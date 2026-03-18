@@ -1,0 +1,17 @@
+{
+  "name": "Probook",
+  "short_name": "Probook",
+  "description": "Professional invoicing and business management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "/probook-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
