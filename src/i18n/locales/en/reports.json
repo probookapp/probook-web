@@ -1,0 +1,57 @@
+{
+  "title": "Reports",
+  "subtitle": "Analyze your business performance",
+  "exportCsv": "Export CSV",
+  "exportSuccess": "CSV saved to {{path}}",
+  "exportError": "Failed to save CSV",
+  "totalHt": "Total (excl. VAT)",
+  "totalTtc": "Total (incl. VAT)",
+  "noUnpaidInvoices": "No unpaid invoices",
+  "totalUnpaid": "Total unpaid",
+  "daysOverdue": "{{count}} days overdue",
+  "dueNow": "Due now",
+  "from": "From",
+  "to": "To",
+  "acceptedQuotes": "Accepted quotes",
+  "revenueByPeriod": {
+    "title": "Revenue by Period",
+    "period": "Period",
+    "revenueHt": "Revenue (excl. VAT)",
+    "revenueTtc": "Revenue (incl. VAT)",
+    "invoiceCount": "Invoice Count"
+  },
+  "revenueByClient": {
+    "title": "Revenue by Client",
+    "client": "Client",
+    "revenueHt": "Revenue (excl. VAT)",
+    "revenueTtc": "Revenue (incl. VAT)",
+    "invoiceCount": "Invoice Count"
+  },
+  "productSales": {
+    "title": "Product Sales",
+    "product": "Product",
+    "quantitySold": "Quantity Sold",
+    "revenueHt": "Revenue (excl. VAT)",
+    "revenueTtc": "Revenue (incl. VAT)"
+  },
+  "outstanding": {
+    "title": "Outstanding",
+    "invoice": "Invoice",
+    "client": "Client",
+    "issueDate": "Issue Date",
+    "dueDate": "Due Date",
+    "status": "Status",
+    "amount": "Amount"
+  },
+  "quoteConversion": {
+    "title": "Quote Conversion Rate",
+    "totalQuotes": "Total Quotes",
+    "conversionRate": "Conversion Rate",
+    "totalQuotedAmount": "Total Quoted Amount",
+    "convertedAmount": "Converted Amount"
+  },
+  "filters": {
+    "dateRange": "Date Range"
+  },
+  "noData": "No data for this period"
+}

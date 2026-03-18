@@ -1,0 +1,63 @@
+{
+  "required": "Ce champ est requis",
+  "email": "Email invalide",
+  "phone": "Numéro de téléphone invalide",
+  "siret": "SIRET invalide",
+  "vatNumber": "Numéro de TVA invalide",
+  "minLength": "Minimum {{min}} caractères",
+  "maxLength": "Maximum {{max}} caractères",
+  "min": "La valeur minimale est {{min}}",
+  "max": "La valeur maximale est {{max}}",
+  "positive": "La valeur doit être positive",
+  "integer": "La valeur doit être un nombre entier",
+  "number": "La valeur doit être un nombre",
+  "date": "Date invalide",
+  "dateAfter": "La date doit être après {{date}}",
+  "dateBefore": "La date doit être avant {{date}}",
+  "client": {
+    "nameRequired": "Le nom du client est requis",
+    "emailInvalid": "L'email est invalide"
+  },
+  "product": {
+    "nameRequired": "Le nom du produit est requis",
+    "priceRequired": "Le prix est requis",
+    "pricePositive": "Le prix doit être positif",
+    "vatRateRequired": "Le taux de TVA est requis"
+  },
+  "quote": {
+    "clientRequired": "Le client est requis",
+    "issueDateRequired": "La date d'émission est requise",
+    "validityDateRequired": "La date de validité est requise",
+    "linesRequired": "Au moins une ligne est requise",
+    "lineDescriptionRequired": "La description est requise",
+    "lineQuantityPositive": "La quantité doit être positive",
+    "linePricePositive": "Le prix doit être positif"
+  },
+  "invoice": {
+    "clientRequired": "Le client est requis",
+    "issueDateRequired": "La date d'émission est requise",
+    "dueDateRequired": "La date d'échéance est requise",
+    "linesRequired": "Au moins une ligne est requise",
+    "lineDescriptionRequired": "La description est requise",
+    "lineQuantityPositive": "La quantité doit être positive",
+    "linePricePositive": "Le prix doit être positif"
+  },
+  "delivery": {
+    "clientRequired": "Le client est requis",
+    "issueDateRequired": "La date d'émission est requise",
+    "linesRequired": "Au moins un article est requis",
+    "lineDescriptionRequired": "La description est requise",
+    "lineQuantityPositive": "La quantité doit être positive"
+  },
+  "payment": {
+    "amountRequired": "Le montant est requis",
+    "amountPositive": "Le montant doit être positif",
+    "dateRequired": "La date est requise",
+    "methodRequired": "La méthode de paiement est requise"
+  },
+  "settings": {
+    "companyNameRequired": "Le nom de l'entreprise est requis",
+    "vatRatePositive": "Le taux de TVA doit être positif",
+    "paymentTermsPositive": "Le délai de paiement doit être positif"
+  }
+}

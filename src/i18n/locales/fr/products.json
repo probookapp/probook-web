@@ -1,0 +1,112 @@
+{
+  "title": "Produits & Services",
+  "subtitle": "Gérez votre catalogue de produits et services",
+  "newProduct": "Nouveau produit",
+  "editProduct": "Modifier le produit",
+  "deleteProduct": "Supprimer le produit",
+  "productDetails": "Détails du produit",
+  "noProducts": "Aucun produit trouvé",
+  "searchPlaceholder": "Rechercher un produit...",
+  "createProduct": "Créer",
+  "updateProduct": "Modifier",
+  "productList": "Liste des produits",
+  "allCategories": "Toutes les catégories",
+  "deleteConfirmation": "Êtes-vous sûr de vouloir supprimer ce produit ?",
+  "tabs": {
+    "products": "Produits",
+    "categories": "Catégories"
+  },
+  "types": {
+    "product": "Produit",
+    "service": "Service"
+  },
+  "fields": {
+    "name": "Nom",
+    "nameRequired": "Nom *",
+    "designation": "Désignation",
+    "designationRequired": "Désignation *",
+    "description": "Description",
+    "unitPriceHt": "Prix unitaire HT",
+    "unitPriceHtRequired": "Prix de vente HT (€) *",
+    "purchasePriceHt": "Prix d'achat HT (€)",
+    "vatRate": "Taux TVA (%)",
+    "vatRateRequired": "Taux de TVA *",
+    "unit": "Unité",
+    "unitRequired": "Unité *",
+    "reference": "Référence",
+    "barcode": "Code-barres",
+    "barcodePlaceholder": "Scanner ou saisir le code-barres",
+    "isService": "C'est un service",
+    "isServiceDescription": "C'est un service (pas de gestion de stock)",
+    "category": "Catégorie",
+    "noCategory": "Aucune catégorie",
+    "photo": "Photo",
+    "type": "Type",
+    "priceHT": "Prix de vente HT",
+    "vat": "TVA",
+    "quantity": "Quantité",
+    "suppliers": "Fournisseur(s)"
+  },
+  "units": {
+    "unit": "Unité",
+    "hour": "Heure",
+    "day": "Jour",
+    "month": "Mois",
+    "flatRate": "Forfait",
+    "kg": "Kilogramme",
+    "meter": "Mètre",
+    "squareMeter": "Mètre carré",
+    "cubicMeter": "Mètre cube",
+    "liter": "Litre"
+  },
+  "categories": {
+    "title": "Catégories",
+    "subtitle": "Organisez vos produits par catégories",
+    "treeTitle": "Arborescence des catégories",
+    "newCategory": "Nouvelle catégorie",
+    "editCategory": "Modifier la catégorie",
+    "deleteCategory": "Supprimer la catégorie",
+    "noCategories": "Aucune catégorie créée. Créez votre première catégorie pour organiser vos produits.",
+    "allProducts": "Tous les produits",
+    "uncategorized": "Non catégorisé",
+    "nameRequired": "Nom de la catégorie *",
+    "parentCategory": "Catégorie parente",
+    "noParent": "Aucune (catégorie racine)",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette catégorie ?",
+    "deleteWarning": "Les produits de cette catégorie ne seront pas supprimés, mais ils n'auront plus de catégorie assignée."
+  },
+  "filters": {
+    "all": "Tous",
+    "products": "Produits",
+    "services": "Services"
+  },
+  "photoUpload": {
+    "title": "Photo du produit",
+    "upload": "Téléverser une photo",
+    "remove": "Supprimer la photo",
+    "maxSize": "Taille max: 5 Mo"
+  },
+  "suppliers": {
+    "title": "Fournisseurs liés",
+    "addSupplier": "Lier un fournisseur",
+    "removeSupplier": "Délier",
+    "selectSupplier": "Sélectionnez un fournisseur...",
+    "purchasePrice": "Prix d'achat HT",
+    "noSuppliers": "Aucun fournisseur lié",
+    "linked": "Fournisseur lié avec succès",
+    "linkError": "Erreur lors de la liaison du fournisseur",
+    "unlinked": "Fournisseur délié avec succès",
+    "unlinkError": "Erreur lors de la suppression du lien",
+    "editPrice": "Cliquer pour modifier le prix",
+    "priceUpdated": "Prix d'achat mis à jour",
+    "priceUpdateError": "Erreur lors de la mise à jour du prix"
+  },
+  "validation": {
+    "nameRequired": "Le nom est requis",
+    "designationRequired": "La désignation est requise",
+    "pricePositive": "Le prix doit être positif",
+    "vatRateRange": "Le taux de TVA doit être entre 0 et 100",
+    "unitRequired": "L'unité est requise",
+    "categoryNameRequired": "Le nom de la catégorie est requis"
+  }
+}

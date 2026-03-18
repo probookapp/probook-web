@@ -1,0 +1,93 @@
+{
+  "title": "عروض الأسعار",
+  "subtitle": "إنشاء وإدارة عروض الأسعار",
+  "listTitle": "قائمة عروض الأسعار",
+  "newQuote": "عرض سعر جديد",
+  "createQuote": "إنشاء عرض السعر",
+  "editQuote": "تعديل عرض السعر",
+  "deleteQuote": "حذف عرض السعر",
+  "quoteDetails": "تفاصيل عرض السعر",
+  "noQuotes": "لا توجد عروض أسعار",
+  "searchPlaceholder": "البحث عن عرض سعر...",
+  "generalInfo": "معلومات عامة",
+  "shippingAndDownPayment": "الشحن والدفعة المقدمة",
+  "downPaymentHint": "أدخل إما نسبة مئوية أو مبلغ ثابت للدفعة المقدمة. إذا تم إدخال كليهما، سيتم استخدام المبلغ الثابت.",
+  "groupSubtotals": "المجاميع الفرعية للمجموعات",
+  "richDescription": "وصف منسق (HTML)",
+  "richDescriptionPlaceholder": "وصف تفصيلي مع تنسيق...",
+  "notesPlaceholder": "ملاحظات إضافية (مرئية على عرض السعر)...",
+  "pdfDocument": "مستند PDF",
+  "createDeliveryNote": "إنشاء إشعار تسليم",
+  "noClientEmail": "هذا العميل ليس لديه عنوان بريد إلكتروني.",
+  "emailGreeting": "مرحباً",
+  "emailBody": "يرجى الاطلاع على عرض السعر المرفق {{number}} بمبلغ {{amount}}.\n\nهذا العرض صالح حتى {{date}}.",
+  "emailClosing": "مع أطيب التحيات",
+  "fields": {
+    "quoteNumber": "رقم عرض السعر",
+    "client": "العميل",
+    "issueDate": "تاريخ الإصدار",
+    "validityDate": "تاريخ الصلاحية",
+    "status": "الحالة",
+    "totalHt": "المجموع (بدون ضريبة)",
+    "totalVat": "إجمالي الضريبة",
+    "totalTtc": "المجموع (شامل الضريبة)",
+    "notes": "ملاحظات",
+    "notesHtml": "ملاحظات (HTML)"
+  },
+  "lines": {
+    "title": "بنود عرض السعر",
+    "product": "المنتج",
+    "description": "الوصف",
+    "quantity": "الكمية",
+    "unitPriceHt": "السعر (بدون ضريبة)",
+    "vatRate": "الضريبة %",
+    "totalTtc": "المجموع (شامل الضريبة)",
+    "groupName": "المجموعة",
+    "groupPlaceholder": "المجموعة (اختياري، مثال: أعمال تحضيرية)",
+    "isSubtotalLine": "سطر مجموع فرعي",
+    "subtotalOnly": "مجموع فرعي",
+    "groupTotal": "مجموع المجموعة",
+    "subtotalHint": "سيعرض هذا السطر المجموع الفرعي للمجموعة في PDF",
+    "addLine": "إضافة سطر",
+    "noLines": "لا توجد بنود"
+  },
+  "shipping": {
+    "title": "الشحن",
+    "costHt": "تكلفة الشحن (بدون ضريبة)",
+    "vatRate": "ضريبة الشحن (%)"
+  },
+  "downPayment": {
+    "title": "الدفعة المقدمة",
+    "percent": "الدفعة المقدمة (%)",
+    "amount": "مبلغ ثابت (€)",
+    "amountPaid": "الدفعة المقدمة المدفوعة",
+    "remaining": "المتبقي",
+    "percentPlaceholder": "مثال: 30",
+    "amountPlaceholder": "مثال: 500"
+  },
+  "totals": {
+    "subtotalHt": "المجموع الفرعي (بدون ضريبة)",
+    "vatProducts": "ضريبة المنتجات",
+    "shippingHt": "الشحن (بدون ضريبة)",
+    "shippingVat": "ضريبة الشحن",
+    "totalTtc": "المجموع (شامل الضريبة)",
+    "labelHt": "بدون ضريبة",
+    "labelTtc": "شامل الضريبة"
+  },
+  "actions": {
+    "convertToInvoice": "تحويل إلى فاتورة",
+    "duplicate": "نسخ",
+    "downloadPdf": "تحميل PDF",
+    "sendByEmail": "إرسال بالبريد الإلكتروني",
+    "markAsSent": "تحديد كمرسل",
+    "markAsAccepted": "تحديد كمقبول"
+  },
+  "status": {
+    "DRAFT": "مسودة",
+    "SENT": "مرسل",
+    "ACCEPTED": "مقبول",
+    "EXPIRED": "منتهي الصلاحية"
+  },
+  "confirmDelete": "هل أنت متأكد من حذف عرض السعر هذا؟",
+  "confirmConvert": "تحويل عرض السعر هذا إلى فاتورة؟"
+}

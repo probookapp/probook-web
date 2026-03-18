@@ -1,0 +1,63 @@
+{
+  "required": "هذا الحقل مطلوب",
+  "email": "بريد إلكتروني غير صالح",
+  "phone": "رقم هاتف غير صالح",
+  "siret": "رقم سجل تجاري غير صالح",
+  "vatNumber": "رقم ضريبي غير صالح",
+  "minLength": "الحد الأدنى {{min}} أحرف",
+  "maxLength": "الحد الأقصى {{max}} أحرف",
+  "min": "القيمة الدنيا هي {{min}}",
+  "max": "القيمة القصوى هي {{max}}",
+  "positive": "يجب أن تكون القيمة موجبة",
+  "integer": "يجب أن تكون القيمة عدداً صحيحاً",
+  "number": "يجب أن تكون القيمة رقماً",
+  "date": "تاريخ غير صالح",
+  "dateAfter": "يجب أن يكون التاريخ بعد {{date}}",
+  "dateBefore": "يجب أن يكون التاريخ قبل {{date}}",
+  "client": {
+    "nameRequired": "اسم العميل مطلوب",
+    "emailInvalid": "بريد إلكتروني غير صالح"
+  },
+  "product": {
+    "nameRequired": "اسم المنتج مطلوب",
+    "priceRequired": "السعر مطلوب",
+    "pricePositive": "يجب أن يكون السعر موجباً",
+    "vatRateRequired": "معدل الضريبة مطلوب"
+  },
+  "quote": {
+    "clientRequired": "العميل مطلوب",
+    "issueDateRequired": "تاريخ الإصدار مطلوب",
+    "validityDateRequired": "تاريخ الصلاحية مطلوب",
+    "linesRequired": "مطلوب سطر واحد على الأقل",
+    "lineDescriptionRequired": "الوصف مطلوب",
+    "lineQuantityPositive": "يجب أن تكون الكمية موجبة",
+    "linePricePositive": "يجب أن يكون السعر موجباً"
+  },
+  "invoice": {
+    "clientRequired": "العميل مطلوب",
+    "issueDateRequired": "تاريخ الإصدار مطلوب",
+    "dueDateRequired": "تاريخ الاستحقاق مطلوب",
+    "linesRequired": "مطلوب سطر واحد على الأقل",
+    "lineDescriptionRequired": "الوصف مطلوب",
+    "lineQuantityPositive": "يجب أن تكون الكمية موجبة",
+    "linePricePositive": "يجب أن يكون السعر موجباً"
+  },
+  "delivery": {
+    "clientRequired": "العميل مطلوب",
+    "issueDateRequired": "تاريخ الإصدار مطلوب",
+    "linesRequired": "مطلوب صنف واحد على الأقل",
+    "lineDescriptionRequired": "الوصف مطلوب",
+    "lineQuantityPositive": "يجب أن تكون الكمية موجبة"
+  },
+  "payment": {
+    "amountRequired": "المبلغ مطلوب",
+    "amountPositive": "يجب أن يكون المبلغ موجباً",
+    "dateRequired": "التاريخ مطلوب",
+    "methodRequired": "طريقة الدفع مطلوبة"
+  },
+  "settings": {
+    "companyNameRequired": "اسم الشركة مطلوب",
+    "vatRatePositive": "يجب أن يكون معدل الضريبة موجباً",
+    "paymentTermsPositive": "يجب أن تكون مدة الدفع موجبة"
+  }
+}

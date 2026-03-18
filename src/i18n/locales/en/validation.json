@@ -1,0 +1,63 @@
+{
+  "required": "This field is required",
+  "email": "Invalid email",
+  "phone": "Invalid phone number",
+  "siret": "Invalid SIRET",
+  "vatNumber": "Invalid VAT number",
+  "minLength": "Minimum {{min}} characters",
+  "maxLength": "Maximum {{max}} characters",
+  "min": "Minimum value is {{min}}",
+  "max": "Maximum value is {{max}}",
+  "positive": "Value must be positive",
+  "integer": "Value must be an integer",
+  "number": "Value must be a number",
+  "date": "Invalid date",
+  "dateAfter": "Date must be after {{date}}",
+  "dateBefore": "Date must be before {{date}}",
+  "client": {
+    "nameRequired": "Client name is required",
+    "emailInvalid": "Invalid email"
+  },
+  "product": {
+    "nameRequired": "Product name is required",
+    "priceRequired": "Price is required",
+    "pricePositive": "Price must be positive",
+    "vatRateRequired": "VAT rate is required"
+  },
+  "quote": {
+    "clientRequired": "Client is required",
+    "issueDateRequired": "Issue date is required",
+    "validityDateRequired": "Validity date is required",
+    "linesRequired": "At least one line is required",
+    "lineDescriptionRequired": "Description is required",
+    "lineQuantityPositive": "Quantity must be positive",
+    "linePricePositive": "Price must be positive"
+  },
+  "invoice": {
+    "clientRequired": "Client is required",
+    "issueDateRequired": "Issue date is required",
+    "dueDateRequired": "Due date is required",
+    "linesRequired": "At least one line is required",
+    "lineDescriptionRequired": "Description is required",
+    "lineQuantityPositive": "Quantity must be positive",
+    "linePricePositive": "Price must be positive"
+  },
+  "delivery": {
+    "clientRequired": "Client is required",
+    "issueDateRequired": "Issue date is required",
+    "linesRequired": "At least one item is required",
+    "lineDescriptionRequired": "Description is required",
+    "lineQuantityPositive": "Quantity must be positive"
+  },
+  "payment": {
+    "amountRequired": "Amount is required",
+    "amountPositive": "Amount must be positive",
+    "dateRequired": "Date is required",
+    "methodRequired": "Payment method is required"
+  },
+  "settings": {
+    "companyNameRequired": "Company name is required",
+    "vatRatePositive": "VAT rate must be positive",
+    "paymentTermsPositive": "Payment terms must be positive"
+  }
+}

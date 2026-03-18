@@ -1,0 +1,33 @@
+{
+  "title": "Expenses",
+  "subtitle": "Track your business expenses",
+  "newExpense": "New Expense",
+  "editExpense": "Edit Expense",
+  "deleteExpense": "Delete Expense",
+  "noExpenses": "No expenses found",
+  "searchPlaceholder": "Search expenses...",
+  "expenseList": "Expense List",
+  "deleteConfirmation": "Are you sure you want to delete this expense? This action cannot be undone.",
+  "fields": {
+    "name": "Name",
+    "nameRequired": "Name *",
+    "amount": "Amount",
+    "amountRequired": "Amount (€) *",
+    "date": "Date",
+    "dateRequired": "Date *",
+    "notes": "Notes"
+  },
+  "validation": {
+    "nameRequired": "Name is required",
+    "amountPositive": "Amount must be a positive number",
+    "dateRequired": "Date is required"
+  },
+  "messages": {
+    "created": "Expense created successfully",
+    "createError": "Failed to create expense",
+    "updated": "Expense updated successfully",
+    "updateError": "Failed to update expense",
+    "deleted": "Expense deleted successfully",
+    "deleteError": "Failed to delete expense"
+  }
+}

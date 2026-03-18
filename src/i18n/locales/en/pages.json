@@ -1,0 +1,190 @@
+{
+  "pricing": {
+    "title": "Simple, transparent pricing",
+    "subtitle": "Choose the plan that fits your business. No hidden fees, no surprises.",
+    "monthly": "Monthly",
+    "yearly": "Yearly",
+    "saveWithYearly": "Save more",
+    "questionsTitle": "Have questions?",
+    "questionsSubtitle": "Check out our FAQ for answers to common questions about plans and billing.",
+    "viewFaq": "View FAQ"
+  },
+  "about": {
+    "title": "About Probook",
+    "subtitle": "We're building the simplest way for businesses to manage their invoicing and operations.",
+    "storyTitle": "Our Story",
+    "storyP1": "Probook was born from a simple observation: small businesses and freelancers spend too much time on paperwork and not enough time growing their business.",
+    "storyP2": "We set out to build a tool that makes professional invoicing, client management, and business operations effortless — even without a reliable internet connection.",
+    "storyP3": "Today, Probook helps businesses create quotes, invoices, and delivery notes in seconds, track payments, manage inventory, and run a point-of-sale system — all from one place.",
+    "valuesTitle": "Our Values",
+    "values": {
+      "simplicity": {
+        "title": "Simplicity",
+        "description": "Powerful features wrapped in an interface anyone can use, no training required."
+      },
+      "reliability": {
+        "title": "Reliability",
+        "description": "Works offline, syncs when connected. Your business never stops."
+      },
+      "accessibility": {
+        "title": "Accessibility",
+        "description": "Available in Arabic, French, and English. Designed for local businesses."
+      },
+      "transparency": {
+        "title": "Transparency",
+        "description": "Clear pricing, no hidden fees. You always know what you're paying for."
+      }
+    },
+    "missionTitle": "Our Mission",
+    "missionText": "To empower every small business with professional-grade tools that are affordable, easy to use, and built for the realities of doing business locally."
+  },
+  "contact": {
+    "title": "Contact Us",
+    "subtitle": "Have a question, feedback, or need help? We'd love to hear from you.",
+    "emailTitle": "Email",
+    "locationTitle": "Location",
+    "locationText": "Algiers, Algeria",
+    "hoursTitle": "Business Hours",
+    "hoursText": "Sunday – Thursday, 9:00 AM – 5:00 PM",
+    "nameLabel": "Name",
+    "emailLabel": "Email",
+    "subjectLabel": "Subject",
+    "messageLabel": "Message",
+    "sendButton": "Send Message",
+    "successTitle": "Message sent!",
+    "successMessage": "Thank you for reaching out. We'll get back to you as soon as possible."
+  },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "subtitle": "Find answers to the most common questions about Probook.",
+    "items": {
+      "whatIsProbook": {
+        "q": "What is Probook?",
+        "a": "Probook is a business management platform that helps you create professional invoices, quotes, and delivery notes, track payments, manage clients and products, and run a point-of-sale system — all in one place."
+      },
+      "howToStart": {
+        "q": "How do I get started?",
+        "a": "Simply sign up for an account, set up your company information, and start creating your first invoice or quote. The onboarding process guides you through each step."
+      },
+      "freeTrial": {
+        "q": "Is there a free trial?",
+        "a": "Some plans include a free trial period. Check our pricing page for current offers and trial availability."
+      },
+      "cancelAnytime": {
+        "q": "Can I cancel my subscription anytime?",
+        "a": "Yes, you can cancel your subscription at any time. Your data remains accessible until the end of your current billing period."
+      },
+      "offlineWork": {
+        "q": "Does Probook work offline?",
+        "a": "Yes! Probook is designed to work offline. You can create invoices, manage clients, and use the POS system without an internet connection. All changes sync automatically when you're back online."
+      },
+      "languages": {
+        "q": "What languages are supported?",
+        "a": "Probook is available in English, French, and Arabic, with full right-to-left support for Arabic."
+      },
+      "dataExport": {
+        "q": "Can I export my data?",
+        "a": "Yes, you can export your invoices, client lists, and reports in various formats. We believe your data belongs to you."
+      },
+      "support": {
+        "q": "How can I get support?",
+        "a": "You can reach our support team via the contact page or by emailing support@probookapp.net. We typically respond within 24 hours."
+      }
+    },
+    "ctaTitle": "Still have questions?",
+    "ctaSubtitle": "Our team is here to help. Reach out and we'll get back to you as soon as possible.",
+    "ctaButton": "Contact Us"
+  },
+  "terms": {
+    "title": "Terms of Service",
+    "lastUpdated": "Last updated: March 2026",
+    "sections": {
+      "acceptance": {
+        "title": "Acceptance of Terms",
+        "content": "By accessing or using Probook, you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use our services."
+      },
+      "services": {
+        "title": "Description of Services",
+        "content": "Probook provides a cloud-based business management platform including invoicing, quoting, delivery notes, client management, product management, point-of-sale, and reporting tools. Services are provided on a subscription basis."
+      },
+      "accounts": {
+        "title": "User Accounts",
+        "content": "You are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You must provide accurate and complete information when creating your account and keep it up to date."
+      },
+      "payment": {
+        "title": "Payment and Billing",
+        "content": "Subscription fees are billed according to the plan you choose (monthly or yearly). Prices are displayed in the applicable currency. We reserve the right to change pricing with reasonable notice. Non-payment may result in suspension of your account."
+      },
+      "intellectualProperty": {
+        "title": "Intellectual Property",
+        "content": "Probook and its content, features, and functionality are owned by us and are protected by copyright, trademark, and other intellectual property laws. You retain ownership of all data you input into the platform."
+      },
+      "termination": {
+        "title": "Termination",
+        "content": "We may suspend or terminate your access to Probook at any time for violation of these terms. You may cancel your subscription at any time. Upon termination, your right to use the service ceases, but your data may be retained for a reasonable period to allow export."
+      },
+      "limitation": {
+        "title": "Limitation of Liability",
+        "content": "Probook is provided \"as is\" without warranties of any kind. We shall not be liable for any indirect, incidental, special, consequential, or punitive damages resulting from your use of or inability to use the service."
+      },
+      "changes": {
+        "title": "Changes to Terms",
+        "content": "We reserve the right to modify these terms at any time. We will notify users of material changes via email or through the platform. Continued use of Probook after changes constitutes acceptance of the new terms."
+      },
+      "governingLaw": {
+        "title": "Governing Law",
+        "content": "These terms shall be governed by and construed in accordance with the laws of Algeria. Any disputes arising from these terms shall be resolved in the competent courts of Algiers."
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "If you have any questions about these Terms of Service, please contact us at support@probookapp.net."
+      }
+    }
+  },
+  "privacy": {
+    "title": "Privacy Policy",
+    "lastUpdated": "Last updated: March 2026",
+    "sections": {
+      "dataCollection": {
+        "title": "Data We Collect",
+        "content": "We collect information you provide when creating an account (name, email, company details), data you enter into the platform (clients, products, invoices, quotes), and technical data such as browser type, IP address, and usage patterns."
+      },
+      "dataUsage": {
+        "title": "How We Use Your Data",
+        "content": "We use your data to provide and improve our services, process your transactions, send service-related communications, and ensure the security and integrity of our platform. We do not sell your personal data to third parties."
+      },
+      "dataStorage": {
+        "title": "Data Storage and Retention",
+        "content": "Your data is stored securely on our servers. We retain your data for as long as your account is active or as needed to provide our services. After account deletion, we may retain certain data as required by law or for legitimate business purposes."
+      },
+      "dataSecurity": {
+        "title": "Data Security",
+        "content": "We implement appropriate technical and organizational measures to protect your data against unauthorized access, alteration, disclosure, or destruction. This includes encryption in transit and at rest, regular security audits, and access controls."
+      },
+      "thirdParties": {
+        "title": "Third-Party Services",
+        "content": "We may use third-party services for hosting, analytics, and payment processing. These providers are bound by their own privacy policies and we ensure they meet appropriate data protection standards."
+      },
+      "cookies": {
+        "title": "Cookies and Tracking",
+        "content": "We use essential cookies to maintain your session and preferences (such as language and theme). We do not use third-party advertising or tracking cookies."
+      },
+      "rights": {
+        "title": "Your Rights",
+        "content": "You have the right to access, correct, or delete your personal data. You can export your data at any time through the platform. To exercise these rights or for any privacy-related inquiries, contact us at support@probookapp.net."
+      },
+      "children": {
+        "title": "Children's Privacy",
+        "content": "Probook is not intended for use by children under 16. We do not knowingly collect personal information from children. If you believe a child has provided us with personal data, please contact us to have it removed."
+      },
+      "changes": {
+        "title": "Changes to This Policy",
+        "content": "We may update this privacy policy from time to time. We will notify you of any material changes via email or through a notice on our platform. We encourage you to review this policy periodically."
+      },
+      "contact": {
+        "title": "Contact Us",
+        "content": "If you have questions about this Privacy Policy or our data practices, please contact us at support@probookapp.net."
+      }
+    }
+  }
+}

@@ -1,0 +1,93 @@
+{
+  "title": "Devis",
+  "subtitle": "Créez et gérez vos devis",
+  "listTitle": "Liste des devis",
+  "newQuote": "Nouveau devis",
+  "createQuote": "Créer le devis",
+  "editQuote": "Modifier le devis",
+  "deleteQuote": "Supprimer le devis",
+  "quoteDetails": "Détails du devis",
+  "noQuotes": "Aucun devis trouvé",
+  "searchPlaceholder": "Rechercher un devis...",
+  "generalInfo": "Informations générales",
+  "shippingAndDownPayment": "Frais de port et acompte",
+  "downPaymentHint": "Saisissez soit un pourcentage, soit un montant fixe pour l'acompte. Si les deux sont renseignés, le montant fixe sera utilisé.",
+  "groupSubtotals": "Sous-totaux par groupe",
+  "richDescription": "Description enrichie (formatage HTML)",
+  "richDescriptionPlaceholder": "Description détaillée avec mise en forme...",
+  "notesPlaceholder": "Notes additionnelles (visibles sur le devis)...",
+  "pdfDocument": "Document PDF",
+  "createDeliveryNote": "Créer bon de livraison",
+  "noClientEmail": "Ce client n'a pas d'adresse email.",
+  "emailGreeting": "Bonjour",
+  "emailBody": "Veuillez trouver ci-joint le devis {{number}} d'un montant de {{amount}}.\n\nCe devis est valable jusqu'au {{date}}.",
+  "emailClosing": "Cordialement",
+  "fields": {
+    "quoteNumber": "Numéro de devis",
+    "client": "Client",
+    "issueDate": "Date d'émission",
+    "validityDate": "Date de validité",
+    "status": "Statut",
+    "totalHt": "Total HT",
+    "totalVat": "Total TVA",
+    "totalTtc": "Total TTC",
+    "notes": "Notes",
+    "notesHtml": "Notes (HTML)"
+  },
+  "lines": {
+    "title": "Lignes du devis",
+    "product": "Produit",
+    "description": "Description",
+    "quantity": "Qté",
+    "unitPriceHt": "Prix HT",
+    "vatRate": "TVA %",
+    "totalTtc": "Total TTC",
+    "groupName": "Groupe",
+    "groupPlaceholder": "Groupe (optionnel, ex: Travaux préparatoires)",
+    "isSubtotalLine": "Ligne de sous-total",
+    "subtotalOnly": "Sous-total",
+    "groupTotal": "Total du groupe",
+    "subtotalHint": "Cette ligne affichera le sous-total du groupe dans le PDF",
+    "addLine": "Ajouter une ligne",
+    "noLines": "Aucune ligne"
+  },
+  "shipping": {
+    "title": "Frais de port",
+    "costHt": "Frais de port HT",
+    "vatRate": "TVA frais de port (%)"
+  },
+  "downPayment": {
+    "title": "Acompte",
+    "percent": "Acompte versé (%)",
+    "amount": "Montant fixe (€)",
+    "amountPaid": "Acompte déjà versé",
+    "remaining": "Reste à payer",
+    "percentPlaceholder": "Ex : 30",
+    "amountPlaceholder": "Ex : 500"
+  },
+  "totals": {
+    "subtotalHt": "Sous-total HT",
+    "vatProducts": "TVA produits",
+    "shippingHt": "Frais de port HT",
+    "shippingVat": "TVA frais de port",
+    "totalTtc": "Total TTC",
+    "labelHt": "HT",
+    "labelTtc": "TTC"
+  },
+  "actions": {
+    "convertToInvoice": "Convertir en facture",
+    "duplicate": "Dupliquer",
+    "downloadPdf": "Télécharger PDF",
+    "sendByEmail": "Envoyer par email",
+    "markAsSent": "Marquer comme envoyé",
+    "markAsAccepted": "Marquer comme accepté"
+  },
+  "status": {
+    "DRAFT": "Brouillon",
+    "SENT": "Envoyé",
+    "ACCEPTED": "Accepté",
+    "EXPIRED": "Expiré"
+  },
+  "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce devis ?",
+  "confirmConvert": "Convertir ce devis en facture ?"
+}

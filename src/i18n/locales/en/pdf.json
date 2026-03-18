@@ -1,0 +1,112 @@
+{
+  "invoice": {
+    "title": "INVOICE",
+    "number": "Invoice Number",
+    "issueDate": "Issue Date",
+    "dueDate": "Due Date",
+    "billTo": "Bill To",
+    "status": {
+      "DRAFT": "DRAFT",
+      "ISSUED": "ISSUED",
+      "PAID": "PAID"
+    },
+    "table": {
+      "description": "Description",
+      "quantity": "Qty",
+      "unitPriceHt": "Unit Price (excl. VAT)",
+      "vat": "VAT",
+      "totalTtc": "Total (incl. VAT)"
+    },
+    "totals": {
+      "subtotalHt": "Subtotal (excl. VAT)",
+      "vatProducts": "VAT on products",
+      "shippingHt": "Shipping (excl. VAT)",
+      "shippingVat": "VAT on shipping",
+      "totalTtc": "Total (incl. VAT)",
+      "downPayment": "Down Payment",
+      "remaining": "Amount Due"
+    },
+    "groupSubtotal": "Subtotal {{group}}",
+    "amountInWords": "Amount in words",
+    "bankDetails": "Bank Details",
+    "notes": "Notes"
+  },
+  "quote": {
+    "title": "QUOTE",
+    "number": "Quote Number",
+    "issueDate": "Issue Date",
+    "validityDate": "Valid Until",
+    "billTo": "Client",
+    "status": {
+      "DRAFT": "DRAFT",
+      "SENT": "SENT",
+      "ACCEPTED": "ACCEPTED",
+      "EXPIRED": "EXPIRED"
+    },
+    "table": {
+      "description": "Description",
+      "quantity": "Qty",
+      "unitPriceHt": "Unit Price (excl. VAT)",
+      "vat": "VAT",
+      "totalTtc": "Total (incl. VAT)"
+    },
+    "totals": {
+      "subtotalHt": "Subtotal (excl. VAT)",
+      "vatProducts": "VAT on products",
+      "shippingHt": "Shipping (excl. VAT)",
+      "shippingVat": "VAT on shipping",
+      "totalTtc": "Total (incl. VAT)",
+      "downPayment": "Down Payment Required",
+      "remaining": "Remaining"
+    },
+    "groupSubtotal": "Subtotal {{group}}",
+    "amountInWords": "Amount in words",
+    "validityNotice": "This quote is valid until {{date}}",
+    "acceptanceClause": "Accepted and agreed (signature)",
+    "notes": "Notes"
+  },
+  "deliveryNote": {
+    "title": "DELIVERY NOTE",
+    "number": "Number",
+    "issueDate": "Issue Date",
+    "deliveryDate": "Delivery Date",
+    "deliveryAddress": "Delivery Address",
+    "recipient": "Recipient",
+    "deliverTo": "Deliver To",
+    "status": {
+      "DRAFT": "DRAFT",
+      "DELIVERED": "DELIVERED",
+      "CANCELLED": "CANCELLED"
+    },
+    "table": {
+      "description": "Description",
+      "quantity": "Quantity",
+      "unit": "Unit"
+    },
+    "totalItems": "Total Items",
+    "totalQuantity": "Total Quantity",
+    "deliverySignature": "Delivery Signature",
+    "recipientSignature": "Recipient Signature",
+    "signature": "Recipient Signature",
+    "receivedInGoodCondition": "Read and approved, goods received in good condition",
+    "notes": "Notes",
+    "notesInstructions": "Notes / Instructions"
+  },
+  "common": {
+    "page": "Page",
+    "of": "of",
+    "generatedOn": "Generated on",
+    "siret": "SIRET",
+    "vatNumber": "VAT No.",
+    "phone": "Phone",
+    "labelHt": "excl. VAT",
+    "labelTtc": "incl. VAT"
+  },
+  "numberToWords": {
+    "and": "and",
+    "euro": "euro",
+    "euros": "euros",
+    "cent": "cent",
+    "cents": "cents"
+  }
+}

@@ -1,0 +1,395 @@
+{
+  "buttons": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "create": "Create",
+    "update": "Update",
+    "close": "Close",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "search": "Search",
+    "filter": "Filter",
+    "export": "Export",
+    "import": "Import",
+    "print": "Print",
+    "download": "Download",
+    "upload": "Upload",
+    "refresh": "Refresh",
+    "reset": "Reset",
+    "apply": "Apply",
+    "view": "View",
+    "details": "Details",
+    "actions": "Actions",
+    "loading": "Loading...",
+    "addLine": "Add line"
+  },
+  "status": {
+    "draft": "Draft",
+    "sent": "Sent",
+    "accepted": "Accepted",
+    "expired": "Expired",
+    "issued": "Issued",
+    "paid": "Paid",
+    "delivered": "Delivered",
+    "cancelled": "Cancelled",
+    "pending": "Pending",
+    "overdue": "Overdue",
+    "dueSoon": "Due soon",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "labels": {
+    "name": "Name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "city": "City",
+    "postalCode": "Postal code",
+    "country": "Country",
+    "date": "Date",
+    "amount": "Amount",
+    "total": "Total",
+    "subtotal": "Subtotal",
+    "description": "Description",
+    "quantity": "Quantity",
+    "unitPrice": "Unit price",
+    "vat": "VAT",
+    "vatRate": "VAT rate",
+    "notes": "Notes",
+    "reference": "Reference",
+    "number": "Number",
+    "client": "Client",
+    "product": "Product",
+    "service": "Service",
+    "unit": "Unit",
+    "yes": "Yes",
+    "no": "No",
+    "all": "All",
+    "none": "None",
+    "select": "Select",
+    "optional": "Optional",
+    "required": "Required",
+    "note": "Note"
+  },
+  "messages": {
+    "confirmDelete": "Are you sure you want to delete this item?",
+    "deleteSuccess": "Successfully deleted",
+    "saveSuccess": "Successfully saved",
+    "error": "An error occurred",
+    "noResults": "No results found",
+    "loading": "Loading...",
+    "unsavedChanges": "You have unsaved changes"
+  },
+  "units": {
+    "piece": "piece",
+    "hour": "hour",
+    "day": "day",
+    "month": "month",
+    "year": "year",
+    "kg": "kg",
+    "unit": "unit",
+    "meter": "meter",
+    "liter": "liter",
+    "forfait": "flat rate"
+  },
+  "currency": {
+    "symbol": "€",
+    "code": "EUR"
+  },
+  "dates": "Dates",
+  "phonebook": {
+    "title": "Phonebook",
+    "subtitle": "Search among all your contacts",
+    "contacts": "Contacts",
+    "searchPlaceholder": "Search by name, email or phone...",
+    "noResultsSearch": "No contacts found for this search",
+    "noContacts": "No contacts in the phonebook. Add contacts to your clients.",
+    "primary": "Primary"
+  },
+  "documents": {
+    "invoice": "Invoice",
+    "quote": "Quote",
+    "deliveryNote": "Delivery Note",
+    "document": "Document"
+  },
+  "reminders": {
+    "title": "Reminders",
+    "titleAlerts": "Reminders and alerts",
+    "paymentDue": "Payment overdue",
+    "quoteExpiring": "Quote expiring soon",
+    "deliveryScheduled": "Delivery scheduled",
+    "reminder": "Reminder",
+    "markAsDone": "Mark as done",
+    "sendEmail": "Send email reminder",
+    "noReminders": "No pending reminders"
+  },
+  "editor": {
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "textColor": "Text color",
+    "font": "Font",
+    "bulletList": "Bullet list",
+    "orderedList": "Numbered list",
+    "undo": "Undo",
+    "redo": "Redo",
+    "reset": "Reset",
+    "placeholder": "Enter your text...",
+    "defaultFont": "Default",
+    "colors": {
+      "black": "Black",
+      "darkGray": "Dark gray",
+      "gray": "Gray",
+      "red": "Red",
+      "orange": "Orange",
+      "yellow": "Yellow",
+      "green": "Green",
+      "blue": "Blue",
+      "purple": "Purple",
+      "pink": "Pink"
+    }
+  },
+  "email": {
+    "sendByEmail": "Send by email",
+    "pdfAutoAttached": "PDF document attached automatically",
+    "message": "Message",
+    "preview": "Preview",
+    "editMessage": "Edit",
+    "subject": "Subject",
+    "body": "Message body",
+    "subjectLabel": "Subject:",
+    "sentFrom": "Sent from",
+    "note": "Clicking \"Send\" will open your default email client. Don't forget to attach the PDF document before sending.",
+    "send": "Send"
+  },
+  "payments": {
+    "title": "Payments",
+    "addPayment": "Add payment",
+    "recordPayment": "Record a payment",
+    "deletePayment": "Delete payment",
+    "invoiceTotal": "Invoice total",
+    "totalPaid": "Total paid",
+    "remaining": "Amount due",
+    "ref": "Ref:",
+    "noPayments": "No payments recorded",
+    "deleteConfirm": "Are you sure you want to delete this payment? This action cannot be undone.",
+    "savePayment": "Save payment",
+    "amount": "Amount (€) *",
+    "date": "Payment date *",
+    "method": "Payment method *",
+    "reference": "Reference",
+    "referencePlaceholder": "Check number, transfer reference...",
+    "notesPlaceholder": "Optional notes...",
+    "selectMethod": "Select...",
+    "methods": {
+      "transfer": "Bank transfer",
+      "check": "Check",
+      "card": "Credit card",
+      "cash": "Cash",
+      "directDebit": "Direct debit",
+      "other": "Other"
+    },
+    "validation": {
+      "amountPositive": "Amount must be positive",
+      "dateRequired": "Date is required",
+      "methodRequired": "Payment method is required"
+    }
+  },
+  "photos": {
+    "productPhoto": "Product photo",
+    "change": "Change",
+    "addPhoto": "Add a photo",
+    "errorUploading": "Error uploading photo",
+    "errorDeleting": "Error deleting photo"
+  },
+  "pdfViewer": {
+    "title": "PDF Document",
+    "loading": "Loading...",
+    "downloadPdf": "Download PDF",
+    "preview": "Preview",
+    "errorPreview": "Error opening PDF preview",
+    "downloadSuccess": "PDF saved to {{path}}",
+    "downloadError": "Failed to save PDF"
+  },
+  "validation": {
+    "stockExceeded": "Insufficient stock (available: {{available}}, requested: {{total}})"
+  },
+  "import": {
+    "title": "Import {{entity}}",
+    "selectFile": "Select File",
+    "selectedFile": "Selected: {{name}}",
+    "noFileSelected": "No file selected",
+    "importButton": "Import",
+    "downloading": "Downloading template...",
+    "downloadTemplate": "Download Template",
+    "requiredColumns": "Required columns",
+    "optionalColumns": "Optional columns",
+    "result": "Import Result",
+    "added": "{{count}} added",
+    "updated": "{{count}} updated",
+    "skipped": "{{count}} skipped",
+    "errors": "Errors",
+    "noErrors": "No errors",
+    "supportedFormats": "Supported formats: CSV, XLSX"
+  },
+  "bulk": {
+    "selectedCount_one": "{{count}} item selected",
+    "selectedCount_other": "{{count}} items selected",
+    "deleteSelected": "Delete selected",
+    "clearSelection": "Clear",
+    "confirmDeleteTitle": "Delete selected items",
+    "confirmDeleteMessage_one": "Are you sure you want to delete {{count}} selected item? This action cannot be undone.",
+    "confirmDeleteMessage_other": "Are you sure you want to delete {{count}} selected items? This action cannot be undone.",
+    "deleteCount": "Delete ({{count}})",
+    "deleted": "Items deleted successfully",
+    "deleteError": "Failed to delete selected items"
+  },
+  "unsavedChanges": {
+    "title": "Unsaved changes",
+    "message": "You have unsaved changes. Are you sure you want to leave this page?",
+    "stay": "Stay",
+    "leave": "Leave"
+  },
+  "errors": {
+    "somethingWentWrong": "Something went wrong",
+    "unexpectedError": "An unexpected error occurred. Please try again or reload the page.",
+    "errorDetails": "Error details",
+    "tryAgain": "Try again",
+    "reloadPage": "Reload page"
+  },
+  "offline": {
+    "title": "You're offline",
+    "description": "This page hasn't been cached yet. Please check your internet connection and try again.",
+    "retry": "Retry",
+    "working_offline": "Working offline",
+    "pending": "pending",
+    "syncing": "Syncing changes...",
+    "synced": "All changes synced",
+    "pending_changes": "changes pending",
+    "sync_now": "Sync now",
+    "queued": "You're offline. Changes saved and will sync when you're back online.",
+    "failedMutations": "Failed Changes",
+    "discard": "Discard",
+    "retryAll": "Retry All",
+    "discardAll": "Discard All",
+    "noFailed": "No failed changes",
+    "retries": "{{count}} retries",
+    "error": "Error"
+  },
+  "conflict": {
+    "title": "Conflict Detected",
+    "description": "This record was modified while you were offline. What would you like to do?",
+    "applyMine": "Apply My Changes",
+    "keepNewer": "Keep Newer Version",
+    "details": "Your change: {{label}}"
+  },
+  "pwa": {
+    "installTitle": "Install Probook",
+    "installDescription": "Install Probook for a better experience.",
+    "install": "Install",
+    "dismiss": "Not Now"
+  },
+  "storage": {
+    "warning": "You have {{count}} pending changes. Consider syncing soon.",
+    "critical": "Storage is getting full with {{count}} pending changes. Please sync or discard old changes."
+  },
+  "aria": {
+    "closeNotification": "Close notification",
+    "openCalendar": "Open calendar",
+    "close": "Close"
+  },
+  "footer": {
+    "poweredBy": "Probook Web"
+  },
+  "update": {
+    "available": "Update available",
+    "availableDescription": "Version {{version}} is ready to download.",
+    "downloading": "Downloading update...",
+    "downloadingProgress": "{{progress}}% complete",
+    "downloadingPleaseWait": "Please wait...",
+    "ready": "Update ready",
+    "readyDescription": "The update has been downloaded. Restart to apply.",
+    "error": "Update failed",
+    "errorDescription": "Could not check for updates. Please try again later.",
+    "downloadInstall": "Download & install",
+    "restartNow": "Restart now",
+    "retry": "Retry",
+    "later": "Later",
+    "autoUpdating": "Installing update...",
+    "autoUpdatingProgress": "Updating... {{progress}}% complete",
+    "autoUpdatingPleaseWait": "Updating... Please wait.",
+    "newVersionAvailable": "A new version is available.",
+    "updateNow": "Update Now"
+  },
+  "landing": {
+    "hero": {
+      "title": "Professional invoicing,",
+      "titleHighlight": "simplified.",
+      "subtitle": "Create quotes, invoices, and delivery notes in seconds. Track payments, manage clients, and grow your business — all in one place.",
+      "cta": "Get started",
+      "login": "Sign in"
+    },
+    "features": {
+      "title": "Everything you need to run your business",
+      "subtitle": "Powerful tools designed for freelancers, self-employed professionals, and small businesses.",
+      "invoicing": {
+        "title": "Invoicing & Quotes",
+        "description": "Create professional invoices and quotes with your branding. Convert quotes to invoices in one click."
+      },
+      "clients": {
+        "title": "Client Management",
+        "description": "Keep track of all your clients, contacts, and communication history in one organized place."
+      },
+      "payments": {
+        "title": "Payment Tracking",
+        "description": "Record payments, track outstanding balances, and get notified when invoices are overdue."
+      },
+      "reports": {
+        "title": "Reports & Analytics",
+        "description": "Understand your revenue, top clients, and product performance with real-time dashboards."
+      },
+      "pos": {
+        "title": "Point of Sale",
+        "description": "Built-in POS system with barcode scanning and receipt printing for retail businesses."
+      },
+      "offline": {
+        "title": "Works Offline",
+        "description": "Keep working even without internet. All changes sync automatically when you're back online."
+      }
+    },
+    "pricing": {
+      "title": "Simple, transparent pricing",
+      "subtitle": "No hidden fees. No surprises. Cancel anytime.",
+      "perMonth": "/mo",
+      "perYear": "/yr",
+      "popular": "Popular",
+      "getStarted": "Get started",
+      "startTrial": "Start free trial",
+      "contactSales": "Contact sales",
+      "trialDays": "{{days}}-day free trial",
+      "loading": "Loading plans...",
+      "noPlans": "No plans available at the moment."
+    },
+    "footer": {
+      "product": "Product",
+      "company": "Company",
+      "legal": "Legal",
+      "features": "Features",
+      "pricing": "Pricing",
+      "about": "About",
+      "contact": "Contact",
+      "privacy": "Privacy Policy",
+      "terms": "Terms of Service",
+      "faq": "FAQ",
+      "rights": "All rights reserved."
+    }
+  },
+  "subscription": {
+    "expiryWarning": "Your subscription expires in {{days}} day(s). Please renew to avoid service interruption."
+  }
+}

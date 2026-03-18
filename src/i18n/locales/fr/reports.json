@@ -1,0 +1,57 @@
+{
+  "title": "Rapports",
+  "subtitle": "Analysez vos performances commerciales",
+  "exportCsv": "Exporter CSV",
+  "exportSuccess": "CSV enregistré dans {{path}}",
+  "exportError": "Échec de l'enregistrement du CSV",
+  "totalHt": "Total HT",
+  "totalTtc": "Total TTC",
+  "noUnpaidInvoices": "Aucune facture impayée",
+  "totalUnpaid": "Total impayés",
+  "daysOverdue": "{{count}} jours de retard",
+  "dueNow": "À échéance",
+  "from": "Du",
+  "to": "Au",
+  "acceptedQuotes": "Devis acceptés",
+  "revenueByPeriod": {
+    "title": "CA par période",
+    "period": "Période",
+    "revenueHt": "CA HT",
+    "revenueTtc": "CA TTC",
+    "invoiceCount": "Nombre de factures"
+  },
+  "revenueByClient": {
+    "title": "CA par client",
+    "client": "Client",
+    "revenueHt": "CA HT",
+    "revenueTtc": "CA TTC",
+    "invoiceCount": "Nombre de factures"
+  },
+  "productSales": {
+    "title": "Ventes par produit",
+    "product": "Produit",
+    "quantitySold": "Quantité vendue",
+    "revenueHt": "CA HT",
+    "revenueTtc": "CA TTC"
+  },
+  "outstanding": {
+    "title": "Impayés",
+    "invoice": "Facture",
+    "client": "Client",
+    "issueDate": "Date d'émission",
+    "dueDate": "Date d'échéance",
+    "status": "Statut",
+    "amount": "Montant"
+  },
+  "quoteConversion": {
+    "title": "Taux de conversion devis",
+    "totalQuotes": "Total devis",
+    "conversionRate": "Taux de conversion",
+    "totalQuotedAmount": "Montant total devisé",
+    "convertedAmount": "Montant converti"
+  },
+  "filters": {
+    "dateRange": "Période"
+  },
+  "noData": "Aucune donnée pour cette période"
+}

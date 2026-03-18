@@ -1,0 +1,132 @@
+{
+  "title": "Paramètres",
+  "subtitle": "Configurez votre entreprise et vos préférences",
+  "company": {
+    "title": "Informations de l'entreprise",
+    "name": "Nom de l'entreprise",
+    "nameRequired": "Nom de l'entreprise *",
+    "address": "Adresse",
+    "addressTitle": "Adresse",
+    "city": "Ville",
+    "postalCode": "Code postal",
+    "country": "Pays",
+    "phone": "Téléphone",
+    "email": "Email",
+    "website": "Site web",
+    "siret": "SIRET",
+    "vatNumber": "Numéro de TVA"
+  },
+  "branding": {
+    "title": "Logo et marque",
+    "logo": "Logo de l'entreprise",
+    "logoAlt": "Logo de l'entreprise",
+    "logoDescription": "Le logo apparaîtra sur vos devis et factures.",
+    "acceptedFormats": "Formats acceptés : PNG, JPG, GIF, WebP",
+    "uploadLogo": "Téléverser un logo",
+    "changeLogo": "Changer le logo",
+    "removeLogo": "Supprimer le logo",
+    "delete": "Supprimer"
+  },
+  "billing": {
+    "title": "Préférences de facturation",
+    "defaultVatRate": "Taux de TVA par défaut",
+    "defaultPaymentTerms": "Délai de paiement (jours)",
+    "invoicePrefix": "Préfixe de facture",
+    "quotePrefix": "Préfixe de devis",
+    "currency": "Devise",
+    "deliveryNotePrefix": "Préfixe de bon de livraison"
+  },
+  "legal": {
+    "title": "Informations légales",
+    "legalMentions": "Mentions légales",
+    "legalMentionsPlaceholder": "Mentions légales à afficher sur les documents...",
+    "legalMentionsHint": "Ces mentions apparaîtront en bas de vos documents",
+    "bankDetails": "Coordonnées bancaires",
+    "bankDetailsPlaceholder": "IBAN, BIC, etc."
+  },
+  "appearance": {
+    "title": "Apparence",
+    "language": "Langue",
+    "theme": "Thème",
+    "systemLanguage": "Langue du système",
+    "systemTheme": "Thème du système",
+    "lightTheme": "Clair",
+    "darkTheme": "Sombre"
+  },
+  "buttons": {
+    "save": "Enregistrer"
+  },
+  "dialogs": {
+    "images": "Images"
+  },
+  "messages": {
+    "saveSuccess": "Paramètres enregistrés avec succès !",
+    "saveFailed": "Erreur lors de l'enregistrement",
+    "deleteLogoConfirm": "Êtes-vous sûr de vouloir supprimer le logo ?"
+  },
+  "backup": {
+    "title": "Sauvegarde et restauration",
+    "exportPlain": "Exporter (JSON)",
+    "exportEncrypted": "Exporter chiffré",
+    "importEncrypted": "Importer une sauvegarde chiffrée",
+    "exportDescription": "Téléchargez une sauvegarde complète de vos données. Les sauvegardes chiffrées sont protégées par un chiffrement AES-256.",
+    "passwordLabel": "Mot de passe de chiffrement",
+    "passwordPlaceholder": "Entrez un mot de passe fort...",
+    "passwordConfirmLabel": "Confirmer le mot de passe",
+    "passwordMismatch": "Les mots de passe ne correspondent pas",
+    "passwordRequired": "Un mot de passe est requis pour les sauvegardes chiffrées",
+    "exporting": "Exportation...",
+    "importing": "Importation...",
+    "exportSuccess": "Sauvegarde exportée avec succès",
+    "exportFailed": "Échec de l'exportation",
+    "importSuccess": "Sauvegarde importée avec succès",
+    "importFailed": "Échec de l'importation. Vérifiez votre mot de passe.",
+    "importDescription": "Sélectionnez un fichier de sauvegarde .enc et entrez le mot de passe utilisé lors de l'exportation.",
+    "selectFile": "Sélectionner le fichier",
+    "importConfirmTitle": "Importer la sauvegarde",
+    "importConfirmMessage": "Cela remplacera toutes vos données existantes. Cette action est irréversible. Êtes-vous sûr ?",
+    "importConfirm": "Oui, importer",
+    "importCancel": "Annuler",
+    "restoreSuccess": "Données restaurées avec succès !",
+    "restoreFailed": "Échec de la restauration des données."
+  },
+  "security": {
+    "twoFactor": {
+      "title": "Authentification \u00e0 deux facteurs",
+      "description": "Ajoutez une couche de s\u00e9curit\u00e9 suppl\u00e9mentaire \u00e0 votre compte.",
+      "enabled": "L'authentification \u00e0 deux facteurs est activ\u00e9e.",
+      "disabled": "L'authentification \u00e0 deux facteurs n'est pas activ\u00e9e.",
+      "enable": "Activer la 2FA",
+      "disable": "D\u00e9sactiver la 2FA",
+      "setupTitle": "Configurer l'authentification \u00e0 deux facteurs",
+      "setupDescription": "Scannez ce code QR avec votre application d'authentification, ou entrez la cl\u00e9 manuellement.",
+      "manualKey": "Cl\u00e9 de saisie manuelle",
+      "verifyCode": "Entrez le code \u00e0 6 chiffres de votre application",
+      "verify": "V\u00e9rifier et activer",
+      "backupCodesTitle": "Codes de secours",
+      "backupCodesDescription": "Enregistrez ces codes dans un endroit s\u00fbr. Chacun ne peut \u00eatre utilis\u00e9 qu'une seule fois.",
+      "backupCodesCopied": "Codes de secours copi\u00e9s dans le presse-papiers",
+      "disableConfirm": "Entrez votre mot de passe pour d\u00e9sactiver la 2FA",
+      "disablePassword": "Mot de passe"
+    },
+    "sessions": {
+      "title": "Sessions actives",
+      "description": "G\u00e9rez vos sessions de connexion actives.",
+      "current": "Session actuelle",
+      "revoke": "R\u00e9voquer",
+      "revokeAll": "R\u00e9voquer toutes les autres sessions",
+      "revokeAllConfirm": "\u00cates-vous s\u00fbr ? Cela vous d\u00e9connectera de tous les autres appareils.",
+      "noOtherSessions": "Aucune autre session active.",
+      "lastActive": "Derni\u00e8re activit\u00e9",
+      "device": "Appareil",
+      "ipAddress": "Adresse IP"
+    }
+  },
+  "validation": {
+    "companyNameRequired": "Le nom de l'entreprise est requis",
+    "emailInvalid": "Email invalide",
+    "invoicePrefixRequired": "Le préfixe de facture est requis",
+    "quotePrefixRequired": "Le préfixe de devis est requis",
+    "deliveryNotePrefixRequired": "Le préfixe de bon de livraison est requis"
+  }
+}

@@ -1,0 +1,395 @@
+{
+  "buttons": {
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "add": "Ajouter",
+    "create": "Créer",
+    "update": "Mettre à jour",
+    "close": "Fermer",
+    "confirm": "Confirmer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "import": "Importer",
+    "print": "Imprimer",
+    "download": "Télécharger",
+    "upload": "Téléverser",
+    "refresh": "Actualiser",
+    "reset": "Réinitialiser",
+    "apply": "Appliquer",
+    "view": "Voir",
+    "details": "Détails",
+    "actions": "Actions",
+    "loading": "Chargement...",
+    "addLine": "Ajouter une ligne"
+  },
+  "status": {
+    "draft": "Brouillon",
+    "sent": "Envoyé",
+    "accepted": "Accepté",
+    "expired": "Expiré",
+    "issued": "Émise",
+    "paid": "Payée",
+    "delivered": "Livré",
+    "cancelled": "Annulé",
+    "pending": "En attente",
+    "overdue": "En retard",
+    "dueSoon": "Échéance proche",
+    "active": "Actif",
+    "inactive": "Inactif"
+  },
+  "labels": {
+    "name": "Nom",
+    "email": "Email",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "city": "Ville",
+    "postalCode": "Code postal",
+    "country": "Pays",
+    "date": "Date",
+    "amount": "Montant",
+    "total": "Total",
+    "subtotal": "Sous-total",
+    "description": "Description",
+    "quantity": "Quantité",
+    "unitPrice": "Prix unitaire",
+    "vat": "TVA",
+    "vatRate": "Taux TVA",
+    "notes": "Notes",
+    "reference": "Référence",
+    "number": "Numéro",
+    "client": "Client",
+    "product": "Produit",
+    "service": "Service",
+    "unit": "Unité",
+    "yes": "Oui",
+    "no": "Non",
+    "all": "Tous",
+    "none": "Aucun",
+    "select": "Sélectionner",
+    "optional": "Optionnel",
+    "required": "Requis",
+    "note": "Note"
+  },
+  "messages": {
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cet élément ?",
+    "deleteSuccess": "Supprimé avec succès",
+    "saveSuccess": "Enregistré avec succès",
+    "error": "Une erreur est survenue",
+    "noResults": "Aucun résultat trouvé",
+    "loading": "Chargement en cours...",
+    "unsavedChanges": "Vous avez des modifications non enregistrées"
+  },
+  "units": {
+    "piece": "pièce",
+    "hour": "heure",
+    "day": "jour",
+    "month": "mois",
+    "year": "année",
+    "kg": "kg",
+    "unit": "unité",
+    "meter": "mètre",
+    "liter": "litre",
+    "forfait": "forfait"
+  },
+  "currency": {
+    "symbol": "€",
+    "code": "EUR"
+  },
+  "dates": "Dates",
+  "phonebook": {
+    "title": "Annuaire",
+    "subtitle": "Recherchez parmi tous vos contacts",
+    "contacts": "Contacts",
+    "searchPlaceholder": "Rechercher un nom, email ou téléphone...",
+    "noResultsSearch": "Aucun contact trouvé pour cette recherche",
+    "noContacts": "Aucun contact dans l'annuaire. Ajoutez des contacts à vos clients.",
+    "primary": "Principal"
+  },
+  "documents": {
+    "invoice": "Facture",
+    "quote": "Devis",
+    "deliveryNote": "Bon de livraison",
+    "document": "Document"
+  },
+  "reminders": {
+    "title": "Rappels",
+    "titleAlerts": "Rappels et alertes",
+    "paymentDue": "Paiement en retard",
+    "quoteExpiring": "Devis expire bientôt",
+    "deliveryScheduled": "Livraison programmée",
+    "reminder": "Rappel",
+    "markAsDone": "Marquer comme traité",
+    "sendEmail": "Envoyer un rappel par email",
+    "noReminders": "Aucun rappel en attente"
+  },
+  "editor": {
+    "bold": "Gras",
+    "italic": "Italique",
+    "underline": "Souligné",
+    "textColor": "Couleur du texte",
+    "font": "Police",
+    "bulletList": "Liste à puces",
+    "orderedList": "Liste numérotée",
+    "undo": "Annuler",
+    "redo": "Rétablir",
+    "reset": "Réinitialiser",
+    "placeholder": "Saisissez votre texte...",
+    "defaultFont": "Par défaut",
+    "colors": {
+      "black": "Noir",
+      "darkGray": "Gris foncé",
+      "gray": "Gris",
+      "red": "Rouge",
+      "orange": "Orange",
+      "yellow": "Jaune",
+      "green": "Vert",
+      "blue": "Bleu",
+      "purple": "Violet",
+      "pink": "Rose"
+    }
+  },
+  "email": {
+    "sendByEmail": "Envoyer par email",
+    "pdfAutoAttached": "Document PDF joint automatiquement",
+    "message": "Message",
+    "preview": "Aperçu",
+    "editMessage": "Modifier",
+    "subject": "Objet",
+    "body": "Corps du message",
+    "subjectLabel": "Objet :",
+    "sentFrom": "Envoyé depuis",
+    "note": "Cliquer sur \"Envoyer\" ouvrira votre client email par défaut. N'oubliez pas de joindre le PDF du document avant d'envoyer.",
+    "send": "Envoyer"
+  },
+  "payments": {
+    "title": "Paiements",
+    "addPayment": "Ajouter un paiement",
+    "recordPayment": "Enregistrer un paiement",
+    "deletePayment": "Supprimer le paiement",
+    "invoiceTotal": "Total facture",
+    "totalPaid": "Total payé",
+    "remaining": "Reste à payer",
+    "ref": "Réf:",
+    "noPayments": "Aucun paiement enregistré",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce paiement ? Cette action est irréversible.",
+    "savePayment": "Enregistrer le paiement",
+    "amount": "Montant (€) *",
+    "date": "Date de paiement *",
+    "method": "Mode de paiement *",
+    "reference": "Référence",
+    "referencePlaceholder": "Numéro de chèque, référence virement...",
+    "notesPlaceholder": "Notes optionnelles...",
+    "selectMethod": "Sélectionner...",
+    "methods": {
+      "transfer": "Virement bancaire",
+      "check": "Chèque",
+      "card": "Carte bancaire",
+      "cash": "Espèces",
+      "directDebit": "Prélèvement",
+      "other": "Autre"
+    },
+    "validation": {
+      "amountPositive": "Le montant doit être positif",
+      "dateRequired": "La date est requise",
+      "methodRequired": "Le mode de paiement est requis"
+    }
+  },
+  "photos": {
+    "productPhoto": "Photo du produit",
+    "change": "Changer",
+    "addPhoto": "Ajouter une photo",
+    "errorUploading": "Erreur lors du téléversement de la photo",
+    "errorDeleting": "Erreur lors de la suppression de la photo"
+  },
+  "pdfViewer": {
+    "title": "Document PDF",
+    "loading": "Chargement...",
+    "downloadPdf": "Télécharger PDF",
+    "preview": "Aperçu",
+    "errorPreview": "Erreur lors de l'ouverture de l'aperçu PDF",
+    "downloadSuccess": "PDF enregistré dans {{path}}",
+    "downloadError": "Échec de l'enregistrement du PDF"
+  },
+  "validation": {
+    "stockExceeded": "Stock insuffisant (disponible : {{available}}, demandé : {{total}})"
+  },
+  "import": {
+    "title": "Importer {{entity}}",
+    "selectFile": "Sélectionner un fichier",
+    "selectedFile": "Sélectionné : {{name}}",
+    "noFileSelected": "Aucun fichier sélectionné",
+    "importButton": "Importer",
+    "downloading": "Téléchargement du modèle...",
+    "downloadTemplate": "Télécharger le modèle",
+    "requiredColumns": "Colonnes requises",
+    "optionalColumns": "Colonnes optionnelles",
+    "result": "Résultat de l'importation",
+    "added": "{{count}} ajouté(s)",
+    "updated": "{{count}} mis à jour",
+    "skipped": "{{count}} ignoré(s)",
+    "errors": "Erreurs",
+    "noErrors": "Aucune erreur",
+    "supportedFormats": "Formats supportés : CSV, XLSX"
+  },
+  "bulk": {
+    "selectedCount_one": "{{count}} élément sélectionné",
+    "selectedCount_other": "{{count}} éléments sélectionnés",
+    "deleteSelected": "Supprimer la sélection",
+    "clearSelection": "Désélectionner",
+    "confirmDeleteTitle": "Supprimer les éléments sélectionnés",
+    "confirmDeleteMessage_one": "Êtes-vous sûr de vouloir supprimer {{count}} élément sélectionné ? Cette action est irréversible.",
+    "confirmDeleteMessage_other": "Êtes-vous sûr de vouloir supprimer {{count}} éléments sélectionnés ? Cette action est irréversible.",
+    "deleteCount": "Supprimer ({{count}})",
+    "deleted": "Éléments supprimés avec succès",
+    "deleteError": "Échec de la suppression des éléments sélectionnés"
+  },
+  "unsavedChanges": {
+    "title": "Modifications non enregistrées",
+    "message": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter cette page ?",
+    "stay": "Rester",
+    "leave": "Quitter"
+  },
+  "errors": {
+    "somethingWentWrong": "Une erreur est survenue",
+    "unexpectedError": "Une erreur inattendue s'est produite. Veuillez réessayer ou recharger la page.",
+    "errorDetails": "Détails de l'erreur",
+    "tryAgain": "Réessayer",
+    "reloadPage": "Recharger la page"
+  },
+  "offline": {
+    "title": "Vous êtes hors ligne",
+    "description": "Cette page n'a pas encore été mise en cache. Veuillez vérifier votre connexion internet et réessayer.",
+    "retry": "Réessayer",
+    "working_offline": "Mode hors ligne",
+    "pending": "en attente",
+    "syncing": "Synchronisation en cours...",
+    "synced": "Toutes les modifications sont synchronisées",
+    "pending_changes": "modifications en attente",
+    "sync_now": "Synchroniser",
+    "queued": "Vous êtes hors ligne. Les modifications sont enregistrées et seront synchronisées lorsque vous serez de retour en ligne.",
+    "failedMutations": "Modifications échouées",
+    "discard": "Supprimer",
+    "retryAll": "Tout réessayer",
+    "discardAll": "Tout supprimer",
+    "noFailed": "Aucune modification échouée",
+    "retries": "{{count}} tentatives",
+    "error": "Erreur"
+  },
+  "conflict": {
+    "title": "Conflit détecté",
+    "description": "Cet enregistrement a été modifié pendant que vous étiez hors ligne. Que souhaitez-vous faire ?",
+    "applyMine": "Appliquer mes modifications",
+    "keepNewer": "Garder la version récente",
+    "details": "Votre modification : {{label}}"
+  },
+  "pwa": {
+    "installTitle": "Installer Probook",
+    "installDescription": "Installez Probook pour une meilleure expérience.",
+    "install": "Installer",
+    "dismiss": "Pas maintenant"
+  },
+  "storage": {
+    "warning": "Vous avez {{count}} modifications en attente. Pensez à synchroniser bientôt.",
+    "critical": "Le stockage est presque plein avec {{count}} modifications en attente. Veuillez synchroniser ou supprimer les anciennes modifications."
+  },
+  "aria": {
+    "closeNotification": "Fermer la notification",
+    "openCalendar": "Ouvrir le calendrier",
+    "close": "Fermer"
+  },
+  "footer": {
+    "poweredBy": "Probook Web"
+  },
+  "update": {
+    "available": "Mise à jour disponible",
+    "availableDescription": "La version {{version}} est prête à être téléchargée.",
+    "downloading": "Téléchargement de la mise à jour...",
+    "downloadingProgress": "{{progress}}% terminé",
+    "downloadingPleaseWait": "Veuillez patienter...",
+    "ready": "Mise à jour prête",
+    "readyDescription": "La mise à jour a été téléchargée. Redémarrez pour l'appliquer.",
+    "error": "Échec de la mise à jour",
+    "errorDescription": "Impossible de vérifier les mises à jour. Veuillez réessayer plus tard.",
+    "downloadInstall": "Télécharger et installer",
+    "restartNow": "Redémarrer maintenant",
+    "retry": "Réessayer",
+    "later": "Plus tard",
+    "autoUpdating": "Installation de la mise à jour...",
+    "autoUpdatingProgress": "Mise à jour... {{progress}}% terminé",
+    "autoUpdatingPleaseWait": "Mise à jour en cours... Veuillez patienter.",
+    "newVersionAvailable": "Une nouvelle version est disponible.",
+    "updateNow": "Mettre à jour"
+  },
+  "landing": {
+    "hero": {
+      "title": "La facturation professionnelle,",
+      "titleHighlight": "simplifiée.",
+      "subtitle": "Créez des devis, factures et bons de livraison en quelques secondes. Suivez les paiements, gérez vos clients et développez votre activité — tout en un seul endroit.",
+      "cta": "Commencer",
+      "login": "Se connecter"
+    },
+    "features": {
+      "title": "Tout ce dont vous avez besoin pour gérer votre activité",
+      "subtitle": "Des outils puissants conçus pour les freelances, les indépendants et les petites entreprises.",
+      "invoicing": {
+        "title": "Facturation & Devis",
+        "description": "Créez des factures et devis professionnels avec votre identité visuelle. Convertissez un devis en facture en un clic."
+      },
+      "clients": {
+        "title": "Gestion des clients",
+        "description": "Gardez une trace de tous vos clients, contacts et historique de communication au même endroit."
+      },
+      "payments": {
+        "title": "Suivi des paiements",
+        "description": "Enregistrez les paiements, suivez les soldes impayés et soyez notifié en cas de retard."
+      },
+      "reports": {
+        "title": "Rapports & Analyses",
+        "description": "Comprenez votre chiffre d'affaires, vos meilleurs clients et la performance de vos produits en temps réel."
+      },
+      "pos": {
+        "title": "Point de vente",
+        "description": "Système de caisse intégré avec lecture de codes-barres et impression de tickets pour le commerce de détail."
+      },
+      "offline": {
+        "title": "Fonctionne hors ligne",
+        "description": "Continuez à travailler même sans internet. Toutes les modifications se synchronisent automatiquement."
+      }
+    },
+    "pricing": {
+      "title": "Tarification simple et transparente",
+      "subtitle": "Pas de frais cachés. Pas de surprises. Annulez à tout moment.",
+      "perMonth": "/mois",
+      "perYear": "/an",
+      "popular": "Populaire",
+      "getStarted": "Commencer",
+      "startTrial": "Essai gratuit",
+      "contactSales": "Contacter les ventes",
+      "trialDays": "Essai gratuit de {{days}} jours",
+      "loading": "Chargement des forfaits...",
+      "noPlans": "Aucun forfait disponible pour le moment."
+    },
+    "footer": {
+      "product": "Produit",
+      "company": "Entreprise",
+      "legal": "Légal",
+      "features": "Fonctionnalités",
+      "pricing": "Tarifs",
+      "about": "À propos",
+      "contact": "Contact",
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions d'utilisation",
+      "faq": "FAQ",
+      "rights": "Tous droits réservés."
+    }
+  },
+  "subscription": {
+    "expiryWarning": "Votre abonnement expire dans {{days}} jour(s). Veuillez renouveler pour éviter une interruption de service."
+  }
+}

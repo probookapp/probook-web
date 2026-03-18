@@ -1,0 +1,112 @@
+{
+  "title": "المنتجات والخدمات",
+  "subtitle": "إدارة كتالوج المنتجات والخدمات",
+  "newProduct": "منتج جديد",
+  "editProduct": "تعديل المنتج",
+  "deleteProduct": "حذف المنتج",
+  "productDetails": "تفاصيل المنتج",
+  "noProducts": "لا توجد منتجات",
+  "searchPlaceholder": "البحث عن منتج...",
+  "createProduct": "إنشاء",
+  "updateProduct": "تعديل",
+  "productList": "قائمة المنتجات",
+  "allCategories": "جميع الفئات",
+  "deleteConfirmation": "هل أنت متأكد من حذف هذا المنتج؟",
+  "tabs": {
+    "products": "المنتجات",
+    "categories": "الفئات"
+  },
+  "types": {
+    "product": "منتج",
+    "service": "خدمة"
+  },
+  "fields": {
+    "name": "الاسم",
+    "nameRequired": "الاسم *",
+    "designation": "التسمية",
+    "designationRequired": "التسمية *",
+    "description": "الوصف",
+    "unitPriceHt": "سعر الوحدة (بدون ضريبة)",
+    "unitPriceHtRequired": "سعر البيع (بدون ضريبة) (€) *",
+    "purchasePriceHt": "سعر الشراء (بدون ضريبة) (€)",
+    "vatRate": "معدل الضريبة (%)",
+    "vatRateRequired": "معدل الضريبة *",
+    "unit": "الوحدة",
+    "unitRequired": "الوحدة *",
+    "reference": "المرجع",
+    "barcode": "الرمز الشريطي",
+    "barcodePlaceholder": "مسح أو كتابة الرمز الشريطي",
+    "isService": "هذه خدمة",
+    "isServiceDescription": "هذه خدمة (بدون إدارة المخزون)",
+    "category": "الفئة",
+    "noCategory": "بدون فئة",
+    "photo": "الصورة",
+    "type": "النوع",
+    "priceHT": "سعر البيع (بدون ضريبة)",
+    "vat": "الضريبة",
+    "quantity": "الكمية",
+    "suppliers": "المورد(ون)"
+  },
+  "units": {
+    "unit": "وحدة",
+    "hour": "ساعة",
+    "day": "يوم",
+    "month": "شهر",
+    "flatRate": "مقطوعية",
+    "kg": "كيلوغرام",
+    "meter": "متر",
+    "squareMeter": "متر مربع",
+    "cubicMeter": "متر مكعب",
+    "liter": "لتر"
+  },
+  "categories": {
+    "title": "الفئات",
+    "subtitle": "نظم منتجاتك حسب الفئات",
+    "treeTitle": "شجرة الفئات",
+    "newCategory": "فئة جديدة",
+    "editCategory": "تعديل الفئة",
+    "deleteCategory": "حذف الفئة",
+    "noCategories": "لا توجد فئات. أنشئ فئتك الأولى لتنظيم منتجاتك.",
+    "allProducts": "جميع المنتجات",
+    "uncategorized": "غير مصنف",
+    "nameRequired": "اسم الفئة *",
+    "parentCategory": "الفئة الأم",
+    "noParent": "لا شيء (فئة رئيسية)",
+    "confirmDelete": "هل أنت متأكد من حذف هذه الفئة؟",
+    "deleteWarning": "المنتجات في هذه الفئة لن يتم حذفها، لكن لن يكون لها فئة مخصصة."
+  },
+  "filters": {
+    "all": "الكل",
+    "products": "المنتجات",
+    "services": "الخدمات"
+  },
+  "photoUpload": {
+    "title": "صورة المنتج",
+    "upload": "رفع صورة",
+    "remove": "حذف الصورة",
+    "maxSize": "الحجم الأقصى: 5 ميغابايت"
+  },
+  "suppliers": {
+    "title": "الموردون المرتبطون",
+    "addSupplier": "ربط مورد",
+    "removeSupplier": "إلغاء الربط",
+    "selectSupplier": "اختر مورداً...",
+    "purchasePrice": "سعر الشراء (بدون ضريبة)",
+    "noSuppliers": "لا يوجد موردون مرتبطون",
+    "linked": "تم ربط المورد بنجاح",
+    "linkError": "فشل في ربط المورد",
+    "unlinked": "تم إلغاء ربط المورد بنجاح",
+    "unlinkError": "فشل في إلغاء ربط المورد",
+    "editPrice": "انقر لتعديل السعر",
+    "priceUpdated": "تم تحديث سعر الشراء",
+    "priceUpdateError": "فشل في تحديث السعر"
+  },
+  "validation": {
+    "nameRequired": "الاسم مطلوب",
+    "designationRequired": "التسمية مطلوبة",
+    "pricePositive": "السعر يجب أن يكون موجباً",
+    "vatRateRange": "معدل الضريبة يجب أن يكون بين 0 و 100",
+    "unitRequired": "الوحدة مطلوبة",
+    "categoryNameRequired": "اسم الفئة مطلوب"
+  }
+}

@@ -1,0 +1,190 @@
+{
+  "pricing": {
+    "title": "Tarification simple et transparente",
+    "subtitle": "Choisissez le forfait adapté à votre activité. Pas de frais cachés, pas de surprises.",
+    "monthly": "Mensuel",
+    "yearly": "Annuel",
+    "saveWithYearly": "Économisez plus",
+    "questionsTitle": "Des questions ?",
+    "questionsSubtitle": "Consultez notre FAQ pour des réponses aux questions courantes sur les forfaits et la facturation.",
+    "viewFaq": "Voir la FAQ"
+  },
+  "about": {
+    "title": "À propos de Probook",
+    "subtitle": "Nous construisons la façon la plus simple pour les entreprises de gérer leur facturation et leurs opérations.",
+    "storyTitle": "Notre histoire",
+    "storyP1": "Probook est né d'un constat simple : les petites entreprises et les indépendants passent trop de temps sur la paperasse et pas assez à développer leur activité.",
+    "storyP2": "Nous avons voulu créer un outil qui rend la facturation professionnelle, la gestion des clients et les opérations commerciales simples — même sans connexion internet fiable.",
+    "storyP3": "Aujourd'hui, Probook aide les entreprises à créer des devis, des factures et des bons de livraison en quelques secondes, à suivre les paiements, gérer les stocks et utiliser un système de caisse — le tout depuis un seul endroit.",
+    "valuesTitle": "Nos valeurs",
+    "values": {
+      "simplicity": {
+        "title": "Simplicité",
+        "description": "Des fonctionnalités puissantes dans une interface que tout le monde peut utiliser, sans formation."
+      },
+      "reliability": {
+        "title": "Fiabilité",
+        "description": "Fonctionne hors ligne, se synchronise une fois connecté. Votre activité ne s'arrête jamais."
+      },
+      "accessibility": {
+        "title": "Accessibilité",
+        "description": "Disponible en arabe, français et anglais. Conçu pour les entreprises locales."
+      },
+      "transparency": {
+        "title": "Transparence",
+        "description": "Tarifs clairs, pas de frais cachés. Vous savez toujours ce que vous payez."
+      }
+    },
+    "missionTitle": "Notre mission",
+    "missionText": "Donner à chaque petite entreprise des outils professionnels abordables, faciles à utiliser et adaptés aux réalités du commerce local."
+  },
+  "contact": {
+    "title": "Contactez-nous",
+    "subtitle": "Une question, un retour ou besoin d'aide ? Nous serions ravis de vous entendre.",
+    "emailTitle": "Email",
+    "locationTitle": "Localisation",
+    "locationText": "Alger, Algérie",
+    "hoursTitle": "Horaires d'ouverture",
+    "hoursText": "Dimanche – Jeudi, 9h00 – 17h00",
+    "nameLabel": "Nom",
+    "emailLabel": "Email",
+    "subjectLabel": "Objet",
+    "messageLabel": "Message",
+    "sendButton": "Envoyer le message",
+    "successTitle": "Message envoyé !",
+    "successMessage": "Merci de nous avoir contactés. Nous vous répondrons dans les plus brefs délais."
+  },
+  "faq": {
+    "title": "Questions fréquentes",
+    "subtitle": "Trouvez les réponses aux questions les plus courantes sur Probook.",
+    "items": {
+      "whatIsProbook": {
+        "q": "Qu'est-ce que Probook ?",
+        "a": "Probook est une plateforme de gestion d'entreprise qui vous permet de créer des factures, devis et bons de livraison professionnels, de suivre les paiements, gérer vos clients et produits, et d'utiliser un système de caisse — le tout en un seul endroit."
+      },
+      "howToStart": {
+        "q": "Comment commencer ?",
+        "a": "Inscrivez-vous simplement, configurez les informations de votre entreprise et commencez à créer votre première facture ou devis. Le processus d'intégration vous guide à chaque étape."
+      },
+      "freeTrial": {
+        "q": "Y a-t-il un essai gratuit ?",
+        "a": "Certains forfaits incluent une période d'essai gratuit. Consultez notre page tarifs pour les offres actuelles."
+      },
+      "cancelAnytime": {
+        "q": "Puis-je annuler mon abonnement à tout moment ?",
+        "a": "Oui, vous pouvez annuler votre abonnement à tout moment. Vos données restent accessibles jusqu'à la fin de votre période de facturation en cours."
+      },
+      "offlineWork": {
+        "q": "Probook fonctionne-t-il hors ligne ?",
+        "a": "Oui ! Probook est conçu pour fonctionner hors ligne. Vous pouvez créer des factures, gérer vos clients et utiliser le système de caisse sans connexion internet. Toutes les modifications se synchronisent automatiquement à la reconnexion."
+      },
+      "languages": {
+        "q": "Quelles langues sont prises en charge ?",
+        "a": "Probook est disponible en anglais, français et arabe, avec un support complet de l'écriture de droite à gauche pour l'arabe."
+      },
+      "dataExport": {
+        "q": "Puis-je exporter mes données ?",
+        "a": "Oui, vous pouvez exporter vos factures, listes de clients et rapports dans différents formats. Nous croyons que vos données vous appartiennent."
+      },
+      "support": {
+        "q": "Comment obtenir de l'aide ?",
+        "a": "Vous pouvez contacter notre équipe support via la page de contact ou par email à support@probookapp.net. Nous répondons généralement sous 24 heures."
+      }
+    },
+    "ctaTitle": "Encore des questions ?",
+    "ctaSubtitle": "Notre équipe est là pour vous aider. Contactez-nous et nous vous répondrons rapidement.",
+    "ctaButton": "Nous contacter"
+  },
+  "terms": {
+    "title": "Conditions d'utilisation",
+    "lastUpdated": "Dernière mise à jour : Mars 2026",
+    "sections": {
+      "acceptance": {
+        "title": "Acceptation des conditions",
+        "content": "En accédant ou en utilisant Probook, vous acceptez d'être lié par ces Conditions d'utilisation. Si vous n'acceptez pas ces conditions, veuillez ne pas utiliser nos services."
+      },
+      "services": {
+        "title": "Description des services",
+        "content": "Probook fournit une plateforme cloud de gestion d'entreprise comprenant la facturation, les devis, les bons de livraison, la gestion des clients, la gestion des produits, le point de vente et les outils de reporting. Les services sont fournis sur la base d'un abonnement."
+      },
+      "accounts": {
+        "title": "Comptes utilisateurs",
+        "content": "Vous êtes responsable de la confidentialité de vos identifiants de compte et de toutes les activités qui se produisent sous votre compte. Vous devez fournir des informations exactes et complètes lors de la création de votre compte et les maintenir à jour."
+      },
+      "payment": {
+        "title": "Paiement et facturation",
+        "content": "Les frais d'abonnement sont facturés selon le forfait choisi (mensuel ou annuel). Les prix sont affichés dans la devise applicable. Nous nous réservons le droit de modifier les tarifs avec un préavis raisonnable. Le non-paiement peut entraîner la suspension de votre compte."
+      },
+      "intellectualProperty": {
+        "title": "Propriété intellectuelle",
+        "content": "Probook et son contenu, ses fonctionnalités et ses fonctions nous appartiennent et sont protégés par les lois sur le droit d'auteur, les marques et la propriété intellectuelle. Vous conservez la propriété de toutes les données que vous saisissez dans la plateforme."
+      },
+      "termination": {
+        "title": "Résiliation",
+        "content": "Nous pouvons suspendre ou résilier votre accès à Probook à tout moment en cas de violation de ces conditions. Vous pouvez annuler votre abonnement à tout moment. À la résiliation, votre droit d'utilisation du service cesse, mais vos données peuvent être conservées pendant une période raisonnable pour permettre l'exportation."
+      },
+      "limitation": {
+        "title": "Limitation de responsabilité",
+        "content": "Probook est fourni « en l'état » sans garantie d'aucune sorte. Nous ne serons pas responsables des dommages indirects, accessoires, spéciaux, consécutifs ou punitifs résultant de votre utilisation ou de votre incapacité à utiliser le service."
+      },
+      "changes": {
+        "title": "Modifications des conditions",
+        "content": "Nous nous réservons le droit de modifier ces conditions à tout moment. Nous informerons les utilisateurs des changements importants par email ou via la plateforme. L'utilisation continue de Probook après les modifications constitue l'acceptation des nouvelles conditions."
+      },
+      "governingLaw": {
+        "title": "Droit applicable",
+        "content": "Ces conditions sont régies et interprétées conformément aux lois de l'Algérie. Tout litige découlant de ces conditions sera résolu devant les tribunaux compétents d'Alger."
+      },
+      "contact": {
+        "title": "Contact",
+        "content": "Si vous avez des questions concernant ces Conditions d'utilisation, veuillez nous contacter à support@probookapp.net."
+      }
+    }
+  },
+  "privacy": {
+    "title": "Politique de confidentialité",
+    "lastUpdated": "Dernière mise à jour : Mars 2026",
+    "sections": {
+      "dataCollection": {
+        "title": "Données collectées",
+        "content": "Nous collectons les informations que vous fournissez lors de la création de votre compte (nom, email, détails de l'entreprise), les données que vous saisissez dans la plateforme (clients, produits, factures, devis) et les données techniques telles que le type de navigateur, l'adresse IP et les habitudes d'utilisation."
+      },
+      "dataUsage": {
+        "title": "Utilisation de vos données",
+        "content": "Nous utilisons vos données pour fournir et améliorer nos services, traiter vos transactions, envoyer des communications liées au service et assurer la sécurité et l'intégrité de notre plateforme. Nous ne vendons pas vos données personnelles à des tiers."
+      },
+      "dataStorage": {
+        "title": "Stockage et conservation des données",
+        "content": "Vos données sont stockées de manière sécurisée sur nos serveurs. Nous conservons vos données tant que votre compte est actif ou selon les besoins pour fournir nos services. Après la suppression du compte, nous pouvons conserver certaines données conformément à la loi."
+      },
+      "dataSecurity": {
+        "title": "Sécurité des données",
+        "content": "Nous mettons en œuvre des mesures techniques et organisationnelles appropriées pour protéger vos données contre tout accès, modification, divulgation ou destruction non autorisés. Cela inclut le chiffrement en transit et au repos, des audits de sécurité réguliers et des contrôles d'accès."
+      },
+      "thirdParties": {
+        "title": "Services tiers",
+        "content": "Nous pouvons utiliser des services tiers pour l'hébergement, l'analyse et le traitement des paiements. Ces fournisseurs sont liés par leurs propres politiques de confidentialité et nous veillons à ce qu'ils respectent les normes appropriées de protection des données."
+      },
+      "cookies": {
+        "title": "Cookies et suivi",
+        "content": "Nous utilisons des cookies essentiels pour maintenir votre session et vos préférences (comme la langue et le thème). Nous n'utilisons pas de cookies publicitaires ou de suivi tiers."
+      },
+      "rights": {
+        "title": "Vos droits",
+        "content": "Vous avez le droit d'accéder, de corriger ou de supprimer vos données personnelles. Vous pouvez exporter vos données à tout moment via la plateforme. Pour exercer ces droits, contactez-nous à support@probookapp.net."
+      },
+      "children": {
+        "title": "Confidentialité des enfants",
+        "content": "Probook n'est pas destiné aux enfants de moins de 16 ans. Nous ne collectons pas sciemment d'informations personnelles auprès d'enfants. Si vous pensez qu'un enfant nous a fourni des données personnelles, veuillez nous contacter pour les supprimer."
+      },
+      "changes": {
+        "title": "Modifications de cette politique",
+        "content": "Nous pouvons mettre à jour cette politique de confidentialité de temps à autre. Nous vous informerons de tout changement important par email ou via un avis sur notre plateforme. Nous vous encourageons à consulter régulièrement cette politique."
+      },
+      "contact": {
+        "title": "Nous contacter",
+        "content": "Si vous avez des questions concernant cette Politique de confidentialité ou nos pratiques en matière de données, veuillez nous contacter à support@probookapp.net."
+      }
+    }
+  }
+}

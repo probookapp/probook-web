@@ -1,0 +1,42 @@
+{
+  "title": "Clients",
+  "subtitle": "Gérez vos clients et prospects",
+  "newClient": "Nouveau client",
+  "editClient": "Modifier le client",
+  "deleteClient": "Supprimer le client",
+  "clientDetails": "Détails du client",
+  "clientList": "Liste des clients",
+  "noClients": "Aucun client trouvé",
+  "searchPlaceholder": "Rechercher un client...",
+  "viewContacts": "Voir les contacts",
+  "deleteConfirmation": "Êtes-vous sûr de vouloir supprimer ce client ? Cette action est irréversible.",
+  "fields": {
+    "name": "Nom / Raison sociale",
+    "nameRequired": "Nom / Raison sociale *",
+    "email": "Email",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "city": "Ville",
+    "postalCode": "Code postal",
+    "country": "Pays",
+    "siret": "SIRET",
+    "vatNumber": "Numéro de TVA",
+    "notes": "Notes"
+  },
+  "contacts": {
+    "title": "Contacts",
+    "addContact": "Ajouter un contact",
+    "editContact": "Modifier le contact",
+    "deleteContact": "Supprimer le contact",
+    "noContacts": "Aucun contact pour ce client",
+    "deleteConfirmation": "Êtes-vous sûr de vouloir supprimer ce contact ?",
+    "fields": {
+      "nameRequired": "Nom *",
+      "role": "Fonction",
+      "rolePlaceholder": "Ex: Directeur commercial",
+      "primaryContact": "Contact principal"
+    },
+    "errorSaving": "Erreur lors de l'enregistrement du contact",
+    "errorDeleting": "Erreur lors de la suppression du contact"
+  }
+}

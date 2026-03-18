@@ -1,0 +1,46 @@
+{
+  "title": "Suppliers",
+  "subtitle": "Manage your suppliers",
+  "newSupplier": "New Supplier",
+  "editSupplier": "Edit Supplier",
+  "deleteSupplier": "Delete Supplier",
+  "noSuppliers": "No suppliers found",
+  "searchPlaceholder": "Search suppliers...",
+  "createSupplier": "Create",
+  "updateSupplier": "Update",
+  "supplierList": "Supplier List",
+  "deleteConfirmation": "Are you sure you want to delete this supplier?",
+  "fields": {
+    "name": "Name",
+    "nameRequired": "Name *",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "notes": "Notes"
+  },
+  "products": {
+    "title": "Linked Products",
+    "addProduct": "Link Product",
+    "removeProduct": "Unlink",
+    "purchasePrice": "Purchase Price (excl. VAT)",
+    "noProducts": "No linked products",
+    "selectProduct": "Select a product...",
+    "alreadyLinked": "This product is already linked"
+  },
+  "validation": {
+    "nameRequired": "Supplier name is required",
+    "emailInvalid": "Please enter a valid email address"
+  },
+  "messages": {
+    "created": "Supplier created successfully",
+    "createError": "Failed to create supplier",
+    "updated": "Supplier updated successfully",
+    "updateError": "Failed to update supplier",
+    "deleted": "Supplier deleted successfully",
+    "deleteError": "Failed to delete supplier",
+    "productLinked": "Product linked successfully",
+    "productLinkError": "Failed to link product",
+    "productUnlinked": "Product unlinked successfully",
+    "productUnlinkError": "Failed to unlink product"
+  }
+}

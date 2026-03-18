@@ -1,0 +1,112 @@
+{
+  "invoice": {
+    "title": "فاتورة",
+    "number": "رقم الفاتورة",
+    "issueDate": "تاريخ الإصدار",
+    "dueDate": "تاريخ الاستحقاق",
+    "billTo": "فاتورة إلى",
+    "status": {
+      "DRAFT": "مسودة",
+      "ISSUED": "صادرة",
+      "PAID": "مدفوعة"
+    },
+    "table": {
+      "description": "الوصف",
+      "quantity": "الكمية",
+      "unitPriceHt": "سعر الوحدة (بدون ضريبة)",
+      "vat": "الضريبة",
+      "totalTtc": "المجموع (شامل الضريبة)"
+    },
+    "totals": {
+      "subtotalHt": "المجموع الفرعي (بدون ضريبة)",
+      "vatProducts": "ضريبة المنتجات",
+      "shippingHt": "الشحن (بدون ضريبة)",
+      "shippingVat": "ضريبة الشحن",
+      "totalTtc": "المجموع (شامل الضريبة)",
+      "downPayment": "الدفعة المقدمة",
+      "remaining": "المبلغ المستحق"
+    },
+    "groupSubtotal": "مجموع فرعي {{group}}",
+    "amountInWords": "المبلغ كتابة",
+    "bankDetails": "التفاصيل البنكية",
+    "notes": "ملاحظات"
+  },
+  "quote": {
+    "title": "عرض سعر",
+    "number": "رقم عرض السعر",
+    "issueDate": "تاريخ الإصدار",
+    "validityDate": "صالح حتى",
+    "billTo": "العميل",
+    "status": {
+      "DRAFT": "مسودة",
+      "SENT": "مرسل",
+      "ACCEPTED": "مقبول",
+      "EXPIRED": "منتهي"
+    },
+    "table": {
+      "description": "الوصف",
+      "quantity": "الكمية",
+      "unitPriceHt": "سعر الوحدة (بدون ضريبة)",
+      "vat": "الضريبة",
+      "totalTtc": "المجموع (شامل الضريبة)"
+    },
+    "totals": {
+      "subtotalHt": "المجموع الفرعي (بدون ضريبة)",
+      "vatProducts": "ضريبة المنتجات",
+      "shippingHt": "الشحن (بدون ضريبة)",
+      "shippingVat": "ضريبة الشحن",
+      "totalTtc": "المجموع (شامل الضريبة)",
+      "downPayment": "الدفعة المقدمة المطلوبة",
+      "remaining": "المتبقي"
+    },
+    "groupSubtotal": "مجموع فرعي {{group}}",
+    "amountInWords": "المبلغ كتابة",
+    "validityNotice": "هذا العرض صالح حتى {{date}}",
+    "acceptanceClause": "موافق ومتفق (التوقيع)",
+    "notes": "ملاحظات"
+  },
+  "deliveryNote": {
+    "title": "سند تسليم",
+    "number": "الرقم",
+    "issueDate": "تاريخ الإصدار",
+    "deliveryDate": "تاريخ التسليم",
+    "deliveryAddress": "عنوان التسليم",
+    "recipient": "المستلم",
+    "deliverTo": "تسليم إلى",
+    "status": {
+      "DRAFT": "مسودة",
+      "DELIVERED": "تم التسليم",
+      "CANCELLED": "ملغي"
+    },
+    "table": {
+      "description": "الوصف",
+      "quantity": "الكمية",
+      "unit": "الوحدة"
+    },
+    "totalItems": "إجمالي الأصناف",
+    "totalQuantity": "إجمالي الكمية",
+    "deliverySignature": "توقيع المسلّم",
+    "recipientSignature": "توقيع المستلم",
+    "signature": "توقيع المستلم",
+    "receivedInGoodCondition": "تم الاستلام والمعاينة، البضاعة في حالة جيدة",
+    "notes": "ملاحظات",
+    "notesInstructions": "ملاحظات / تعليمات"
+  },
+  "common": {
+    "page": "صفحة",
+    "of": "من",
+    "generatedOn": "تم الإنشاء في",
+    "siret": "السجل التجاري",
+    "vatNumber": "الرقم الضريبي",
+    "phone": "هاتف",
+    "labelHt": "بدون ضريبة",
+    "labelTtc": "شامل الضريبة"
+  },
+  "numberToWords": {
+    "and": "و",
+    "euro": "يورو",
+    "euros": "يورو",
+    "cent": "سنت",
+    "cents": "سنت"
+  }
+}

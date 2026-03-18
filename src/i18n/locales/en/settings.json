@@ -1,0 +1,132 @@
+{
+  "title": "Settings",
+  "subtitle": "Configure your company and preferences",
+  "company": {
+    "title": "Company Information",
+    "name": "Company Name",
+    "nameRequired": "Company Name *",
+    "address": "Address",
+    "addressTitle": "Address",
+    "city": "City",
+    "postalCode": "Postal Code",
+    "country": "Country",
+    "phone": "Phone",
+    "email": "Email",
+    "website": "Website",
+    "siret": "SIRET",
+    "vatNumber": "VAT Number"
+  },
+  "branding": {
+    "title": "Logo and Branding",
+    "logo": "Company Logo",
+    "logoAlt": "Company logo",
+    "logoDescription": "The logo will appear on your quotes and invoices.",
+    "acceptedFormats": "Accepted formats: PNG, JPG, GIF, WebP",
+    "uploadLogo": "Upload Logo",
+    "changeLogo": "Change Logo",
+    "removeLogo": "Remove Logo",
+    "delete": "Delete"
+  },
+  "billing": {
+    "title": "Billing Preferences",
+    "defaultVatRate": "Default VAT Rate",
+    "defaultPaymentTerms": "Payment Terms (days)",
+    "invoicePrefix": "Invoice Prefix",
+    "quotePrefix": "Quote Prefix",
+    "currency": "Currency",
+    "deliveryNotePrefix": "Delivery Note Prefix"
+  },
+  "legal": {
+    "title": "Legal Information",
+    "legalMentions": "Legal Mentions",
+    "legalMentionsPlaceholder": "Legal mentions to display on documents...",
+    "legalMentionsHint": "These mentions will appear at the bottom of your documents",
+    "bankDetails": "Bank Details",
+    "bankDetailsPlaceholder": "IBAN, BIC, etc."
+  },
+  "appearance": {
+    "title": "Appearance",
+    "language": "Language",
+    "theme": "Theme",
+    "systemLanguage": "System Language",
+    "systemTheme": "System Theme",
+    "lightTheme": "Light",
+    "darkTheme": "Dark"
+  },
+  "buttons": {
+    "save": "Save"
+  },
+  "dialogs": {
+    "images": "Images"
+  },
+  "messages": {
+    "saveSuccess": "Settings saved successfully!",
+    "saveFailed": "Failed to save settings",
+    "deleteLogoConfirm": "Are you sure you want to delete the logo?"
+  },
+  "backup": {
+    "title": "Backup & Restore",
+    "exportPlain": "Export (JSON)",
+    "exportEncrypted": "Export Encrypted",
+    "importEncrypted": "Import Encrypted Backup",
+    "exportDescription": "Download a full backup of your data. Encrypted backups are protected with AES-256 encryption.",
+    "passwordLabel": "Encryption Password",
+    "passwordPlaceholder": "Enter a strong password...",
+    "passwordConfirmLabel": "Confirm Password",
+    "passwordMismatch": "Passwords do not match",
+    "passwordRequired": "Password is required for encrypted backups",
+    "exporting": "Exporting...",
+    "importing": "Importing...",
+    "exportSuccess": "Backup exported successfully",
+    "exportFailed": "Failed to export backup",
+    "importSuccess": "Backup imported successfully",
+    "importFailed": "Failed to import backup. Check your password.",
+    "importDescription": "Select an encrypted .enc backup file and enter the password used during export.",
+    "selectFile": "Select backup file",
+    "importConfirmTitle": "Import Backup",
+    "importConfirmMessage": "This will replace all your existing data. This action cannot be undone. Are you sure?",
+    "importConfirm": "Yes, Import",
+    "importCancel": "Cancel",
+    "restoreSuccess": "Data restored successfully!",
+    "restoreFailed": "Failed to restore data."
+  },
+  "security": {
+    "twoFactor": {
+      "title": "Two-Factor Authentication",
+      "description": "Add an extra layer of security to your account.",
+      "enabled": "Two-factor authentication is enabled.",
+      "disabled": "Two-factor authentication is not enabled.",
+      "enable": "Enable 2FA",
+      "disable": "Disable 2FA",
+      "setupTitle": "Set Up Two-Factor Authentication",
+      "setupDescription": "Scan this QR code with your authenticator app, or enter the key manually.",
+      "manualKey": "Manual entry key",
+      "verifyCode": "Enter the 6-digit code from your app",
+      "verify": "Verify & Enable",
+      "backupCodesTitle": "Backup Codes",
+      "backupCodesDescription": "Save these codes in a safe place. Each can only be used once.",
+      "backupCodesCopied": "Backup codes copied to clipboard",
+      "disableConfirm": "Enter your password to disable 2FA",
+      "disablePassword": "Password"
+    },
+    "sessions": {
+      "title": "Active Sessions",
+      "description": "Manage your active login sessions.",
+      "current": "Current session",
+      "revoke": "Revoke",
+      "revokeAll": "Revoke All Other Sessions",
+      "revokeAllConfirm": "Are you sure? This will log you out of all other devices.",
+      "noOtherSessions": "No other active sessions.",
+      "lastActive": "Last active",
+      "device": "Device",
+      "ipAddress": "IP Address"
+    }
+  },
+  "validation": {
+    "companyNameRequired": "Company name is required",
+    "emailInvalid": "Invalid email",
+    "invoicePrefixRequired": "Invoice prefix is required",
+    "quotePrefixRequired": "Quote prefix is required",
+    "deliveryNotePrefixRequired": "Delivery note prefix is required"
+  }
+}

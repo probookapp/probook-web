@@ -1,0 +1,93 @@
+{
+  "title": "Quotes",
+  "subtitle": "Create and manage your quotes",
+  "listTitle": "Quote List",
+  "newQuote": "New Quote",
+  "createQuote": "Create Quote",
+  "editQuote": "Edit Quote",
+  "deleteQuote": "Delete Quote",
+  "quoteDetails": "Quote Details",
+  "noQuotes": "No quotes found",
+  "searchPlaceholder": "Search quotes...",
+  "generalInfo": "General Information",
+  "shippingAndDownPayment": "Shipping and Down Payment",
+  "downPaymentHint": "Enter either a percentage or a fixed amount for the down payment. If both are provided, the fixed amount will be used.",
+  "groupSubtotals": "Group Subtotals",
+  "richDescription": "Rich Description (HTML formatting)",
+  "richDescriptionPlaceholder": "Detailed description with formatting...",
+  "notesPlaceholder": "Additional notes (visible on the quote)...",
+  "pdfDocument": "PDF Document",
+  "createDeliveryNote": "Create Delivery Note",
+  "noClientEmail": "This client does not have an email address.",
+  "emailGreeting": "Hello",
+  "emailBody": "Please find attached quote {{number}} for an amount of {{amount}}.\n\nThis quote is valid until {{date}}.",
+  "emailClosing": "Best regards",
+  "fields": {
+    "quoteNumber": "Quote Number",
+    "client": "Client",
+    "issueDate": "Issue Date",
+    "validityDate": "Validity Date",
+    "status": "Status",
+    "totalHt": "Total (excl. VAT)",
+    "totalVat": "Total VAT",
+    "totalTtc": "Total (incl. VAT)",
+    "notes": "Notes",
+    "notesHtml": "Notes (HTML)"
+  },
+  "lines": {
+    "title": "Quote Lines",
+    "product": "Product",
+    "description": "Description",
+    "quantity": "Qty",
+    "unitPriceHt": "Price (excl. VAT)",
+    "vatRate": "VAT %",
+    "totalTtc": "Total (incl. VAT)",
+    "groupName": "Group",
+    "groupPlaceholder": "Group (optional, e.g., Preparation work)",
+    "isSubtotalLine": "Subtotal line",
+    "subtotalOnly": "Subtotal",
+    "groupTotal": "Group total",
+    "subtotalHint": "This line will display the group subtotal in the PDF",
+    "addLine": "Add Line",
+    "noLines": "No lines"
+  },
+  "shipping": {
+    "title": "Shipping",
+    "costHt": "Shipping Cost (excl. VAT)",
+    "vatRate": "Shipping VAT (%)"
+  },
+  "downPayment": {
+    "title": "Down Payment",
+    "percent": "Down Payment (%)",
+    "amount": "Fixed Amount (€)",
+    "amountPaid": "Down Payment Paid",
+    "remaining": "Remaining",
+    "percentPlaceholder": "e.g. 30",
+    "amountPlaceholder": "e.g. 500"
+  },
+  "totals": {
+    "subtotalHt": "Subtotal (excl. VAT)",
+    "vatProducts": "VAT on products",
+    "shippingHt": "Shipping (excl. VAT)",
+    "shippingVat": "VAT on shipping",
+    "totalTtc": "Total (incl. VAT)",
+    "labelHt": "excl. VAT",
+    "labelTtc": "incl. VAT"
+  },
+  "actions": {
+    "convertToInvoice": "Convert to Invoice",
+    "duplicate": "Duplicate",
+    "downloadPdf": "Download PDF",
+    "sendByEmail": "Send by Email",
+    "markAsSent": "Mark as Sent",
+    "markAsAccepted": "Mark as Accepted"
+  },
+  "status": {
+    "DRAFT": "Draft",
+    "SENT": "Sent",
+    "ACCEPTED": "Accepted",
+    "EXPIRED": "Expired"
+  },
+  "confirmDelete": "Are you sure you want to delete this quote?",
+  "confirmConvert": "Convert this quote to an invoice?"
+}

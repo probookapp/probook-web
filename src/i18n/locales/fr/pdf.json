@@ -1,0 +1,112 @@
+{
+  "invoice": {
+    "title": "FACTURE",
+    "number": "Numéro de facture",
+    "issueDate": "Date d'émission",
+    "dueDate": "Date d'échéance",
+    "billTo": "Facturer à",
+    "status": {
+      "DRAFT": "BROUILLON",
+      "ISSUED": "ÉMISE",
+      "PAID": "PAYÉE"
+    },
+    "table": {
+      "description": "Description",
+      "quantity": "Qté",
+      "unitPriceHt": "Prix unit. HT",
+      "vat": "TVA",
+      "totalTtc": "Total TTC"
+    },
+    "totals": {
+      "subtotalHt": "Sous-total HT",
+      "vatProducts": "TVA produits",
+      "shippingHt": "Frais de port HT",
+      "shippingVat": "TVA frais de port",
+      "totalTtc": "Total TTC",
+      "downPayment": "Acompte versé",
+      "remaining": "Reste à payer"
+    },
+    "groupSubtotal": "Sous-total {{group}}",
+    "amountInWords": "Arrêté à la somme de",
+    "bankDetails": "Coordonnées bancaires",
+    "notes": "Notes"
+  },
+  "quote": {
+    "title": "DEVIS",
+    "number": "Numéro de devis",
+    "issueDate": "Date d'émission",
+    "validityDate": "Date de validité",
+    "billTo": "Client",
+    "status": {
+      "DRAFT": "BROUILLON",
+      "SENT": "ENVOYÉ",
+      "ACCEPTED": "ACCEPTÉ",
+      "EXPIRED": "EXPIRÉ"
+    },
+    "table": {
+      "description": "Description",
+      "quantity": "Qté",
+      "unitPriceHt": "Prix unit. HT",
+      "vat": "TVA",
+      "totalTtc": "Total TTC"
+    },
+    "totals": {
+      "subtotalHt": "Sous-total HT",
+      "vatProducts": "TVA produits",
+      "shippingHt": "Frais de port HT",
+      "shippingVat": "TVA frais de port",
+      "totalTtc": "Total TTC",
+      "downPayment": "Acompte à verser",
+      "remaining": "Reste à payer"
+    },
+    "groupSubtotal": "Sous-total {{group}}",
+    "amountInWords": "Arrêté à la somme de",
+    "validityNotice": "Ce devis est valable jusqu'au {{date}}",
+    "acceptanceClause": "Bon pour accord (signature)",
+    "notes": "Notes"
+  },
+  "deliveryNote": {
+    "title": "BON DE LIVRAISON",
+    "number": "Numéro",
+    "issueDate": "Date d'émission",
+    "deliveryDate": "Date de livraison",
+    "deliveryAddress": "Adresse de livraison",
+    "recipient": "Destinataire",
+    "deliverTo": "Livrer à",
+    "status": {
+      "DRAFT": "BROUILLON",
+      "DELIVERED": "LIVRÉ",
+      "CANCELLED": "ANNULÉ"
+    },
+    "table": {
+      "description": "Description",
+      "quantity": "Quantité",
+      "unit": "Unité"
+    },
+    "totalItems": "Total articles",
+    "totalQuantity": "Quantité totale",
+    "deliverySignature": "Signature du livreur",
+    "recipientSignature": "Signature du destinataire",
+    "signature": "Signature du destinataire",
+    "receivedInGoodCondition": "Lu et approuvé, marchandise reçue en bon état",
+    "notes": "Notes",
+    "notesInstructions": "Notes / Instructions"
+  },
+  "common": {
+    "page": "Page",
+    "of": "sur",
+    "generatedOn": "Généré le",
+    "siret": "SIRET",
+    "vatNumber": "N° TVA",
+    "phone": "Tél",
+    "labelHt": "HT",
+    "labelTtc": "TTC"
+  },
+  "numberToWords": {
+    "and": "et",
+    "euro": "euro",
+    "euros": "euros",
+    "cent": "centime",
+    "cents": "centimes"
+  }
+}

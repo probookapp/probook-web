@@ -1,0 +1,46 @@
+{
+  "title": "الموردون",
+  "subtitle": "إدارة الموردين",
+  "newSupplier": "مورد جديد",
+  "editSupplier": "تعديل المورد",
+  "deleteSupplier": "حذف المورد",
+  "noSuppliers": "لا يوجد موردون",
+  "searchPlaceholder": "البحث عن مورد...",
+  "createSupplier": "إنشاء",
+  "updateSupplier": "تعديل",
+  "supplierList": "قائمة الموردين",
+  "deleteConfirmation": "هل أنت متأكد من حذف هذا المورد؟",
+  "fields": {
+    "name": "الاسم",
+    "nameRequired": "الاسم *",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "address": "العنوان",
+    "notes": "ملاحظات"
+  },
+  "products": {
+    "title": "المنتجات المرتبطة",
+    "addProduct": "ربط منتج",
+    "removeProduct": "إلغاء الربط",
+    "purchasePrice": "سعر الشراء (بدون ضريبة)",
+    "noProducts": "لا توجد منتجات مرتبطة",
+    "selectProduct": "اختر منتج...",
+    "alreadyLinked": "هذا المنتج مرتبط بالفعل"
+  },
+  "validation": {
+    "nameRequired": "اسم المورد مطلوب",
+    "emailInvalid": "يرجى إدخال عنوان بريد إلكتروني صالح"
+  },
+  "messages": {
+    "created": "تم إنشاء المورد بنجاح",
+    "createError": "فشل في إنشاء المورد",
+    "updated": "تم تحديث المورد بنجاح",
+    "updateError": "فشل في تحديث المورد",
+    "deleted": "تم حذف المورد بنجاح",
+    "deleteError": "فشل في حذف المورد",
+    "productLinked": "تم ربط المنتج بنجاح",
+    "productLinkError": "فشل في ربط المنتج",
+    "productUnlinked": "تم إلغاء ربط المنتج بنجاح",
+    "productUnlinkError": "فشل في إلغاء ربط المنتج"
+  }
+}

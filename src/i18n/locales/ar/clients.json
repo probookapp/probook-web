@@ -1,0 +1,42 @@
+{
+  "title": "العملاء",
+  "subtitle": "إدارة العملاء والعملاء المحتملين",
+  "newClient": "عميل جديد",
+  "editClient": "تعديل العميل",
+  "deleteClient": "حذف العميل",
+  "clientDetails": "تفاصيل العميل",
+  "clientList": "قائمة العملاء",
+  "noClients": "لم يتم العثور على عملاء",
+  "searchPlaceholder": "البحث عن عميل...",
+  "viewContacts": "عرض جهات الاتصال",
+  "deleteConfirmation": "هل أنت متأكد من حذف هذا العميل؟ لا يمكن التراجع عن هذا الإجراء.",
+  "fields": {
+    "name": "الاسم / الشركة",
+    "nameRequired": "الاسم / الشركة *",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "address": "العنوان",
+    "city": "المدينة",
+    "postalCode": "الرمز البريدي",
+    "country": "البلد",
+    "siret": "رقم السجل التجاري",
+    "vatNumber": "رقم ضريبة القيمة المضافة",
+    "notes": "ملاحظات"
+  },
+  "contacts": {
+    "title": "جهات الاتصال",
+    "addContact": "إضافة جهة اتصال",
+    "editContact": "تعديل جهة الاتصال",
+    "deleteContact": "حذف جهة الاتصال",
+    "noContacts": "لا توجد جهات اتصال لهذا العميل",
+    "deleteConfirmation": "هل أنت متأكد من حذف جهة الاتصال هذه؟",
+    "fields": {
+      "nameRequired": "الاسم *",
+      "role": "المنصب",
+      "rolePlaceholder": "مثال: مدير المبيعات",
+      "primaryContact": "جهة الاتصال الرئيسية"
+    },
+    "errorSaving": "خطأ في حفظ جهة الاتصال",
+    "errorDeleting": "خطأ في حذف جهة الاتصال"
+  }
+}

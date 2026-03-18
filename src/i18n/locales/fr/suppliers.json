@@ -1,0 +1,46 @@
+{
+  "title": "Fournisseurs",
+  "subtitle": "Gérez vos fournisseurs",
+  "newSupplier": "Nouveau fournisseur",
+  "editSupplier": "Modifier le fournisseur",
+  "deleteSupplier": "Supprimer le fournisseur",
+  "noSuppliers": "Aucun fournisseur trouvé",
+  "searchPlaceholder": "Rechercher un fournisseur...",
+  "createSupplier": "Créer",
+  "updateSupplier": "Modifier",
+  "supplierList": "Liste des fournisseurs",
+  "deleteConfirmation": "Êtes-vous sûr de vouloir supprimer ce fournisseur ?",
+  "fields": {
+    "name": "Nom",
+    "nameRequired": "Nom *",
+    "email": "Email",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "notes": "Notes"
+  },
+  "products": {
+    "title": "Produits liés",
+    "addProduct": "Lier un produit",
+    "removeProduct": "Délier",
+    "purchasePrice": "Prix d'achat HT",
+    "noProducts": "Aucun produit lié",
+    "selectProduct": "Sélectionner un produit...",
+    "alreadyLinked": "Ce produit est déjà lié"
+  },
+  "validation": {
+    "nameRequired": "Le nom du fournisseur est requis",
+    "emailInvalid": "Veuillez entrer une adresse email valide"
+  },
+  "messages": {
+    "created": "Fournisseur créé avec succès",
+    "createError": "Erreur lors de la création du fournisseur",
+    "updated": "Fournisseur mis à jour avec succès",
+    "updateError": "Erreur lors de la mise à jour du fournisseur",
+    "deleted": "Fournisseur supprimé avec succès",
+    "deleteError": "Erreur lors de la suppression du fournisseur",
+    "productLinked": "Produit lié avec succès",
+    "productLinkError": "Erreur lors de la liaison du produit",
+    "productUnlinked": "Produit délié avec succès",
+    "productUnlinkError": "Erreur lors de la suppression du lien"
+  }
+}

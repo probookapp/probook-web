@@ -1,0 +1,19 @@
+{
+  "dashboard": "Dashboard",
+  "clients": "Clients",
+  "products": "Products",
+  "quotes": "Quotes",
+  "invoices": "Invoices",
+  "deliveryNotes": "Delivery Notes",
+  "expenses": "Expenses",
+  "suppliers": "Suppliers",
+  "phonebook": "Phonebook",
+  "reports": "Reports",
+  "settings": "Settings",
+  "logout": "Logout",
+  "closeSidebar": "Close sidebar",
+  "admin": "Admin",
+  "employee": "Employee",
+  "posMode": "POS Mode",
+  "officeMode": "Office Mode"
+}

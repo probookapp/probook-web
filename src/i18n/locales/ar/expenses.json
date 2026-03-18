@@ -1,0 +1,33 @@
+{
+  "title": "المصاريف",
+  "subtitle": "تتبع مصاريفك المهنية",
+  "newExpense": "مصروف جديد",
+  "editExpense": "تعديل المصروف",
+  "deleteExpense": "حذف المصروف",
+  "noExpenses": "لم يتم العثور على مصاريف",
+  "searchPlaceholder": "البحث عن مصروف...",
+  "expenseList": "قائمة المصاريف",
+  "deleteConfirmation": "هل أنت متأكد من حذف هذا المصروف؟ لا يمكن التراجع عن هذا الإجراء.",
+  "fields": {
+    "name": "الاسم",
+    "nameRequired": "الاسم *",
+    "amount": "المبلغ",
+    "amountRequired": "المبلغ (€) *",
+    "date": "التاريخ",
+    "dateRequired": "التاريخ *",
+    "notes": "ملاحظات"
+  },
+  "validation": {
+    "nameRequired": "الاسم مطلوب",
+    "amountPositive": "يجب أن يكون المبلغ رقمًا موجبًا",
+    "dateRequired": "التاريخ مطلوب"
+  },
+  "messages": {
+    "created": "تم إنشاء المصروف بنجاح",
+    "createError": "فشل في إنشاء المصروف",
+    "updated": "تم تحديث المصروف بنجاح",
+    "updateError": "فشل في تحديث المصروف",
+    "deleted": "تم حذف المصروف بنجاح",
+    "deleteError": "فشل في حذف المصروف"
+  }
+}

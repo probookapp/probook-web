@@ -1,0 +1,57 @@
+{
+  "title": "التقارير",
+  "subtitle": "تحليل أداء عملك التجاري",
+  "exportCsv": "CSV تصدير ",
+  "exportSuccess": "تم حفظ CSV في {{path}}",
+  "exportError": "فشل في حفظ CSV",
+  "totalHt": "المجموع (بدون ضريبة)",
+  "totalTtc": "المجموع (شامل الضريبة)",
+  "noUnpaidInvoices": "لا توجد فواتير غير مدفوعة",
+  "totalUnpaid": "إجمالي غير المدفوع",
+  "daysOverdue": "{{count}} أيام تأخير",
+  "dueNow": "مستحق الآن",
+  "from": "من",
+  "to": "إلى",
+  "acceptedQuotes": "العروض المقبولة",
+  "revenueByPeriod": {
+    "title": "الإيرادات حسب الفترة",
+    "period": "الفترة",
+    "revenueHt": "الإيرادات (بدون ضريبة)",
+    "revenueTtc": "الإيرادات (شامل الضريبة)",
+    "invoiceCount": "عدد الفواتير"
+  },
+  "revenueByClient": {
+    "title": "الإيرادات حسب العميل",
+    "client": "العميل",
+    "revenueHt": "الإيرادات (بدون ضريبة)",
+    "revenueTtc": "الإيرادات (شامل الضريبة)",
+    "invoiceCount": "عدد الفواتير"
+  },
+  "productSales": {
+    "title": "مبيعات المنتجات",
+    "product": "المنتج",
+    "quantitySold": "الكمية المباعة",
+    "revenueHt": "الإيرادات (بدون ضريبة)",
+    "revenueTtc": "الإيرادات (شامل الضريبة)"
+  },
+  "outstanding": {
+    "title": "المستحقات",
+    "invoice": "الفاتورة",
+    "client": "العميل",
+    "issueDate": "تاريخ الإصدار",
+    "dueDate": "تاريخ الاستحقاق",
+    "status": "الحالة",
+    "amount": "المبلغ"
+  },
+  "quoteConversion": {
+    "title": "معدل تحويل العروض",
+    "totalQuotes": "إجمالي العروض",
+    "conversionRate": "معدل التحويل",
+    "totalQuotedAmount": "إجمالي المبلغ المعروض",
+    "convertedAmount": "المبلغ المحول"
+  },
+  "filters": {
+    "dateRange": "نطاق التاريخ"
+  },
+  "noData": "لا توجد بيانات لهذه الفترة"
+}

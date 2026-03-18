@@ -1,0 +1,395 @@
+{
+  "buttons": {
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "edit": "تعديل",
+    "add": "إضافة",
+    "create": "إنشاء",
+    "update": "تحديث",
+    "close": "إغلاق",
+    "confirm": "تأكيد",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق",
+    "search": "بحث",
+    "filter": "تصفية",
+    "export": "تصدير",
+    "import": "استيراد",
+    "print": "طباعة",
+    "download": "تحميل",
+    "upload": "رفع",
+    "refresh": "تحديث",
+    "reset": "إعادة تعيين",
+    "apply": "تطبيق",
+    "view": "عرض",
+    "details": "التفاصيل",
+    "actions": "الإجراءات",
+    "loading": "جاري التحميل...",
+    "addLine": "إضافة سطر"
+  },
+  "status": {
+    "draft": "مسودة",
+    "sent": "مرسل",
+    "accepted": "مقبول",
+    "expired": "منتهي الصلاحية",
+    "issued": "صادرة",
+    "paid": "مدفوعة",
+    "delivered": "تم التسليم",
+    "cancelled": "ملغي",
+    "pending": "قيد الانتظار",
+    "overdue": "متأخر",
+    "dueSoon": "يستحق قريباً",
+    "active": "نشط",
+    "inactive": "غير نشط"
+  },
+  "labels": {
+    "name": "الاسم",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "address": "العنوان",
+    "city": "المدينة",
+    "postalCode": "الرمز البريدي",
+    "country": "البلد",
+    "date": "التاريخ",
+    "amount": "المبلغ",
+    "total": "المجموع",
+    "subtotal": "المجموع الفرعي",
+    "description": "الوصف",
+    "quantity": "الكمية",
+    "unitPrice": "سعر الوحدة",
+    "vat": "ضريبة القيمة المضافة",
+    "vatRate": "معدل الضريبة",
+    "notes": "ملاحظات",
+    "reference": "المرجع",
+    "number": "الرقم",
+    "client": "العميل",
+    "product": "المنتج",
+    "service": "الخدمة",
+    "unit": "الوحدة",
+    "yes": "نعم",
+    "no": "لا",
+    "all": "الكل",
+    "none": "لا شيء",
+    "select": "اختر",
+    "optional": "اختياري",
+    "required": "مطلوب",
+    "note": "ملاحظة"
+  },
+  "messages": {
+    "confirmDelete": "هل أنت متأكد من حذف هذا العنصر؟",
+    "deleteSuccess": "تم الحذف بنجاح",
+    "saveSuccess": "تم الحفظ بنجاح",
+    "error": "حدث خطأ",
+    "noResults": "لا توجد نتائج",
+    "loading": "جاري التحميل...",
+    "unsavedChanges": "لديك تغييرات غير محفوظة"
+  },
+  "units": {
+    "piece": "قطعة",
+    "hour": "ساعة",
+    "day": "يوم",
+    "month": "شهر",
+    "year": "سنة",
+    "kg": "كغ",
+    "unit": "وحدة",
+    "meter": "متر",
+    "liter": "لتر",
+    "forfait": "مقطوعية"
+  },
+  "currency": {
+    "symbol": "€",
+    "code": "EUR"
+  },
+  "dates": "التواريخ",
+  "phonebook": {
+    "title": "دليل الهاتف",
+    "subtitle": "ابحث بين جميع جهات الاتصال",
+    "contacts": "جهات الاتصال",
+    "searchPlaceholder": "البحث بالاسم أو البريد الإلكتروني أو الهاتف...",
+    "noResultsSearch": "لم يتم العثور على جهات اتصال لهذا البحث",
+    "noContacts": "لا توجد جهات اتصال في الدليل. أضف جهات اتصال لعملائك.",
+    "primary": "رئيسي"
+  },
+  "documents": {
+    "invoice": "فاتورة",
+    "quote": "عرض سعر",
+    "deliveryNote": "سند تسليم",
+    "document": "مستند"
+  },
+  "reminders": {
+    "title": "التذكيرات",
+    "titleAlerts": "التذكيرات والتنبيهات",
+    "paymentDue": "دفعة متأخرة",
+    "quoteExpiring": "عرض السعر ينتهي قريباً",
+    "deliveryScheduled": "تسليم مجدول",
+    "reminder": "تذكير",
+    "markAsDone": "وضع علامة كمنجز",
+    "sendEmail": "إرسال تذكير بالبريد الإلكتروني",
+    "noReminders": "لا توجد تذكيرات معلقة"
+  },
+  "editor": {
+    "bold": "عريض",
+    "italic": "مائل",
+    "underline": "تحته خط",
+    "textColor": "لون النص",
+    "font": "الخط",
+    "bulletList": "قائمة نقطية",
+    "orderedList": "قائمة مرقمة",
+    "undo": "تراجع",
+    "redo": "إعادة",
+    "reset": "إعادة تعيين",
+    "placeholder": "أدخل النص...",
+    "defaultFont": "افتراضي",
+    "colors": {
+      "black": "أسود",
+      "darkGray": "رمادي داكن",
+      "gray": "رمادي",
+      "red": "أحمر",
+      "orange": "برتقالي",
+      "yellow": "أصفر",
+      "green": "أخضر",
+      "blue": "أزرق",
+      "purple": "بنفسجي",
+      "pink": "وردي"
+    }
+  },
+  "email": {
+    "sendByEmail": "إرسال بالبريد الإلكتروني",
+    "pdfAutoAttached": "مستند PDF مرفق تلقائياً",
+    "message": "الرسالة",
+    "preview": "معاينة",
+    "editMessage": "تعديل",
+    "subject": "الموضوع",
+    "body": "نص الرسالة",
+    "subjectLabel": "الموضوع:",
+    "sentFrom": "مرسل من",
+    "note": "النقر على \"إرسال\" سيفتح برنامج البريد الإلكتروني الافتراضي. لا تنسَ إرفاق ملف PDF قبل الإرسال.",
+    "send": "إرسال"
+  },
+  "payments": {
+    "title": "المدفوعات",
+    "addPayment": "إضافة دفعة",
+    "recordPayment": "تسجيل دفعة",
+    "deletePayment": "حذف الدفعة",
+    "invoiceTotal": "إجمالي الفاتورة",
+    "totalPaid": "المبلغ المدفوع",
+    "remaining": "المبلغ المتبقي",
+    "ref": "المرجع:",
+    "noPayments": "لا توجد مدفوعات مسجلة",
+    "deleteConfirm": "هل أنت متأكد من حذف هذه الدفعة؟ لا يمكن التراجع عن هذا الإجراء.",
+    "savePayment": "حفظ الدفعة",
+    "amount": "المبلغ (€) *",
+    "date": "تاريخ الدفع *",
+    "method": "طريقة الدفع *",
+    "reference": "المرجع",
+    "referencePlaceholder": "رقم الشيك، مرجع التحويل...",
+    "notesPlaceholder": "ملاحظات اختيارية...",
+    "selectMethod": "اختر...",
+    "methods": {
+      "transfer": "تحويل بنكي",
+      "check": "شيك",
+      "card": "بطاقة ائتمان",
+      "cash": "نقداً",
+      "directDebit": "خصم مباشر",
+      "other": "أخرى"
+    },
+    "validation": {
+      "amountPositive": "يجب أن يكون المبلغ موجباً",
+      "dateRequired": "التاريخ مطلوب",
+      "methodRequired": "طريقة الدفع مطلوبة"
+    }
+  },
+  "photos": {
+    "productPhoto": "صورة المنتج",
+    "change": "تغيير",
+    "addPhoto": "إضافة صورة",
+    "errorUploading": "خطأ في رفع الصورة",
+    "errorDeleting": "خطأ في حذف الصورة"
+  },
+  "pdfViewer": {
+    "title": "مستند PDF",
+    "loading": "جاري التحميل...",
+    "downloadPdf": "تحميل PDF",
+    "preview": "معاينة",
+    "errorPreview": "خطأ في فتح معاينة PDF",
+    "downloadSuccess": "تم حفظ PDF في {{path}}",
+    "downloadError": "فشل في حفظ PDF"
+  },
+  "validation": {
+    "stockExceeded": "المخزون غير كافٍ (المتاح: {{available}}، المطلوب: {{total}})"
+  },
+  "import": {
+    "title": "استيراد {{entity}}",
+    "selectFile": "اختيار ملف",
+    "selectedFile": "المحدد: {{name}}",
+    "noFileSelected": "لم يتم اختيار ملف",
+    "importButton": "استيراد",
+    "downloading": "جاري تنزيل النموذج...",
+    "downloadTemplate": "تنزيل النموذج",
+    "requiredColumns": "الأعمدة المطلوبة",
+    "optionalColumns": "الأعمدة الاختيارية",
+    "result": "نتيجة الاستيراد",
+    "added": "{{count}} مضاف",
+    "updated": "{{count}} محدث",
+    "skipped": "{{count}} متجاوز",
+    "errors": "أخطاء",
+    "noErrors": "لا أخطاء",
+    "supportedFormats": "التنسيقات المدعومة: CSV، XLSX"
+  },
+  "bulk": {
+    "selectedCount_one": "تم تحديد عنصر واحد",
+    "selectedCount_other": "تم تحديد {{count}} عناصر",
+    "deleteSelected": "حذف المحدد",
+    "clearSelection": "إلغاء التحديد",
+    "confirmDeleteTitle": "حذف العناصر المحددة",
+    "confirmDeleteMessage_one": "هل أنت متأكد من حذف عنصر واحد محدد؟ لا يمكن التراجع عن هذا الإجراء.",
+    "confirmDeleteMessage_other": "هل أنت متأكد من حذف {{count}} عناصر محددة؟ لا يمكن التراجع عن هذا الإجراء.",
+    "deleteCount": "حذف ({{count}})",
+    "deleted": "تم حذف العناصر بنجاح",
+    "deleteError": "فشل في حذف العناصر المحددة"
+  },
+  "unsavedChanges": {
+    "title": "تغييرات غير محفوظة",
+    "message": "لديك تغييرات غير محفوظة. هل أنت متأكد أنك تريد مغادرة هذه الصفحة؟",
+    "stay": "البقاء",
+    "leave": "مغادرة"
+  },
+  "errors": {
+    "somethingWentWrong": "حدث خطأ ما",
+    "unexpectedError": "حدث خطأ غير متوقع. يرجى المحاولة مرة أخرى أو إعادة تحميل الصفحة.",
+    "errorDetails": "تفاصيل الخطأ",
+    "tryAgain": "حاول مرة أخرى",
+    "reloadPage": "إعادة تحميل الصفحة"
+  },
+  "offline": {
+    "title": "أنت غير متصل",
+    "description": "لم يتم تخزين هذه الصفحة بعد. يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى.",
+    "retry": "إعادة المحاولة",
+    "working_offline": "وضع عدم الاتصال",
+    "pending": "قيد الانتظار",
+    "syncing": "جاري المزامنة...",
+    "synced": "تمت مزامنة جميع التغييرات",
+    "pending_changes": "تغييرات معلقة",
+    "sync_now": "مزامنة الآن",
+    "queued": "أنت غير متصل بالإنترنت. تم حفظ التغييرات وسيتم مزامنتها عند عودتك للاتصال.",
+    "failedMutations": "التغييرات الفاشلة",
+    "discard": "تجاهل",
+    "retryAll": "إعادة محاولة الكل",
+    "discardAll": "تجاهل الكل",
+    "noFailed": "لا توجد تغييرات فاشلة",
+    "retries": "{{count}} محاولات",
+    "error": "خطأ"
+  },
+  "conflict": {
+    "title": "تم اكتشاف تعارض",
+    "description": "تم تعديل هذا السجل أثناء عدم اتصالك. ماذا تريد أن تفعل؟",
+    "applyMine": "تطبيق تغييراتي",
+    "keepNewer": "الاحتفاظ بالنسخة الأحدث",
+    "details": "تغييرك: {{label}}"
+  },
+  "pwa": {
+    "installTitle": "تثبيت Probook",
+    "installDescription": "ثبّت Probook للحصول على تجربة أفضل.",
+    "install": "تثبيت",
+    "dismiss": "ليس الآن"
+  },
+  "storage": {
+    "warning": "لديك {{count}} تغييرات معلقة. يُرجى المزامنة قريباً.",
+    "critical": "التخزين ممتلئ تقريباً بـ {{count}} تغييرات معلقة. يرجى المزامنة أو حذف التغييرات القديمة."
+  },
+  "aria": {
+    "closeNotification": "إغلاق الإشعار",
+    "openCalendar": "فتح التقويم",
+    "close": "إغلاق"
+  },
+  "footer": {
+    "poweredBy": "Probook Web"
+  },
+  "update": {
+    "available": "تحديث متاح",
+    "availableDescription": "الإصدار {{version}} جاهز للتنزيل.",
+    "downloading": "جاري تنزيل التحديث...",
+    "downloadingProgress": "{{progress}}% مكتمل",
+    "downloadingPleaseWait": "يرجى الانتظار...",
+    "ready": "التحديث جاهز",
+    "readyDescription": "تم تنزيل التحديث. أعد التشغيل لتطبيقه.",
+    "error": "فشل التحديث",
+    "errorDescription": "تعذر التحقق من التحديثات. يرجى المحاولة لاحقاً.",
+    "downloadInstall": "تنزيل وتثبيت",
+    "restartNow": "إعادة التشغيل الآن",
+    "retry": "إعادة المحاولة",
+    "later": "لاحقاً",
+    "autoUpdating": "جاري تثبيت التحديث...",
+    "autoUpdatingProgress": "جاري التحديث... {{progress}}% مكتمل",
+    "autoUpdatingPleaseWait": "جاري التحديث... يرجى الانتظار.",
+    "newVersionAvailable": "يتوفر إصدار جديد.",
+    "updateNow": "تحديث الآن"
+  },
+  "landing": {
+    "hero": {
+      "title": "الفوترة الاحترافية،",
+      "titleHighlight": "مبسّطة.",
+      "subtitle": "أنشئ عروض الأسعار والفواتير وسندات التسليم في ثوانٍ. تتبع المدفوعات، وأدر عملاءك، وطوّر أعمالك — كل ذلك في مكان واحد.",
+      "cta": "ابدأ الآن",
+      "login": "تسجيل الدخول"
+    },
+    "features": {
+      "title": "كل ما تحتاجه لإدارة أعمالك",
+      "subtitle": "أدوات قوية مصممة للمستقلين وأصحاب الأعمال الصغيرة.",
+      "invoicing": {
+        "title": "الفوترة وعروض الأسعار",
+        "description": "أنشئ فواتير وعروض أسعار احترافية بهويتك البصرية. حوّل العرض إلى فاتورة بنقرة واحدة."
+      },
+      "clients": {
+        "title": "إدارة العملاء",
+        "description": "تتبع جميع عملائك وجهات الاتصال وسجل التواصل في مكان واحد منظم."
+      },
+      "payments": {
+        "title": "تتبع المدفوعات",
+        "description": "سجّل المدفوعات، تتبع الأرصدة المستحقة، واحصل على إشعارات عند تأخر الفواتير."
+      },
+      "reports": {
+        "title": "التقارير والتحليلات",
+        "description": "افهم إيراداتك وأفضل عملائك وأداء منتجاتك من خلال لوحات معلومات في الوقت الفعلي."
+      },
+      "pos": {
+        "title": "نقطة البيع",
+        "description": "نظام نقطة بيع مدمج مع مسح الباركود وطباعة الإيصالات للتجارة بالتجزئة."
+      },
+      "offline": {
+        "title": "يعمل بدون إنترنت",
+        "description": "واصل العمل حتى بدون إنترنت. تتم مزامنة جميع التغييرات تلقائياً عند عودة الاتصال."
+      }
+    },
+    "pricing": {
+      "title": "أسعار بسيطة وشفافة",
+      "subtitle": "لا رسوم خفية. لا مفاجآت. إلغاء في أي وقت.",
+      "perMonth": "/شهر",
+      "perYear": "/سنة",
+      "popular": "الأكثر شعبية",
+      "getStarted": "ابدأ الآن",
+      "startTrial": "تجربة مجانية",
+      "contactSales": "اتصل بنا",
+      "trialDays": "تجربة مجانية لمدة {{days}} يوم",
+      "loading": "جاري تحميل الباقات...",
+      "noPlans": "لا توجد باقات متاحة حاليًا."
+    },
+    "footer": {
+      "product": "المنتج",
+      "company": "الشركة",
+      "legal": "قانوني",
+      "features": "الميزات",
+      "pricing": "الأسعار",
+      "about": "حول",
+      "contact": "اتصل بنا",
+      "privacy": "سياسة الخصوصية",
+      "terms": "شروط الخدمة",
+      "faq": "الأسئلة الشائعة",
+      "rights": "جميع الحقوق محفوظة."
+    }
+  },
+  "subscription": {
+    "expiryWarning": "ينتهي اشتراكك خلال {{days}} يوم/أيام. يرجى التجديد لتجنب انقطاع الخدمة."
+  }
+}

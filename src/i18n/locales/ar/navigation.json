@@ -1,0 +1,19 @@
+{
+  "dashboard": "لوحة التحكم",
+  "clients": "العملاء",
+  "products": "المنتجات",
+  "quotes": "عروض الأسعار",
+  "invoices": "الفواتير",
+  "deliveryNotes": "سندات التسليم",
+  "expenses": "المصاريف",
+  "suppliers": "الموردون",
+  "phonebook": "دليل الهاتف",
+  "reports": "التقارير",
+  "settings": "الإعدادات",
+  "logout": "تسجيل الخروج",
+  "closeSidebar": "إغلاق القائمة",
+  "admin": "مسؤول",
+  "employee": "موظف",
+  "posMode": "وضع الصندوق",
+  "officeMode": "وضع المكتب"
+}

@@ -1,0 +1,19 @@
+{
+  "dashboard": "Tableau de bord",
+  "clients": "Clients",
+  "products": "Produits",
+  "quotes": "Devis",
+  "invoices": "Factures",
+  "deliveryNotes": "Bons de livraison",
+  "expenses": "Dépenses",
+  "suppliers": "Fournisseurs",
+  "phonebook": "Annuaire",
+  "reports": "Rapports",
+  "settings": "Paramètres",
+  "logout": "Déconnexion",
+  "closeSidebar": "Fermer le menu",
+  "admin": "Administrateur",
+  "employee": "Employé",
+  "posMode": "Mode Caisse",
+  "officeMode": "Mode Bureau"
+}

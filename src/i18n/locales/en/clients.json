@@ -1,0 +1,42 @@
+{
+  "title": "Clients",
+  "subtitle": "Manage your clients and prospects",
+  "newClient": "New Client",
+  "editClient": "Edit Client",
+  "deleteClient": "Delete Client",
+  "clientDetails": "Client Details",
+  "clientList": "Client List",
+  "noClients": "No clients found",
+  "searchPlaceholder": "Search clients...",
+  "viewContacts": "View contacts",
+  "deleteConfirmation": "Are you sure you want to delete this client? This action cannot be undone.",
+  "fields": {
+    "name": "Name / Company",
+    "nameRequired": "Name / Company *",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "city": "City",
+    "postalCode": "Postal Code",
+    "country": "Country",
+    "siret": "SIRET",
+    "vatNumber": "VAT Number",
+    "notes": "Notes"
+  },
+  "contacts": {
+    "title": "Contacts",
+    "addContact": "Add Contact",
+    "editContact": "Edit Contact",
+    "deleteContact": "Delete Contact",
+    "noContacts": "No contacts for this client",
+    "deleteConfirmation": "Are you sure you want to delete this contact?",
+    "fields": {
+      "nameRequired": "Name *",
+      "role": "Role",
+      "rolePlaceholder": "e.g., Sales Director",
+      "primaryContact": "Primary Contact"
+    },
+    "errorSaving": "Error saving contact",
+    "errorDeleting": "Error deleting contact"
+  }
+}

@@ -1,0 +1,112 @@
+{
+  "title": "Products & Services",
+  "subtitle": "Manage your product and service catalog",
+  "newProduct": "New Product",
+  "editProduct": "Edit Product",
+  "deleteProduct": "Delete Product",
+  "productDetails": "Product Details",
+  "noProducts": "No products found",
+  "searchPlaceholder": "Search products...",
+  "createProduct": "Create",
+  "updateProduct": "Update",
+  "productList": "Product List",
+  "allCategories": "All Categories",
+  "deleteConfirmation": "Are you sure you want to delete this product?",
+  "tabs": {
+    "products": "Products",
+    "categories": "Categories"
+  },
+  "types": {
+    "product": "Product",
+    "service": "Service"
+  },
+  "fields": {
+    "name": "Name",
+    "nameRequired": "Name *",
+    "designation": "Designation",
+    "designationRequired": "Designation *",
+    "description": "Description",
+    "unitPriceHt": "Unit Price (excl. VAT)",
+    "unitPriceHtRequired": "Selling Price (excl. VAT) (€) *",
+    "purchasePriceHt": "Purchase Price (excl. VAT) (€)",
+    "vatRate": "VAT Rate (%)",
+    "vatRateRequired": "VAT Rate *",
+    "unit": "Unit",
+    "unitRequired": "Unit *",
+    "reference": "Reference",
+    "barcode": "Barcode",
+    "barcodePlaceholder": "Scan or type barcode",
+    "isService": "This is a service",
+    "isServiceDescription": "This is a service (no stock management)",
+    "category": "Category",
+    "noCategory": "No category",
+    "photo": "Photo",
+    "type": "Type",
+    "priceHT": "Selling Price (excl. VAT)",
+    "vat": "VAT",
+    "quantity": "Quantity",
+    "suppliers": "Supplier(s)"
+  },
+  "units": {
+    "unit": "Unit",
+    "hour": "Hour",
+    "day": "Day",
+    "month": "Month",
+    "flatRate": "Flat Rate",
+    "kg": "Kilogram",
+    "meter": "Meter",
+    "squareMeter": "Square Meter",
+    "cubicMeter": "Cubic Meter",
+    "liter": "Liter"
+  },
+  "categories": {
+    "title": "Categories",
+    "subtitle": "Organize your products by category",
+    "treeTitle": "Category tree",
+    "newCategory": "New Category",
+    "editCategory": "Edit Category",
+    "deleteCategory": "Delete Category",
+    "noCategories": "No categories created. Create your first category to organize your products.",
+    "allProducts": "All Products",
+    "uncategorized": "Uncategorized",
+    "nameRequired": "Category name *",
+    "parentCategory": "Parent category",
+    "noParent": "None (root category)",
+    "confirmDelete": "Are you sure you want to delete this category?",
+    "deleteWarning": "Products in this category will not be deleted, but they will no longer have a category assigned."
+  },
+  "filters": {
+    "all": "All",
+    "products": "Products",
+    "services": "Services"
+  },
+  "photoUpload": {
+    "title": "Product Photo",
+    "upload": "Upload Photo",
+    "remove": "Remove Photo",
+    "maxSize": "Max size: 5 MB"
+  },
+  "suppliers": {
+    "title": "Linked Suppliers",
+    "addSupplier": "Link Supplier",
+    "removeSupplier": "Unlink",
+    "selectSupplier": "Select a supplier...",
+    "purchasePrice": "Purchase Price (excl. VAT)",
+    "noSuppliers": "No linked suppliers",
+    "linked": "Supplier linked successfully",
+    "linkError": "Failed to link supplier",
+    "unlinked": "Supplier unlinked successfully",
+    "unlinkError": "Failed to unlink supplier",
+    "editPrice": "Click to edit price",
+    "priceUpdated": "Purchase price updated",
+    "priceUpdateError": "Failed to update price"
+  },
+  "validation": {
+    "nameRequired": "Name is required",
+    "designationRequired": "Designation is required",
+    "pricePositive": "Price must be positive",
+    "vatRateRange": "VAT rate must be between 0 and 100",
+    "unitRequired": "Unit is required",
+    "categoryNameRequired": "Category name is required"
+  }
+}
