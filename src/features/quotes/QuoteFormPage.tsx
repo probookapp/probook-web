@@ -1,0 +1,728 @@
+import { useMemo, useRef, useState } from "react";
+import { useRouter, useParams } from "@/lib/navigation";
+import { useTranslation } from "react-i18next";
+import { useForm, useFieldArray, useWatch, Controller, type Resolver } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Plus, Trash2, ArrowLeft, FileText } from "lucide-react";
+import {
+  Button,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Input,
+  Select,
+  SearchableSelect,
+} from "@/components/ui";
+import { RichTextEditor } from "@/components/ui/RichTextEditor";
+import { useQuote, useCreateQuote, useUpdateQuote } from "./hooks/useQuotes";
+import { useClients } from "@/features/clients";
+import { useProducts } from "@/features/products";
+import { formatCurrency, formatDateISO, calculateLineTotal } from "@/lib/utils";
+import type { QuoteStatus } from "@/types";
+import { useCompanySettings } from "@/features/settings/hooks/useSettings";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
+
+const createLineSchema = (t: (key: string) => string) => z.object({
+  product_id: z.string().nullable().optional(),
+  description: z.string().min(1, t("validation:quote.lineDescriptionRequired")),
+  description_html: z.string().nullable().optional(),
+  quantity: z.coerce.number().min(0.01, t("validation:quote.lineQuantityPositive")),
+  unit_price: z.coerce.number().min(0, t("validation:quote.linePricePositive")),
+  tax_rate: z.coerce.number().min(0).max(100),
+  group_name: z.string().nullable().optional(),
+  is_subtotal_line: z.boolean().optional(),
+});
+
+const createQuoteFormSchema = (t: (key: string) => string) => z.object({
+  client_id: z.string().min(1, t("validation:quote.clientRequired")),
+  issue_date: z.string().min(1, t("validation:quote.issueDateRequired")),
+  validity_date: z.string().min(1, t("validation:quote.validityDateRequired")),
+  notes: z.string().nullable().optional(),
+  status: z.enum(["DRAFT", "SENT", "ACCEPTED", "EXPIRED"]).optional(),
+  shipping_cost: z.coerce.number().min(0).optional(),
+  shipping_tax_rate: z.coerce.number().min(0).max(100).optional(),
+  down_payment_percent: z.coerce.number().min(0).max(100).optional(),
+  down_payment_amount: z.coerce.number().min(0).optional(),
+  lines: z.array(createLineSchema(t)).min(1, t("validation:quote.linesRequired")),
+});
+
+type QuoteFormData = z.output<ReturnType<typeof createQuoteFormSchema>>;
+
+export function QuoteFormPage() {
+  const { t } = useTranslation(["quotes", "common", "validation"]);
+  const router = useRouter();
+  const { id } = useParams<{ id: string }>();
+  const isEditing = !!id;
+
+  const quoteFormSchema = useMemo(() => createQuoteFormSchema(t), [t]);
+
+  const { data: quote, isLoading: isLoadingQuote } = useQuote(id ?? "");
+  const { data: clients } = useClients();
+  const { data: products } = useProducts();
+  const createQuote = useCreateQuote();
+  const updateQuote = useUpdateQuote();
+  const { data: settings } = useCompanySettings();
+  const defaultTaxRate = settings?.default_tax_rate ?? 0;
+  const [notesHtml, setNotesHtml] = useState("");
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<number>>(new Set());
+  const submittedRef = useRef(false);
+  const [defaultValidityDate] = useState(() => formatDateISO(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)));
+
+  const {
+    register,
+    control,
+    handleSubmit,
+    setValue,
+    reset,
+    formState: { errors, isDirty },
+  } = useForm<QuoteFormData>({
+    resolver: zodResolver(quoteFormSchema) as Resolver<QuoteFormData>,
+    defaultValues: {
+      client_id: "",
+      issue_date: formatDateISO(new Date()),
+      validity_date: defaultValidityDate,
+      notes: "",
+      status: "DRAFT" as QuoteStatus,
+      shipping_cost: 0,
+      shipping_tax_rate: defaultTaxRate,
+      down_payment_percent: 0,
+      down_payment_amount: 0,
+      lines: [{ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate }],
+    },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "lines",
+  });
+
+  // Use useWatch for real-time updates when fields change
+  const watchedLines = useWatch({
+    control,
+    name: "lines",
+    defaultValue: [{ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate }],
+  });
+
+  const watchedShippingCost = useWatch({
+    control,
+    name: "shipping_cost",
+    defaultValue: 0,
+  });
+
+  const watchedShippingTaxRate = useWatch({
+    control,
+    name: "shipping_tax_rate",
+    defaultValue: 0,
+  });
+
+  const watchedDownPaymentPercent = useWatch({
+    control,
+    name: "down_payment_percent",
+    defaultValue: 0,
+  });
+
+  const watchedDownPaymentAmount = useWatch({
+    control,
+    name: "down_payment_amount",
+    defaultValue: 0,
+  });
+
+  const blocker = useUnsavedChangesGuard(() => isDirty && !submittedRef.current);
+
+  const [lastResetQuoteId, setLastResetQuoteId] = useState<string | null>(null);
+
+  if (quote && isEditing && quote.id !== lastResetQuoteId) {
+    setLastResetQuoteId(quote.id);
+    reset({
+      client_id: quote.client_id,
+      issue_date: quote.issue_date,
+      validity_date: quote.validity_date,
+      notes: quote.notes ?? "",
+      status: quote.status,
+      shipping_cost: quote.shipping_cost ?? 0,
+      shipping_tax_rate: quote.shipping_tax_rate ?? 0,
+      down_payment_percent: quote.down_payment_percent ?? 0,
+      down_payment_amount: quote.down_payment_amount ?? 0,
+      lines: quote.lines.map((line) => ({
+        product_id: line.product_id,
+        description: line.description,
+        description_html: line.description_html,
+        quantity: line.quantity,
+        unit_price: line.unit_price,
+        tax_rate: line.tax_rate,
+        group_name: line.group_name,
+        is_subtotal_line: !!line.is_subtotal_line,
+      })),
+    });
+    setNotesHtml(quote.notes_html || "");
+  }
+
+  // Calculate totals reactively based on watched lines and shipping
+  const { totals, groupSubtotals } = useMemo(() => {
+    if (!watchedLines) return {
+      totals: { beforeTax: 0, vat: 0, total: 0, shippingCost: 0, shippingVat: 0, shippingTotal: 0, downPayment: 0 },
+      groupSubtotals: {} as Record<string, { beforeTax: number; vat: number; total: number }>
+    };
+
+    const groups: Record<string, { beforeTax: number; vat: number; total: number }> = {};
+
+    const lineTotals = watchedLines.reduce(
+      (acc, line) => {
+        // Skip subtotal lines - they don't contribute to totals
+        if (line?.is_subtotal_line) return acc;
+
+        const { subtotal, taxAmount, total } = calculateLineTotal(
+          parseFloat(String(line?.quantity)) || 0,
+          parseFloat(String(line?.unit_price)) || 0,
+          parseFloat(String(line?.tax_rate)) || 0
+        );
+
+        // Track group subtotals
+        const groupName = line?.group_name || "";
+        if (groupName) {
+          if (!groups[groupName]) {
+            groups[groupName] = { beforeTax: 0, vat: 0, total: 0 };
+          }
+          groups[groupName].beforeTax += subtotal;
+          groups[groupName].vat += taxAmount;
+          groups[groupName].total += total;
+        }
+
+        return {
+          beforeTax: acc.beforeTax + subtotal,
+          vat: acc.vat + taxAmount,
+          total: acc.total + total,
+        };
+      },
+      { beforeTax: 0, vat: 0, total: 0 }
+    );
+
+    // Calculate shipping (parseFloat to handle string values from form inputs)
+    const shippingCost = parseFloat(String(watchedShippingCost)) || 0;
+    const shippingTaxRate = parseFloat(String(watchedShippingTaxRate)) || 0;
+    const shippingVat = shippingCost * (shippingTaxRate / 100);
+    const shippingTotal = shippingCost + shippingVat;
+
+    // Calculate down payment (use fixed amount if set, otherwise calculate from percentage)
+    const grandTotal = lineTotals.total + shippingTotal;
+    const dpAmount = parseFloat(String(watchedDownPaymentAmount)) || 0;
+    const dpPercent = parseFloat(String(watchedDownPaymentPercent)) || 0;
+    const downPayment = dpAmount > 0
+      ? dpAmount
+      : (dpPercent > 0 ? grandTotal * (dpPercent / 100) : 0);
+
+    return {
+      totals: {
+        beforeTax: lineTotals.beforeTax,
+        vat: lineTotals.vat,
+        total: lineTotals.total,
+        shippingCost,
+        shippingVat,
+        shippingTotal,
+        downPayment,
+      },
+      groupSubtotals: groups,
+    };
+  }, [watchedLines, watchedShippingCost, watchedShippingTaxRate, watchedDownPaymentPercent, watchedDownPaymentAmount]);
+
+  const getStockError = (index: number): string | null => {
+    const line = watchedLines[index];
+    if (!line?.product_id || !products) return null;
+
+    const product = products.find((p) => p.id === line.product_id);
+    if (!product || product.is_service) return null;
+
+    const available = product.quantity ?? 0;
+    const totalUsed = watchedLines.reduce((sum, l) => {
+      if (l?.product_id === line.product_id && !l?.is_subtotal_line) {
+        return sum + Number(l?.quantity || 0);
+      }
+      return sum;
+    }, 0);
+
+    if (totalUsed > available) {
+      return t("common:validation.stockExceeded", { available, total: totalUsed });
+    }
+    return null;
+  };
+
+  const hasStockErrors = useMemo(() => {
+    return watchedLines.some((_, index) => getStockError(index) !== null);
+  }, [watchedLines, products, getStockError]);
+
+  const handleProductSelect = (index: number, productId: string) => {
+    const product = products?.find((p) => p.id === productId);
+    if (product) {
+      setValue(`lines.${index}.product_id`, productId);
+      setValue(`lines.${index}.description`, product.designation);
+      setValue(`lines.${index}.unit_price`, product.unit_price);
+      setValue(`lines.${index}.tax_rate`, product.tax_rate);
+    }
+  };
+
+  const toggleDescriptionExpand = (index: number) => {
+    setExpandedDescriptions((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(index)) {
+        newSet.delete(index);
+      } else {
+        newSet.add(index);
+      }
+      return newSet;
+    });
+  };
+
+  const onSubmit = async (data: QuoteFormData) => {
+    const formData = {
+      ...data,
+      notes_html: notesHtml || null,
+    };
+    if (isEditing && id) {
+      await updateQuote.mutateAsync({
+        id,
+        ...formData,
+        status: data.status || "DRAFT",
+      });
+    } else {
+      await createQuote.mutateAsync(formData);
+    }
+    submittedRef.current = true;
+    router.push("/quotes");
+  };
+
+  if (isEditing && isLoadingQuote) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+      </div>
+    );
+  }
+
+  const clientOptions = [
+    { value: "", label: t("common:labels.select") },
+    ...(clients?.map((c) => ({ value: c.id, label: c.name })) ?? []),
+  ];
+
+  const productOptions = [
+    { value: "", label: t("quotes:lines.product") + " (" + t("common:labels.optional") + ")" },
+    ...(products?.filter((p) => p.is_service || (p.quantity ?? 0) > 0).map((p) => ({ value: p.id, label: `${p.reference ? `[${p.reference}] ` : ""}${p.designation}${p.barcode ? ` - ${p.barcode}` : ""}${!p.is_service ? ` (${p.quantity ?? 0})` : ""}` })) ?? []),
+  ];
+
+  const statusOptions = [
+    { value: "DRAFT", label: t("quotes:status.DRAFT") },
+    { value: "SENT", label: t("quotes:status.SENT") },
+    { value: "ACCEPTED", label: t("quotes:status.ACCEPTED") },
+    { value: "EXPIRED", label: t("quotes:status.EXPIRED") },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" onClick={() => router.push("/quotes")}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          {t("common:buttons.back")}
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold text-(--color-text-primary)">
+            {isEditing ? t("quotes:editQuote") : t("quotes:newQuote")}
+          </h1>
+        </div>
+      </div>
+
+      <form onSubmit={(e) => handleSubmit(onSubmit)(e)} className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("quotes:generalInfo")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Controller
+                name="client_id"
+                control={control}
+                render={({ field }) => (
+                  <SearchableSelect
+                    label={t("quotes:fields.client") + " *"}
+                    options={clientOptions}
+                    value={field.value}
+                    onChange={field.onChange}
+                    placeholder={t("common:labels.select")}
+                    error={errors.client_id?.message}
+                  />
+                )}
+              />
+              <Input
+                label={t("quotes:fields.issueDate") + " *"}
+                type="date"
+                {...register("issue_date")}
+                error={errors.issue_date?.message}
+              />
+              <Input
+                label={t("quotes:fields.validityDate") + " *"}
+                type="date"
+                {...register("validity_date")}
+                error={errors.validity_date?.message}
+              />
+              {isEditing && (
+                <Select
+                  label={t("quotes:fields.status")}
+                  options={statusOptions}
+                  {...register("status")}
+                />
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>{t("quotes:lines.title")}</CardTitle>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={() =>
+                  append({ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate })
+                }
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                {t("quotes:lines.addLine")}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {fields.map((field, index) => {
+                const line = watchedLines[index];
+                const lineTotal = calculateLineTotal(
+                  parseFloat(String(line?.quantity)) || 0,
+                  parseFloat(String(line?.unit_price)) || 0,
+                  parseFloat(String(line?.tax_rate)) || 0
+                );
+                const isExpanded = expandedDescriptions.has(index);
+                const hasRichDescription = line?.description_html && line.description_html !== "<p></p>";
+                const isSubtotalLine = line?.is_subtotal_line;
+                const groupName = line?.group_name || "";
+
+                // Render subtotal lines differently
+                if (isSubtotalLine) {
+                  return (
+                    <div
+                      key={field.id}
+                      className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border-l-4 border-blue-400 dark:border-blue-500"
+                    >
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
+                          <div className="flex-1">
+                            <Input
+                              label=""
+                              placeholder={t("quotes:lines.groupPlaceholder")}
+                              {...register(`lines.${index}.group_name`)}
+                              className="text-sm font-medium bg-white dark:bg-gray-800"
+                            />
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              id={`lines.${index}.is_subtotal_line`}
+                              {...register(`lines.${index}.is_subtotal_line`)}
+                              className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                            />
+                            <label
+                              htmlFor={`lines.${index}.is_subtotal_line`}
+                              className="text-sm text-blue-700 dark:text-blue-300 whitespace-nowrap font-medium"
+                            >
+                              {t("quotes:lines.subtotalOnly")}
+                            </label>
+                          </div>
+                          {fields.length > 1 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => remove(index)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="text-right">
+                          <span className="text-sm text-blue-600 dark:text-blue-400">{t("quotes:lines.groupTotal")}:</span>
+                          <span className="ml-2 font-bold text-blue-800 dark:text-blue-200">
+                            {formatCurrency(groupSubtotals[groupName]?.total || 0)} {t("quotes:totals.labelTtc")}
+                          </span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                        {t("quotes:lines.subtotalHint").replace("{groupName}", groupName || '...')}
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
+                  <div
+                    key={field.id}
+                    className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-3"
+                  >
+                    <div className="grid grid-cols-12 gap-3 items-start">
+                      <div className="col-span-12 md:col-span-6 lg:col-span-3">
+                        <SearchableSelect
+                          label={t("quotes:lines.product")}
+                          options={productOptions}
+                          value={line?.product_id || ""}
+                          onChange={(val) => handleProductSelect(index, val)}
+                          placeholder={t("quotes:lines.product") + " (" + t("common:labels.optional") + ")"}
+                        />
+                      </div>
+                      <div className="col-span-12 md:col-span-6 lg:col-span-3">
+                        <div className="flex items-end gap-1">
+                          <div className="flex-1">
+                            <Input
+                              label={t("quotes:lines.description") + " *"}
+                              {...register(`lines.${index}.description`)}
+                              error={errors.lines?.[index]?.description?.message}
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => toggleDescriptionExpand(index)}
+                            className={`p-2 mb-0.5 rounded transition-colors ${
+                              isExpanded || hasRichDescription
+                                ? "bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300"
+                                : "text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-gray-600 dark:hover:text-gray-300"
+                            }`}
+                            title={t("quotes:richDescription")}
+                          >
+                            <FileText className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="col-span-4 md:col-span-3 lg:col-span-1">
+                        <Input
+                          label={t("quotes:lines.quantity") + " *"}
+                          type="number"
+                          step="0.01"
+                          {...register(`lines.${index}.quantity`)}
+                          error={errors.lines?.[index]?.quantity?.message || getStockError(index) || undefined}
+                        />
+                      </div>
+                      <div className="col-span-4 md:col-span-3 lg:col-span-2">
+                        <Input
+                          label={t("quotes:lines.unitPriceHt") + " *"}
+                          type="number"
+                          step="0.01"
+                          {...register(`lines.${index}.unit_price`)}
+                          error={errors.lines?.[index]?.unit_price?.message}
+                        />
+                      </div>
+                      <div className="col-span-4 md:col-span-3 lg:col-span-1">
+                        <Input
+                          label={t("quotes:lines.vatRate")}
+                          type="number"
+                          step="0.1"
+                          {...register(`lines.${index}.tax_rate`)}
+                        />
+                      </div>
+                      <div className="col-span-6 md:col-span-2 lg:col-span-1 flex flex-col">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("quotes:lines.totalTtc")}</span>
+                        <span className="py-2 font-medium">{formatCurrency(lineTotal.total)}</span>
+                      </div>
+                      <div className="col-span-6 md:col-span-1 lg:col-span-1 flex items-end pb-2 justify-end md:justify-start">
+                        {fields.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => remove(index)}
+                            className="text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                    {isExpanded && (
+                      <div className="mt-2">
+                        <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+                          {t("quotes:richDescription")}
+                        </label>
+                        <RichTextEditor
+                          content={line?.description_html || ""}
+                          onChange={(html, text) => {
+                            setValue(`lines.${index}.description_html`, html);
+                            if (text && text.trim()) {
+                              setValue(`lines.${index}.description`, text);
+                            }
+                          }}
+                          placeholder={t("quotes:richDescriptionPlaceholder")}
+                          minHeight="80px"
+                        />
+                      </div>
+                    )}
+                    <div className="flex items-center gap-4">
+                      <div className="flex-1">
+                        <Input
+                          label=""
+                          placeholder={t("quotes:lines.groupPlaceholder")}
+                          {...register(`lines.${index}.group_name`)}
+                          className="text-sm"
+                        />
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          id={`lines.${index}.is_subtotal_line`}
+                          {...register(`lines.${index}.is_subtotal_line`)}
+                          className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                        />
+                        <label
+                          htmlFor={`lines.${index}.is_subtotal_line`}
+                          className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap"
+                        >
+                          {t("quotes:lines.isSubtotalLine")}
+                        </label>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              {errors.lines?.message && (
+                <p className="text-sm text-red-600">{errors.lines.message}</p>
+              )}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <div className="w-full sm:w-72 md:w-80 lg:w-96 space-y-2">
+                {/* Group subtotals */}
+                {Object.keys(groupSubtotals).length > 0 && (
+                  <div className="mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+                    <p className="text-xs font-medium text-gray-500 uppercase mb-2">{t("quotes:groupSubtotals")}</p>
+                    {Object.entries(groupSubtotals).map(([groupName, sub]) => (
+                      <div key={groupName} className="flex justify-between text-sm py-1 bg-gray-100 dark:bg-gray-800 px-2 rounded mb-1">
+                        <span className="text-gray-600 dark:text-gray-400 font-medium">{groupName}</span>
+                        <span className="text-gray-700 dark:text-gray-300">
+                          {formatCurrency(sub.beforeTax)} {t("quotes:totals.labelHt")} / {formatCurrency(sub.total)} {t("quotes:totals.labelTtc")}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">{t("quotes:totals.subtotalHt")}</span>
+                  <span className="font-medium">{formatCurrency(totals.beforeTax)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-500">{t("quotes:totals.vatProducts")}</span>
+                  <span className="font-medium">{formatCurrency(totals.vat)}</span>
+                </div>
+                {totals.shippingCost > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">{t("quotes:totals.shippingHt")}</span>
+                      <span className="font-medium">{formatCurrency(totals.shippingCost)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">{t("quotes:totals.shippingVat")}</span>
+                      <span className="font-medium">{formatCurrency(totals.shippingVat)}</span>
+                    </div>
+                  </>
+                )}
+                <div className="flex justify-between text-lg font-bold border-t pt-2">
+                  <span>{t("quotes:totals.totalTtc")}</span>
+                  <span>{formatCurrency(totals.total + totals.shippingTotal)}</span>
+                </div>
+                {totals.downPayment > 0 && (
+                  <>
+                    <div className="flex justify-between text-sm text-primary-600">
+                      <span>{t("quotes:downPayment.amountPaid")}</span>
+                      <span className="font-medium">{formatCurrency(totals.downPayment)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">{t("quotes:downPayment.remaining")}</span>
+                      <span className="font-medium">{formatCurrency(totals.total + totals.shippingTotal - totals.downPayment)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("quotes:shippingAndDownPayment")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Input
+                label={t("quotes:shipping.costHt")}
+                type="number"
+                step="0.01"
+                {...register("shipping_cost")}
+              />
+              <Input
+                label={t("quotes:shipping.vatRate")}
+                type="number"
+                step="0.1"
+                {...register("shipping_tax_rate")}
+              />
+              <Input
+                label={t("quotes:downPayment.percent")}
+                type="number"
+                step="1"
+                {...register("down_payment_percent")}
+                placeholder={t("quotes:downPayment.percentPlaceholder")}
+              />
+              <Input
+                label={t("quotes:downPayment.amount")}
+                type="number"
+                step="0.01"
+                {...register("down_payment_amount")}
+                placeholder={t("quotes:downPayment.amountPlaceholder")}
+              />
+            </div>
+            <p className="text-sm text-gray-500 mt-2">
+              {t("quotes:downPaymentHint")}
+            </p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("quotes:fields.notes")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RichTextEditor
+              content={notesHtml}
+              onChange={(html, text) => {
+                setNotesHtml(html);
+                setValue("notes", text);
+              }}
+              placeholder={t("quotes:notesPlaceholder")}
+              minHeight="120px"
+            />
+          </CardContent>
+        </Card>
+
+        <div className="flex justify-end gap-3">
+          <Button type="button" variant="secondary" onClick={() => router.push("/quotes")}>
+            {t("common:buttons.cancel")}
+          </Button>
+          <Button
+            type="submit"
+            isLoading={createQuote.isPending || updateQuote.isPending}
+            disabled={hasStockErrors}
+          >
+            {isEditing ? t("common:buttons.save") : t("quotes:createQuote")}
+          </Button>
+        </div>
+      </form>
+      <UnsavedChangesDialog isBlocked={blocker.isBlocked} onProceed={blocker.proceed} onReset={blocker.reset} />
+    </div>
+  );
+}
