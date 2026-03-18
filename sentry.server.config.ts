@@ -8,4 +8,7 @@ Sentry.init({
 
   // Don't send events in development
   enabled: process.env.NODE_ENV === "production",
+
+  // Disable import-in-the-middle hooking to avoid addHook error
+  registerEsmLoaderHooks: false,
 });
