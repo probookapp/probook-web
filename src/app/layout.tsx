@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
+import { SentryProvider } from "@/components/providers/SentryProvider";
 import "./globals.css";
 
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://probookapp.net";
@@ -54,7 +55,10 @@ export default async function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="apple-touch-icon" sizes="180x180" href="/probook-icon.png" />
       </head>
-      <body>{children}</body>
+      <body>
+        <SentryProvider />
+        {children}
+      </body>
     </html>
   );
 }
