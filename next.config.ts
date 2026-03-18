@@ -47,6 +47,8 @@ export default withSentryConfig(nextConfig, {
   // Upload source maps for better stack traces in production
   widenClientFileUpload: true,
 
-  // Automatically tree-shake Sentry logger statements
-  disableLogger: true,
+  // Tree-shake Sentry debug logging in production
+  bundleSizeOptimizations: {
+    excludeDebugStatements: true,
+  },
 });
