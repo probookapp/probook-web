@@ -326,6 +326,10 @@ export const createPlanSchema = z.object({
   trial_days: z.coerce.number().int().min(0).default(0),
   sort_order: z.coerce.number().int().default(0),
   prices: z.array(planPriceSchema).optional(),
+  quotas: z.array(z.object({
+    quota_key: z.string().min(1),
+    limit_value: z.coerce.number().int().min(0),
+  })).optional(),
 });
 
 export const updatePlanSchema = createPlanSchema.partial();

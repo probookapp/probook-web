@@ -67,6 +67,20 @@ export const PUT = withSuperAdmin(async (req, ctx) => {
     }
   }
 
+  // Replace PlanQuota rows if provided
+  if (Array.isArray(body.quotas)) {
+    await prisma.planQuota.deleteMany({ where: { planId: id } });
+    if (body.quotas.length > 0) {
+      await prisma.planQuota.createMany({
+        data: body.quotas.map((q: { quota_key: string; limit_value: number }) => ({
+          planId: id!,
+          quotaKey: q.quota_key,
+          limitValue: q.limit_value,
+        })),
+      });
+    }
+  }
+
   const result = await prisma.plan.findUnique({
     where: { id },
     include: { features: { include: { feature: true } }, prices: true, quotas: true },

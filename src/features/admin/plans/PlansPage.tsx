@@ -31,6 +31,17 @@ interface PriceEntry {
   yearly_price: string;
 }
 
+interface QuotaEntry {
+  quota_key: string;
+  limit_value: string;
+}
+
+const QUOTA_KEYS = [
+  { value: "max_users", label: "Max Users" },
+  { value: "max_invoices_month", label: "Max Invoices / Month" },
+  { value: "storage_mb", label: "Storage (MB)" },
+] as const;
+
 interface PlanFormState {
   slug: string;
   name: string;
@@ -42,6 +53,7 @@ interface PlanFormState {
   trial_days: string;
   sort_order: string;
   prices: PriceEntry[];
+  quotas: QuotaEntry[];
 }
 
 const emptyForm: PlanFormState = {
@@ -55,6 +67,7 @@ const emptyForm: PlanFormState = {
   trial_days: "0",
   sort_order: "0",
   prices: [{ currency: "DZD", monthly_price: "", yearly_price: "" }],
+  quotas: [],
 };
 
 function formatPrice(amount: number, currency: string): string {
@@ -103,6 +116,12 @@ export function PlansPage() {
           yearly_price: String(plan.yearly_price != null ? Number(plan.yearly_price) / 100 : ""),
         }];
 
+    const planQuotas = (plan.quotas || []) as { quota_key: string; limit_value: number }[];
+    const quotas: QuotaEntry[] = planQuotas.map((q) => ({
+      quota_key: q.quota_key,
+      limit_value: String(q.limit_value),
+    }));
+
     setFormData({
       slug: String(plan.slug || ""),
       name: String(plan.name || ""),
@@ -114,6 +133,7 @@ export function PlansPage() {
       trial_days: String(plan.trial_days ?? "0"),
       sort_order: String(plan.sort_order ?? "0"),
       prices,
+      quotas,
     });
     setIsModalOpen(true);
   };
@@ -144,6 +164,13 @@ export function PlansPage() {
       yearly_price: Math.round(parseFloat(p.yearly_price || "0") * 100),
     }));
 
+    const quotas = formData.quotas
+      .filter((q) => q.quota_key && q.limit_value)
+      .map((q) => ({
+        quota_key: q.quota_key,
+        limit_value: parseInt(q.limit_value, 10),
+      }));
+
     const input: Record<string, unknown> = {
       slug: formData.slug,
       name: formData.name,
@@ -156,6 +183,7 @@ export function PlansPage() {
       trial_days: parseInt(formData.trial_days || "0", 10),
       sort_order: parseInt(formData.sort_order || "0", 10),
       prices,
+      quotas,
     };
 
     if (editingPlan) {
@@ -199,6 +227,30 @@ export function PlansPage() {
     }));
   };
 
+  const addQuotaRow = () => {
+    const usedKeys = formData.quotas.map((q) => q.quota_key);
+    const available = QUOTA_KEYS.find((k) => !usedKeys.includes(k.value));
+    if (!available) return;
+    setFormData((prev) => ({
+      ...prev,
+      quotas: [...prev.quotas, { quota_key: available.value, limit_value: "" }],
+    }));
+  };
+
+  const removeQuotaRow = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      quotas: prev.quotas.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateQuota = (index: number, field: keyof QuotaEntry, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      quotas: prev.quotas.map((q, i) => (i === index ? { ...q, [field]: value } : q)),
+    }));
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -226,6 +278,7 @@ export function PlansPage() {
         {planList.map((plan) => {
           const features = (plan.features || []) as Record<string, unknown>[];
           const prices = (plan.prices || []) as { currency: string; monthly_price: number; yearly_price: number }[];
+          const quotas = (plan.quotas || []) as { quota_key: string; limit_value: number }[];
           return (
             <Card key={String(plan.id)}>
               <CardContent className="p-6">
@@ -298,6 +351,17 @@ export function PlansPage() {
                       {features.length}
                     </span>
                   </div>
+                  {quotas.map((q) => {
+                    const label = QUOTA_KEYS.find((k) => k.value === q.quota_key)?.label || q.quota_key;
+                    return (
+                      <div key={q.quota_key} className="flex justify-between text-sm">
+                        <span className="text-gray-500 dark:text-gray-400">{label}</span>
+                        <span className="font-medium text-gray-900 dark:text-gray-100">
+                          {q.limit_value.toLocaleString()}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="flex gap-2">
@@ -464,6 +528,57 @@ export function PlansPage() {
                 )}
               </div>
             ))}
+          </div>
+
+          {/* Quotas */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Quotas
+              </label>
+              {formData.quotas.length < QUOTA_KEYS.length && (
+                <Button type="button" variant="secondary" size="sm" onClick={addQuotaRow}>
+                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  Add Quota
+                </Button>
+              )}
+            </div>
+            {formData.quotas.map((quota, idx) => (
+              <div key={idx} className="flex items-end gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
+                <div className="flex-1">
+                  <Select
+                    name={`quota-key-${idx}`}
+                    label={idx === 0 ? "Quota" : ""}
+                    value={quota.quota_key}
+                    onChange={(e) => updateQuota(idx, "quota_key", e.target.value)}
+                    options={QUOTA_KEYS.map((k) => ({ value: k.value, label: k.label }))}
+                  />
+                </div>
+                <div className="flex-1">
+                  <Input
+                    name={`quota-value-${idx}`}
+                    label={idx === 0 ? "Limit" : ""}
+                    type="number"
+                    min="0"
+                    value={quota.limit_value}
+                    onChange={(e) => updateQuota(idx, "limit_value", e.target.value)}
+                    placeholder="0"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="danger"
+                  size="sm"
+                  onClick={() => removeQuotaRow(idx)}
+                  className="shrink-0"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            {formData.quotas.length === 0 && (
+              <p className="text-sm text-gray-400 dark:text-gray-500">No quotas set — unlimited by default.</p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
