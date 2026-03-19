@@ -195,6 +195,16 @@
     "noPlans": "Aucun forfait créé. Créez votre premier forfait pour commencer.",
     "cancel": "Annuler",
     "updatePlan": "Mettre à jour le forfait",
+    "quotas": "Quotas",
+    "addQuota": "Ajouter un quota",
+    "quota": "Quota",
+    "limit": "Limite",
+    "noQuotas": "Aucun quota défini — illimité par défaut.",
+    "quotaKeys": {
+      "max_users": "Utilisateurs max",
+      "max_invoices_month": "Factures max / Mois",
+      "storage_mb": "Stockage (Mo)"
+    },
     "form": {
       "slug": "Identifiant",
       "slugPlaceholder": "ex. starter",

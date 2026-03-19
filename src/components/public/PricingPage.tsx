@@ -48,6 +48,8 @@ function formatPrice(centimes: number, currency: string): string {
 
 export function PricingPage() {
   const { t } = useTranslation(["pages", "common"]);
+  const tc = (key: string, opts?: Record<string, unknown>) =>
+    t(key, { ns: "common", ...opts });
   const locale = useLocale();
   const isRtl = locale === "ar";
   const textDir = isRtl ? "rtl" : undefined;
@@ -128,11 +130,11 @@ export function PricingPage() {
         <div className="max-w-7xl mx-auto">
           {isLoading ? (
             <p className="text-center text-gray-500 dark:text-gray-400">
-              {t("landing.pricing.loading")}
+              {tc("landing.pricing.loading")}
             </p>
           ) : !plans || plans.length === 0 ? (
             <p className="text-center text-gray-500 dark:text-gray-400">
-              {t("landing.pricing.noPlans")}
+              {tc("landing.pricing.noPlans")}
             </p>
           ) : (
             <div
@@ -165,7 +167,7 @@ export function PricingPage() {
                   >
                     {isPopular && (
                       <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-white text-xs font-semibold px-3 py-1 rounded-full bg-primary-600">
-                        {t("landing.pricing.popular")}
+                        {tc("landing.pricing.popular")}
                       </div>
                     )}
                     <h3 dir={textDir} className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -182,18 +184,18 @@ export function PricingPage() {
                       </span>
                       <span className="text-gray-500 dark:text-gray-400">
                         {billingCycle === "monthly"
-                          ? t("landing.pricing.perMonth")
-                          : t("landing.pricing.perYear")}
+                          ? tc("landing.pricing.perMonth")
+                          : tc("landing.pricing.perYear")}
                       </span>
                     </div>
                     {billingCycle === "yearly" && plan.monthly_price > 0 && (
                       <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {formatPrice(Math.round(plan.yearly_price / 12), plan.currency)}{t("landing.pricing.perMonth")}
+                        {formatPrice(Math.round(plan.yearly_price / 12), plan.currency)}{tc("landing.pricing.perMonth")}
                       </p>
                     )}
                     {plan.trial_days > 0 && (
                       <p className="mt-2 text-xs font-medium text-primary-600 dark:text-primary-400">
-                        {t("landing.pricing.trialDays", { days: plan.trial_days })}
+                        {tc("landing.pricing.trialDays", { days: plan.trial_days })}
                       </p>
                     )}
                     {featureNames.length > 0 && (
@@ -217,8 +219,8 @@ export function PricingPage() {
                       }`}
                     >
                       {plan.trial_days > 0
-                        ? t("landing.pricing.startTrial")
-                        : t("landing.pricing.getStarted")}
+                        ? tc("landing.pricing.startTrial")
+                        : tc("landing.pricing.getStarted")}
                     </Link>
                   </div>
                 );

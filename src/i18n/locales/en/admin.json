@@ -195,6 +195,16 @@
     "noPlans": "No plans created yet. Create your first plan to get started.",
     "cancel": "Cancel",
     "updatePlan": "Update Plan",
+    "quotas": "Quotas",
+    "addQuota": "Add Quota",
+    "quota": "Quota",
+    "limit": "Limit",
+    "noQuotas": "No quotas set — unlimited by default.",
+    "quotaKeys": {
+      "max_users": "Max Users",
+      "max_invoices_month": "Max Invoices / Month",
+      "storage_mb": "Storage (MB)"
+    },
     "form": {
       "slug": "Slug",
       "slugPlaceholder": "e.g., starter",

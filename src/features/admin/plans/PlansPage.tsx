@@ -36,11 +36,7 @@ interface QuotaEntry {
   limit_value: string;
 }
 
-const QUOTA_KEYS = [
-  { value: "max_users", label: "Max Users" },
-  { value: "max_invoices_month", label: "Max Invoices / Month" },
-  { value: "storage_mb", label: "Storage (MB)" },
-] as const;
+const QUOTA_KEYS = ["max_users", "max_invoices_month", "storage_mb"] as const;
 
 interface PlanFormState {
   slug: string;
@@ -227,13 +223,15 @@ export function PlansPage() {
     }));
   };
 
+  const getQuotaLabel = (key: string) => t(`plans.quotaKeys.${key}`, key);
+
   const addQuotaRow = () => {
     const usedKeys = formData.quotas.map((q) => q.quota_key);
-    const available = QUOTA_KEYS.find((k) => !usedKeys.includes(k.value));
+    const available = QUOTA_KEYS.find((k) => !usedKeys.includes(k));
     if (!available) return;
     setFormData((prev) => ({
       ...prev,
-      quotas: [...prev.quotas, { quota_key: available.value, limit_value: "" }],
+      quotas: [...prev.quotas, { quota_key: available, limit_value: "" }],
     }));
   };
 
@@ -352,10 +350,9 @@ export function PlansPage() {
                     </span>
                   </div>
                   {quotas.map((q) => {
-                    const label = QUOTA_KEYS.find((k) => k.value === q.quota_key)?.label || q.quota_key;
                     return (
                       <div key={q.quota_key} className="flex justify-between text-sm">
-                        <span className="text-gray-500 dark:text-gray-400">{label}</span>
+                        <span className="text-gray-500 dark:text-gray-400">{getQuotaLabel(q.quota_key)}</span>
                         <span className="font-medium text-gray-900 dark:text-gray-100">
                           {q.limit_value.toLocaleString()}
                         </span>
@@ -534,12 +531,12 @@ export function PlansPage() {
           <div className="space-y-3">
             <div className="flex items-center justify-between">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Quotas
+                {t("plans.quotas")}
               </label>
               {formData.quotas.length < QUOTA_KEYS.length && (
                 <Button type="button" variant="secondary" size="sm" onClick={addQuotaRow}>
                   <Plus className="h-3.5 w-3.5 mr-1" />
-                  Add Quota
+                  {t("plans.addQuota")}
                 </Button>
               )}
             </div>
@@ -548,16 +545,16 @@ export function PlansPage() {
                 <div className="flex-1">
                   <Select
                     name={`quota-key-${idx}`}
-                    label={idx === 0 ? "Quota" : ""}
+                    label={idx === 0 ? t("plans.quota") : ""}
                     value={quota.quota_key}
                     onChange={(e) => updateQuota(idx, "quota_key", e.target.value)}
-                    options={QUOTA_KEYS.map((k) => ({ value: k.value, label: k.label }))}
+                    options={QUOTA_KEYS.map((k) => ({ value: k, label: getQuotaLabel(k) }))}
                   />
                 </div>
                 <div className="flex-1">
                   <Input
                     name={`quota-value-${idx}`}
-                    label={idx === 0 ? "Limit" : ""}
+                    label={idx === 0 ? t("plans.limit") : ""}
                     type="number"
                     min="0"
                     value={quota.limit_value}
@@ -577,7 +574,7 @@ export function PlansPage() {
               </div>
             ))}
             {formData.quotas.length === 0 && (
-              <p className="text-sm text-gray-400 dark:text-gray-500">No quotas set — unlimited by default.</p>
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t("plans.noQuotas")}</p>
             )}
           </div>
 
