@@ -11,7 +11,11 @@ const IDB_KEY = "probook-query-cache";
 export function createIdbPersister(): Persister {
   return {
     persistClient: async (client: PersistedClient) => {
-      await set(IDB_KEY, client);
+      try {
+        await set(IDB_KEY, client);
+      } catch {
+        // DataCloneError on Safari — non-cloneable data in cache, skip persisting
+      }
     },
     restoreClient: async () => {
       return await get<PersistedClient>(IDB_KEY);

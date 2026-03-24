@@ -592,7 +592,7 @@ export async function apiCall<T>(
     // If offline and this is a write operation, queue for later sync
     const isNetworkError =
       !navigator.onLine ||
-      (err instanceof TypeError && err.message.includes("fetch"));
+      (err instanceof TypeError && (err.message.includes("fetch") || err.message === "Load failed"));
 
     if (isWrite && isNetworkError) {
       await queueMutationRaw({
