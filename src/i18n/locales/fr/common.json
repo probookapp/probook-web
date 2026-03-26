@@ -391,5 +391,14 @@
   },
   "subscription": {
     "expiryWarning": "Votre abonnement expire dans {{days}} jour(s). Veuillez renouveler pour éviter une interruption de service."
+  },
+  "demo": {
+    "banner": "Vous explorez une démo — Abonnez-vous pour gérer votre activité",
+    "bannerShort": "Mode démo",
+    "viewPlans": "Voir les offres",
+    "subscribe": "S'abonner",
+    "promptTitle": "Abonnez-vous pour débloquer",
+    "promptDescription": "Créez des clients, factures, devis et bien plus avec un abonnement actif.",
+    "maybeLater": "Plus tard"
   }
 }

@@ -391,5 +391,14 @@
   },
   "subscription": {
     "expiryWarning": "Your subscription expires in {{days}} day(s). Please renew to avoid service interruption."
+  },
+  "demo": {
+    "banner": "You're exploring a demo — Subscribe to start managing your business",
+    "bannerShort": "Demo mode",
+    "viewPlans": "View Plans",
+    "subscribe": "Subscribe",
+    "promptTitle": "Subscribe to unlock",
+    "promptDescription": "Create clients, invoices, quotes, and more with an active subscription.",
+    "maybeLater": "Maybe later"
   }
 }
