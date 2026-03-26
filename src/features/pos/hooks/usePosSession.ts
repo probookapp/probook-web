@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { posApi } from "@/lib/api";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import type {
   CreatePosRegisterInput,
   UpdatePosRegisterInput,
@@ -29,9 +30,11 @@ export const posKeys = {
 
 // Registers
 export function usePosRegisters() {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: posKeys.registers(),
-    queryFn: posApi.getRegisters,
+    queryFn: isDemoMode ? () => [] : posApi.getRegisters,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 }
 
@@ -67,10 +70,11 @@ export function useDeletePosRegister() {
 
 // Sessions
 export function useActiveSession(registerId: string | undefined) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: posKeys.activeSession(registerId ?? ""),
-    queryFn: () => posApi.getActiveSession(registerId!),
-    enabled: !!registerId,
+    queryFn: isDemoMode ? () => null : () => posApi.getActiveSession(registerId!),
+    enabled: !!registerId && !isDemoMode,
   });
 }
 
@@ -106,17 +110,20 @@ export function useSessionSummary(sessionId: string | undefined) {
 
 // Printer configs
 export function usePrinterConfigs() {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: posKeys.printerConfigs(),
-    queryFn: posApi.getPrinterConfigs,
+    queryFn: isDemoMode ? () => [] : posApi.getPrinterConfigs,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 }
 
 // Daily report
 export function useDailyPosReport(date: string, registerId?: string) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: posKeys.dailyReport(date, registerId),
-    queryFn: () => posApi.getDailyReport(date, registerId),
-    enabled: !!date,
+    queryFn: isDemoMode ? () => null : () => posApi.getDailyReport(date, registerId),
+    enabled: !!date && !isDemoMode,
   });
 }

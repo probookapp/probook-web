@@ -1,11 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { alertsApi } from "@/lib/api";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { DEMO_ALERTS_SUMMARY } from "@/lib/demo-data";
 
 export function useAlertsSummary() {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["alerts-summary"],
-    queryFn: alertsApi.getSummary,
-    refetchInterval: 60000, // Refresh every minute
+    queryKey: ["alerts-summary", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => DEMO_ALERTS_SUMMARY : alertsApi.getSummary,
+    refetchInterval: isDemoMode ? false : 60000,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 }
 

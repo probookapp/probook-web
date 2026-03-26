@@ -1,18 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { invoiceApi, paymentApi } from "@/lib/api";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { DEMO_INVOICES } from "@/lib/demo-data";
 import type { CreateInvoiceInput, UpdateInvoiceInput, CreatePaymentInput } from "@/types";
 
 export function useInvoices() {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["invoices"],
-    queryFn: invoiceApi.getAll,
+    queryKey: ["invoices", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => DEMO_INVOICES : invoiceApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 }
 
 export function useInvoice(id: string) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["invoices", id],
-    queryFn: () => invoiceApi.getById(id),
+    queryKey: ["invoices", id, { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? () => DEMO_INVOICES.find((i) => i.id === id) ?? DEMO_INVOICES[0]
+      : () => invoiceApi.getById(id),
     enabled: !!id,
   });
 }
@@ -81,17 +88,21 @@ export function useIssueInvoice() {
 }
 
 export function useVerifyInvoiceIntegrity(id: string) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["invoice-integrity", id],
-    queryFn: () => invoiceApi.verifyIntegrity(id),
-    enabled: !!id,
+    queryFn: isDemoMode ? () => true : () => invoiceApi.verifyIntegrity(id),
+    enabled: !!id && !isDemoMode,
   });
 }
 
 export function usePayments(invoiceId: string) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["payments", invoiceId],
-    queryFn: () => paymentApi.getByInvoice(invoiceId),
+    queryKey: ["payments", invoiceId, { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? () => DEMO_INVOICES.find((i) => i.id === invoiceId)?.payments ?? []
+      : () => paymentApi.getByInvoice(invoiceId),
     enabled: !!invoiceId,
   });
 }

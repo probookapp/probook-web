@@ -1,18 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { quoteApi } from "@/lib/api";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { DEMO_QUOTES } from "@/lib/demo-data";
 import type { CreateQuoteInput, UpdateQuoteInput } from "@/types";
 
 export function useQuotes() {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["quotes"],
-    queryFn: quoteApi.getAll,
+    queryKey: ["quotes", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => DEMO_QUOTES : quoteApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 }
 
 export function useQuote(id: string) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["quotes", id],
-    queryFn: () => quoteApi.getById(id),
+    queryKey: ["quotes", id, { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? () => DEMO_QUOTES.find((q) => q.id === id) ?? DEMO_QUOTES[0]
+      : () => quoteApi.getById(id),
     enabled: !!id,
   });
 }

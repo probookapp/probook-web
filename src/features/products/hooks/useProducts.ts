@@ -1,18 +1,25 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productApi } from "@/lib/api";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { DEMO_PRODUCTS } from "@/lib/demo-data";
 import type { CreateProductInput, UpdateProductInput } from "@/types";
 
 export function useProducts() {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["products"],
-    queryFn: productApi.getAll,
+    queryKey: ["products", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => DEMO_PRODUCTS : productApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 }
 
 export function useProduct(id: string) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["products", id],
-    queryFn: () => productApi.getById(id),
+    queryKey: ["products", id, { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? () => DEMO_PRODUCTS.find((p) => p.id === id) ?? DEMO_PRODUCTS[0]
+      : () => productApi.getById(id),
     enabled: !!id,
   });
 }
@@ -52,10 +59,11 @@ export function useDeleteProduct() {
 }
 
 export function useProductPhoto(productId: string) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["productPhoto", productId],
-    queryFn: () => productApi.getPhotoBase64(productId),
-    enabled: !!productId,
+    queryFn: isDemoMode ? () => null : () => productApi.getPhotoBase64(productId),
+    enabled: !!productId && !isDemoMode,
   });
 }
 

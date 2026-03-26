@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { posApi } from "@/lib/api";
 import { posKeys } from "./usePosSession";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import type { CreatePosTransactionInput, CreateCashMovementInput } from "@/types";
 
 // Product lookup by barcode
@@ -27,10 +28,11 @@ export function useCreateTransaction() {
 }
 
 export function useSessionTransactions(sessionId: string | undefined) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: posKeys.sessionTransactions(sessionId ?? ""),
-    queryFn: () => posApi.getSessionTransactions(sessionId!),
-    enabled: !!sessionId,
+    queryFn: isDemoMode ? () => [] : () => posApi.getSessionTransactions(sessionId!),
+    enabled: !!sessionId && !isDemoMode,
   });
 }
 
@@ -62,9 +64,10 @@ export function useCreateCashMovement() {
 }
 
 export function useSessionCashMovements(sessionId: string | undefined) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: posKeys.cashMovements(sessionId ?? ""),
-    queryFn: () => posApi.getSessionCashMovements(sessionId!),
-    enabled: !!sessionId,
+    queryFn: isDemoMode ? () => [] : () => posApi.getSessionCashMovements(sessionId!),
+    enabled: !!sessionId && !isDemoMode,
   });
 }

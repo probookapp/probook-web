@@ -1,11 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { deliveryNoteApi } from "@/lib/api";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { DEMO_DELIVERY_NOTES } from "@/lib/demo-data";
 import type { CreateDeliveryNoteInput, UpdateDeliveryNoteInput } from "@/types";
 
 export function useDeliveryNotes() {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["deliveryNotes"],
-    queryFn: deliveryNoteApi.getAll,
+    queryKey: ["deliveryNotes", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => DEMO_DELIVERY_NOTES : deliveryNoteApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 }
 

@@ -1,18 +1,23 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { clientContactApi } from "@/lib/api";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { DEMO_CLIENT_CONTACTS } from "@/lib/demo-data";
 import type { CreateClientContactInput, UpdateClientContactInput } from "@/types";
 
 export function useClientContacts() {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["client-contacts"],
-    queryFn: clientContactApi.getAll,
+    queryKey: ["client-contacts", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => DEMO_CLIENT_CONTACTS : clientContactApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 }
 
 export function useClientContactsByClient(clientId: string) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["client-contacts", "client", clientId],
-    queryFn: () => clientContactApi.getByClientId(clientId),
+    queryFn: isDemoMode ? () => [] : () => clientContactApi.getByClientId(clientId),
     enabled: !!clientId,
   });
 }
@@ -60,9 +65,16 @@ export function useDeleteClientContact() {
 }
 
 export function useSearchContacts(query: string) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["client-contacts", "search", query],
-    queryFn: () => clientContactApi.search(query),
+    queryKey: ["client-contacts", "search", query, { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? () => DEMO_CLIENT_CONTACTS.filter((c) =>
+          c.name.toLowerCase().includes(query.toLowerCase()) ||
+          c.email?.toLowerCase().includes(query.toLowerCase()) ||
+          c.phone?.includes(query)
+        )
+      : () => clientContactApi.search(query),
     enabled: query.length >= 2,
   });
 }

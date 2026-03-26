@@ -1,11 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supplierApi, productSupplierApi } from "@/lib/api";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { DEMO_SUPPLIERS } from "@/lib/demo-data";
 import type { CreateSupplierInput, UpdateSupplierInput, CreateProductSupplierInput } from "@/types";
 
 export function useSuppliers() {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["suppliers"],
-    queryFn: supplierApi.getAll,
+    queryKey: ["suppliers", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => DEMO_SUPPLIERS : supplierApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 }
 
@@ -43,17 +47,23 @@ export function useDeleteSupplier() {
 }
 
 export function useSuppliersForProduct(productId: string) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["suppliers-for-product", productId],
-    queryFn: () => productSupplierApi.getSuppliersForProduct(productId),
+    queryFn: isDemoMode
+      ? () => []
+      : () => productSupplierApi.getSuppliersForProduct(productId),
     enabled: !!productId,
   });
 }
 
 export function useProductsForSupplier(supplierId: string) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["supplier-products", supplierId],
-    queryFn: () => productSupplierApi.getProductsForSupplier(supplierId),
+    queryFn: isDemoMode
+      ? () => []
+      : () => productSupplierApi.getProductsForSupplier(supplierId),
     enabled: !!supplierId,
   });
 }

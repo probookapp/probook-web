@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productCategoryApi } from "@/lib/api";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import type { CreateProductCategoryInput, UpdateProductCategoryInput } from "@/types";
 
 export function useProductCategories() {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["productCategories"],
-    queryFn: productCategoryApi.getAll,
+    queryKey: ["productCategories", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => [] : productCategoryApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 }
 
