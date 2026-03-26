@@ -22,6 +22,8 @@ import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { useSelection } from "@/hooks/useSelection";
 import { expenseApi } from "@/lib/api";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { DEMO_EXPENSES } from "@/lib/demo-data";
 import { useToastStore } from "@/stores/useToastStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Expense, CreateExpenseInput, UpdateExpenseInput } from "@/types";
@@ -31,6 +33,7 @@ export function ExpensesPage() {
   const { t } = useTranslation("expenses");
   const { t: tCommon } = useTranslation("common");
   const queryClient = useQueryClient();
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const addToast = useToastStore((state) => state.addToast);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | undefined>();
@@ -39,8 +42,9 @@ export function ExpensesPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const { data: expenses, isLoading } = useQuery({
-    queryKey: ["expenses"],
-    queryFn: expenseApi.getAll,
+    queryKey: ["expenses", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => DEMO_EXPENSES : expenseApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 
   const createExpense = useMutation({
@@ -102,6 +106,7 @@ export function ExpensesPage() {
   }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOpenModal = (expense?: Expense) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     setSelectedExpense(expense);
     setIsModalOpen(true);
   };
@@ -126,6 +131,7 @@ export function ExpensesPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await deleteExpense.mutateAsync(id);
     setDeleteConfirmId(null);
   };
@@ -319,6 +325,7 @@ export function ExpensesPage() {
         isOpen={bulkDeleteOpen}
         onClose={() => setBulkDeleteOpen(false)}
         onConfirm={async () => {
+          if (isDemoMode) { showSubscribePrompt(); return; }
           await batchDeleteExpense.mutateAsync(Array.from(selection.selectedIds));
           selection.clear();
           setBulkDeleteOpen(false);

@@ -36,6 +36,7 @@ import {
   useBatchDeleteDeliveryNotes,
 } from "./hooks/useDeliveryNotes";
 import { useCreateInvoiceFromDeliveryNotes } from "@/features/invoices/hooks/useInvoices";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { useSelection } from "@/hooks/useSelection";
@@ -45,6 +46,7 @@ import { formatDate } from "@/lib/utils";
 export function DeliveryNotesPage() {
   const { t } = useTranslation(["delivery", "common"]);
   const router = useRouter();
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -85,6 +87,7 @@ export function DeliveryNotesPage() {
   }, [selection.selectedIds, selection.selectedCount, deliveryNotes]);
 
   const handleDelete = async (id: string) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       await deleteDeliveryNote.mutateAsync(id);
       setDeleteConfirmId(null);
@@ -94,11 +97,13 @@ export function DeliveryNotesPage() {
   };
 
   const handleDuplicate = async (note: DeliveryNote) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     const newNote = await duplicateDeliveryNote.mutateAsync(note.id);
     router.push(`/delivery-notes/${newNote.id}/edit`);
   };
 
   const handleCreateInvoiceFromSelection = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     if (selection.selectedCount === 0) return;
 
     // Check if all selected delivery notes are for the same client
@@ -364,6 +369,7 @@ export function DeliveryNotesPage() {
         isOpen={bulkDeleteOpen}
         onClose={() => setBulkDeleteOpen(false)}
         onConfirm={async () => {
+          if (isDemoMode) { showSubscribePrompt(); return; }
           await batchDeleteDNs.mutateAsync(Array.from(selection.selectedIds));
           selection.clear();
           setBulkDeleteOpen(false);

@@ -7,6 +7,7 @@ import {
   useCancelTransaction,
 } from "../hooks/usePosTransaction";
 import type { PosTransaction } from "@/types";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { toast } from "@/stores/useToastStore";
 import { printReceiptWindow, type ReceiptData } from "@/lib/receipt-printer";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
@@ -22,6 +23,7 @@ interface TransactionHistoryDrawerProps {
 
 function TransactionRow({ tx, companyName, currency }: { tx: PosTransaction; companyName: string; currency: string }) {
   const { t } = useTranslation("pos");
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const [expanded, setExpanded] = useState(false);
   const cancelTransaction = useCancelTransaction();
 
@@ -32,6 +34,7 @@ function TransactionRow({ tx, companyName, currency }: { tx: PosTransaction; com
   });
 
   const handleCancel = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     if (!confirm(t("confirmCancelTransaction"))) return;
     try {
       await cancelTransaction.mutateAsync({

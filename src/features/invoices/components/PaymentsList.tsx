@@ -11,6 +11,7 @@ import {
   Badge,
 } from "@/components/ui";
 import { PaymentForm, type PaymentFormData } from "./PaymentForm";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCreatePayment, useDeletePayment } from "../hooks/useInvoices";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Invoice } from "@/types";
@@ -21,6 +22,7 @@ interface PaymentsListProps {
 
 export function PaymentsList({ invoice }: PaymentsListProps) {
   const { t } = useTranslation("common");
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const [showAddModal, setShowAddModal] = useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
@@ -43,6 +45,7 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
   };
 
   const handleAddPayment = async (data: PaymentFormData) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await createPayment.mutateAsync({
       invoice_id: invoice.id,
       amount: data.amount,
@@ -55,6 +58,7 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
   };
 
   const handleDeletePayment = async (id: string) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await deletePayment.mutateAsync(id);
     setDeleteConfirmId(null);
   };

@@ -17,6 +17,7 @@ import {
 } from "@/components/ui";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { useInvoice, useCreateInvoice, useUpdateInvoice } from "./hooks/useInvoices";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useClients } from "@/features/clients";
 import { useProducts } from "@/features/products";
 import { formatCurrency, formatDateISO, calculateLineTotal } from "@/lib/utils";
@@ -54,6 +55,7 @@ type InvoiceFormData = z.output<ReturnType<typeof createInvoiceFormSchema>>;
 export function InvoiceFormPage() {
   const { t } = useTranslation(["invoices", "common", "validation"]);
   const router = useRouter();
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
 
@@ -283,6 +285,7 @@ export function InvoiceFormPage() {
   };
 
   const onSubmit = async (data: InvoiceFormData) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     const formData = {
       ...data,
       notes_html: notesHtml || null,

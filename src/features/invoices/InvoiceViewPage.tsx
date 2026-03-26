@@ -16,6 +16,7 @@ import { EmailDialog } from "@/components/email";
 import { PDFViewer } from "@/features/pdf";
 import { PaymentsList } from "./components";
 import { useInvoice, useMarkInvoicePaid, useIssueInvoice, useVerifyInvoiceIntegrity, useConvertInvoiceToDeliveryNote } from "./hooks/useInvoices";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCompanySettings } from "@/features/settings";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
@@ -26,6 +27,7 @@ export function InvoiceViewPage() {
   const router = useRouter();
   const [showEmailDialog, setShowEmailDialog] = useState(false);
 
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { data: invoice, isLoading } = useInvoice(id ?? "");
   const { data: company } = useCompanySettings();
   const { data: isIntegrityValid } = useVerifyInvoiceIntegrity(id ?? "");
@@ -42,14 +44,17 @@ export function InvoiceViewPage() {
   }
 
   const handleMarkPaid = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await markPaid.mutateAsync(invoice.id);
   };
 
   const handleIssue = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await issueInvoice.mutateAsync(invoice.id);
   };
 
   const handleConvertToDeliveryNote = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     const deliveryNote = await convertToDeliveryNote.mutateAsync(invoice.id);
     router.push(`/delivery-notes/${deliveryNote.id}`);
   };

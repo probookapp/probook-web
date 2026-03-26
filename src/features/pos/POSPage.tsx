@@ -31,10 +31,12 @@ import { syncOfflineTransactions, isOnline, startAutoSync } from "@/lib/offline-
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { lookupBarcodeOffline } from "@/lib/offline-barcode";
 import { useQueryClient } from "@tanstack/react-query";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 
 export function POSPage() {
   const { t } = useTranslation("pos");
   const router = useRouter();
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const currency = useSettingsStore((state) => state.currency);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCloseSessionModal, setShowCloseSessionModal] = useState(false);
@@ -141,6 +143,7 @@ export function POSPage() {
 
   const handleOpenSession = async () => {
     if (!currentRegister) return;
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       const amount = parseFloat(openingFloat) || 0;
       const session = await openSession.mutateAsync({
@@ -157,6 +160,7 @@ export function POSPage() {
 
   const handleCloseSession = async (actualCash: number, notes?: string) => {
     if (!currentSession) return;
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       await closeSession.mutateAsync({
         session_id: currentSession.id,
@@ -210,6 +214,7 @@ export function POSPage() {
 
   const handlePaymentComplete = async (payments: Array<{ method: string; amount: number; cashGiven?: number }>) => {
     if (!currentSession || !currentRegister || items.length === 0) return;
+    if (isDemoMode) { showSubscribePrompt(); return; }
 
     const { discountPercent, discountAmount, clientId } = usePosStore.getState();
 
@@ -287,6 +292,7 @@ export function POSPage() {
 
   const handleCreateRegister = async () => {
     if (!newRegisterName.trim()) return;
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       const register = await createRegister.mutateAsync({
         name: newRegisterName.trim(),

@@ -19,6 +19,7 @@ import {
 import { ClientForm } from "./components/ClientForm";
 import { ClientContacts } from "./components/ClientContacts";
 import { ImportDialog } from "@/components/shared/ImportDialog";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { useSelection } from "@/hooks/useSelection";
@@ -35,6 +36,7 @@ import type { ClientFormData } from "./schemas/clientSchema";
 export function ClientsPage() {
   const { t } = useTranslation("clients");
   const { t: tCommon } = useTranslation("common");
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | undefined>();
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
@@ -62,6 +64,7 @@ export function ClientsPage() {
   }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOpenModal = (client?: Client) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     setSelectedClient(client);
     setIsModalOpen(true);
   };
@@ -72,6 +75,7 @@ export function ClientsPage() {
   };
 
   const handleSubmit = async (data: ClientFormData) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     if (selectedClient) {
       await updateClient.mutateAsync({ ...data, id: selectedClient.id });
     } else {
@@ -81,6 +85,7 @@ export function ClientsPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await deleteClient.mutateAsync(id);
     setDeleteConfirmId(null);
   };
@@ -101,7 +106,7 @@ export function ClientsPage() {
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
-          <Button variant="secondary" onClick={() => setIsImportOpen(true)} size="sm">
+          <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
             <Upload className="h-4 w-4 mr-2" />
             {tCommon("buttons.import")}
           </Button>
@@ -304,6 +309,7 @@ export function ClientsPage() {
         isOpen={bulkDeleteOpen}
         onClose={() => setBulkDeleteOpen(false)}
         onConfirm={async () => {
+          if (isDemoMode) { showSubscribePrompt(); return; }
           await batchDeleteClients.mutateAsync(Array.from(selection.selectedIds));
           selection.clear();
           setBulkDeleteOpen(false);

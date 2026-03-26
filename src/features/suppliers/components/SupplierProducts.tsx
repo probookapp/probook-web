@@ -17,6 +17,7 @@ import {
   useRemoveProductSupplier,
 } from "../hooks/useSuppliers";
 import { useProducts } from "@/features/products/hooks/useProducts";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useToastStore } from "@/stores/useToastStore";
 import { formatCurrency } from "@/lib/utils";
 import type { ProductWithPrice, CreateProductSupplierInput } from "@/types";
@@ -28,6 +29,7 @@ interface SupplierProductsProps {
 export function SupplierProducts({ supplierId }: SupplierProductsProps) {
   const { t } = useTranslation("suppliers");
   const { t: tCommon } = useTranslation("common");
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const addToast = useToastStore((state) => state.addToast);
 
   const { data: linkedProducts, isLoading: isLoadingLinked } = useProductsForSupplier(supplierId);
@@ -44,6 +46,7 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
 
   const handleAddProduct = async () => {
     if (!selectedProductId || !purchasePrice) return;
+    if (isDemoMode) { showSubscribePrompt(); return; }
 
     const input: CreateProductSupplierInput = {
       product_id: selectedProductId,
@@ -63,6 +66,7 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
   };
 
   const handleRemoveProduct = async (linkId: string) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       await removeProductSupplier.mutateAsync(linkId);
       addToast({ type: "success", message: t("messages.productUnlinked") });

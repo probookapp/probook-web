@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Bell, AlertTriangle, Clock, FileText, Receipt, Check, Mail } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, Button } from "@/components/ui";
 import { usePendingReminders, useCheckAndCreateReminders, useMarkReminderSent, useSendReminderEmail } from "../hooks/useReminders";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { formatDate } from "@/lib/utils";
 import type { Reminder } from "@/types";
 
@@ -46,6 +47,7 @@ function getDocumentIcon(type: string) {
 
 export function RemindersWidget() {
   const { t } = useTranslation("common");
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { data: reminders, isLoading } = usePendingReminders();
   const checkAndCreate = useCheckAndCreateReminders();
   const markSent = useMarkReminderSent();
@@ -79,18 +81,20 @@ export function RemindersWidget() {
 
   // Check for new reminders on component mount
   useEffect(() => {
-    checkAndCreate.mutate();
-  }, []);
+    if (!isDemoMode) checkAndCreate.mutate();
+  }, [isDemoMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleMarkDone = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await markSent.mutateAsync(id);
   };
 
   const handleSendEmail = async (id: string, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await sendEmail.mutateAsync(id);
   };
 

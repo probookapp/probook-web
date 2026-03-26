@@ -24,12 +24,14 @@ import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { useSelection } from "@/hooks/useSelection";
 import { useQuotes, useDeleteQuote, useConvertQuoteToInvoice, useDuplicateQuote, useBatchDeleteQuotes } from "./hooks/useQuotes";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Quote } from "@/types";
 
 export function QuotesPage() {
   const { t } = useTranslation(["quotes", "common"]);
   const router = useRouter();
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [convertConfirm, setConvertConfirm] = useState<Quote | null>(null);
@@ -54,11 +56,13 @@ export function QuotesPage() {
   }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleDelete = async (id: string) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await deleteQuote.mutateAsync(id);
     setDeleteConfirmId(null);
   };
 
   const handleConvert = async (quote: Quote) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await convertToInvoice.mutateAsync(quote.id);
     setConvertConfirm(null);
     router.push("/invoices");
@@ -130,7 +134,7 @@ export function QuotesPage() {
                     <div className="flex justify-end gap-1 mt-2">
                       <button onClick={() => router.push(`/quotes/${quote.id}`)} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.view")} aria-label={t("common:buttons.view")}><Eye className="h-4 w-4" /></button>
                       <button onClick={() => router.push(`/quotes/${quote.id}/edit`)} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.edit")} aria-label={t("common:buttons.edit")}><Pencil className="h-4 w-4" /></button>
-                      <button onClick={() => duplicateQuote.mutate(quote.id)} className="p-1 text-gray-500 hover:text-blue-600" title={t("quotes:actions.duplicate")} aria-label={t("quotes:actions.duplicate")} disabled={duplicateQuote.isPending}><Copy className="h-4 w-4" /></button>
+                      <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateQuote.mutate(quote.id); }} className="p-1 text-gray-500 hover:text-blue-600" title={t("quotes:actions.duplicate")} aria-label={t("quotes:actions.duplicate")} disabled={duplicateQuote.isPending}><Copy className="h-4 w-4" /></button>
                       {quote.status === "ACCEPTED" && (
                         <button onClick={() => setConvertConfirm(quote)} className="p-1 text-gray-500 hover:text-green-600" title={t("quotes:actions.convertToInvoice")} aria-label={t("quotes:actions.convertToInvoice")}><ArrowRight className="h-4 w-4" /></button>
                       )}
@@ -214,7 +218,7 @@ export function QuotesPage() {
                           <Pencil className="h-4 w-4" />
                         </button>
                         <button
-                          onClick={() => duplicateQuote.mutate(quote.id)}
+                          onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateQuote.mutate(quote.id); }}
                           className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
                           title={t("quotes:actions.duplicate")}
                           aria-label={t("quotes:actions.duplicate")}
@@ -314,6 +318,7 @@ export function QuotesPage() {
         isOpen={bulkDeleteOpen}
         onClose={() => setBulkDeleteOpen(false)}
         onConfirm={async () => {
+          if (isDemoMode) { showSubscribePrompt(); return; }
           await batchDeleteQuotes.mutateAsync(Array.from(selection.selectedIds));
           selection.clear();
           setBulkDeleteOpen(false);

@@ -16,6 +16,7 @@ import {
 import { EmailDialog } from "@/components/email";
 import { PDFViewer } from "@/features/pdf";
 import { useQuote, useConvertQuoteToInvoice, useConvertQuoteToDeliveryNote } from "./hooks/useQuotes";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCompanySettings } from "@/features/settings";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
@@ -27,6 +28,7 @@ export function QuoteViewPage() {
   const [showConvertModal, setShowConvertModal] = useState(false);
   const [showEmailDialog, setShowEmailDialog] = useState(false);
 
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { data: quote, isLoading } = useQuote(id ?? "");
   const { data: company } = useCompanySettings();
   const convertToInvoice = useConvertQuoteToInvoice();
@@ -41,12 +43,14 @@ export function QuoteViewPage() {
   }
 
   const handleConvert = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await convertToInvoice.mutateAsync(quote.id);
     setShowConvertModal(false);
     router.push("/invoices");
   };
 
   const handleConvertToDeliveryNote = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     const deliveryNote = await convertToDeliveryNote.mutateAsync(quote.id);
     router.push(`/delivery-notes/${deliveryNote.id}`);
   };

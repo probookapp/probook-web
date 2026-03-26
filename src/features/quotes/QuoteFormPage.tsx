@@ -17,6 +17,7 @@ import {
 } from "@/components/ui";
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { useQuote, useCreateQuote, useUpdateQuote } from "./hooks/useQuotes";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useClients } from "@/features/clients";
 import { useProducts } from "@/features/products";
 import { formatCurrency, formatDateISO, calculateLineTotal } from "@/lib/utils";
@@ -54,6 +55,7 @@ type QuoteFormData = z.output<ReturnType<typeof createQuoteFormSchema>>;
 export function QuoteFormPage() {
   const { t } = useTranslation(["quotes", "common", "validation"]);
   const router = useRouter();
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
 
@@ -276,6 +278,7 @@ export function QuoteFormPage() {
   };
 
   const onSubmit = async (data: QuoteFormData) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     const formData = {
       ...data,
       notes_html: notesHtml || null,

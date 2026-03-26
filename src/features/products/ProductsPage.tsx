@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, Search, Package, Briefcase, Tags, Upload, Folder, Truck } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import {
   Button,
   Card,
@@ -53,6 +54,7 @@ export function ProductsPage() {
   const [supplierProductId, setSupplierProductId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { data: products, isLoading } = useProducts();
   const { data: categories } = useProductCategories();
   const createProduct = useCreateProduct();
@@ -67,8 +69,9 @@ export function ProductsPage() {
   };
 
   const { data: supplierSummaries } = useQuery({
-    queryKey: ["product-supplier-summaries"],
-    queryFn: productSupplierApi.getAllSummaries,
+    queryKey: ["product-supplier-summaries", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => [] : productSupplierApi.getAllSummaries,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 
   const suppliersByProduct = useMemo(() => {
@@ -93,6 +96,7 @@ export function ProductsPage() {
   useEffect(() => { selection.clear(); }, [searchQuery, categoryFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleOpenModal = (product?: Product) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
@@ -103,6 +107,7 @@ export function ProductsPage() {
   };
 
   const handleSubmit = async (data: ProductFormData) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     // Transform empty strings to null for optional fields
     const input = {
       ...data,
@@ -120,6 +125,7 @@ export function ProductsPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await deleteProduct.mutateAsync(id);
     setDeleteConfirmId(null);
   };
@@ -141,7 +147,7 @@ export function ProductsPage() {
         </div>
         {activeTab === "products" && (
           <div className="flex gap-2 self-start sm:self-auto">
-            <Button variant="secondary" onClick={() => setIsImportOpen(true)} size="sm">
+            <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
               <Upload className="h-4 w-4 mr-2" />
               {tCommon("buttons.import")}
             </Button>
@@ -458,6 +464,7 @@ export function ProductsPage() {
         isOpen={bulkDeleteOpen}
         onClose={() => setBulkDeleteOpen(false)}
         onConfirm={async () => {
+          if (isDemoMode) { showSubscribePrompt(); return; }
           await batchDeleteProducts.mutateAsync(Array.from(selection.selectedIds));
           selection.clear();
           setBulkDeleteOpen(false);

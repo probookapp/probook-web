@@ -13,6 +13,8 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
 import { formatCurrency } from "@/lib/utils";
 import { dashboardApi } from "@/lib/api";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { DEMO_DASHBOARD_STATS } from "@/lib/demo-data";
 import { AlertsPanel } from "./components";
 
 function StatCard({
@@ -48,9 +50,11 @@ function StatCard({
 
 export function DashboardPage() {
   const { t } = useTranslation("dashboard");
+  const { isDemoMode } = useDemoMode();
   const { data: stats, isLoading } = useQuery({
-    queryKey: ["dashboard-stats"],
-    queryFn: dashboardApi.getStats,
+    queryKey: ["dashboard-stats", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => DEMO_DASHBOARD_STATS : dashboardApi.getStats,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 
   if (isLoading) {

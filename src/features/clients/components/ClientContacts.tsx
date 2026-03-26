@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, Phone, Mail, Star } from "lucide-react";
 import { toast } from "@/stores/useToastStore";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import {
   Button,
   Input,
@@ -38,6 +39,7 @@ const initialFormData: ContactFormData = {
 export function ClientContacts({ clientId }: ClientContactsProps) {
   const { t } = useTranslation("clients");
   const { t: tCommon } = useTranslation("common");
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<ClientContact | null>(null);
   const [formData, setFormData] = useState<ContactFormData>(initialFormData);
@@ -68,6 +70,7 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       if (editingContact) {
         const input: UpdateClientContactInput = {
@@ -99,6 +102,7 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
   };
 
   const handleDelete = async (id: string) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       await deleteContact.mutateAsync(id);
       setDeleteConfirmId(null);

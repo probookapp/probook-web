@@ -20,11 +20,13 @@ import {
   useUpdateProductCategory,
   useDeleteProductCategory,
 } from "../hooks/useProductCategories";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { createProductCategorySchema, type ProductCategoryFormData } from "../schemas/productSchema";
 import type { ProductCategory } from "@/types";
 
 export function CategoryManager() {
   const { t } = useTranslation(["products", "common"]);
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | undefined>();
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -46,6 +48,7 @@ export function CategoryManager() {
   };
 
   const handleSubmit = async (data: ProductCategoryFormData) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     const input = {
       ...data,
       description: data.description || null,
@@ -65,6 +68,7 @@ export function CategoryManager() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await deleteCategory.mutateAsync(id);
     setDeleteConfirmId(null);
   };

@@ -34,11 +34,13 @@ import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { useSelection } from "@/hooks/useSelection";
 import { useInvoices, useDeleteInvoice, useMarkInvoicePaid, useDuplicateInvoice, useBatchDeleteInvoices } from "./hooks/useInvoices";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export function InvoicesPage() {
   const { t } = useTranslation(["invoices", "common"]);
   const router = useRouter();
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [markPaidId, setMarkPaidId] = useState<string | null>(null);
@@ -66,11 +68,13 @@ export function InvoicesPage() {
   useEffect(() => { selection.clear(); }, [searchQuery]);
 
   const handleDelete = async (id: string) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await deleteInvoice.mutateAsync(id);
     setDeleteConfirmId(null);
   };
 
   const handleMarkPaid = async (id: string) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await markPaid.mutateAsync(id);
     setMarkPaidId(null);
   };
@@ -148,7 +152,7 @@ export function InvoicesPage() {
                       {invoice.status === "ISSUED" && (
                         <button onClick={() => setMarkPaidId(invoice.id)} className="p-1 text-gray-500 hover:text-green-600" title={t("invoices:actions.markAsPaid")} aria-label={t("invoices:actions.markAsPaid")}><CheckCircle className="h-4 w-4" /></button>
                       )}
-                      <button onClick={() => duplicateInvoice.mutate(invoice.id)} className="p-1 text-gray-500 hover:text-blue-600" title={t("invoices:actions.duplicate")} aria-label={t("invoices:actions.duplicate")} disabled={duplicateInvoice.isPending}><Copy className="h-4 w-4" /></button>
+                      <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateInvoice.mutate(invoice.id); }} className="p-1 text-gray-500 hover:text-blue-600" title={t("invoices:actions.duplicate")} aria-label={t("invoices:actions.duplicate")} disabled={duplicateInvoice.isPending}><Copy className="h-4 w-4" /></button>
                       {invoice.status === "DRAFT" && (
                         <button onClick={() => setDeleteConfirmId(invoice.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>
                       )}
@@ -246,7 +250,7 @@ export function InvoicesPage() {
                           </button>
                         )}
                         <button
-                          onClick={() => duplicateInvoice.mutate(invoice.id)}
+                          onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateInvoice.mutate(invoice.id); }}
                           className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
                           title={t("invoices:actions.duplicate")}
                           aria-label={t("invoices:actions.duplicate")}
@@ -345,6 +349,7 @@ export function InvoicesPage() {
         isOpen={bulkDeleteOpen}
         onClose={() => setBulkDeleteOpen(false)}
         onConfirm={async () => {
+          if (isDemoMode) { showSubscribePrompt(); return; }
           await batchDeleteInvoices.mutateAsync(Array.from(selection.selectedIds));
           selection.clear();
           setBulkDeleteOpen(false);

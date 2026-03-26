@@ -7,6 +7,7 @@ import {
   useCreateCashMovement,
   useSessionCashMovements,
 } from "../hooks/usePosTransaction";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { toast } from "@/stores/useToastStore";
 import type { CashMovementType } from "@/types";
 
@@ -24,6 +25,7 @@ export function CashMovementModal({
   sessionId,
 }: CashMovementModalProps) {
   const { t } = useTranslation("pos");
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const currency = useSettingsStore((state) => state.currency);
   const [movementType, setMovementType] = useState<CashMovementType>("CASH_IN");
   const [amount, setAmount] = useState("");
@@ -38,6 +40,7 @@ export function CashMovementModal({
   const handleSubmit = async () => {
     const parsedAmount = parseFloat(amount);
     if (!parsedAmount || parsedAmount <= 0 || !reason.trim()) return;
+    if (isDemoMode) { showSubscribePrompt(); return; }
 
     try {
       await createMovement.mutateAsync({

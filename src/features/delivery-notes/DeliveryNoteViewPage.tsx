@@ -26,6 +26,7 @@ import {
   useDuplicateDeliveryNote,
   useConvertDeliveryNoteToInvoice,
 } from "./hooks/useDeliveryNotes";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCompanySettings, useLogoBase64 } from "@/features/settings/hooks/useSettings";
 import { PDFViewer } from "../pdf/PDFViewer";
 import { formatDate } from "@/lib/utils";
@@ -46,6 +47,7 @@ export function DeliveryNoteViewPage() {
     CANCELLED: { label: t("delivery:status.CANCELLED"), variant: "danger" },
   };
 
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { data: deliveryNote, isLoading } = useDeliveryNote(id || "");
   const { data: company } = useCompanySettings();
   const { data: logoBase64 } = useLogoBase64();
@@ -55,6 +57,7 @@ export function DeliveryNoteViewPage() {
 
   const handleMarkDelivered = async () => {
     if (!deliveryNote) return;
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       await updateDeliveryNote.mutateAsync({
         id: deliveryNote.id,
@@ -80,6 +83,7 @@ export function DeliveryNoteViewPage() {
 
   const handleDuplicate = async () => {
     if (!deliveryNote) return;
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       const newNote = await duplicateDeliveryNote.mutateAsync(deliveryNote.id);
       router.push(`/delivery-notes/${newNote.id}/edit`);
@@ -90,6 +94,7 @@ export function DeliveryNoteViewPage() {
 
   const handleConvertToInvoice = async () => {
     if (!deliveryNote) return;
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       const invoice = await convertToInvoice.mutateAsync(deliveryNote.id);
       router.push(`/invoices/${invoice.id}`);

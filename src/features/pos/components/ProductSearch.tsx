@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { productApi } from "@/lib/api";
 import { useProductPhoto } from "@/features/products/hooks/useProducts";
 import { useProductCategories } from "@/features/products/hooks/useProductCategories";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { DEMO_PRODUCTS } from "@/lib/demo-data";
 import type { Product } from "@/types";
 import { formatCurrency } from "@/lib/utils";
 
@@ -71,9 +73,11 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
+  const { isDemoMode } = useDemoMode();
   const { data: products } = useQuery({
-    queryKey: ["products"],
-    queryFn: productApi.getAll,
+    queryKey: ["products", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => DEMO_PRODUCTS : productApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 
   const { data: categories } = useProductCategories();

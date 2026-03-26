@@ -22,6 +22,7 @@ import { useSelection } from "@/hooks/useSelection";
 import { SupplierForm } from "./components/SupplierForm";
 import { SupplierProducts } from "./components/SupplierProducts";
 import { ImportDialog } from "@/components/shared/ImportDialog";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import {
   useSuppliers,
   useCreateSupplier,
@@ -36,6 +37,7 @@ import type { SupplierFormData } from "./schemas/supplierSchema";
 export function SuppliersPage() {
   const { t } = useTranslation("suppliers");
   const { t: tCommon } = useTranslation("common");
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const addToast = useToastStore((state) => state.addToast);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | undefined>();
@@ -66,6 +68,7 @@ export function SuppliersPage() {
   useEffect(() => { selection.clear(); }, [searchQuery]);
 
   const handleOpenModal = (supplier?: Supplier) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     setSelectedSupplier(supplier);
     setIsModalOpen(true);
   };
@@ -76,6 +79,7 @@ export function SuppliersPage() {
   };
 
   const handleSubmit = async (data: SupplierFormData) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     const input: CreateSupplierInput = {
       name: data.name,
       email: data.email || null,
@@ -103,6 +107,7 @@ export function SuppliersPage() {
   };
 
   const handleDelete = async (id: string) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       await deleteSupplier.mutateAsync(id);
       addToast({ type: "success", message: t("messages.deleted") });
@@ -128,7 +133,7 @@ export function SuppliersPage() {
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
-          <Button variant="secondary" onClick={() => setIsImportOpen(true)} size="sm">
+          <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
             <Upload className="h-4 w-4 mr-2" />
             {tCommon("buttons.import")}
           </Button>
@@ -338,6 +343,7 @@ export function SuppliersPage() {
         isOpen={bulkDeleteOpen}
         onClose={() => setBulkDeleteOpen(false)}
         onConfirm={async () => {
+          if (isDemoMode) { showSubscribePrompt(); return; }
           await batchDeleteSuppliers.mutateAsync(Array.from(selection.selectedIds));
           selection.clear();
           setBulkDeleteOpen(false);

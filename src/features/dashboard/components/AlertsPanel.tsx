@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { AlertTriangle, Clock, FileText, AlertCircle, ChevronRight, X, Bell } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, Badge } from "@/components/ui";
 import { useAlertsSummary, useMarkQuoteExpired } from "../hooks/useAlerts";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { formatCurrency } from "@/lib/utils";
 import type { Alert } from "@/types";
 
@@ -109,6 +110,7 @@ function AlertItem({ alert, onMarkExpired }: { alert: Alert; onMarkExpired?: (id
 export function AlertsPanel() {
   const locale = useLocale();
   const { t } = useTranslation("dashboard");
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { data: alerts, isLoading } = useAlertsSummary();
   const markExpired = useMarkQuoteExpired();
 
@@ -225,7 +227,7 @@ export function AlertsPanel() {
                     <AlertItem
                       key={alert.id}
                       alert={alert}
-                      onMarkExpired={(id) => markExpired.mutate(id)}
+                      onMarkExpired={(id) => { if (isDemoMode) { showSubscribePrompt(); return; } markExpired.mutate(id); }}
 
                     />
                   ))}

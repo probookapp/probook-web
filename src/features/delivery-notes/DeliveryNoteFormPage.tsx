@@ -16,6 +16,7 @@ import {
   Select,
   SearchableSelect,
 } from "@/components/ui";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useClients } from "@/features/clients/hooks/useClients";
 import { useProducts } from "@/features/products/hooks/useProducts";
 import {
@@ -35,6 +36,7 @@ import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 export function DeliveryNoteFormPage() {
   const { t } = useTranslation(["delivery", "common"]);
   const router = useRouter();
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { id } = useParams<{ id: string }>();
   const isEdit = !!id;
 
@@ -150,6 +152,7 @@ export function DeliveryNoteFormPage() {
   };
 
   const onSubmit = async (data: DeliveryNoteFormData & { status?: DeliveryNoteStatus }) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       // Transform empty strings to null for optional fields
       const input = {

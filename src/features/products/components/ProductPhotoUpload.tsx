@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { toast } from "@/stores/useToastStore";
 import { Camera, Trash2, Upload } from "lucide-react";
 import { Button } from "@/components/ui";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import {
   useProductPhoto,
   useUploadProductPhoto,
@@ -15,6 +16,7 @@ interface ProductPhotoUploadProps {
 
 export function ProductPhotoUpload({ productId }: ProductPhotoUploadProps) {
   const { t } = useTranslation("common");
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const [isUploading, setIsUploading] = useState(false);
   const { data: photoBase64, isLoading } = useProductPhoto(productId);
   const uploadPhoto = useUploadProductPhoto();
@@ -28,6 +30,7 @@ export function ProductPhotoUpload({ productId }: ProductPhotoUploadProps) {
   const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       setIsUploading(true);
       await uploadPhoto.mutateAsync({ productId, file });
@@ -40,6 +43,7 @@ export function ProductPhotoUpload({ productId }: ProductPhotoUploadProps) {
   };
 
   const handleDelete = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     try {
       await deletePhoto.mutateAsync(productId);
     } catch {
