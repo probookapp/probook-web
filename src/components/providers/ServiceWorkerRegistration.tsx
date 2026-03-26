@@ -68,7 +68,7 @@ export function ServiceWorkerRegistration() {
   if (!showUpdateBanner) return null;
 
   return (
-    <div className="fixed top-0 inset-x-0 z-[100] bg-primary-600 text-white px-4 py-3 flex items-center justify-center gap-3 shadow-lg">
+    <div className="fixed top-0 inset-x-0 z-100 bg-primary-600 text-white px-4 py-3 flex items-center justify-center gap-3 shadow-lg">
       <RefreshCw className="h-4 w-4" />
       <span className="text-sm font-medium">
         {t("update.newVersionAvailable")}
