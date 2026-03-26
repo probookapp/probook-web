@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { Check, Tag, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/Button";
@@ -62,8 +62,9 @@ function formatPrice(amount: number, currency: string): string {
 }
 
 
-export function SubscriptionWall({ subscriptionStatus }: { subscriptionStatus?: SubscriptionStatus }) {
+export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { subscriptionStatus?: SubscriptionStatus; onRequestSuccess?: () => void }) {
   const { t } = useTranslation("admin");
+  const queryClient = useQueryClient();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<"yearly" | "monthly">("yearly");
   const [couponCode, setCouponCode] = useState("");
@@ -80,6 +81,10 @@ export function SubscriptionWall({ subscriptionStatus }: { subscriptionStatus?: 
 
   const subscribeRequest = useMutation({
     mutationFn: (input: Record<string, unknown>) => tenantSubscriptionApi.request(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["current-subscription"] });
+      onRequestSuccess?.();
+    },
   });
 
   const validateCoupon = useMutation({

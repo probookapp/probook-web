@@ -10,7 +10,17 @@ export const GET = withAuth(async (_req: NextRequest, ctx) => {
   });
 
   if (!subscription) {
-    return NextResponse.json(null);
+    // Only check for pending requests when there's no active subscription
+    const pendingRequest = await prisma.subscriptionRequest.findFirst({
+      where: {
+        tenantId: ctx.tenantId,
+        status: "pending",
+      },
+    });
+
+    return NextResponse.json(
+      pendingRequest ? { pending_request: true } : null
+    );
   }
 
   return NextResponse.json(toSnakeCase(subscription));
