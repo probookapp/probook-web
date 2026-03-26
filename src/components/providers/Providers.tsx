@@ -32,7 +32,6 @@ export function Providers({ children, locale, theme }: ProvidersProps) {
     });
     if (typeof document !== 'undefined') {
       document.documentElement.lang = validLocale;
-      document.documentElement.dir = validLocale === 'ar' ? 'rtl' : 'ltr';
     }
   });
 

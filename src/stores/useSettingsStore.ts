@@ -101,7 +101,6 @@ const applyThemeToDOM = (theme: AppTheme, resolvedTheme: ResolvedTheme) => {
 const applyLanguageToDOM = (resolved: ResolvedLanguage) => {
   if (typeof document === 'undefined') return;
   document.documentElement.lang = resolved;
-  document.documentElement.dir = resolved === 'ar' ? 'rtl' : 'ltr';
 };
 
 // --- Store initialization ---
