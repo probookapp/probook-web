@@ -6,8 +6,8 @@ import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { SubscriptionWall } from "@/components/shared/SubscriptionWall";
 import { AnnouncementBanner } from "@/components/shared/AnnouncementBanner";
+import { DemoModeProvider, DemoModeBanner } from "@/components/providers/DemoModeProvider";
 import { ImpersonationBar } from "@/components/shared/ImpersonationBar";
 import { PwaInstallBanner } from "@/components/shared/PwaInstallBanner";
 import { ConflictResolutionModal } from "@/components/shared/ConflictResolutionModal";
@@ -51,28 +51,14 @@ export default function AuthenticatedLayout({
     return null;
   }
 
-  // Allow /settings paths through even without subscription
-  const isSettingsPath = pathname.includes("/settings");
-
   // Check subscription status
   const subStatus = subscription?.status as string | undefined;
   const isActive = subStatus === "active";
   const isInTrial = subStatus === "trial" || subStatus === "trialing";
   const hasValidSubscription = isActive || isInTrial;
 
-  // Show subscription wall if no valid subscription (unless on settings pages)
-  if (!subLoading && !hasValidSubscription && !isSettingsPath) {
-    return (
-      <ErrorBoundary>
-        <SubscriptionWall
-          subscriptionStatus={{
-            status: subStatus || null,
-            pending_request: subscription?.pending_request as boolean | undefined,
-          }}
-        />
-      </ErrorBoundary>
-    );
-  }
+  // Demo mode: no valid subscription (banner shows on all pages including settings)
+  const isDemoMode = !subLoading && !hasValidSubscription;
 
   // Check if subscription expires within 30 days
   const periodEnd = subscription?.period_end as string | undefined;
@@ -87,24 +73,26 @@ export default function AuthenticatedLayout({
 
   return (
     <ErrorBoundary>
-      <TenantSettingsProvider />
-      <ImpersonationBar />
-      <Layout>
-        {showExpiryWarning && (
-          <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 px-4 py-2">
-            <div className="flex items-center gap-2 text-sm text-yellow-800 dark:text-yellow-200">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>
-                {t("subscription.expiryWarning", { days: daysUntilExpiry })}
-              </span>
+      <DemoModeProvider isDemoMode={isDemoMode}>
+        <TenantSettingsProvider />
+        <ImpersonationBar />
+        <Layout topBanner={<DemoModeBanner />}>
+          {showExpiryWarning && (
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 px-4 py-2">
+              <div className="flex items-center gap-2 text-sm text-yellow-800 dark:text-yellow-200">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>
+                  {t("subscription.expiryWarning", { days: daysUntilExpiry })}
+                </span>
+              </div>
             </div>
-          </div>
-        )}
-        <AnnouncementBanner />
-        {children}
-      </Layout>
-      <PwaInstallBanner />
-      <ConflictResolutionModal />
+          )}
+          <AnnouncementBanner />
+          {children}
+        </Layout>
+        <PwaInstallBanner />
+        <ConflictResolutionModal />
+      </DemoModeProvider>
     </ErrorBoundary>
   );
 }

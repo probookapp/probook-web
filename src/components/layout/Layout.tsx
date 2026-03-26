@@ -7,9 +7,10 @@ import { OfflineIndicator } from "./OfflineIndicator";
 
 interface LayoutProps {
   children: ReactNode;
+  topBanner?: ReactNode;
 }
 
-export function Layout({ children }: LayoutProps) {
+export function Layout({ children, topBanner }: LayoutProps) {
   const { t } = useTranslation("common");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -50,6 +51,7 @@ export function Layout({ children }: LayoutProps) {
           </button>
           <span className="text-lg font-bold text-gray-900 dark:text-gray-100">Probook</span>
         </div>
+        {topBanner}
         <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </main>
     </div>
