@@ -1,0 +1,76 @@
+import type { DeliveryNote } from "@/types";
+import { DEMO_CLIENTS } from "./clients";
+
+const now = "2026-03-20T10:00:00.000Z";
+
+export const DEMO_DELIVERY_NOTES: DeliveryNote[] = [
+  {
+    id: "demo-dn-001",
+    delivery_note_number: "BL-2026-001",
+    client_id: DEMO_CLIENTS[0].id,
+    client: DEMO_CLIENTS[0],
+    quote_id: null,
+    invoice_id: "demo-invoice-001",
+    status: "DELIVERED",
+    issue_date: "2026-03-01",
+    delivery_date: "2026-03-05",
+    delivery_address: "123 Rue des Oliviers, Alger",
+    notes: null,
+    notes_html: null,
+    lines: [
+      {
+        id: "demo-dnline-001",
+        delivery_note_id: "demo-dn-001",
+        product_id: "demo-product-003",
+        description: "Office Chair - Ergonomic",
+        description_html: null,
+        quantity: 2,
+        unit: "piece",
+        position: 0,
+        created_at: now,
+      },
+      {
+        id: "demo-dnline-002",
+        delivery_note_id: "demo-dn-001",
+        product_id: "demo-product-005",
+        description: "Printer Paper A4 (500 sheets)",
+        description_html: null,
+        quantity: 10,
+        unit: "piece",
+        position: 1,
+        created_at: now,
+      },
+    ],
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    id: "demo-dn-002",
+    delivery_note_number: "BL-2026-002",
+    client_id: DEMO_CLIENTS[2].id,
+    client: DEMO_CLIENTS[2],
+    quote_id: null,
+    invoice_id: null,
+    status: "DRAFT",
+    issue_date: "2026-03-18",
+    delivery_date: null,
+    delivery_address: "78 Avenue de l'Indépendance, Constantine",
+    notes: null,
+    notes_html: null,
+    lines: [
+      {
+        id: "demo-dnline-003",
+        delivery_note_id: "demo-dn-002",
+        product_id: "demo-product-006",
+        description: "Laptop Stand - Aluminum",
+        description_html: null,
+        quantity: 5,
+        unit: "piece",
+        position: 0,
+        created_at: now,
+      },
+    ],
+    created_at: now,
+    updated_at: now,
+  },
+];

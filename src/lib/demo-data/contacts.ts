@@ -1,0 +1,61 @@
+import type { ClientContact } from "@/types";
+
+const now = "2026-03-20T10:00:00.000Z";
+
+export const DEMO_CLIENT_CONTACTS: ClientContact[] = [
+  {
+    id: "demo-contact-001",
+    client_id: "demo-client-001",
+    name: "Karim Benali",
+    role: "CEO",
+    email: "karim@acme-demo.example",
+    phone: "+213 555 0111",
+    is_primary: true,
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    id: "demo-contact-002",
+    client_id: "demo-client-001",
+    name: "Nadia Ouazane",
+    role: "Accounting",
+    email: "nadia@acme-demo.example",
+    phone: "+213 555 0112",
+    is_primary: false,
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    id: "demo-contact-003",
+    client_id: "demo-client-002",
+    name: "Yassine Khaldi",
+    role: "Purchasing Manager",
+    email: "yassine@sahara-demo.example",
+    phone: "+213 555 0221",
+    is_primary: true,
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    id: "demo-contact-004",
+    client_id: "demo-client-003",
+    name: "Amina Ferhat",
+    role: "Director",
+    email: "amina@atlas-demo.example",
+    phone: "+213 555 0331",
+    is_primary: true,
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    id: "demo-contact-005",
+    client_id: "demo-client-004",
+    name: "Mehdi Bouzid",
+    role: "Technical Lead",
+    email: "mehdi@med-demo.example",
+    phone: "+213 555 0441",
+    is_primary: true,
+    created_at: now,
+    updated_at: now,
+  },
+];
