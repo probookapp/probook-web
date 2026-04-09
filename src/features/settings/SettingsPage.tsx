@@ -31,6 +31,7 @@ import {
 import { useSettingsStore } from "@/stores/useSettingsStore";
 import { useTheme, type AppTheme } from "@/components/providers/ThemeContext";
 import { useEffect, useRef, useState } from "react";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 
 const createSettingsSchema = (t: (key: string) => string) => z.object({
   company_name: z.string().min(1, t("validation.companyNameRequired")),
@@ -77,6 +78,7 @@ export function SettingsPage() {
   const { t } = useTranslation("settings");
   const settingsSchema = createSettingsSchema(t);
   const { data: settings, isLoading } = useCompanySettings();
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { data: logoBase64 } = useLogoBase64();
   const updateSettings = useUpdateCompanySettings();
   const uploadLogo = useUploadLogo();
@@ -94,7 +96,9 @@ export function SettingsPage() {
   const pathname = usePathname();
 
   const handleLanguageChange = async (newLang: string) => {
-    await updateAppSettings.mutateAsync({ appLanguage: newLang, appTheme: theme });
+    if (!isDemoMode) {
+      await updateAppSettings.mutateAsync({ appLanguage: newLang, appTheme: theme });
+    }
     // Navigate to the same page under the new locale
     const resolvedLang = newLang === 'system'
       ? (typeof navigator !== 'undefined' ? navigator.language.split('-')[0] : 'en')
@@ -106,7 +110,9 @@ export function SettingsPage() {
 
   const handleThemeChange = async (newTheme: AppTheme) => {
     setTheme(newTheme);
-    await updateAppSettings.mutateAsync({ appLanguage: language, appTheme: newTheme });
+    if (!isDemoMode) {
+      await updateAppSettings.mutateAsync({ appLanguage: language, appTheme: newTheme });
+    }
   };
 
   const handleUploadLogo = () => {
@@ -114,10 +120,10 @@ export function SettingsPage() {
   };
 
   const handleLogoFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      // Convert file to base64 or pass to upload API
       await uploadLogo.mutateAsync(file);
     } catch {
       toast.error(t("messages.logoUploadFailed"));
@@ -127,6 +133,7 @@ export function SettingsPage() {
   };
 
   const handleDeleteLogo = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     if (confirm(t("messages.deleteLogoConfirm"))) {
       await deleteLogo.mutateAsync();
     }
@@ -187,6 +194,7 @@ export function SettingsPage() {
   }, [settings, reset]);
 
   const onSubmit = async (data: SettingsFormData) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     await updateSettings.mutateAsync(data);
     if (data.currency) {
       setCurrency(data.currency);

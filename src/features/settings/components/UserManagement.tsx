@@ -5,11 +5,13 @@ import { toast } from '@/stores/useToastStore';
 import { Button, Input, Select, Modal } from '@/components/ui';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '../hooks/useUsers';
 import { useAuthStore } from '@/stores/useAuthStore';
+import { useDemoMode } from '@/components/providers/DemoModeProvider';
 import type { UserInfo, PermissionKey } from '@/types';
 import { ALL_PERMISSIONS } from '@/types';
 
 export function UserManagement() {
   const { t } = useTranslation('auth');
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { data: users, isLoading } = useUsers();
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
@@ -59,6 +61,7 @@ export function UserManagement() {
   };
 
   const handleCreate = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     setFormError('');
     if (!formUsername.trim() || !formDisplayName.trim() || !formPassword.trim()) {
       setFormError(t('userManagement.allFieldsRequired'));
@@ -80,6 +83,7 @@ export function UserManagement() {
   };
 
   const handleUpdate = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     if (!editingUser) return;
     setFormError('');
     if (!formUsername.trim() || !formDisplayName.trim()) {
@@ -104,6 +108,7 @@ export function UserManagement() {
   };
 
   const handleDelete = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     if (!deleteConfirmUser) return;
     try {
       await deleteUser.mutateAsync(deleteConfirmUser.id);

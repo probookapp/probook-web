@@ -3,11 +3,13 @@ import { useTranslation } from "react-i18next";
 import { Download, Upload, Lock, FileDown } from "lucide-react";
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/components/ui";
 import { toast } from "@/stores/useToastStore";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { exportApi, backupApi } from "@/lib/api";
 import { downloadEncryptedBackup, importEncryptedBackup } from "@/lib/crypto";
 
 export function BackupSection() {
   const { t } = useTranslation("settings");
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const [exportPassword, setExportPassword] = useState("");
   const [exportPasswordConfirm, setExportPasswordConfirm] = useState("");
   const [importPassword, setImportPassword] = useState("");
@@ -19,6 +21,7 @@ export function BackupSection() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportPlain = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     setIsExporting(true);
     try {
       await exportApi.download();
@@ -31,6 +34,7 @@ export function BackupSection() {
   };
 
   const handleExportEncrypted = async () => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     if (!exportPassword) {
       toast.error(t("backup.passwordRequired"));
       return;
@@ -53,6 +57,7 @@ export function BackupSection() {
   };
 
   const handleImportEncrypted = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     const file = e.target.files?.[0];
     if (!file) return;
     if (!importPassword) {

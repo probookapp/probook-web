@@ -117,6 +117,7 @@ export function ExpensesPage() {
   };
 
   const handleSubmit = async (data: ExpenseFormData) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
     const input = {
       ...data,
       notes: data.notes || null,
