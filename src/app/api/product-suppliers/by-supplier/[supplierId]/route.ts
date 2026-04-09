@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth, toSnakeCase } from "@/lib/api-utils";
+import { withAuth } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
@@ -8,5 +8,15 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
     include: { product: true },
     orderBy: { createdAt: "desc" },
   });
-  return NextResponse.json(toSnakeCase(links));
+
+  const products = links.map((link) => ({
+    id: link.product.id,
+    designation: link.product.designation,
+    reference: link.product.reference,
+    unit_price: link.product.unitPrice,
+    purchase_price: link.purchasePrice,
+    link_id: link.id,
+  }));
+
+  return NextResponse.json(products);
 });
