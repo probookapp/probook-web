@@ -183,7 +183,7 @@ export function SupplierPaymentModal({
           <Button
             onClick={handleSubmit}
             isLoading={createPayment.isPending}
-            disabled={!amount || !paymentDate}
+            disabled={!(parseFloat(amount) > 0) || !paymentDate}
           >
             {t("credits.recordPayment")}
           </Button>

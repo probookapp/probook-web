@@ -71,7 +71,8 @@
     "quantityRequired": "La quantité est requise",
     "quantityMin": "La quantité doit être d'au moins 1",
     "priceRequired": "Le prix est requis",
-    "priceMin": "Le prix doit être positif"
+    "priceMin": "Le prix doit être positif",
+    "atLeastOneLine": "Ajoutez au moins une ligne de produit"
   },
   "messages": {
     "created": "Bon de commande créé",

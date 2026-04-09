@@ -2,6 +2,7 @@ import { useEffect, useMemo } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2 } from "lucide-react";
+import { toast } from "@/stores/useToastStore";
 import {
   Button,
   Input,
@@ -183,7 +184,10 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
         tax_rate: Number(l.tax_rate),
       }));
 
-    if (lines.length === 0) return;
+    if (lines.length === 0) {
+      toast.error(t("validation.atLeastOneLine"));
+      return;
+    }
 
     onSubmit({
       supplier_id: data.supplier_id,

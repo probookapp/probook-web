@@ -71,7 +71,8 @@
     "quantityRequired": "الكمية مطلوبة",
     "quantityMin": "الكمية يجب أن تكون 1 على الأقل",
     "priceRequired": "السعر مطلوب",
-    "priceMin": "السعر يجب أن يكون موجباً"
+    "priceMin": "السعر يجب أن يكون موجباً",
+    "atLeastOneLine": "أضف سطر منتج واحد على الأقل"
   },
   "messages": {
     "created": "تم إنشاء طلب الشراء",

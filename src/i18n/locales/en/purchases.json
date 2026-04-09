@@ -71,7 +71,8 @@
     "quantityRequired": "Quantity is required",
     "quantityMin": "Quantity must be at least 1",
     "priceRequired": "Price is required",
-    "priceMin": "Price must be positive"
+    "priceMin": "Price must be positive",
+    "atLeastOneLine": "Add at least one product line"
   },
   "messages": {
     "created": "Purchase order created",
