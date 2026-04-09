@@ -38,5 +38,9 @@
     },
     "errorSaving": "Error saving contact",
     "errorDeleting": "Error deleting contact"
+  },
+  "messages": {
+    "deleteBlocked": "Cannot delete client with existing quotes, invoices, or delivery notes",
+    "deleteError": "Failed to delete client"
   }
 }

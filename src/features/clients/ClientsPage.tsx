@@ -20,6 +20,8 @@ import { ClientForm } from "./components/ClientForm";
 import { ClientContacts } from "./components/ClientContacts";
 import { ImportDialog } from "@/components/shared/ImportDialog";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { toast } from "@/stores/useToastStore";
+import { isApiError } from "@/lib/api-adapter";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { useSelection } from "@/hooks/useSelection";
@@ -86,8 +88,12 @@ export function ClientsPage() {
 
   const handleDelete = async (id: string) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
-    await deleteClient.mutateAsync(id);
-    setDeleteConfirmId(null);
+    try {
+      await deleteClient.mutateAsync(id);
+      setDeleteConfirmId(null);
+    } catch (err) {
+      toast.error(isApiError(err, 409) ? t("messages.deleteBlocked") : t("messages.deleteError"));
+    }
   };
 
   if (isLoading) {

@@ -32,6 +32,19 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
 });
 
 export const DELETE = withAuth(async (req, { tenantId, params }) => {
-  await prisma.client.delete({ where: { tenantId, id: params?.id } });
+  const clientId = params?.id as string;
+
+  const refCount = await prisma.quote.count({ where: { tenantId, clientId } })
+    + await prisma.invoice.count({ where: { tenantId, clientId } })
+    + await prisma.deliveryNote.count({ where: { tenantId, clientId } });
+
+  if (refCount > 0) {
+    return NextResponse.json(
+      { error: "Cannot delete client with existing quotes, invoices, or delivery notes" },
+      { status: 409 }
+    );
+  }
+
+  await prisma.client.delete({ where: { tenantId, id: clientId } });
   return new NextResponse(null, { status: 204 });
 });

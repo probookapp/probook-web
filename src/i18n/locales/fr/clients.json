@@ -38,5 +38,9 @@
     },
     "errorSaving": "Erreur lors de l'enregistrement du contact",
     "errorDeleting": "Erreur lors de la suppression du contact"
+  },
+  "messages": {
+    "deleteBlocked": "Impossible de supprimer un client ayant des devis, factures ou bons de livraison",
+    "deleteError": "Erreur lors de la suppression du client"
   }
 }
