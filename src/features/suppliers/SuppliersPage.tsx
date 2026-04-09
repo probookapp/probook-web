@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Trash2, Search, Package, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Upload, CreditCard } from "lucide-react";
 import {
   Button,
   Card,
@@ -21,8 +21,10 @@ import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { useSelection } from "@/hooks/useSelection";
 import { SupplierForm } from "./components/SupplierForm";
 import { SupplierProducts } from "./components/SupplierProducts";
+import { SupplierCredits } from "./components/SupplierCredits";
 import { ImportDialog } from "@/components/shared/ImportDialog";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { isApiError } from "@/lib/api-adapter";
 import {
   useSuppliers,
   useCreateSupplier,
@@ -46,6 +48,7 @@ export function SuppliersPage() {
   const [productsSupplier, setProductsSupplier] = useState<Supplier | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [creditsSupplier, setCreditsSupplier] = useState<Supplier | null>(null);
 
   const { data: suppliers, isLoading } = useSuppliers();
   const createSupplier = useCreateSupplier();
@@ -112,8 +115,11 @@ export function SuppliersPage() {
       await deleteSupplier.mutateAsync(id);
       addToast({ type: "success", message: t("messages.deleted") });
       setDeleteConfirmId(null);
-    } catch {
-      addToast({ type: "error", message: t("messages.deleteError") });
+    } catch (err) {
+      const msg = isApiError(err, 409)
+        ? t("messages.deleteBlocked")
+        : t("messages.deleteError");
+      addToast({ type: "error", message: msg });
     }
   };
 
@@ -179,6 +185,7 @@ export function SuppliersPage() {
                       <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{supplier.name}</p>
                       <div className="flex items-center gap-1 shrink-0">
                         <button onClick={() => setProductsSupplier(supplier)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={t("products.title")} aria-label={t("products.title")}><Package className="h-4 w-4" /></button>
+                        <button onClick={() => setCreditsSupplier(supplier)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={t("credits.title")} aria-label={t("credits.title")}><CreditCard className="h-4 w-4" /></button>
                         <button onClick={() => handleOpenModal(supplier)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={tCommon("buttons.edit")} aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>
                         <button onClick={() => setDeleteConfirmId(supplier.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>
                       </div>
@@ -241,6 +248,14 @@ export function SuppliersPage() {
                           aria-label={t("products.title")}
                         >
                           <Package className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setCreditsSupplier(supplier)}
+                          className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                          title={t("credits.title")}
+                          aria-label={t("credits.title")}
+                        >
+                          <CreditCard className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => handleOpenModal(supplier)}
@@ -331,6 +346,16 @@ export function SuppliersPage() {
         size="lg"
       >
         {productsSupplier && <SupplierProducts supplierId={productsSupplier.id} />}
+      </Modal>
+
+      {/* Credits Modal */}
+      <Modal
+        isOpen={!!creditsSupplier}
+        onClose={() => setCreditsSupplier(null)}
+        title={creditsSupplier ? `${t("credits.title")} - ${creditsSupplier.name}` : t("credits.title")}
+        size="lg"
+      >
+        {creditsSupplier && <SupplierCredits supplier={creditsSupplier} onClose={() => setCreditsSupplier(null)} />}
       </Modal>
 
       <BulkActionBar

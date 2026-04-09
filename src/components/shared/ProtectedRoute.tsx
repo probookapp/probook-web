@@ -16,6 +16,7 @@ const routePermissions: { path: string; permission: PermissionKey }[] = [
   { path: '/phonebook', permission: 'phonebook' },
   { path: '/reports', permission: 'reports' },
   { path: '/expenses', permission: 'expenses' },
+  { path: '/purchases', permission: 'purchases' },
   { path: '/settings', permission: 'settings' },
 ];
 

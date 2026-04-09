@@ -27,6 +27,19 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
 });
 
 export const DELETE = withAuth(async (req, { tenantId, params }) => {
-  await prisma.supplier.delete({ where: { tenantId, id: params?.id } });
+  const supplierId = params?.id as string;
+
+  // Prevent deleting suppliers with purchase orders
+  const purchaseCount = await prisma.purchaseOrder.count({
+    where: { tenantId, supplierId },
+  });
+  if (purchaseCount > 0) {
+    return NextResponse.json(
+      { error: "Cannot delete supplier with existing purchase orders" },
+      { status: 409 }
+    );
+  }
+
+  await prisma.supplier.delete({ where: { tenantId, id: supplierId } });
   return new NextResponse(null, { status: 204 });
 });

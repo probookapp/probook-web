@@ -1,0 +1,66 @@
+{
+  "title": "Purchases",
+  "subtitle": "Manage purchase orders from suppliers",
+  "newPurchase": "New Purchase Order",
+  "editPurchase": "Edit Purchase Order",
+  "deletePurchase": "Delete Purchase Order",
+  "noPurchases": "No purchase orders found",
+  "searchPlaceholder": "Search purchase orders...",
+  "createPurchase": "Create",
+  "updatePurchase": "Update",
+  "deleteConfirmation": "Are you sure you want to delete this purchase order?",
+  "confirmOrder": "Confirm Receipt",
+  "cancelOrder": "Cancel Order",
+  "confirmTitle": "Confirm Purchase Order",
+  "confirmDescription": "Confirm that goods have been received and choose how to handle payment.",
+  "cancelConfirmation": "Are you sure you want to cancel this purchase order?",
+  "orderConfirmed": "Purchase order confirmed",
+  "orderCancelled": "Purchase order cancelled",
+  "fields": {
+    "orderNumber": "Order #",
+    "supplier": "Supplier",
+    "supplierRequired": "Supplier *",
+    "selectSupplier": "Select a supplier...",
+    "addNewSupplier": "Add new supplier",
+    "orderDate": "Order Date",
+    "status": "Status",
+    "paymentStatus": "Payment",
+    "total": "Total",
+    "notes": "Notes",
+    "product": "Product",
+    "quantity": "Qty",
+    "unitPrice": "Unit Price",
+    "previousPrice": "Previous Price",
+    "useAveragePrice": "Use average price (PMP)",
+    "averagePriceTooltip": "Calculate weighted average of old and new purchase price",
+    "taxRate": "Tax %",
+    "subtotal": "Subtotal",
+    "addLine": "Add Product",
+    "selectProduct": "Select a product..."
+  },
+  "status": {
+    "PENDING": "Pending",
+    "CONFIRMED": "Confirmed",
+    "CANCELLED": "Cancelled"
+  },
+  "paymentStatus": {
+    "UNPAID": "Unpaid",
+    "PARTIAL": "Partial",
+    "PAID": "Paid"
+  },
+  "confirm": {
+    "paidFromRegister": "Pay from cash register",
+    "paidFromRegisterDescription": "Deduct the total from the register's active session",
+    "notPaidFromRegister": "Do not pay from register (supplier credit)",
+    "selectRegister": "Select register",
+    "selectSession": "Active session",
+    "noOpenSession": "No open session on this register. Please open a session first.",
+    "confirm": "Confirm Receipt"
+  },
+  "filters": {
+    "all": "All",
+    "pending": "Pending",
+    "confirmed": "Confirmed",
+    "cancelled": "Cancelled"
+  }
+}

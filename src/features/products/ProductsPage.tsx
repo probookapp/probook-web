@@ -35,6 +35,8 @@ import {
 } from "./hooks/useProducts";
 import { useProductCategories } from "./hooks/useProductCategories";
 import { formatCurrency } from "@/lib/utils";
+import { toast } from "@/stores/useToastStore";
+import { isApiError } from "@/lib/api-adapter";
 import { productSupplierApi } from "@/lib/api";
 import type { Product } from "@/types";
 import type { ProductFormData } from "./schemas/productSchema";
@@ -126,8 +128,12 @@ export function ProductsPage() {
 
   const handleDelete = async (id: string) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
-    await deleteProduct.mutateAsync(id);
-    setDeleteConfirmId(null);
+    try {
+      await deleteProduct.mutateAsync(id);
+      setDeleteConfirmId(null);
+    } catch (err) {
+      toast.error(isApiError(err, 409) ? t("messages.deleteBlocked") : t("messages.deleteError"));
+    }
   };
 
   if (isLoading) {

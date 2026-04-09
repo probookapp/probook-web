@@ -38,9 +38,37 @@
     "updateError": "Erreur lors de la mise à jour du fournisseur",
     "deleted": "Fournisseur supprimé avec succès",
     "deleteError": "Erreur lors de la suppression du fournisseur",
+    "deleteBlocked": "Impossible de supprimer un fournisseur ayant des bons de commande",
     "productLinked": "Produit lié avec succès",
     "productLinkError": "Erreur lors de la liaison du produit",
     "productUnlinked": "Produit délié avec succès",
     "productUnlinkError": "Erreur lors de la suppression du lien"
+  },
+  "credits": {
+    "title": "Crédits fournisseur",
+    "totalOwed": "Total dû",
+    "totalPaid": "Total payé",
+    "balance": "Solde",
+    "noBalance": "Aucun solde en cours",
+    "unpaidOrders": "Bons de commande impayés",
+    "noUnpaidOrders": "Aucun bon de commande impayé",
+    "paymentHistory": "Historique des paiements",
+    "noPayments": "Aucun paiement enregistré",
+    "recordPayment": "Enregistrer un paiement",
+    "paymentAmount": "Montant",
+    "paymentDate": "Date",
+    "paymentMethod": "Méthode",
+    "paymentReference": "Référence",
+    "paymentNotes": "Notes",
+    "linkToOrder": "Lier à un bon de commande (optionnel)",
+    "noLink": "Paiement général",
+    "methods": {
+      "CASH": "Espèces",
+      "BANK_TRANSFER": "Virement bancaire",
+      "CHECK": "Chèque",
+      "OTHER": "Autre"
+    },
+    "paymentRecorded": "Paiement enregistré avec succès",
+    "paymentError": "Erreur lors de l'enregistrement du paiement"
   }
 }

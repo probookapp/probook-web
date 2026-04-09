@@ -38,9 +38,37 @@
     "updateError": "فشل في تحديث المورد",
     "deleted": "تم حذف المورد بنجاح",
     "deleteError": "فشل في حذف المورد",
+    "deleteBlocked": "لا يمكن حذف مورد لديه طلبات شراء",
     "productLinked": "تم ربط المنتج بنجاح",
     "productLinkError": "فشل في ربط المنتج",
     "productUnlinked": "تم إلغاء ربط المنتج بنجاح",
     "productUnlinkError": "فشل في إلغاء ربط المنتج"
+  },
+  "credits": {
+    "title": "ائتمانات المورد",
+    "totalOwed": "إجمالي المستحق",
+    "totalPaid": "إجمالي المدفوع",
+    "balance": "الرصيد",
+    "noBalance": "لا يوجد رصيد مستحق",
+    "unpaidOrders": "أوامر الشراء غير المدفوعة",
+    "noUnpaidOrders": "لا توجد أوامر شراء غير مدفوعة",
+    "paymentHistory": "سجل المدفوعات",
+    "noPayments": "لا توجد مدفوعات مسجلة",
+    "recordPayment": "تسجيل دفعة",
+    "paymentAmount": "المبلغ",
+    "paymentDate": "التاريخ",
+    "paymentMethod": "طريقة الدفع",
+    "paymentReference": "المرجع",
+    "paymentNotes": "ملاحظات",
+    "linkToOrder": "ربط بأمر شراء (اختياري)",
+    "noLink": "دفعة عامة",
+    "methods": {
+      "CASH": "نقدي",
+      "BANK_TRANSFER": "تحويل بنكي",
+      "CHECK": "شيك",
+      "OTHER": "أخرى"
+    },
+    "paymentRecorded": "تم تسجيل الدفعة بنجاح",
+    "paymentError": "فشل في تسجيل الدفعة"
   }
 }

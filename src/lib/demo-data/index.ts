@@ -8,4 +8,5 @@ export { DEMO_DASHBOARD_STATS } from "./dashboard";
 export { DEMO_ALERTS_SUMMARY } from "./alerts";
 export { DEMO_DELIVERY_NOTES } from "./delivery-notes";
 export { DEMO_CLIENT_CONTACTS } from "./contacts";
+export { DEMO_PURCHASES } from "./purchases";
 export { DEMO_REVENUE_BY_MONTH, DEMO_REVENUE_BY_CLIENT, DEMO_PRODUCT_SALES, DEMO_OUTSTANDING_PAYMENTS } from "./reports";

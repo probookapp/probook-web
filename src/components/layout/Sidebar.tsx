@@ -12,6 +12,7 @@ import {
   BarChart3,
   Settings,
   Wallet,
+  ShoppingCart,
   Factory,
   X,
   LogOut,
@@ -54,6 +55,7 @@ export function Sidebar({ onClose }: SidebarProps) {
     { name: t("phonebook"), href: "/phonebook", icon: BookUser, permission: "phonebook" },
     { name: t("reports"), href: "/reports", icon: BarChart3, permission: "reports" },
     { name: t("expenses"), href: "/expenses", icon: Wallet, permission: "expenses" },
+    { name: t("purchases"), href: "/purchases", icon: ShoppingCart, permission: "purchases" },
     { name: t("settings"), href: "/settings", icon: Settings, permission: "settings" },
   ];
 

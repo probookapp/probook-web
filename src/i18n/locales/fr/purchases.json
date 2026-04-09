@@ -1,0 +1,66 @@
+{
+  "title": "Achats",
+  "subtitle": "Gérez vos bons de commande fournisseurs",
+  "newPurchase": "Nouveau bon de commande",
+  "editPurchase": "Modifier le bon de commande",
+  "deletePurchase": "Supprimer le bon de commande",
+  "noPurchases": "Aucun bon de commande trouvé",
+  "searchPlaceholder": "Rechercher un bon de commande...",
+  "createPurchase": "Créer",
+  "updatePurchase": "Modifier",
+  "deleteConfirmation": "Êtes-vous sûr de vouloir supprimer ce bon de commande ?",
+  "confirmOrder": "Confirmer la réception",
+  "cancelOrder": "Annuler la commande",
+  "confirmTitle": "Confirmer le bon de commande",
+  "confirmDescription": "Confirmez la réception des marchandises et choisissez le mode de paiement.",
+  "cancelConfirmation": "Êtes-vous sûr de vouloir annuler ce bon de commande ?",
+  "orderConfirmed": "Bon de commande confirmé",
+  "orderCancelled": "Bon de commande annulé",
+  "fields": {
+    "orderNumber": "N° commande",
+    "supplier": "Fournisseur",
+    "supplierRequired": "Fournisseur *",
+    "selectSupplier": "Sélectionner un fournisseur...",
+    "addNewSupplier": "Ajouter un fournisseur",
+    "orderDate": "Date de commande",
+    "status": "Statut",
+    "paymentStatus": "Paiement",
+    "total": "Total",
+    "notes": "Notes",
+    "product": "Produit",
+    "quantity": "Qté",
+    "unitPrice": "Prix unitaire",
+    "previousPrice": "Prix précédent",
+    "useAveragePrice": "Utiliser le prix moyen pondéré (PMP)",
+    "averagePriceTooltip": "Calculer la moyenne pondérée de l'ancien et du nouveau prix d'achat",
+    "taxRate": "TVA %",
+    "subtotal": "Sous-total",
+    "addLine": "Ajouter un produit",
+    "selectProduct": "Sélectionner un produit..."
+  },
+  "status": {
+    "PENDING": "En attente",
+    "CONFIRMED": "Confirmé",
+    "CANCELLED": "Annulé"
+  },
+  "paymentStatus": {
+    "UNPAID": "Non payé",
+    "PARTIAL": "Partiel",
+    "PAID": "Payé"
+  },
+  "confirm": {
+    "paidFromRegister": "Payer depuis la caisse",
+    "paidFromRegisterDescription": "Déduire le total de la session active de la caisse",
+    "notPaidFromRegister": "Ne pas payer depuis la caisse (crédit fournisseur)",
+    "selectRegister": "Sélectionner la caisse",
+    "selectSession": "Session active",
+    "noOpenSession": "Aucune session ouverte sur cette caisse. Veuillez d'abord ouvrir une session.",
+    "confirm": "Confirmer la réception"
+  },
+  "filters": {
+    "all": "Tous",
+    "pending": "En attente",
+    "confirmed": "Confirmés",
+    "cancelled": "Annulés"
+  }
+}

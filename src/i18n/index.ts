@@ -20,6 +20,7 @@ import frAuth from './locales/fr/auth.json';
 import frPos from './locales/fr/pos.json';
 import frAdmin from './locales/fr/admin.json';
 import frPages from './locales/fr/pages.json';
+import frPurchases from './locales/fr/purchases.json';
 
 // English translations
 import enCommon from './locales/en/common.json';
@@ -40,6 +41,7 @@ import enAuth from './locales/en/auth.json';
 import enPos from './locales/en/pos.json';
 import enAdmin from './locales/en/admin.json';
 import enPages from './locales/en/pages.json';
+import enPurchases from './locales/en/purchases.json';
 
 // Arabic translations
 import arCommon from './locales/ar/common.json';
@@ -60,6 +62,7 @@ import arAuth from './locales/ar/auth.json';
 import arPos from './locales/ar/pos.json';
 import arAdmin from './locales/ar/admin.json';
 import arPages from './locales/ar/pages.json';
+import arPurchases from './locales/ar/purchases.json';
 
 const resources = {
   fr: {
@@ -81,6 +84,7 @@ const resources = {
     pos: frPos,
     admin: frAdmin,
     pages: frPages,
+    purchases: frPurchases,
   },
   en: {
     common: enCommon,
@@ -101,6 +105,7 @@ const resources = {
     pos: enPos,
     admin: enAdmin,
     pages: enPages,
+    purchases: enPurchases,
   },
   ar: {
     common: arCommon,
@@ -121,6 +126,7 @@ const resources = {
     pos: arPos,
     admin: arAdmin,
     pages: arPages,
+    purchases: arPurchases,
   },
 };
 

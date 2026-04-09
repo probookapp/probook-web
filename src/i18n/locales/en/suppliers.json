@@ -38,9 +38,37 @@
     "updateError": "Failed to update supplier",
     "deleted": "Supplier deleted successfully",
     "deleteError": "Failed to delete supplier",
+    "deleteBlocked": "Cannot delete supplier with existing purchase orders",
     "productLinked": "Product linked successfully",
     "productLinkError": "Failed to link product",
     "productUnlinked": "Product unlinked successfully",
     "productUnlinkError": "Failed to unlink product"
+  },
+  "credits": {
+    "title": "Supplier Credits",
+    "totalOwed": "Total Owed",
+    "totalPaid": "Total Paid",
+    "balance": "Balance",
+    "noBalance": "No outstanding balance",
+    "unpaidOrders": "Unpaid Purchase Orders",
+    "noUnpaidOrders": "No unpaid purchase orders",
+    "paymentHistory": "Payment History",
+    "noPayments": "No payments recorded",
+    "recordPayment": "Record Payment",
+    "paymentAmount": "Amount",
+    "paymentDate": "Date",
+    "paymentMethod": "Method",
+    "paymentReference": "Reference",
+    "paymentNotes": "Notes",
+    "linkToOrder": "Link to purchase order (optional)",
+    "noLink": "General payment",
+    "methods": {
+      "CASH": "Cash",
+      "BANK_TRANSFER": "Bank Transfer",
+      "CHECK": "Check",
+      "OTHER": "Other"
+    },
+    "paymentRecorded": "Payment recorded successfully",
+    "paymentError": "Failed to record payment"
   }
 }

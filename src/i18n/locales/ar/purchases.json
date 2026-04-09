@@ -1,0 +1,66 @@
+{
+  "title": "المشتريات",
+  "subtitle": "إدارة طلبات الشراء من الموردين",
+  "newPurchase": "طلب شراء جديد",
+  "editPurchase": "تعديل طلب الشراء",
+  "deletePurchase": "حذف طلب الشراء",
+  "noPurchases": "لا توجد طلبات شراء",
+  "searchPlaceholder": "البحث عن طلب شراء...",
+  "createPurchase": "إنشاء",
+  "updatePurchase": "تعديل",
+  "deleteConfirmation": "هل أنت متأكد من حذف طلب الشراء هذا؟",
+  "confirmOrder": "تأكيد الاستلام",
+  "cancelOrder": "إلغاء الطلب",
+  "confirmTitle": "تأكيد طلب الشراء",
+  "confirmDescription": "تأكيد استلام البضائع واختيار طريقة الدفع.",
+  "cancelConfirmation": "هل أنت متأكد من إلغاء طلب الشراء هذا؟",
+  "orderConfirmed": "تم تأكيد طلب الشراء",
+  "orderCancelled": "تم إلغاء طلب الشراء",
+  "fields": {
+    "orderNumber": "رقم الطلب",
+    "supplier": "المورد",
+    "supplierRequired": "المورد *",
+    "selectSupplier": "اختر مورداً...",
+    "addNewSupplier": "إضافة مورد جديد",
+    "orderDate": "تاريخ الطلب",
+    "status": "الحالة",
+    "paymentStatus": "الدفع",
+    "total": "المجموع",
+    "notes": "ملاحظات",
+    "product": "المنتج",
+    "quantity": "الكمية",
+    "unitPrice": "سعر الوحدة",
+    "previousPrice": "السعر السابق",
+    "useAveragePrice": "استخدام السعر المتوسط المرجح (PMP)",
+    "averagePriceTooltip": "حساب المتوسط المرجح لسعر الشراء القديم والجديد",
+    "taxRate": "% الضريبة",
+    "subtotal": "المجموع الفرعي",
+    "addLine": "إضافة منتج",
+    "selectProduct": "اختر منتجاً..."
+  },
+  "status": {
+    "PENDING": "معلق",
+    "CONFIRMED": "مؤكد",
+    "CANCELLED": "ملغى"
+  },
+  "paymentStatus": {
+    "UNPAID": "غير مدفوع",
+    "PARTIAL": "جزئي",
+    "PAID": "مدفوع"
+  },
+  "confirm": {
+    "paidFromRegister": "الدفع من الصندوق",
+    "paidFromRegisterDescription": "خصم المبلغ من الجلسة النشطة للصندوق",
+    "notPaidFromRegister": "عدم الدفع من الصندوق (ائتمان مورد)",
+    "selectRegister": "اختر الصندوق",
+    "selectSession": "الجلسة النشطة",
+    "noOpenSession": "لا توجد جلسة مفتوحة على هذا الصندوق. يرجى فتح جلسة أولاً.",
+    "confirm": "تأكيد الاستلام"
+  },
+  "filters": {
+    "all": "الكل",
+    "pending": "معلق",
+    "confirmed": "مؤكد",
+    "cancelled": "ملغى"
+  }
+}
