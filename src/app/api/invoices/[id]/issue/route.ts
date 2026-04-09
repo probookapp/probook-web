@@ -38,5 +38,19 @@ export const POST = withAuth(async (req, { tenantId, params }) => {
     include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
   });
 
+  // Decrement stock for product lines (prevent going below zero)
+  for (const line of updated.lines) {
+    if (line.productId) {
+      const product = await prisma.product.findUnique({ where: { id: line.productId } });
+      if (product) {
+        const newQty = Math.max(0, (product.quantity ?? 0) - Math.round(line.quantity));
+        await prisma.product.update({
+          where: { tenantId, id: line.productId },
+          data: { quantity: newQty },
+        });
+      }
+    }
+  }
+
   return NextResponse.json(toSnakeCase(updated));
 });
