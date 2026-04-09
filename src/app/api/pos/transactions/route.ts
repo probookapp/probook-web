@@ -6,6 +6,7 @@ import { posTransactionSchema } from "@/lib/validations";
 
 interface PosLineInput {
   product_id?: string | null;
+  variant_id?: string | null;
   barcode?: string | null;
   designation: string;
   quantity: number;
@@ -79,6 +80,7 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
           const lineVat = lineHt * (l.tax_rate || 0) / 100;
           return {
             productId: l.product_id || null,
+            variantId: l.variant_id || null,
             barcode: l.barcode || null,
             designation: l.designation,
             quantity: l.quantity,
@@ -105,12 +107,22 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
     include: { lines: true, payments: true },
   });
 
-  // Update stock for product lines
+  // Update stock for product lines (prevent going below zero)
   for (const line of lines) {
-    if (line.product_id) {
+    const qty = Math.round(line.quantity);
+    if (line.variant_id) {
+      const variant = await prisma.productVariant.findUnique({ where: { id: line.variant_id } });
+      const newQty = Math.max(0, (variant?.quantity ?? 0) - qty);
+      await prisma.productVariant.update({
+        where: { id: line.variant_id },
+        data: { quantity: newQty },
+      });
+    } else if (line.product_id) {
+      const product = await prisma.product.findUnique({ where: { id: line.product_id } });
+      const newQty = Math.max(0, (product?.quantity ?? 0) - qty);
       await prisma.product.update({
         where: { tenantId, id: line.product_id },
-        data: { quantity: { decrement: line.quantity } },
+        data: { quantity: newQty },
       });
     }
   }

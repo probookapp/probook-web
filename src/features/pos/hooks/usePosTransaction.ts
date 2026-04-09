@@ -23,6 +23,7 @@ export function useCreateTransaction() {
       });
       // Invalidate products to reflect stock changes
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["pos-products"] });
     },
   });
 }
