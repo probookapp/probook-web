@@ -53,6 +53,15 @@ export interface UpdateProductCategoryInput extends CreateProductCategoryInput {
 }
 
 // Product types
+export interface ProductPrice {
+  id: string;
+  product_id: string;
+  label: string;
+  price: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Product {
   id: string;
   designation: string;
@@ -70,8 +79,41 @@ export interface Product {
   // Stock management
   quantity: number | null;
   purchase_price: number | null;
+  // Multi-tier pricing
+  prices?: ProductPrice[];
+  // Variants
+  has_variants: boolean;
+  variants?: ProductVariant[];
   created_at: string;
   updated_at: string;
+}
+
+export interface ProductVariant {
+  id: string;
+  product_id: string;
+  name: string;
+  sku: string | null;
+  barcode: string | null;
+  attributes: Record<string, string>;
+  quantity: number;
+  price_override: number | null;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateProductVariantInput {
+  name: string;
+  sku?: string | null;
+  barcode?: string | null;
+  attributes: Record<string, string>;
+  quantity?: number;
+  price_override?: number | null;
+}
+
+export interface UpdateProductVariantInput extends CreateProductVariantInput {
+  id: string;
+  is_active?: boolean;
 }
 
 export interface CreateProductInput {
@@ -87,10 +129,112 @@ export interface CreateProductInput {
   category_id?: string | null;
   quantity?: number | null;
   purchase_price?: number | null;
+  prices?: { label: string; price: number }[];
+  has_variants?: boolean;
 }
 
 export interface UpdateProductInput extends CreateProductInput {
   id: string;
+}
+
+// Purchase Order types
+export type PurchaseOrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
+export type PurchasePaymentStatus = "UNPAID" | "PARTIAL" | "PAID";
+
+export interface PurchaseOrder {
+  id: string;
+  order_number: string;
+  supplier_id: string;
+  supplier?: Supplier;
+  status: PurchaseOrderStatus;
+  order_date: string;
+  confirmed_date: string | null;
+  paid_from_register: boolean;
+  register_id: string | null;
+  session_id: string | null;
+  payment_status: PurchasePaymentStatus;
+  subtotal: number;
+  tax_amount: number;
+  total: number;
+  notes: string | null;
+  lines: PurchaseOrderLine[];
+  payments?: SupplierPayment[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PurchaseOrderLine {
+  id: string;
+  order_id: string;
+  product_id: string;
+  variant_id: string | null;
+  quantity: number;
+  unit_price: number;
+  previous_price: number | null;
+  use_average_price: boolean;
+  subtotal: number;
+  tax_rate: number;
+  tax_amount: number;
+  total: number;
+  product?: Product;
+  variant?: ProductVariant;
+}
+
+export interface CreatePurchaseOrderInput {
+  supplier_id: string;
+  order_date?: string;
+  notes?: string | null;
+  lines: CreatePurchaseOrderLineInput[];
+}
+
+export interface CreatePurchaseOrderLineInput {
+  product_id: string;
+  variant_id?: string | null;
+  quantity: number;
+  unit_price: number;
+  previous_price?: number | null;
+  use_average_price?: boolean;
+  tax_rate?: number;
+}
+
+export interface UpdatePurchaseOrderInput extends CreatePurchaseOrderInput {
+  id: string;
+}
+
+export interface ConfirmPurchaseOrderInput {
+  paid_from_register: boolean;
+  register_id?: string | null;
+  session_id?: string | null;
+}
+
+export interface SupplierPayment {
+  id: string;
+  supplier_id: string;
+  purchase_order_id: string | null;
+  amount: number;
+  payment_date: string;
+  payment_method: string;
+  reference: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
+export interface CreateSupplierPaymentInput {
+  amount: number;
+  payment_date: string;
+  payment_method: string;
+  purchase_order_id?: string | null;
+  reference?: string | null;
+  notes?: string | null;
+}
+
+export interface SupplierCreditSummary {
+  supplier_id: string;
+  supplier_name: string;
+  total_owed: number;
+  total_paid: number;
+  balance: number;
+  unpaid_orders: PurchaseOrder[];
 }
 
 // Quote types
@@ -648,6 +792,7 @@ export type PermissionKey =
   | 'phonebook'
   | 'reports'
   | 'expenses'
+  | 'purchases'
   | 'settings'
   | 'pos';
 
@@ -662,6 +807,7 @@ export const ALL_PERMISSIONS: PermissionKey[] = [
   'phonebook',
   'reports',
   'expenses',
+  'purchases',
   'settings',
   'pos',
 ];
@@ -778,6 +924,7 @@ export interface PosTransactionLine {
   id: string;
   transaction_id: string;
   product_id: string | null;
+  variant_id: string | null;
   barcode: string | null;
   designation: string;
   quantity: number;
@@ -793,6 +940,7 @@ export interface PosTransactionLine {
 
 export interface CreateTransactionLineInput {
   product_id?: string | null;
+  variant_id?: string | null;
   barcode?: string | null;
   designation: string;
   quantity: number;

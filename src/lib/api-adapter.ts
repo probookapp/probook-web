@@ -3,6 +3,22 @@ import { queueMutationRaw } from "./offline-mutations";
 import { toast } from "@/stores/useToastStore";
 import i18n from "@/i18n";
 
+export class ApiError extends Error {
+  status: number;
+  body: string;
+
+  constructor(status: number, body: string) {
+    super(body || `Request failed with status ${status}`);
+    this.name = "ApiError";
+    this.status = status;
+    this.body = body;
+  }
+}
+
+export function isApiError(err: unknown, status?: number): err is ApiError {
+  return err instanceof ApiError && (status === undefined || err.status === status);
+}
+
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 interface EndpointDef {
@@ -33,7 +49,15 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   },
 
   // Products
-  get_products: { method: "GET", path: "/api/products" },
+  get_products: {
+    method: "GET",
+    path: "/api/products",
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.include) q.include = String(a.include);
+      return q;
+    },
+  },
   get_product: { method: "GET", path: (a) => `/api/products/${a.id}` },
   create_product: { method: "POST", path: "/api/products", body: (a) => a.input },
   update_product: {
@@ -46,6 +70,30 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     method: "POST",
     path: "/api/products/batch-delete",
     body: (a) => a.ids,
+  },
+
+  // Product Variants
+  get_product_variants: {
+    method: "GET",
+    path: (a) => `/api/products/${a.productId}/variants`,
+  },
+  create_product_variant: {
+    method: "POST",
+    path: (a) => `/api/products/${a.productId}/variants`,
+    body: (a) => a.input,
+  },
+  get_product_variant: {
+    method: "GET",
+    path: (a) => `/api/products/${a.productId}/variants/${a.variantId}`,
+  },
+  update_product_variant: {
+    method: "PUT",
+    path: (a) => `/api/products/${a.productId}/variants/${a.variantId}`,
+    body: (a) => a.input,
+  },
+  delete_product_variant: {
+    method: "DELETE",
+    path: (a) => `/api/products/${a.productId}/variants/${a.variantId}`,
   },
 
   // Product Categories
@@ -241,6 +289,46 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     method: "PUT",
     path: (a) => `/api/product-suppliers/${a.linkId}/price`,
     body: (a) => ({ purchase_price: a.purchasePrice }),
+  },
+
+  // Purchase Orders
+  get_purchases: { method: "GET", path: "/api/purchases" },
+  get_purchase: { method: "GET", path: (a) => `/api/purchases/${a.id}` },
+  create_purchase: { method: "POST", path: "/api/purchases", body: (a) => a.input },
+  update_purchase: {
+    method: "PUT",
+    path: (a) => `/api/purchases/${(a.input as Record<string, unknown>).id}`,
+    body: (a) => a.input,
+  },
+  delete_purchase: { method: "DELETE", path: (a) => `/api/purchases/${a.id}` },
+  batch_delete_purchases: {
+    method: "POST",
+    path: "/api/purchases/batch-delete",
+    body: (a) => a.ids,
+  },
+  confirm_purchase: {
+    method: "POST",
+    path: (a) => `/api/purchases/${a.id}/confirm`,
+    body: (a) => a.input,
+  },
+  cancel_purchase: {
+    method: "POST",
+    path: (a) => `/api/purchases/${a.id}/cancel`,
+  },
+
+  // Supplier Credits
+  get_supplier_credits: {
+    method: "GET",
+    path: (a) => `/api/suppliers/${a.supplierId}/credits`,
+  },
+  get_supplier_payments: {
+    method: "GET",
+    path: (a) => `/api/suppliers/${a.supplierId}/payments`,
+  },
+  create_supplier_payment: {
+    method: "POST",
+    path: (a) => `/api/suppliers/${a.supplierId}/payments`,
+    body: (a) => a.input,
   },
 
   // Delivery Notes
@@ -574,7 +662,7 @@ export async function apiCall<T>(
 
     if (!res.ok) {
       const text = await res.text();
-      throw new Error(text || `Request failed with status ${res.status}`);
+      throw new ApiError(res.status, text);
     }
 
     // Handle empty responses (204 No Content, or empty body)

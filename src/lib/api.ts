@@ -7,6 +7,16 @@ import type {
   Product,
   CreateProductInput,
   UpdateProductInput,
+  ProductVariant,
+  CreateProductVariantInput,
+  UpdateProductVariantInput,
+  PurchaseOrder,
+  CreatePurchaseOrderInput,
+  UpdatePurchaseOrderInput,
+  ConfirmPurchaseOrderInput,
+  SupplierPayment,
+  CreateSupplierPaymentInput,
+  SupplierCreditSummary,
   ProductCategory,
   CreateProductCategoryInput,
   UpdateProductCategoryInput,
@@ -82,6 +92,7 @@ export const clientApi = {
 // Product commands
 export const productApi = {
   getAll: () => apiCall<Product[]>("get_products"),
+  getAllWithDetails: () => apiCall<Product[]>("get_products", { include: "prices,variants" }),
   getById: (id: string) => apiCall<Product>("get_product", { id }),
   create: (input: CreateProductInput) => apiCall<Product>("create_product", { input }),
   update: (input: UpdateProductInput) => apiCall<Product>("update_product", { input }),
@@ -105,6 +116,20 @@ export const productApi = {
     apiCall<string | null>("get_product_photo_base64", { productId }),
   deletePhoto: (productId: string) =>
     apiCall<void>("delete_product_photo", { productId }),
+};
+
+// Product Variant commands
+export const productVariantApi = {
+  getAll: (productId: string) =>
+    apiCall<ProductVariant[]>("get_product_variants", { productId }),
+  getById: (productId: string, variantId: string) =>
+    apiCall<ProductVariant>("get_product_variant", { productId, variantId }),
+  create: (productId: string, input: CreateProductVariantInput) =>
+    apiCall<ProductVariant>("create_product_variant", { productId, input }),
+  update: (productId: string, variantId: string, input: UpdateProductVariantInput) =>
+    apiCall<ProductVariant>("update_product_variant", { productId, variantId, input }),
+  delete: (productId: string, variantId: string) =>
+    apiCall<void>("delete_product_variant", { productId, variantId }),
 };
 
 // Product Category commands
@@ -208,6 +233,26 @@ export const productSupplierApi = {
   addLink: (input: CreateProductSupplierInput) => apiCall<ProductSupplier>("add_product_supplier", { input }),
   removeLink: (linkId: string) => apiCall<void>("remove_product_supplier", { linkId }),
   updatePrice: (linkId: string, purchasePrice: number) => apiCall<void>("update_product_supplier_price", { linkId, purchasePrice }),
+};
+
+// Purchase Order commands
+export const purchaseApi = {
+  getAll: () => apiCall<PurchaseOrder[]>("get_purchases"),
+  getById: (id: string) => apiCall<PurchaseOrder>("get_purchase", { id }),
+  create: (input: CreatePurchaseOrderInput) => apiCall<PurchaseOrder>("create_purchase", { input }),
+  update: (input: UpdatePurchaseOrderInput) => apiCall<PurchaseOrder>("update_purchase", { input }),
+  delete: (id: string) => apiCall<void>("delete_purchase", { id }),
+  batchDelete: (ids: string[]) => apiCall<number>("batch_delete_purchases", { ids }),
+  confirm: (id: string, input: ConfirmPurchaseOrderInput) => apiCall<PurchaseOrder>("confirm_purchase", { id, input }),
+  cancel: (id: string) => apiCall<PurchaseOrder>("cancel_purchase", { id }),
+};
+
+// Supplier Credit commands
+export const supplierCreditApi = {
+  getCredits: (supplierId: string) => apiCall<SupplierCreditSummary>("get_supplier_credits", { supplierId }),
+  getPayments: (supplierId: string) => apiCall<SupplierPayment[]>("get_supplier_payments", { supplierId }),
+  createPayment: (supplierId: string, input: CreateSupplierPaymentInput) =>
+    apiCall<SupplierPayment>("create_supplier_payment", { supplierId, input }),
 };
 
 // Dashboard commands

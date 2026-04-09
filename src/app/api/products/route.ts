@@ -5,10 +5,17 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { productSchema } from "@/lib/validations";
 
 export const GET = withAuth(async (req, { tenantId }) => {
+  const url = new URL(req.url);
+  const fields = url.searchParams.get("include")?.split(",") ?? [];
+
   const products = await prisma.product.findMany({
     where: { tenantId },
     orderBy: { createdAt: "desc" },
-    include: { category: true },
+    include: {
+      category: true,
+      prices: fields.includes("prices"),
+      variants: fields.includes("variants"),
+    },
   });
   return NextResponse.json(toSnakeCase(products));
 });
@@ -16,6 +23,7 @@ export const GET = withAuth(async (req, { tenantId }) => {
 export const POST = withAuth(async (req, { tenantId }) => {
   const body = await validateBody(req, productSchema);
   if (isValidationError(body)) return body;
+  const prices = body.prices || [];
   const product = await prisma.product.create({
     data: {
       tenantId,
@@ -31,7 +39,16 @@ export const POST = withAuth(async (req, { tenantId }) => {
       categoryId: body.category_id || null,
       quantity: body.quantity ?? 0,
       purchasePrice: body.purchase_price ?? 0,
+      hasVariants: body.has_variants || false,
+      prices: prices.length > 0 ? {
+        create: prices.map((p: { label: string; price: number }) => ({
+          tenantId,
+          label: p.label,
+          price: p.price,
+        })),
+      } : undefined,
     },
+    include: { prices: true, variants: true },
   });
   markOnboardingStep(tenantId, "first_product");
   return NextResponse.json(toSnakeCase(product));

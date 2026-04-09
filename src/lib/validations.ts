@@ -63,6 +63,11 @@ export const clientSchema = z.object({
 
 // ─── Products ───────────────────────────────────────────────────────────────
 
+const productPriceSchema = z.object({
+  label: z.string().min(1, "Label is required"),
+  price: positiveNumber,
+});
+
 export const productSchema = z.object({
   designation: requiredString("Designation"),
   description: optionalString,
@@ -76,6 +81,56 @@ export const productSchema = z.object({
   category_id: optionalString,
   quantity: z.coerce.number().int().min(0).default(0),
   purchase_price: positiveNumber.default(0),
+  prices: z.array(productPriceSchema).optional(),
+  has_variants: z.boolean().default(false),
+});
+
+// ─── Product Variants ──────────────────────────────────────────────────────
+
+export const productVariantSchema = z.object({
+  name: requiredString("Name"),
+  sku: optionalString,
+  barcode: optionalString,
+  attributes: z.record(z.string(), z.string()).default({}),
+  quantity: z.coerce.number().int().min(0).default(0),
+  price_override: z.coerce.number().min(0).nullable().optional(),
+  is_active: z.boolean().default(true),
+});
+
+// ─── Purchase Orders ───────────────────────────────────────────────────────
+
+const purchaseOrderLineSchema = z.object({
+  product_id: requiredString("Product ID"),
+  variant_id: optionalString,
+  quantity: z.coerce.number().min(0.01, "Quantity must be positive"),
+  unit_price: positiveNumber,
+  previous_price: z.coerce.number().min(0).nullable().optional(),
+  use_average_price: z.boolean().default(false),
+  tax_rate: z.coerce.number().min(0).max(100).default(0),
+});
+
+export const purchaseOrderSchema = z.object({
+  supplier_id: requiredString("Supplier ID"),
+  order_date: z.string().optional(),
+  notes: optionalString,
+  lines: z.array(purchaseOrderLineSchema).min(1, "At least one line is required"),
+});
+
+export const confirmPurchaseOrderSchema = z.object({
+  paid_from_register: z.boolean(),
+  register_id: optionalString,
+  session_id: optionalString,
+});
+
+// ─── Supplier Payments ─────────────────────────────────────────────────────
+
+export const supplierPaymentSchema = z.object({
+  amount: z.coerce.number().min(0.01, "Amount must be positive"),
+  payment_date: requiredString("Payment date"),
+  payment_method: z.string().default("CASH"),
+  purchase_order_id: optionalString,
+  reference: optionalString,
+  notes: optionalString,
 });
 
 // ─── Categories ─────────────────────────────────────────────────────────────
@@ -236,6 +291,7 @@ export const updateDeliveryNoteSchema = createDeliveryNoteSchema.extend({
 
 const posLineSchema = z.object({
   product_id: optionalString,
+  variant_id: optionalString,
   barcode: optionalString,
   designation: requiredString("Designation"),
   quantity: z.coerce.number().min(0.01, "Quantity must be positive"),

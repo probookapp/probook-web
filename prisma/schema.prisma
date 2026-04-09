@@ -22,6 +22,10 @@ model Tenant {
   clients              Client[]
   products             Product[]
   productCategories    ProductCategory[]
+  productPrices        ProductPrice[]
+  productVariants      ProductVariant[]
+  purchaseOrders       PurchaseOrder[]
+  supplierPayments     SupplierPayment[]
   quotes               Quote[]
   invoices             Invoice[]
   payments             Payment[]
@@ -237,12 +241,16 @@ model Product {
   photoPath       String?  @map("photo_path")
   quantity        Int?     @default(0)
   purchasePrice Float?   @default(0) @map("purchase_price")
+  hasVariants     Boolean  @default(false) @map("has_variants")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   category            ProductCategory?     @relation(fields: [categoryId], references: [id])
   suppliers           ProductSupplier[]
+  prices              ProductPrice[]
+  variants            ProductVariant[]
+  purchaseOrderLines  PurchaseOrderLine[]
   quoteLines          QuoteLine[]
   invoiceLines        InvoiceLine[]
   deliveryNoteLines   DeliveryNoteLine[]
@@ -251,6 +259,47 @@ model Product {
   @@index([tenantId])
   @@index([barcode])
   @@map("products")
+}
+
+model ProductPrice {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  productId String   @map("product_id")
+  label     String   // "retail", "wholesale", "semi_wholesale", "super_wholesale", or custom
+  price     Float
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@map("product_prices")
+}
+
+model ProductVariant {
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  productId     String   @map("product_id")
+  name          String   // e.g. "Rouge - XL"
+  sku           String?
+  barcode       String?
+  attributes    Json     @default("{}") // { "size": "XL", "color": "Rouge" }
+  quantity      Int      @default(0)
+  priceOverride Float?   @map("price_override")
+  isActive      Boolean  @default(true) @map("is_active")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product             Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+  posTransactionLines PosTransactionLine[]
+  purchaseOrderLines  PurchaseOrderLine[]
+
+  @@index([productId])
+  @@index([tenantId])
+  @@index([barcode])
+  @@map("product_variants")
 }
 
 model ProductCategory {
@@ -533,8 +582,10 @@ model Supplier {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  products ProductSupplier[]
+  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  products         ProductSupplier[]
+  purchaseOrders   PurchaseOrder[]
+  supplierPayments SupplierPayment[]
 
   @@index([tenantId])
   @@map("suppliers")
@@ -556,6 +607,83 @@ model ProductSupplier {
   @@index([productId])
   @@index([supplierId])
   @@map("product_suppliers")
+}
+
+// ========== Purchase Orders ==========
+
+model PurchaseOrder {
+  id               String    @id @default(uuid())
+  tenantId         String    @map("tenant_id")
+  orderNumber      String    @map("order_number")
+  supplierId       String    @map("supplier_id")
+  status           String    @default("PENDING") // PENDING | CONFIRMED | CANCELLED
+  orderDate        DateTime  @default(now()) @map("order_date") @db.Date
+  confirmedDate    DateTime? @map("confirmed_date")
+  paidFromRegister Boolean   @default(false) @map("paid_from_register")
+  registerId       String?   @map("register_id")
+  sessionId        String?   @map("session_id")
+  paymentStatus    String    @default("UNPAID") // UNPAID | PARTIAL | PAID
+  subtotal         Float     @default(0)
+  taxAmount        Float     @default(0) @map("tax_amount")
+  total            Float     @default(0)
+  notes            String?
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  tenant   Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier Supplier            @relation(fields: [supplierId], references: [id])
+  register PosRegister?        @relation(fields: [registerId], references: [id])
+  lines    PurchaseOrderLine[]
+  payments SupplierPayment[]
+
+  @@unique([tenantId, orderNumber])
+  @@index([tenantId])
+  @@index([supplierId])
+  @@index([status])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id              String  @id @default(uuid())
+  orderId         String  @map("order_id")
+  productId       String  @map("product_id")
+  variantId       String? @map("variant_id")
+  quantity        Float
+  unitPrice       Float   @map("unit_price")
+  previousPrice   Float?  @map("previous_price")
+  useAveragePrice Boolean @default(false) @map("use_average_price")
+  subtotal        Float   @default(0)
+  taxRate         Float   @default(0) @map("tax_rate")
+  taxAmount       Float   @default(0) @map("tax_amount")
+  total           Float   @default(0)
+
+  order   PurchaseOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
+
+  @@index([orderId])
+  @@map("purchase_order_lines")
+}
+
+model SupplierPayment {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  supplierId      String   @map("supplier_id")
+  purchaseOrderId String?  @map("purchase_order_id")
+  amount          Float
+  paymentDate     DateTime @map("payment_date") @db.Date
+  paymentMethod   String   @default("CASH") @map("payment_method")
+  reference       String?
+  notes           String?
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier      Supplier       @relation(fields: [supplierId], references: [id])
+  purchaseOrder PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+
+  @@index([supplierId])
+  @@index([tenantId])
+  @@map("supplier_payments")
 }
 
 // ========== Client Contacts ==========
@@ -614,6 +742,7 @@ model PosRegister {
   sessions       PosSession[]
   transactions   PosTransaction[]
   printerConfigs PosPrinterConfig[]
+  purchaseOrders PurchaseOrder[]
 
   @@index([tenantId])
   @@map("pos_registers")
@@ -688,6 +817,7 @@ model PosTransactionLine {
   id              String   @id @default(uuid())
   transactionId   String   @map("transaction_id")
   productId       String?  @map("product_id")
+  variantId       String?  @map("variant_id")
   barcode         String?
   designation     String
   quantity        Float
@@ -702,6 +832,7 @@ model PosTransactionLine {
 
   transaction PosTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
   product     Product?       @relation(fields: [productId], references: [id])
+  variant     ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@index([transactionId])
   @@index([productId])
