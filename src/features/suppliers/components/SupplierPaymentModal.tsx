@@ -64,10 +64,11 @@ export function SupplierPaymentModal({
   };
 
   const handleSubmit = () => {
-    if (!amount || !paymentDate) return;
+    const parsedAmount = parseFloat(amount);
+    if (!parsedAmount || parsedAmount <= 0 || !paymentDate) return;
 
     const input: CreateSupplierPaymentInput = {
-      amount: parseFloat(amount),
+      amount: parsedAmount,
       payment_date: paymentDate,
       payment_method: paymentMethod,
       purchase_order_id: purchaseOrderId || null,

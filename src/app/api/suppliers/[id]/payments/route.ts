@@ -16,10 +16,25 @@ export const POST = withAuth(async (req, { tenantId, params }) => {
   const body = await validateBody(req, supplierPaymentSchema);
   if (isValidationError(body)) return body;
 
+  const supplierId = params?.id as string;
+
+  // Validate linked order belongs to this supplier
+  if (body.purchase_order_id) {
+    const order = await prisma.purchaseOrder.findFirst({
+      where: { tenantId, id: body.purchase_order_id, supplierId },
+    });
+    if (!order) {
+      return NextResponse.json(
+        { error: "Purchase order not found or does not belong to this supplier" },
+        { status: 400 }
+      );
+    }
+  }
+
   const payment = await prisma.supplierPayment.create({
     data: {
       tenantId,
-      supplierId: params?.id!,
+      supplierId,
       purchaseOrderId: body.purchase_order_id || null,
       amount: body.amount,
       paymentDate: new Date(body.payment_date),
@@ -29,14 +44,14 @@ export const POST = withAuth(async (req, { tenantId, params }) => {
     },
   });
 
-  // Update purchase order payment status if linked to an order
+  // Update purchase order payment status if linked
   if (body.purchase_order_id) {
     const order = await prisma.purchaseOrder.findFirst({
       where: { tenantId, id: body.purchase_order_id },
     });
     if (order) {
       const totalPayments = await prisma.supplierPayment.aggregate({
-        where: { purchaseOrderId: body.purchase_order_id },
+        where: { tenantId, purchaseOrderId: body.purchase_order_id },
         _sum: { amount: true },
       });
       const paidAmount = totalPayments._sum.amount || 0;

@@ -6,37 +6,34 @@
   "deletePurchase": "Delete Purchase Order",
   "noPurchases": "No purchase orders found",
   "searchPlaceholder": "Search purchase orders...",
+  "purchaseList": "Purchase Orders",
   "createPurchase": "Create",
   "updatePurchase": "Update",
   "deleteConfirmation": "Are you sure you want to delete this purchase order?",
-  "confirmOrder": "Confirm Receipt",
-  "cancelOrder": "Cancel Order",
-  "confirmTitle": "Confirm Purchase Order",
-  "confirmDescription": "Confirm that goods have been received and choose how to handle payment.",
-  "cancelConfirmation": "Are you sure you want to cancel this purchase order?",
-  "orderConfirmed": "Purchase order confirmed",
-  "orderCancelled": "Purchase order cancelled",
   "fields": {
     "orderNumber": "Order #",
     "supplier": "Supplier",
-    "supplierRequired": "Supplier *",
     "selectSupplier": "Select a supplier...",
-    "addNewSupplier": "Add new supplier",
     "orderDate": "Order Date",
+    "date": "Date",
     "status": "Status",
     "paymentStatus": "Payment",
     "total": "Total",
     "notes": "Notes",
     "product": "Product",
+    "selectProduct": "Select a product...",
+    "variant": "Variant",
+    "selectVariant": "Select variant...",
     "quantity": "Qty",
     "unitPrice": "Unit Price",
     "previousPrice": "Previous Price",
     "useAveragePrice": "Use average price (PMP)",
-    "averagePriceTooltip": "Calculate weighted average of old and new purchase price",
     "taxRate": "Tax %",
     "subtotal": "Subtotal",
-    "addLine": "Add Product",
-    "selectProduct": "Select a product..."
+    "tax": "Tax",
+    "lineTotal": "Line Total",
+    "lines": "Order Lines",
+    "addLine": "Add Product"
   },
   "status": {
     "PENDING": "Pending",
@@ -48,14 +45,45 @@
     "PARTIAL": "Partial",
     "PAID": "Paid"
   },
-  "confirm": {
-    "paidFromRegister": "Pay from cash register",
-    "paidFromRegisterDescription": "Deduct the total from the register's active session",
-    "notPaidFromRegister": "Do not pay from register (supplier credit)",
+  "actions": {
+    "confirm": "Confirm Receipt",
+    "cancel": "Cancel Order"
+  },
+  "confirmModal": {
+    "title": "Confirm Purchase Order",
+    "description": "Confirm that goods have been received and choose how to handle payment.",
+    "payFromRegister": "Pay from cash register",
     "selectRegister": "Select register",
-    "selectSession": "Active session",
-    "noOpenSession": "No open session on this register. Please open a session first.",
+    "selectRegisterPlaceholder": "Choose a register...",
+    "activeSession": "Active session",
+    "openedAt": "Opened at",
+    "noActiveSession": "No open session on this register. Please open a session first.",
     "confirm": "Confirm Receipt"
+  },
+  "cancelModal": {
+    "title": "Cancel Purchase Order",
+    "description": "Are you sure you want to cancel this purchase order?"
+  },
+  "validation": {
+    "supplierRequired": "Supplier is required",
+    "dateRequired": "Date is required",
+    "productRequired": "Product is required",
+    "quantityRequired": "Quantity is required",
+    "quantityMin": "Quantity must be at least 1",
+    "priceRequired": "Price is required",
+    "priceMin": "Price must be positive"
+  },
+  "messages": {
+    "created": "Purchase order created",
+    "createError": "Failed to create purchase order",
+    "updated": "Purchase order updated",
+    "updateError": "Failed to update purchase order",
+    "deleted": "Purchase order deleted",
+    "deleteError": "Failed to delete purchase order",
+    "confirmed": "Purchase order confirmed",
+    "confirmError": "Failed to confirm purchase order",
+    "cancelled": "Purchase order cancelled",
+    "cancelError": "Failed to cancel purchase order"
   },
   "filters": {
     "all": "All",

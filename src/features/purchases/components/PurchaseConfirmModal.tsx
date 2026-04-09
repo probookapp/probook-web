@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle } from "lucide-react";
 import { Button, Modal, SearchableSelect } from "@/components/ui";
@@ -28,6 +28,14 @@ export function PurchaseConfirmModal({
 
   const [paidFromRegister, setPaidFromRegister] = useState(false);
   const [selectedRegisterId, setSelectedRegisterId] = useState("");
+
+  // Reset state when modal opens/closes
+  useEffect(() => {
+    if (!open) {
+      setPaidFromRegister(false);
+      setSelectedRegisterId("");
+    }
+  }, [open]);
 
   const { data: registers } = usePosRegisters();
   const { data: activeSession } = useActiveSession(

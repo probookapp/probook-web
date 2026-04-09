@@ -122,10 +122,10 @@ export function SupplierCredits({ supplier, onClose }: SupplierCreditsProps) {
           <Table className="min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead>{tCommon("labels.orderNumber", { defaultValue: "Order #" })}</TableHead>
-                <TableHead>{t("credits.paymentDate")}</TableHead>
-                <TableHead>{tCommon("labels.total", { defaultValue: "Total" })}</TableHead>
-                <TableHead>{tCommon("labels.status", { defaultValue: "Status" })}</TableHead>
+                <TableHead>{t("credits.orderNumber")}</TableHead>
+                <TableHead>{t("credits.orderDate")}</TableHead>
+                <TableHead>{t("credits.orderTotal")}</TableHead>
+                <TableHead>{t("credits.orderStatus")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

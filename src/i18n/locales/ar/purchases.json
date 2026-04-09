@@ -6,37 +6,34 @@
   "deletePurchase": "حذف طلب الشراء",
   "noPurchases": "لا توجد طلبات شراء",
   "searchPlaceholder": "البحث عن طلب شراء...",
+  "purchaseList": "طلبات الشراء",
   "createPurchase": "إنشاء",
   "updatePurchase": "تعديل",
   "deleteConfirmation": "هل أنت متأكد من حذف طلب الشراء هذا؟",
-  "confirmOrder": "تأكيد الاستلام",
-  "cancelOrder": "إلغاء الطلب",
-  "confirmTitle": "تأكيد طلب الشراء",
-  "confirmDescription": "تأكيد استلام البضائع واختيار طريقة الدفع.",
-  "cancelConfirmation": "هل أنت متأكد من إلغاء طلب الشراء هذا؟",
-  "orderConfirmed": "تم تأكيد طلب الشراء",
-  "orderCancelled": "تم إلغاء طلب الشراء",
   "fields": {
     "orderNumber": "رقم الطلب",
     "supplier": "المورد",
-    "supplierRequired": "المورد *",
     "selectSupplier": "اختر مورداً...",
-    "addNewSupplier": "إضافة مورد جديد",
     "orderDate": "تاريخ الطلب",
+    "date": "التاريخ",
     "status": "الحالة",
     "paymentStatus": "الدفع",
     "total": "المجموع",
     "notes": "ملاحظات",
     "product": "المنتج",
+    "selectProduct": "اختر منتجاً...",
+    "variant": "المتغير",
+    "selectVariant": "اختر المتغير...",
     "quantity": "الكمية",
     "unitPrice": "سعر الوحدة",
     "previousPrice": "السعر السابق",
     "useAveragePrice": "استخدام السعر المتوسط المرجح (PMP)",
-    "averagePriceTooltip": "حساب المتوسط المرجح لسعر الشراء القديم والجديد",
     "taxRate": "% الضريبة",
     "subtotal": "المجموع الفرعي",
-    "addLine": "إضافة منتج",
-    "selectProduct": "اختر منتجاً..."
+    "tax": "الضريبة",
+    "lineTotal": "إجمالي السطر",
+    "lines": "سطور الطلب",
+    "addLine": "إضافة منتج"
   },
   "status": {
     "PENDING": "معلق",
@@ -48,14 +45,45 @@
     "PARTIAL": "جزئي",
     "PAID": "مدفوع"
   },
-  "confirm": {
-    "paidFromRegister": "الدفع من الصندوق",
-    "paidFromRegisterDescription": "خصم المبلغ من الجلسة النشطة للصندوق",
-    "notPaidFromRegister": "عدم الدفع من الصندوق (ائتمان مورد)",
+  "actions": {
+    "confirm": "تأكيد الاستلام",
+    "cancel": "إلغاء الطلب"
+  },
+  "confirmModal": {
+    "title": "تأكيد طلب الشراء",
+    "description": "تأكيد استلام البضائع واختيار طريقة الدفع.",
+    "payFromRegister": "الدفع من الصندوق",
     "selectRegister": "اختر الصندوق",
-    "selectSession": "الجلسة النشطة",
-    "noOpenSession": "لا توجد جلسة مفتوحة على هذا الصندوق. يرجى فتح جلسة أولاً.",
+    "selectRegisterPlaceholder": "اختر صندوقاً...",
+    "activeSession": "الجلسة النشطة",
+    "openedAt": "فتحت في",
+    "noActiveSession": "لا توجد جلسة مفتوحة على هذا الصندوق. يرجى فتح جلسة أولاً.",
     "confirm": "تأكيد الاستلام"
+  },
+  "cancelModal": {
+    "title": "إلغاء طلب الشراء",
+    "description": "هل أنت متأكد من إلغاء طلب الشراء هذا؟"
+  },
+  "validation": {
+    "supplierRequired": "المورد مطلوب",
+    "dateRequired": "التاريخ مطلوب",
+    "productRequired": "المنتج مطلوب",
+    "quantityRequired": "الكمية مطلوبة",
+    "quantityMin": "الكمية يجب أن تكون 1 على الأقل",
+    "priceRequired": "السعر مطلوب",
+    "priceMin": "السعر يجب أن يكون موجباً"
+  },
+  "messages": {
+    "created": "تم إنشاء طلب الشراء",
+    "createError": "فشل في إنشاء طلب الشراء",
+    "updated": "تم تعديل طلب الشراء",
+    "updateError": "فشل في تعديل طلب الشراء",
+    "deleted": "تم حذف طلب الشراء",
+    "deleteError": "فشل في حذف طلب الشراء",
+    "confirmed": "تم تأكيد طلب الشراء",
+    "confirmError": "فشل في تأكيد طلب الشراء",
+    "cancelled": "تم إلغاء طلب الشراء",
+    "cancelError": "فشل في إلغاء طلب الشراء"
   },
   "filters": {
     "all": "الكل",

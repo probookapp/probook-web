@@ -285,7 +285,7 @@ export function PurchasesPage() {
                       </p>
                       <div className="flex gap-2 mt-1">
                         <Badge variant={getStatusBadgeVariant(purchase.status)}>
-                          {t(`status.${purchase.status.toLowerCase()}`)}
+                          {t(`status.${purchase.status}`)}
                         </Badge>
                         <Badge
                           variant={getPaymentBadgeVariant(
@@ -293,7 +293,7 @@ export function PurchasesPage() {
                           )}
                         >
                           {t(
-                            `paymentStatus.${purchase.payment_status.toLowerCase()}`
+                            `paymentStatus.${purchase.payment_status}`
                           )}
                         </Badge>
                       </div>
@@ -402,7 +402,7 @@ export function PurchasesPage() {
                           <Badge
                             variant={getStatusBadgeVariant(purchase.status)}
                           >
-                            {t(`status.${purchase.status.toLowerCase()}`)}
+                            {t(`status.${purchase.status}`)}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -412,7 +412,7 @@ export function PurchasesPage() {
                             )}
                           >
                             {t(
-                              `paymentStatus.${purchase.payment_status.toLowerCase()}`
+                              `paymentStatus.${purchase.payment_status}`
                             )}
                           </Badge>
                         </TableCell>

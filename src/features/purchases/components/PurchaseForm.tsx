@@ -183,6 +183,8 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
         tax_rate: Number(l.tax_rate),
       }));
 
+    if (lines.length === 0) return;
+
     onSubmit({
       supplier_id: data.supplier_id,
       order_date: data.order_date,
@@ -288,9 +290,10 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
                       <Controller
                         control={control}
                         name={`lines.${index}.variant_id`}
+                        rules={{ required: t("validation.productRequired") }}
                         render={({ field: variantField }) => (
                           <SearchableSelect
-                            label={t("fields.variant")}
+                            label={t("fields.variant") + " *"}
                             options={variantOptions}
                             value={variantField.value}
                             onChange={variantField.onChange}

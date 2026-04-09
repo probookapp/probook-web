@@ -209,7 +209,10 @@ export function VariantManager({ productId }: VariantManagerProps) {
                       </button>
                       <button
                         type="button"
-                        onClick={() => isDemoMode ? showSubscribePrompt() : deleteMutation.mutate(v.id)}
+                        onClick={() => {
+                          if (isDemoMode) { showSubscribePrompt(); return; }
+                          if (confirm(t("common:messages.deleteConfirm"))) deleteMutation.mutate(v.id);
+                        }}
                         className="p-1 text-gray-500 hover:text-red-600 rounded"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

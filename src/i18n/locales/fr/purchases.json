@@ -6,37 +6,34 @@
   "deletePurchase": "Supprimer le bon de commande",
   "noPurchases": "Aucun bon de commande trouvé",
   "searchPlaceholder": "Rechercher un bon de commande...",
+  "purchaseList": "Bons de commande",
   "createPurchase": "Créer",
   "updatePurchase": "Modifier",
   "deleteConfirmation": "Êtes-vous sûr de vouloir supprimer ce bon de commande ?",
-  "confirmOrder": "Confirmer la réception",
-  "cancelOrder": "Annuler la commande",
-  "confirmTitle": "Confirmer le bon de commande",
-  "confirmDescription": "Confirmez la réception des marchandises et choisissez le mode de paiement.",
-  "cancelConfirmation": "Êtes-vous sûr de vouloir annuler ce bon de commande ?",
-  "orderConfirmed": "Bon de commande confirmé",
-  "orderCancelled": "Bon de commande annulé",
   "fields": {
     "orderNumber": "N° commande",
     "supplier": "Fournisseur",
-    "supplierRequired": "Fournisseur *",
     "selectSupplier": "Sélectionner un fournisseur...",
-    "addNewSupplier": "Ajouter un fournisseur",
     "orderDate": "Date de commande",
+    "date": "Date",
     "status": "Statut",
     "paymentStatus": "Paiement",
     "total": "Total",
     "notes": "Notes",
     "product": "Produit",
+    "selectProduct": "Sélectionner un produit...",
+    "variant": "Variante",
+    "selectVariant": "Sélectionner la variante...",
     "quantity": "Qté",
     "unitPrice": "Prix unitaire",
     "previousPrice": "Prix précédent",
     "useAveragePrice": "Utiliser le prix moyen pondéré (PMP)",
-    "averagePriceTooltip": "Calculer la moyenne pondérée de l'ancien et du nouveau prix d'achat",
     "taxRate": "TVA %",
     "subtotal": "Sous-total",
-    "addLine": "Ajouter un produit",
-    "selectProduct": "Sélectionner un produit..."
+    "tax": "TVA",
+    "lineTotal": "Total ligne",
+    "lines": "Lignes de commande",
+    "addLine": "Ajouter un produit"
   },
   "status": {
     "PENDING": "En attente",
@@ -48,14 +45,45 @@
     "PARTIAL": "Partiel",
     "PAID": "Payé"
   },
-  "confirm": {
-    "paidFromRegister": "Payer depuis la caisse",
-    "paidFromRegisterDescription": "Déduire le total de la session active de la caisse",
-    "notPaidFromRegister": "Ne pas payer depuis la caisse (crédit fournisseur)",
+  "actions": {
+    "confirm": "Confirmer la réception",
+    "cancel": "Annuler la commande"
+  },
+  "confirmModal": {
+    "title": "Confirmer le bon de commande",
+    "description": "Confirmez la réception des marchandises et choisissez le mode de paiement.",
+    "payFromRegister": "Payer depuis la caisse",
     "selectRegister": "Sélectionner la caisse",
-    "selectSession": "Session active",
-    "noOpenSession": "Aucune session ouverte sur cette caisse. Veuillez d'abord ouvrir une session.",
+    "selectRegisterPlaceholder": "Choisir une caisse...",
+    "activeSession": "Session active",
+    "openedAt": "Ouverte le",
+    "noActiveSession": "Aucune session ouverte sur cette caisse. Veuillez d'abord ouvrir une session.",
     "confirm": "Confirmer la réception"
+  },
+  "cancelModal": {
+    "title": "Annuler le bon de commande",
+    "description": "Êtes-vous sûr de vouloir annuler ce bon de commande ?"
+  },
+  "validation": {
+    "supplierRequired": "Le fournisseur est requis",
+    "dateRequired": "La date est requise",
+    "productRequired": "Le produit est requis",
+    "quantityRequired": "La quantité est requise",
+    "quantityMin": "La quantité doit être d'au moins 1",
+    "priceRequired": "Le prix est requis",
+    "priceMin": "Le prix doit être positif"
+  },
+  "messages": {
+    "created": "Bon de commande créé",
+    "createError": "Erreur lors de la création du bon de commande",
+    "updated": "Bon de commande modifié",
+    "updateError": "Erreur lors de la modification du bon de commande",
+    "deleted": "Bon de commande supprimé",
+    "deleteError": "Erreur lors de la suppression du bon de commande",
+    "confirmed": "Bon de commande confirmé",
+    "confirmError": "Erreur lors de la confirmation du bon de commande",
+    "cancelled": "Bon de commande annulé",
+    "cancelError": "Erreur lors de l'annulation du bon de commande"
   },
   "filters": {
     "all": "Tous",

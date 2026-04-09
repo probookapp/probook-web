@@ -12,7 +12,6 @@ interface LineInput {
   previous_price?: number | null;
   use_average_price?: boolean;
   tax_rate?: number;
-  [key: string]: unknown;
 }
 
 export const GET = withAuth(async (req, { tenantId }) => {
@@ -27,23 +26,30 @@ export const GET = withAuth(async (req, { tenantId }) => {
   return NextResponse.json(toSnakeCase(orders));
 });
 
+async function generateOrderNumber(tenantId: string): Promise<string> {
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+  // Use max order number for today to avoid TOCTOU race
+  const latest = await prisma.purchaseOrder.findFirst({
+    where: {
+      tenantId,
+      orderNumber: { startsWith: `PO-${today}-` },
+    },
+    orderBy: { orderNumber: "desc" },
+    select: { orderNumber: true },
+  });
+
+  let seq = 1;
+  if (latest) {
+    const lastSeq = parseInt(latest.orderNumber.split("-").pop() || "0", 10);
+    seq = lastSeq + 1;
+  }
+  return `PO-${today}-${String(seq).padStart(4, "0")}`;
+}
+
 export const POST = withAuth(async (req, { tenantId }) => {
   const body = await validateBody(req, purchaseOrderSchema);
   if (isValidationError(body)) return body;
 
-  // Generate order number
-  const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const count = await prisma.purchaseOrder.count({
-    where: {
-      tenantId,
-      createdAt: {
-        gte: new Date(new Date().setHours(0, 0, 0, 0)),
-      },
-    },
-  });
-  const orderNumber = `PO-${today}-${String(count + 1).padStart(4, "0")}`;
-
-  // Calculate totals from lines
   const lines = body.lines || [];
   let subtotal = 0;
   let taxAmount = 0;
@@ -55,39 +61,52 @@ export const POST = withAuth(async (req, { tenantId }) => {
   }
   const total = subtotal + taxAmount;
 
-  const order = await prisma.purchaseOrder.create({
-    data: {
-      tenantId,
-      orderNumber,
-      supplierId: body.supplier_id,
-      orderDate: body.order_date ? new Date(body.order_date) : new Date(),
-      status: "PENDING",
-      paymentStatus: "UNPAID",
-      subtotal,
-      taxAmount,
-      total,
-      notes: body.notes || null,
-      lines: {
-        create: lines.map((l: LineInput) => {
-          const lineSubtotal = l.quantity * l.unit_price;
-          const lineTax = lineSubtotal * (l.tax_rate || 0) / 100;
-          return {
-            productId: l.product_id,
-            variantId: l.variant_id || null,
-            quantity: l.quantity,
-            unitPrice: l.unit_price,
-            previousPrice: l.previous_price ?? null,
-            useAveragePrice: l.use_average_price || false,
-            taxRate: l.tax_rate || 0,
-            subtotal: lineSubtotal,
-            taxAmount: lineTax,
-            total: lineSubtotal + lineTax,
-          };
-        }),
-      },
-    },
-    include: { lines: true },
-  });
+  // Retry loop for unique constraint violation on order number
+  const MAX_RETRIES = 3;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const orderNumber = await generateOrderNumber(tenantId);
+    try {
+      const order = await prisma.purchaseOrder.create({
+        data: {
+          tenantId,
+          orderNumber,
+          supplierId: body.supplier_id,
+          orderDate: body.order_date ? new Date(body.order_date) : new Date(),
+          status: "PENDING",
+          paymentStatus: "UNPAID",
+          subtotal,
+          taxAmount,
+          total,
+          notes: body.notes || null,
+          lines: {
+            create: lines.map((l: LineInput) => {
+              const lineSubtotal = l.quantity * l.unit_price;
+              const lineTax = lineSubtotal * (l.tax_rate || 0) / 100;
+              return {
+                productId: l.product_id,
+                variantId: l.variant_id || null,
+                quantity: l.quantity,
+                unitPrice: l.unit_price,
+                previousPrice: l.previous_price ?? null,
+                useAveragePrice: l.use_average_price || false,
+                taxRate: l.tax_rate || 0,
+                subtotal: lineSubtotal,
+                taxAmount: lineTax,
+                total: lineSubtotal + lineTax,
+              };
+            }),
+          },
+        },
+        include: { lines: true },
+      });
+      return NextResponse.json(toSnakeCase(order));
+    } catch (err) {
+      // P2002 = unique constraint violation
+      const isUniqueViolation = err && typeof err === "object" && "code" in err && err.code === "P2002";
+      if (!isUniqueViolation || attempt === MAX_RETRIES - 1) throw err;
+      // Retry with next sequence number
+    }
+  }
 
-  return NextResponse.json(toSnakeCase(order));
+  return NextResponse.json({ error: "Failed to generate unique order number" }, { status: 500 });
 });

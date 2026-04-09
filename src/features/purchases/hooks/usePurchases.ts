@@ -112,6 +112,9 @@ export function useConfirmPurchase() {
       queryClient.invalidateQueries({ queryKey: ["purchases"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["pos-products"] });
+      queryClient.invalidateQueries({ queryKey: ["supplier-credits"] });
+      queryClient.invalidateQueries({ queryKey: ["supplier-payments"] });
       addToast({ type: "success", message: t("messages.confirmed") });
     },
     onError: () => {
