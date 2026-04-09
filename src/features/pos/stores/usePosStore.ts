@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Product, PosSession, PosRegister } from "@/types";
+import type { Product, ProductVariant, PosSession, PosRegister } from "@/types";
 
 export interface CartItem {
   id: string; // Temporary ID for cart management
@@ -11,6 +11,9 @@ export interface CartItem {
   taxRate: number;
   unit: string;
   discountPercent: number;
+  priceTier: string | null; // label of selected price tier, null = default price
+  variantId: string | null;
+  variantName: string | null;
 }
 
 interface PosState {
@@ -29,7 +32,8 @@ interface PosState {
   clearSession: () => void;
 
   // Cart actions
-  addItem: (product: Product, quantity?: number) => void;
+  addItem: (product: Product, quantity?: number, priceTier?: string) => void;
+  addItemWithVariant: (product: Product, variant: ProductVariant, quantity?: number) => void;
   addCustomItem: (designation: string, unitPrice: number, taxRate: number, quantity?: number) => void;
   removeItem: (itemId: string) => void;
   updateQuantity: (itemId: string, quantity: number) => void;
@@ -71,14 +75,23 @@ export const usePosStore = create<PosState>((set, get) => ({
     }),
 
   // Cart actions
-  addItem: (product, quantity = 1) => {
+  addItem: (product, quantity = 1, priceTier?: string) => {
     const { items } = get();
-    const existingItem = items.find((item) => item.productId === product.id);
+    // Determine unit price based on price tier
+    let unitPrice = product.unit_price;
+    if (priceTier && product.prices) {
+      const tier = product.prices.find((p) => p.label === priceTier);
+      if (tier) unitPrice = tier.price;
+    }
+
+    const existingItem = items.find(
+      (item) => item.productId === product.id && item.priceTier === (priceTier || null)
+    );
 
     if (existingItem) {
       set({
         items: items.map((item) =>
-          item.productId === product.id
+          item.id === existingItem.id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         ),
@@ -90,10 +103,47 @@ export const usePosStore = create<PosState>((set, get) => ({
         barcode: product.barcode,
         designation: product.designation,
         quantity,
-        unitPrice: product.unit_price,
+        unitPrice,
         taxRate: product.tax_rate,
         unit: product.unit ?? "unit",
         discountPercent: 0,
+        priceTier: priceTier || null,
+        variantId: null,
+        variantName: null,
+      };
+      set({ items: [...items, newItem] });
+    }
+  },
+
+  addItemWithVariant: (product, variant, quantity = 1) => {
+    const { items } = get();
+    const unitPrice = variant.price_override ?? product.unit_price;
+    const existingItem = items.find(
+      (item) => item.productId === product.id && item.variantId === variant.id
+    );
+
+    if (existingItem) {
+      set({
+        items: items.map((item) =>
+          item.id === existingItem.id
+            ? { ...item, quantity: item.quantity + quantity }
+            : item
+        ),
+      });
+    } else {
+      const newItem: CartItem = {
+        id: crypto.randomUUID(),
+        productId: product.id,
+        barcode: variant.barcode || product.barcode,
+        designation: `${product.designation} — ${variant.name}`,
+        quantity,
+        unitPrice,
+        taxRate: product.tax_rate,
+        unit: product.unit ?? "unit",
+        discountPercent: 0,
+        priceTier: null,
+        variantId: variant.id,
+        variantName: variant.name,
       };
       set({ items: [...items, newItem] });
     }
@@ -110,6 +160,9 @@ export const usePosStore = create<PosState>((set, get) => ({
       taxRate,
       unit: "unit",
       discountPercent: 0,
+      priceTier: null,
+      variantId: null,
+      variantName: null,
     };
     set((state) => ({ items: [...state.items, newItem] }));
   },

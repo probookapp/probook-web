@@ -101,6 +101,51 @@
     "priceUpdated": "Prix d'achat mis à jour",
     "priceUpdateError": "Erreur lors de la mise à jour du prix"
   },
+  "variants": {
+    "title": "Variantes du produit",
+    "hasVariants": "Ce produit a des variantes (tailles, couleurs, etc.)",
+    "addVariant": "Ajouter une variante",
+    "editVariant": "Modifier la variante",
+    "removeVariant": "Supprimer",
+    "name": "Nom de la variante",
+    "namePlaceholder": "ex. Rouge - XL",
+    "sku": "SKU",
+    "barcode": "Code-barres",
+    "quantity": "Stock",
+    "priceOverride": "Prix personnalisé",
+    "priceOverridePlaceholder": "Laisser vide pour utiliser le prix par défaut",
+    "attributes": "Attributs",
+    "addAttribute": "Ajouter un attribut",
+    "attributeName": "Nom de l'attribut",
+    "attributeValue": "Valeur",
+    "noVariants": "Aucune variante ajoutée.",
+    "totalStock": "Stock total (toutes variantes)",
+    "presets": {
+      "size": "Taille",
+      "color": "Couleur",
+      "material": "Matière"
+    },
+    "sizeOptions": "S, M, L, XL, XXL",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "pricing": {
+    "title": "Grille de prix",
+    "addTier": "Ajouter un prix",
+    "removeTier": "Supprimer",
+    "labelPlaceholder": "Nom du tarif",
+    "pricePlaceholder": "Prix",
+    "labels": {
+      "retail": "Détail",
+      "wholesale": "Gros",
+      "semi_wholesale": "Demi-Gros",
+      "super_wholesale": "Super Gros",
+      "custom": "Personnalisé"
+    },
+    "selectLabel": "Sélectionner un tarif...",
+    "noTiers": "Aucun tarif configuré. Le prix de vente par défaut sera utilisé.",
+    "tierPrice": "Prix du tarif HT"
+  },
   "validation": {
     "nameRequired": "Le nom est requis",
     "designationRequired": "La désignation est requise",
@@ -108,5 +153,9 @@
     "vatRateRange": "Le taux de TVA doit être entre 0 et 100",
     "unitRequired": "L'unité est requise",
     "categoryNameRequired": "Le nom de la catégorie est requis"
+  },
+  "messages": {
+    "deleteBlocked": "Impossible de supprimer un produit ayant des bons de commande",
+    "deleteError": "Erreur lors de la suppression du produit"
   }
 }

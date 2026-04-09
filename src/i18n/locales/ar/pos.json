@@ -94,6 +94,11 @@
   "syncComplete": "{{synced}} تمت مزامنتها، {{failed}} فشلت",
   "transactionQueued": "تم حفظ المعاملة بدون اتصال",
   "thankYou": "شكراً لتسوقكم!",
+  "selectVariant": "اختر المتغير",
+  "variantOutOfStock": "نفذ المخزون",
+  "priceTier": "التسعيرة",
+  "defaultPrice": "افتراضي",
+  "selectPriceTier": "اختر التسعيرة",
   "errors": {
     "createRegisterFailed": "فشل انشاء الصندوق",
     "noSession": "لا توجد جلسة مفتوحة. يرجى فتح جلسة اولا.",

@@ -94,6 +94,11 @@
   "syncComplete": "{{synced}} synchronisé(s), {{failed}} échoué(s)",
   "transactionQueued": "Transaction enregistrée hors ligne",
   "thankYou": "Merci pour votre achat !",
+  "selectVariant": "Choisir la variante",
+  "variantOutOfStock": "Rupture de stock",
+  "priceTier": "Tarif",
+  "defaultPrice": "Par défaut",
+  "selectPriceTier": "Choisir le tarif",
   "errors": {
     "createRegisterFailed": "Echec de la creation de la caisse",
     "noSession": "Aucune session ouverte. Veuillez d'abord ouvrir une session.",

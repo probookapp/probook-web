@@ -94,6 +94,11 @@
   "syncComplete": "{{synced}} synced, {{failed}} failed",
   "transactionQueued": "Transaction saved offline",
   "thankYou": "Thank you for your purchase!",
+  "selectVariant": "Select Variant",
+  "variantOutOfStock": "Out of stock",
+  "priceTier": "Price Tier",
+  "defaultPrice": "Default",
+  "selectPriceTier": "Select price tier",
   "errors": {
     "createRegisterFailed": "Failed to create register",
     "noSession": "No session open. Please open a session first.",

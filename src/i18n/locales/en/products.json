@@ -101,6 +101,51 @@
     "priceUpdated": "Purchase price updated",
     "priceUpdateError": "Failed to update price"
   },
+  "variants": {
+    "title": "Product Variants",
+    "hasVariants": "This product has variants (sizes, colors, etc.)",
+    "addVariant": "Add Variant",
+    "editVariant": "Edit Variant",
+    "removeVariant": "Remove",
+    "name": "Variant Name",
+    "namePlaceholder": "e.g. Red - XL",
+    "sku": "SKU",
+    "barcode": "Barcode",
+    "quantity": "Stock",
+    "priceOverride": "Price Override",
+    "priceOverridePlaceholder": "Leave empty to use default price",
+    "attributes": "Attributes",
+    "addAttribute": "Add Attribute",
+    "attributeName": "Attribute name",
+    "attributeValue": "Value",
+    "noVariants": "No variants added yet.",
+    "totalStock": "Total stock across variants",
+    "presets": {
+      "size": "Size",
+      "color": "Color",
+      "material": "Material"
+    },
+    "sizeOptions": "S, M, L, XL, XXL",
+    "active": "Active",
+    "inactive": "Inactive"
+  },
+  "pricing": {
+    "title": "Price Tiers",
+    "addTier": "Add Price Tier",
+    "removeTier": "Remove",
+    "labelPlaceholder": "Price tier name",
+    "pricePlaceholder": "Price",
+    "labels": {
+      "retail": "Retail",
+      "wholesale": "Wholesale",
+      "semi_wholesale": "Semi-Wholesale",
+      "super_wholesale": "Super Wholesale",
+      "custom": "Custom"
+    },
+    "selectLabel": "Select tier...",
+    "noTiers": "No price tiers configured. The default selling price will be used.",
+    "tierPrice": "Tier Price (excl. VAT)"
+  },
   "validation": {
     "nameRequired": "Name is required",
     "designationRequired": "Designation is required",
@@ -108,5 +153,9 @@
     "vatRateRange": "VAT rate must be between 0 and 100",
     "unitRequired": "Unit is required",
     "categoryNameRequired": "Category name is required"
+  },
+  "messages": {
+    "deleteBlocked": "Cannot delete product with existing purchase orders",
+    "deleteError": "Failed to delete product"
   }
 }

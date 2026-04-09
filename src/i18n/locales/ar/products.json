@@ -101,6 +101,51 @@
     "priceUpdated": "تم تحديث سعر الشراء",
     "priceUpdateError": "فشل في تحديث السعر"
   },
+  "variants": {
+    "title": "متغيرات المنتج",
+    "hasVariants": "هذا المنتج يحتوي على متغيرات (أحجام، ألوان، إلخ.)",
+    "addVariant": "إضافة متغير",
+    "editVariant": "تعديل المتغير",
+    "removeVariant": "حذف",
+    "name": "اسم المتغير",
+    "namePlaceholder": "مثال: أحمر - XL",
+    "sku": "رمز المنتج",
+    "barcode": "الرمز الشريطي",
+    "quantity": "المخزون",
+    "priceOverride": "سعر مخصص",
+    "priceOverridePlaceholder": "اتركه فارغاً لاستخدام السعر الافتراضي",
+    "attributes": "الخصائص",
+    "addAttribute": "إضافة خاصية",
+    "attributeName": "اسم الخاصية",
+    "attributeValue": "القيمة",
+    "noVariants": "لم تتم إضافة متغيرات بعد.",
+    "totalStock": "إجمالي المخزون (جميع المتغيرات)",
+    "presets": {
+      "size": "المقاس",
+      "color": "اللون",
+      "material": "المادة"
+    },
+    "sizeOptions": "S, M, L, XL, XXL",
+    "active": "نشط",
+    "inactive": "غير نشط"
+  },
+  "pricing": {
+    "title": "قائمة الأسعار",
+    "addTier": "إضافة سعر",
+    "removeTier": "حذف",
+    "labelPlaceholder": "اسم التسعيرة",
+    "pricePlaceholder": "السعر",
+    "labels": {
+      "retail": "تجزئة",
+      "wholesale": "جملة",
+      "semi_wholesale": "نصف جملة",
+      "super_wholesale": "جملة كبيرة",
+      "custom": "مخصص"
+    },
+    "selectLabel": "اختر تسعيرة...",
+    "noTiers": "لا توجد تسعيرات. سيتم استخدام سعر البيع الافتراضي.",
+    "tierPrice": "سعر التسعيرة (بدون ضريبة)"
+  },
   "validation": {
     "nameRequired": "الاسم مطلوب",
     "designationRequired": "التسمية مطلوبة",
@@ -108,5 +153,9 @@
     "vatRateRange": "معدل الضريبة يجب أن يكون بين 0 و 100",
     "unitRequired": "الوحدة مطلوبة",
     "categoryNameRequired": "اسم الفئة مطلوب"
+  },
+  "messages": {
+    "deleteBlocked": "لا يمكن حذف منتج لديه طلبات شراء",
+    "deleteError": "فشل في حذف المنتج"
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Trash2, Plus, Minus } from "lucide-react";
+import { Trash2, Plus, Minus, Tag } from "lucide-react";
 import { usePosStore } from "../stores/usePosStore";
 import { formatCurrency } from "@/lib/utils";
 
@@ -77,7 +77,7 @@ function EditableCell({
 }
 
 export function CartDisplay() {
-  const { t } = useTranslation("pos");
+  const { t } = useTranslation(["pos", "products"]);
   const { items, updateQuantity, updateItemPrice, removeItem } = usePosStore();
 
   if (items.length === 0) {
@@ -122,6 +122,12 @@ export function CartDisplay() {
                     {item.barcode && (
                       <p className="text-xs text-(--color-text-secondary)">
                         {item.barcode}
+                      </p>
+                    )}
+                    {item.priceTier && (
+                      <p className="text-xs text-blue-600 dark:text-blue-400 flex items-center gap-1">
+                        <Tag className="h-3 w-3" />
+                        {t(`products:pricing.labels.${item.priceTier}`, { defaultValue: item.priceTier })}
                       </p>
                     )}
                     {item.discountPercent > 0 && (

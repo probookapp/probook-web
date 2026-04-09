@@ -7,7 +7,9 @@ import { useProductPhoto } from "@/features/products/hooks/useProducts";
 import { useProductCategories } from "@/features/products/hooks/useProductCategories";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_PRODUCTS } from "@/lib/demo-data";
-import type { Product } from "@/types";
+import { Modal } from "@/components/ui";
+import type { Product, ProductVariant } from "@/types";
+import { VariantPickerModal } from "./VariantPickerModal";
 import { formatCurrency } from "@/lib/utils";
 
 const formatAmount = formatCurrency;
@@ -64,19 +66,60 @@ function ProductTile({
   );
 }
 
-interface ProductSearchProps {
-  onProductSelect: (product: Product) => void;
+interface PriceTierPickerProps {
+  product: Product;
+  onSelect: (product: Product, priceTier?: string) => void;
+  onClose: () => void;
 }
 
-export function ProductSearch({ onProductSelect }: ProductSearchProps) {
+function PriceTierPicker({ product, onSelect, onClose }: PriceTierPickerProps) {
+  const { t } = useTranslation(["pos", "products"]);
+  const prices = product.prices || [];
+
+  return (
+    <Modal isOpen={true} onClose={onClose} title={t("pos:selectPriceTier")} size="sm">
+      <p className="font-medium text-sm mb-3 truncate">{product.designation}</p>
+      <div className="space-y-2">
+        <button
+          onClick={() => onSelect(product)}
+          className="w-full text-left px-3 py-2 rounded-lg border border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex justify-between items-center"
+        >
+          <span className="text-sm font-medium">{t("pos:defaultPrice")}</span>
+          <span className="text-sm font-bold text-primary-600">{formatAmount(product.unit_price * (1 + product.tax_rate / 100))}</span>
+        </button>
+        {prices.map((p) => (
+          <button
+            key={p.id}
+            onClick={() => onSelect(product, p.label)}
+            className="w-full text-left px-3 py-2 rounded-lg border border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex justify-between items-center"
+          >
+            <span className="text-sm font-medium">
+              {t(`products:pricing.labels.${p.label}`, { defaultValue: p.label })}
+            </span>
+            <span className="text-sm font-bold text-primary-600">{formatAmount(p.price * (1 + product.tax_rate / 100))}</span>
+          </button>
+        ))}
+      </div>
+    </Modal>
+  );
+}
+
+interface ProductSearchProps {
+  onProductSelect: (product: Product, priceTier?: string) => void;
+  onVariantSelect?: (product: Product, variant: ProductVariant) => void;
+}
+
+export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearchProps) {
   const { t } = useTranslation("pos");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [priceTierProduct, setPriceTierProduct] = useState<Product | null>(null);
+  const [variantProduct, setVariantProduct] = useState<Product | null>(null);
 
   const { isDemoMode } = useDemoMode();
   const { data: products } = useQuery({
-    queryKey: ["products", { demo: isDemoMode }],
-    queryFn: isDemoMode ? () => DEMO_PRODUCTS : productApi.getAll,
+    queryKey: ["pos-products", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => DEMO_PRODUCTS : productApi.getAllWithDetails,
     staleTime: isDemoMode ? Infinity : undefined,
   });
 
@@ -157,7 +200,15 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
             <ProductTile
               key={product.id}
               product={product}
-              onClick={() => onProductSelect(product)}
+              onClick={() => {
+                if (product.has_variants && product.variants && product.variants.length > 0) {
+                  setVariantProduct(product);
+                } else if (product.prices && product.prices.length > 0) {
+                  setPriceTierProduct(product);
+                } else {
+                  onProductSelect(product);
+                }
+              }}
             />
           ))}
         </div>
@@ -168,6 +219,28 @@ export function ProductSearch({ onProductSelect }: ProductSearchProps) {
           </div>
         )}
       </div>
+
+      {priceTierProduct && (
+        <PriceTierPicker
+          product={priceTierProduct}
+          onSelect={(product, priceTier) => {
+            onProductSelect(product, priceTier);
+            setPriceTierProduct(null);
+          }}
+          onClose={() => setPriceTierProduct(null)}
+        />
+      )}
+
+      {variantProduct && onVariantSelect && (
+        <VariantPickerModal
+          product={variantProduct}
+          onSelect={(product, variant) => {
+            onVariantSelect(product, variant);
+            setVariantProduct(null);
+          }}
+          onClose={() => setVariantProduct(null)}
+        />
+      )}
     </div>
   );
 }

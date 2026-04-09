@@ -52,6 +52,7 @@ export function POSPage() {
     setSession,
     items,
     addItem,
+    addItemWithVariant,
     clearCart,
     getFinalAmount,
   } = usePosStore();
@@ -224,6 +225,7 @@ export function POSPage() {
       client_id: clientId,
       lines: items.map((item) => ({
         product_id: item.productId,
+        variant_id: item.variantId,
         barcode: item.barcode,
         designation: item.designation,
         quantity: item.quantity,
@@ -579,11 +581,16 @@ export function POSPage() {
         <div className={`lg:w-2/5 flex flex-col ${
           mobileTab === "products" ? "flex" : "hidden lg:flex"
         }`}>
-          <ProductSearch onProductSelect={(product) => {
-            addItem(product);
-            // On mobile, switch to cart after adding a product
-            if (window.innerWidth < 1024) setMobileTab("cart");
-          }} />
+          <ProductSearch
+            onProductSelect={(product, priceTier) => {
+              addItem(product, 1, priceTier);
+              if (window.innerWidth < 1024) setMobileTab("cart");
+            }}
+            onVariantSelect={(product, variant) => {
+              addItemWithVariant(product, variant);
+              if (window.innerWidth < 1024) setMobileTab("cart");
+            }}
+          />
         </div>
       </div>
 
