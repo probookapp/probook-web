@@ -99,6 +99,7 @@ export async function proxy(req: NextRequest) {
       "/api/auth/verify-email",
       "/api/auth/totp/verify",
       "/api/subscription/plans",
+      ...(process.env.NODE_ENV !== "production" ? ["/api/test/"] : []),
     ];
 
     // Auth-related public routes get a stricter rate limit (20/min)
