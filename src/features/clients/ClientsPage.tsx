@@ -300,8 +300,6 @@ export function ClientsPage() {
         onClose={() => setIsImportOpen(false)}
         title={tCommon("import.title", { entity: t("title") })}
         entityType="clients"
-        requiredColumns={["name"]}
-        optionalColumns={["email", "phone", "address", "city", "postal_code", "country", "siret", "vat_number", "notes"]}
       />
 
       <BulkActionBar

@@ -408,8 +408,6 @@ export function ProductsPage() {
         onClose={() => setIsImportOpen(false)}
         title={tCommon("import.title", { entity: t("title") })}
         entityType="products"
-        requiredColumns={["designation", "unit_price"]}
-        optionalColumns={["description", "tax_rate", "unit", "reference", "is_service", "quantity", "purchase_price"]}
       />
 
       <Modal

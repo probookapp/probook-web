@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { parseImportFile } from "@/lib/parse-import-file";
 
 export const POST = withAuth(async (req, { tenantId }) => {
   const formData = await req.formData();
@@ -9,24 +10,18 @@ export const POST = withAuth(async (req, { tenantId }) => {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  const text = await file.text();
-  const lines = text.split("\n").filter((l) => l.trim());
-  if (lines.length < 2) {
+  const { rows } = await parseImportFile(file);
+  if (rows.length === 0) {
     return NextResponse.json({ error: "File is empty or has no data rows" }, { status: 400 });
   }
 
-  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
   let imported = 0;
   let skipped = 0;
   const errors: string[] = [];
 
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = 0; i < rows.length; i++) {
     try {
-      const values = lines[i].split(",").map((v) => v.trim().replace(/^"|"$/g, ""));
-      const row: Record<string, string> = {};
-      headers.forEach((h, idx) => {
-        row[h] = values[idx] || "";
-      });
+      const row = rows[i];
 
       const name = row.name || row.nom || row.fournisseur;
       if (!name) {
@@ -46,7 +41,7 @@ export const POST = withAuth(async (req, { tenantId }) => {
       });
       imported++;
     } catch (e: unknown) {
-      errors.push(`Row ${i + 1}: ${e instanceof Error ? e.message : "Unknown error"}`);
+      errors.push(`Row ${i + 2}: ${e instanceof Error ? e.message : "Unknown error"}`);
       skipped++;
     }
   }

@@ -295,8 +295,6 @@ export function SuppliersPage() {
         onClose={() => setIsImportOpen(false)}
         title={tCommon("import.title", { entity: t("title") })}
         entityType="suppliers"
-        requiredColumns={["name"]}
-        optionalColumns={["email", "phone", "address", "notes"]}
       />
 
       {/* Create/Edit Modal */}

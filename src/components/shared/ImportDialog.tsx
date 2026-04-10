@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Upload, FileDown, CheckCircle2, AlertCircle, FileSpreadsheet } from "lucide-react";
 import { Button, Modal } from "@/components/ui";
 import { importApi } from "@/lib/api";
+import { getColumnsForEntity } from "@/lib/import-columns";
 import type { ImportResult } from "@/types";
 
 interface ImportDialogProps {
@@ -11,8 +12,6 @@ interface ImportDialogProps {
   onClose: () => void;
   title: string;
   entityType: "clients" | "products" | "suppliers";
-  requiredColumns: string[];
-  optionalColumns: string[];
 }
 
 export function ImportDialog({
@@ -20,15 +19,18 @@ export function ImportDialog({
   onClose,
   title,
   entityType,
-  requiredColumns,
-  optionalColumns,
 }: ImportDialogProps) {
-  const { t } = useTranslation("common");
+  const { t, i18n } = useTranslation("common");
   const queryClient = useQueryClient();
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const columns = getColumnsForEntity(entityType);
+  const lang = (i18n.language.startsWith("ar") ? "ar" : i18n.language.startsWith("fr") ? "fr" : "en") as "en" | "fr" | "ar";
+  const requiredColumns = columns.filter((c) => c.required).map((c) => c.labels[lang]);
+  const optionalColumns = columns.filter((c) => !c.required).map((c) => c.labels[lang]);
 
   const handleSelectFile = () => {
     fileInputRef.current?.click();
@@ -44,10 +46,10 @@ export function ImportDialog({
   };
 
   const handleDownloadTemplate = () => {
-    const allColumns = [...requiredColumns, ...optionalColumns];
-    const csvContent = allColumns.join(",") + "\n";
+    const allHeaders = columns.map((c) => c.labels[lang]);
+    const csvContent = allHeaders.join(",") + "\n";
 
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
