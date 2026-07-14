@@ -8,6 +8,7 @@ import { useLocale } from "@/lib/navigation";
 import { Button, Input } from "@/components/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearAllUserData } from "@/lib/session-cleanup";
+import { MetaPixel, trackMetaEvent } from "@/components/analytics/MetaPixel";
 import Link from "next/link";
 
 export function SignupPage() {
@@ -60,6 +61,11 @@ export function SignupPage() {
         return;
       }
 
+      // Report the signup conversion to Meta. Measured for every signup (incl.
+      // visitors from the WhatsApp campaign) even though the campaign optimizes
+      // for the Contact event, not this one.
+      trackMetaEvent("CompleteRegistration");
+
       await clearAllUserData(queryClient);
       setUser(data);
     } catch {
@@ -71,6 +77,7 @@ export function SignupPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
+      <MetaPixel />
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">

@@ -44,6 +44,7 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <meta name="facebook-domain-verification" content="4arj80yrn0r1yulikcr92ihluf0g90" />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var d=document.documentElement;var t=localStorage.getItem('probook_theme');if(t==='dark')d.classList.add('dark');else if(t==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches)d.classList.add('dark')}catch(e){}})()`,

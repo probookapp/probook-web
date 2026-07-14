@@ -4,9 +4,10 @@ import Link from "next/link";
 import { useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Check } from "lucide-react";
 import { PublicLayout } from "./PublicLayout";
+import { trackMetaEvent } from "@/components/analytics/MetaPixel";
 
 type Translations = Record<string, string> | null;
 
@@ -54,6 +55,13 @@ export function PricingPage() {
   const isRtl = locale === "ar";
   const textDir = isRtl ? "rtl" : undefined;
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("yearly");
+
+  // Pricing view is a purchase-intent signal — feeds retargeting audiences of
+  // ad visitors who considered but didn't convert. Fires once on mount; the
+  // pixel is loaded by the enclosing PublicLayout.
+  useEffect(() => {
+    trackMetaEvent("ViewContent", { content_name: "pricing" });
+  }, []);
 
   const { data: plansData, isLoading } = useQuery<PlansResponse>({
     queryKey: ["public-plans"],

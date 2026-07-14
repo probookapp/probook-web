@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useTheme } from "@/components/providers/ThemeContext";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
+import { MetaPixel } from "@/components/analytics/MetaPixel";
 
 interface PublicLayoutProps {
   children: React.ReactNode;
@@ -21,6 +22,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
 
   return (
     <div className={isDark ? "dark" : ""}>
+      <MetaPixel />
       <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors flex flex-col">
         <Navbar
           actions={

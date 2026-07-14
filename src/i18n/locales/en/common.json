@@ -334,6 +334,10 @@
       "cta": "Get started",
       "login": "Sign in"
     },
+    "whatsapp": {
+      "button": "Chat on WhatsApp",
+      "prefill": "Hello! I saw your ad and I'd like to know more about Probook. (ref: {{ref}})"
+    },
     "features": {
       "title": "Everything you need to run your business",
       "subtitle": "Powerful tools designed for freelancers, self-employed professionals, and small businesses.",

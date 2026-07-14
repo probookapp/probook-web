@@ -7,6 +7,8 @@ import { useQuery } from "@tanstack/react-query";
 import { useTheme } from "@/components/providers/ThemeContext";
 import { Navbar } from "@/components/public/Navbar";
 import { Footer } from "@/components/public/Footer";
+import { WhatsAppCta } from "@/components/landing/WhatsAppCta";
+import { MetaPixel } from "@/components/analytics/MetaPixel";
 import {
   Receipt,
   Users,
@@ -108,6 +110,7 @@ export function LandingPage() {
 
   return (
     <div className={isDark ? "dark" : ""}>
+      <MetaPixel />
       <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors">
         <Navbar
           actions={
@@ -139,18 +142,13 @@ export function LandingPage() {
               {t("landing.hero.subtitle")}
             </p>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+              <WhatsAppCta variant="hero" />
               <Link
                 href={`/${locale}/signup`}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-white text-lg font-semibold px-8 py-3.5 rounded-xl shadow-lg transition-all bg-primary-600 hover:bg-primary-700 hover:-translate-y-0.5"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-lg font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-8 py-3.5 rounded-xl border border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
               >
                 {t("landing.hero.cta")}
                 <ArrowRight className="h-5 w-5" />
-              </Link>
-              <Link
-                href={`/${locale}/login`}
-                className="w-full sm:w-auto inline-flex items-center justify-center text-lg font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white px-8 py-3.5 rounded-xl border border-gray-300 dark:border-gray-700 hover:border-gray-400 dark:hover:border-gray-600 transition-colors"
-              >
-                {t("landing.hero.login")}
               </Link>
             </div>
           </div>
@@ -303,6 +301,9 @@ export function LandingPage() {
 
         {/* Footer */}
         <Footer />
+
+        {/* Persistent WhatsApp bubble */}
+        <WhatsAppCta variant="float" />
       </div>
     </div>
   );
