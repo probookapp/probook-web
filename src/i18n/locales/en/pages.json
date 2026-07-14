@@ -163,11 +163,11 @@
       },
       "thirdParties": {
         "title": "Third-Party Services",
-        "content": "We may use third-party services for hosting, analytics, and payment processing. These providers are bound by their own privacy policies and we ensure they meet appropriate data protection standards."
+        "content": "We may use third-party services for hosting, analytics, payment processing, and advertising measurement. In particular, we use the Meta Pixel (Meta Platforms Ireland Ltd.) to measure the effectiveness of our advertising campaigns, which may involve sharing limited information about your interactions with our public pages. These providers are bound by their own privacy policies and we ensure they meet appropriate data protection standards."
       },
       "cookies": {
         "title": "Cookies and Tracking",
-        "content": "We use essential cookies to maintain your session and preferences (such as language and theme). We do not use third-party advertising or tracking cookies."
+        "content": "We use essential cookies to maintain your session and preferences (such as language and theme). On our public marketing pages we also use the Meta (Facebook) Pixel, which may set cookies to measure the performance of our advertising and understand how visitors who arrive from our ads use the site. You can control or block these cookies through your browser settings."
       },
       "rights": {
         "title": "Your Rights",

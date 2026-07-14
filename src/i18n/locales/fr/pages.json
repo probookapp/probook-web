@@ -163,11 +163,11 @@
       },
       "thirdParties": {
         "title": "Services tiers",
-        "content": "Nous pouvons utiliser des services tiers pour l'hébergement, l'analyse et le traitement des paiements. Ces fournisseurs sont liés par leurs propres politiques de confidentialité et nous veillons à ce qu'ils respectent les normes appropriées de protection des données."
+        "content": "Nous pouvons utiliser des services tiers pour l'hébergement, l'analyse, le traitement des paiements et la mesure publicitaire. En particulier, nous utilisons le Pixel Meta (Meta Platforms Ireland Ltd.) pour mesurer l'efficacité de nos campagnes publicitaires, ce qui peut impliquer le partage d'informations limitées sur vos interactions avec nos pages publiques. Ces fournisseurs sont liés par leurs propres politiques de confidentialité et nous veillons à ce qu'ils respectent les normes appropriées de protection des données."
       },
       "cookies": {
         "title": "Cookies et suivi",
-        "content": "Nous utilisons des cookies essentiels pour maintenir votre session et vos préférences (comme la langue et le thème). Nous n'utilisons pas de cookies publicitaires ou de suivi tiers."
+        "content": "Nous utilisons des cookies essentiels pour maintenir votre session et vos préférences (comme la langue et le thème). Sur nos pages publiques de présentation, nous utilisons également le Pixel Meta (Facebook), qui peut déposer des cookies afin de mesurer la performance de notre publicité et de comprendre comment les visiteurs arrivant depuis nos annonces utilisent le site. Vous pouvez contrôler ou bloquer ces cookies dans les paramètres de votre navigateur."
       },
       "rights": {
         "title": "Vos droits",
