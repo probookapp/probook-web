@@ -1,5 +1,5 @@
 // Probook Service Worker — offline-first PWA support
-const CACHE_VERSION = "v4";
+const CACHE_VERSION = "v5";
 const STATIC_CACHE = `probook-static-${CACHE_VERSION}`;
 const API_CACHE = `probook-api-${CACHE_VERSION}`;
 
@@ -61,6 +61,12 @@ self.addEventListener("fetch", (event) => {
 
   // Skip non-HTTP(S) requests (e.g. chrome-extension://)
   if (!url.protocol.startsWith("http")) return;
+
+  // Only handle same-origin requests. Cross-origin requests (Meta Pixel,
+  // analytics, third-party CDNs) must go straight to the network — intercepting
+  // them here breaks their loading, since a SW-initiated fetch runs under the
+  // CSP captured when the worker was installed, not the current page's.
+  if (url.origin !== self.location.origin) return;
 
   // Skip non-GET requests (mutations are handled by the offline queue)
   if (request.method !== "GET") return;
