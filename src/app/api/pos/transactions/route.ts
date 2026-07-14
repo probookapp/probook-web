@@ -54,6 +54,25 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
   }
   const total = subtotal + taxAmount;
 
+  // Resolve the cost price for each line up-front so we can freeze it on the line.
+  // ProductVariant has no purchase price of its own, so variants inherit the parent product's.
+  const directProductIds = lines.map((l) => l.product_id).filter((id): id is string => !!id);
+  const variantIds = Array.from(new Set(lines.map((l) => l.variant_id).filter((id): id is string => !!id)));
+  const variants = variantIds.length
+    ? await prisma.productVariant.findMany({ where: { id: { in: variantIds } }, select: { id: true, productId: true } })
+    : [];
+  const variantToProduct = new Map(variants.map((v) => [v.id, v.productId]));
+  const allProductIds = Array.from(new Set([...directProductIds, ...variants.map((v) => v.productId)]));
+  const products = allProductIds.length
+    ? await prisma.product.findMany({ where: { id: { in: allProductIds } }, select: { id: true, purchasePrice: true } })
+    : [];
+  const productCost = new Map(products.map((p) => [p.id, p.purchasePrice ?? 0]));
+  const resolveCost = (l: PosLineInput): number => {
+    const productId = l.variant_id ? variantToProduct.get(l.variant_id) ?? l.product_id : l.product_id;
+    if (productId && productCost.has(productId)) return productCost.get(productId) ?? 0;
+    return 0;
+  };
+
   const discountPercent = body.discount_percent || 0;
   const discountAmount = body.discount_amount || (total * discountPercent / 100);
   const finalAmount = total - discountAmount;
@@ -91,6 +110,7 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
             total: lineHt + lineVat,
             discountPercent: l.discount_percent || 0,
             position: i,
+            costPriceSnapshot: resolveCost(l),
           };
         }),
       },

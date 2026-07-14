@@ -38,7 +38,8 @@ export const POST = withAuth(async (req, { tenantId, params }) => {
     include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
   });
 
-  // Decrement stock for product lines (prevent going below zero)
+  // Decrement stock and freeze the cost price snapshot on each product line.
+  // The snapshot is what makes COGS / profit reports stable when product purchase prices change later.
   for (const line of updated.lines) {
     if (line.productId) {
       const product = await prisma.product.findUnique({ where: { id: line.productId } });
@@ -47,6 +48,10 @@ export const POST = withAuth(async (req, { tenantId, params }) => {
         await prisma.product.update({
           where: { tenantId, id: line.productId },
           data: { quantity: newQty },
+        });
+        await prisma.invoiceLine.update({
+          where: { id: line.id },
+          data: { costPriceSnapshot: product.purchasePrice ?? 0 },
         });
       }
     }

@@ -50,8 +50,18 @@ export const GET = withAuth(async (req, { tenantId }) => {
       status: { in: ["PAID", "ISSUED"] },
       issueDate: { gte: startOfYear },
     },
+    include: { lines: true },
   });
   const revenueYear = paidInvoicesYear.reduce((sum, inv) => sum + inv.total, 0);
+
+  // COGS (cost of goods sold): sum of (quantity * frozen cost) across all lines of
+  // PAID/ISSUED invoices issued this year. costPriceSnapshot is captured at issue time.
+  const cogsYear = paidInvoicesYear.reduce((sum, inv) => {
+    return (
+      sum +
+      inv.lines.reduce((lineSum, line) => lineSum + line.quantity * line.costPriceSnapshot, 0)
+    );
+  }, 0);
 
   const totalExpenses = expenses._sum?.amount || 0;
   const totalExpensesYear = yearlyExpenses._sum?.amount || 0;
@@ -62,8 +72,8 @@ export const GET = withAuth(async (req, { tenantId }) => {
     return sum + (inv.total - paid);
   }, 0);
 
-  // Profit: yearly revenue minus yearly expenses
-  const profit = revenueYear - totalExpensesYear;
+  // Net profit: revenue − cost of goods sold − operating expenses (all scoped to current year)
+  const profit = revenueYear - cogsYear - totalExpensesYear;
 
   return NextResponse.json({
     total_clients: clientCount,

@@ -434,6 +434,9 @@ model InvoiceLine {
   position        Int      @default(0)
   groupName       String?  @map("group_name")
   isSubtotalLine  Boolean? @default(false) @map("is_subtotal_line")
+  // Snapshot of product.purchasePrice captured at sale time (invoice issue).
+  // Frozen so later edits to the product's purchase price never rewrite history.
+  costPriceSnapshot Float  @default(0) @map("cost_price_snapshot")
 
   invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   product Product? @relation(fields: [productId], references: [id])
@@ -828,6 +831,8 @@ model PosTransactionLine {
   total        Float    @map("total")
   discountPercent Float    @default(0) @map("discount_percent")
   position        Int      @default(0)
+  // Snapshot of product/variant purchase price captured at sale time (transaction creation).
+  costPriceSnapshot Float  @default(0) @map("cost_price_snapshot")
   createdAt       DateTime @default(now()) @map("created_at")
 
   transaction PosTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
