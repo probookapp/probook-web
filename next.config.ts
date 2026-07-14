@@ -28,7 +28,7 @@ const nextConfig: NextConfig = {
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
               "connect-src 'self' https://*.supabase.co https://*.sentry.io https://*.ingest.de.sentry.io https://connect.facebook.net https://www.facebook.com",
-              "worker-src 'self'",
+              "worker-src 'self' blob:",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",
