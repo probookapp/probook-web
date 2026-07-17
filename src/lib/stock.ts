@@ -55,20 +55,6 @@ export interface StockChangeInput {
   userId?: string | null;
 }
 
-/** Reads the current per-location on-hand for a product/variant (0 if none). */
-async function getLevelQuantity(
-  db: Db,
-  locationId: string,
-  productId: string,
-  variantId: string | null
-): Promise<number> {
-  const level = await db.stockLevel.findFirst({
-    where: { locationId, productId, variantId: variantId ?? null },
-    select: { quantity: true },
-  });
-  return level?.quantity ?? 0;
-}
-
 /** Sets the per-location on-hand for a product/variant (upsert by find-or-create). */
 async function setLevelQuantity(
   db: Db,
@@ -98,36 +84,82 @@ async function setLevelQuantity(
  * the new location balance. On-hand is clamped at zero; the same applied delta
  * is mirrored to the aggregate Product/Variant quantity so the total stays the
  * sum across locations.
+ *
+ * Concurrency: the per-location level row is locked with `SELECT ... FOR UPDATE`
+ * so concurrent writers on the same product/location serialize (no lost updates
+ * / oversell), and the aggregate is mirrored with an atomic `increment`. This
+ * REQUIRES a transaction: when called with the base client we open our own so
+ * the read-modify-write and the ledger append commit atomically; when called
+ * with a transaction client we join the caller's transaction.
  */
 export async function applyStockChange(
   db: Db,
   input: StockChangeInput
 ): Promise<number> {
-  const { tenantId, productId, variantId = null, quantityChange } = input;
-  const locationId = input.locationId ?? (await getDefaultLocationId(db, tenantId));
+  if ("$transaction" in db) {
+    return (db as typeof prisma).$transaction((tx) => applyStockChangeTx(tx, input));
+  }
+  return applyStockChangeTx(db as Prisma.TransactionClient, input);
+}
 
-  const currentAtLocation = await getLevelQuantity(db, locationId, productId, variantId);
+async function applyStockChangeTx(
+  tx: Prisma.TransactionClient,
+  input: StockChangeInput
+): Promise<number> {
+  const { tenantId, productId, variantId = null, quantityChange } = input;
+  const locationId = input.locationId ?? (await getDefaultLocationId(tx, tenantId));
+
+  // Find-or-create the level row, tolerating a concurrent creator.
+  let level = await tx.stockLevel.findFirst({
+    where: { locationId, productId, variantId: variantId ?? null },
+    select: { id: true },
+  });
+  if (!level) {
+    try {
+      level = await tx.stockLevel.create({
+        data: { tenantId, locationId, productId, variantId: variantId ?? null, quantity: 0 },
+        select: { id: true },
+      });
+    } catch {
+      level = await tx.stockLevel.findFirst({
+        where: { locationId, productId, variantId: variantId ?? null },
+        select: { id: true },
+      });
+    }
+  }
+
+  // Lock the level row so concurrent stock changes on it serialize, then read
+  // the authoritative on-hand under that lock.
+  let currentAtLocation = 0;
+  if (level) {
+    const locked = await tx.$queryRaw<Array<{ quantity: number }>>`
+      SELECT "quantity" FROM "stock_levels" WHERE "id" = ${level.id} FOR UPDATE`;
+    currentAtLocation = locked[0]?.quantity ?? 0;
+  }
+
   const newAtLocation = Math.max(0, currentAtLocation + quantityChange);
   const appliedDelta = newAtLocation - currentAtLocation;
 
-  await setLevelQuantity(db, tenantId, locationId, productId, variantId, newAtLocation);
-
-  // Mirror the applied delta onto the aggregate cache (clamped at 0).
-  if (variantId) {
-    const v = await db.productVariant.findUnique({ where: { id: variantId }, select: { quantity: true } });
-    await db.productVariant.update({
-      where: { id: variantId },
-      data: { quantity: Math.max(0, (v?.quantity ?? 0) + appliedDelta) },
-    });
-  } else {
-    const p = await db.product.findUnique({ where: { id: productId }, select: { quantity: true } });
-    await db.product.update({
-      where: { id: productId },
-      data: { quantity: Math.max(0, (p?.quantity ?? 0) + appliedDelta) },
-    });
+  if (level) {
+    await tx.stockLevel.update({ where: { id: level.id }, data: { quantity: newAtLocation } });
   }
 
-  await db.stockMovement.create({
+  // Mirror the applied delta onto the aggregate cache atomically.
+  if (appliedDelta !== 0) {
+    if (variantId) {
+      await tx.productVariant.update({
+        where: { id: variantId },
+        data: { quantity: { increment: appliedDelta } },
+      });
+    } else {
+      await tx.product.update({
+        where: { id: productId },
+        data: { quantity: { increment: appliedDelta } },
+      });
+    }
+  }
+
+  await tx.stockMovement.create({
     data: {
       tenantId,
       productId,

@@ -25,22 +25,6 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   });
   if (!existing) return NextResponse.json({ error: "Variant not found" }, { status: 404 });
 
-  // Record a manual adjustment when the stock quantity is edited directly.
-  const newQuantity = body.quantity ?? existing.quantity;
-  const quantityDelta = newQuantity - existing.quantity;
-  if (quantityDelta !== 0) {
-    await applyStockChange(prisma, {
-      tenantId,
-      productId: params?.id as string,
-      variantId: existing.id,
-      type: "adjustment",
-      quantityChange: quantityDelta,
-      reason: "manual edit",
-      referenceType: "manual",
-      userId: session.userId,
-    });
-  }
-
   // Ensure barcode uniqueness within tenant (if changed)
   if (body.barcode && body.barcode !== existing.barcode) {
     const dupVariant = await prisma.productVariant.findFirst({
@@ -57,17 +41,39 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
     }
   }
 
-  const variant = await prisma.productVariant.update({
-    where: { id: params?.variantId },
-    data: {
-      name: body.name,
-      sku: body.sku || null,
-      barcode: body.barcode || null,
-      attributes: (body.attributes || {}) as Record<string, string>,
-      quantity: body.quantity ?? existing.quantity,
-      priceOverride: body.price_override ?? null,
-      isActive: body.is_active ?? true,
-    },
+  // A direct quantity edit is recorded as a manual adjustment through the stock
+  // ledger, which sets the aggregate itself — so `quantity` is omitted from the
+  // update below (writing it too would clobber the per-location sum in a
+  // multi-location tenant). Both run in one transaction.
+  const newQuantity = body.quantity ?? existing.quantity;
+  const quantityDelta = newQuantity - existing.quantity;
+
+  const variant = await prisma.$transaction(async (tx) => {
+    if (quantityDelta !== 0) {
+      await applyStockChange(tx, {
+        tenantId,
+        productId: params?.id as string,
+        variantId: existing.id,
+        type: "adjustment",
+        quantityChange: quantityDelta,
+        reason: "manual edit",
+        referenceType: "manual",
+        userId: session.userId,
+      });
+    }
+
+    return tx.productVariant.update({
+      where: { id: params?.variantId },
+      data: {
+        name: body.name,
+        sku: body.sku || null,
+        barcode: body.barcode || null,
+        attributes: (body.attributes || {}) as Record<string, string>,
+        ...(quantityDelta === 0 ? { quantity: newQuantity } : {}),
+        priceOverride: body.price_override ?? null,
+        isActive: body.is_active ?? true,
+      },
+    });
   });
   return NextResponse.json(toSnakeCase(variant));
 });

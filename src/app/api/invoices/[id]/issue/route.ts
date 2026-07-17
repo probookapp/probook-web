@@ -48,47 +48,53 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
 
   const integrityHash = createHash("sha256").update(hashInput).digest("hex");
 
-  const updated = await prisma.invoice.update({
-    where: { tenantId, id: params?.id },
-    data: {
-      status: "ISSUED",
-      integrityHash,
-      stampDuty,
-    },
-    include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
+  // Issue the invoice, freeze the COGS snapshots, and decrement stock atomically:
+  // an invoice must never end up ISSUED with only some lines' stock deducted.
+  const updated = await prisma.$transaction(async (tx) => {
+    const inv = await tx.invoice.update({
+      where: { tenantId, id: params?.id },
+      data: {
+        status: "ISSUED",
+        integrityHash,
+        stampDuty,
+      },
+      include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
+    });
+
+    // Decrement stock and freeze the cost price snapshot on each product line.
+    // The snapshot is what makes COGS / profit reports stable when product purchase prices change later.
+    for (const line of inv.lines) {
+      if (!line.productId) continue;
+      const product = await tx.product.findUnique({ where: { id: line.productId } });
+      if (!product) continue;
+
+      // Freeze the COGS basis before touching stock.
+      await tx.invoiceLine.update({
+        where: { id: line.id },
+        data: { costPriceSnapshot: product.purchasePrice ?? 0 },
+      });
+
+      // Services carry no stock.
+      if (product.isService) continue;
+
+      // Route through the stock engine rather than writing product.quantity
+      // directly: a direct write skips stock_levels and the ledger, silently
+      // drifting the aggregate away from the sum of per-location levels.
+      // Invoices aren't location-scoped, so this deducts from the tenant's
+      // default location (applyStockChange resolves it when locationId is omitted).
+      await applyStockChange(tx, {
+        tenantId,
+        productId: line.productId,
+        type: "sale",
+        quantityChange: -Math.round(line.quantity),
+        referenceType: "invoice",
+        referenceId: inv.id,
+        userId: session.userId,
+      });
+    }
+
+    return inv;
   });
-
-  // Decrement stock and freeze the cost price snapshot on each product line.
-  // The snapshot is what makes COGS / profit reports stable when product purchase prices change later.
-  for (const line of updated.lines) {
-    if (!line.productId) continue;
-    const product = await prisma.product.findUnique({ where: { id: line.productId } });
-    if (!product) continue;
-
-    // Freeze the COGS basis before touching stock.
-    await prisma.invoiceLine.update({
-      where: { id: line.id },
-      data: { costPriceSnapshot: product.purchasePrice ?? 0 },
-    });
-
-    // Services carry no stock.
-    if (product.isService) continue;
-
-    // Route through the stock engine rather than writing product.quantity
-    // directly: a direct write skips stock_levels and the ledger, silently
-    // drifting the aggregate away from the sum of per-location levels.
-    // Invoices aren't location-scoped, so this deducts from the tenant's
-    // default location (applyStockChange resolves it when locationId is omitted).
-    await applyStockChange(prisma, {
-      tenantId,
-      productId: line.productId,
-      type: "sale",
-      quantityChange: -Math.round(line.quantity),
-      referenceType: "invoice",
-      referenceId: updated.id,
-      userId: session.userId,
-    });
-  }
 
   return NextResponse.json(toSnakeCase(updated));
 });

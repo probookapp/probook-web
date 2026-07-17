@@ -42,39 +42,43 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
     : null;
   const fallbackLocationId = register?.locationId ?? null;
 
-  // Restore stock through the inventory ledger (mirror of the sale decrement).
-  for (const line of transaction.lines) {
-    const qty = Math.round(line.quantity);
-    let productId = line.productId;
-    if (!productId && line.variantId) {
-      const variant = await prisma.productVariant.findUnique({
-        where: { id: line.variantId },
-        select: { productId: true },
+  // Restore stock and flip the status atomically, so a partial restock can't be
+  // left behind if a later line fails.
+  const updated = await prisma.$transaction(async (tx) => {
+    // Restore stock through the inventory ledger (mirror of the sale decrement).
+    for (const line of transaction.lines) {
+      const qty = Math.round(line.quantity);
+      let productId = line.productId;
+      if (!productId && line.variantId) {
+        const variant = await tx.productVariant.findUnique({
+          where: { id: line.variantId },
+          select: { productId: true },
+        });
+        productId = variant?.productId ?? null;
+      }
+      if (!productId) continue;
+      const key = `${productId}:${line.variantId ?? ""}`;
+      const locationId = movementLocationByKey.get(key) ?? fallbackLocationId;
+      await applyStockChange(tx, {
+        tenantId,
+        productId,
+        variantId: line.variantId ?? null,
+        locationId,
+        type: "return",
+        quantityChange: qty,
+        referenceType: "pos_transaction",
+        referenceId: transaction.id,
+        userId: session.userId,
       });
-      productId = variant?.productId ?? null;
     }
-    if (!productId) continue;
-    const key = `${productId}:${line.variantId ?? ""}`;
-    const locationId = movementLocationByKey.get(key) ?? fallbackLocationId;
-    await applyStockChange(prisma, {
-      tenantId,
-      productId,
-      variantId: line.variantId ?? null,
-      locationId,
-      type: "return",
-      quantityChange: qty,
-      referenceType: "pos_transaction",
-      referenceId: transaction.id,
-      userId: session.userId,
-    });
-  }
 
-  const updated = await prisma.posTransaction.update({
-    where: { tenantId, id: params?.id },
-    data: {
-      status: "CANCELLED",
-      notes: body.reason ? `Cancelled: ${body.reason}` : "Cancelled",
-    },
+    return tx.posTransaction.update({
+      where: { tenantId, id: params?.id },
+      data: {
+        status: "CANCELLED",
+        notes: body.reason ? `Cancelled: ${body.reason}` : "Cancelled",
+      },
+    });
   });
   return NextResponse.json(toSnakeCase(updated));
 });

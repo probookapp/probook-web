@@ -90,86 +90,92 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
   });
   const saleLocationId = register?.locationId ?? null;
 
-  const transaction = await prisma.posTransaction.create({
-    data: {
-      tenantId,
-      ticketNumber,
-      registerId: body.register_id,
-      sessionId: body.session_id,
-      clientId: body.client_id || null,
-      userId: authSession.userId,
-      subtotal,
-      taxAmount,
-      total,
-      discountPercent,
-      discountAmount,
-      finalAmount,
-      status: "COMPLETED",
-      notes: body.notes || null,
-      lines: {
-        create: lines.map((l: PosLineInput, i: number) => {
-          const lineHt = l.quantity * l.unit_price * (1 - (l.discount_percent || 0) / 100);
-          const lineVat = lineHt * (l.tax_rate || 0) / 100;
-          return {
-            productId: l.product_id || null,
-            variantId: l.variant_id || null,
-            barcode: l.barcode || null,
-            designation: l.designation,
-            quantity: l.quantity,
-            unitPrice: l.unit_price,
-            taxRate: l.tax_rate || 0,
-            subtotal: lineHt,
-            taxAmount: lineVat,
-            total: lineHt + lineVat,
-            discountPercent: l.discount_percent || 0,
-            position: i,
-            costPriceSnapshot: resolveCost(l),
-          };
-        }),
+  // Create the transaction and deduct stock atomically: a mid-loop failure must
+  // not leave a COMPLETED sale with only some lines decremented.
+  const transaction = await prisma.$transaction(async (tx) => {
+    const created = await tx.posTransaction.create({
+      data: {
+        tenantId,
+        ticketNumber,
+        registerId: body.register_id,
+        sessionId: body.session_id,
+        clientId: body.client_id || null,
+        userId: authSession.userId,
+        subtotal,
+        taxAmount,
+        total,
+        discountPercent,
+        discountAmount,
+        finalAmount,
+        status: "COMPLETED",
+        notes: body.notes || null,
+        lines: {
+          create: lines.map((l: PosLineInput, i: number) => {
+            const lineHt = l.quantity * l.unit_price * (1 - (l.discount_percent || 0) / 100);
+            const lineVat = lineHt * (l.tax_rate || 0) / 100;
+            return {
+              productId: l.product_id || null,
+              variantId: l.variant_id || null,
+              barcode: l.barcode || null,
+              designation: l.designation,
+              quantity: l.quantity,
+              unitPrice: l.unit_price,
+              taxRate: l.tax_rate || 0,
+              subtotal: lineHt,
+              taxAmount: lineVat,
+              total: lineHt + lineVat,
+              discountPercent: l.discount_percent || 0,
+              position: i,
+              costPriceSnapshot: resolveCost(l),
+            };
+          }),
+        },
+        payments: {
+          create: (body.payments || []).map((p: PosPaymentInput) => ({
+            paymentMethod: p.payment_method,
+            amount: p.amount,
+            cashGiven: p.cash_given || null,
+            changeGiven: p.change_given || null,
+            cardReference: p.card_reference || null,
+          })),
+        },
       },
-      payments: {
-        create: (body.payments || []).map((p: PosPaymentInput) => ({
-          paymentMethod: p.payment_method,
-          amount: p.amount,
-          cashGiven: p.cash_given || null,
-          changeGiven: p.change_given || null,
-          cardReference: p.card_reference || null,
-        })),
-      },
-    },
-    include: { lines: true, payments: true },
-  });
+      include: { lines: true, payments: true },
+    });
 
-  // Update stock for product lines via the inventory ledger (clamps at zero).
-  for (const line of lines) {
-    const qty = Math.round(line.quantity);
-    if (line.variant_id) {
-      const productId = variantToProduct.get(line.variant_id) ?? line.product_id;
-      if (!productId) continue;
-      await applyStockChange(prisma, {
-        tenantId,
-        productId,
-        variantId: line.variant_id,
-        locationId: saleLocationId,
-        type: "sale",
-        quantityChange: -qty,
-        referenceType: "pos_transaction",
-        referenceId: transaction.id,
-        userId: authSession.userId,
-      });
-    } else if (line.product_id) {
-      await applyStockChange(prisma, {
-        tenantId,
-        productId: line.product_id,
-        locationId: saleLocationId,
-        type: "sale",
-        quantityChange: -qty,
-        referenceType: "pos_transaction",
-        referenceId: transaction.id,
-        userId: authSession.userId,
-      });
+    // Update stock for product lines via the inventory ledger (clamps at zero).
+    for (const line of lines) {
+      const qty = Math.round(line.quantity);
+      if (line.variant_id) {
+        const productId = variantToProduct.get(line.variant_id) ?? line.product_id;
+        if (!productId) continue;
+        await applyStockChange(tx, {
+          tenantId,
+          productId,
+          variantId: line.variant_id,
+          locationId: saleLocationId,
+          type: "sale",
+          quantityChange: -qty,
+          referenceType: "pos_transaction",
+          referenceId: created.id,
+          userId: authSession.userId,
+        });
+      } else if (line.product_id) {
+        await applyStockChange(tx, {
+          tenantId,
+          productId: line.product_id,
+          locationId: saleLocationId,
+          type: "sale",
+          quantityChange: -qty,
+          referenceType: "pos_transaction",
+          referenceId: created.id,
+          userId: authSession.userId,
+        });
+      }
     }
-  }
+
+    return created;
+  });
 
   return NextResponse.json(toSnakeCase(transaction));
 });
