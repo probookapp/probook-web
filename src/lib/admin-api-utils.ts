@@ -98,3 +98,70 @@ export function getClientIp(req: NextRequest): string | undefined {
     undefined
   );
 }
+
+// ========== Durable Admin Login Brute-Force Protection ==========
+// Backed by the AdminLoginAttempt table so the lockout survives restarts and is
+// shared across serverless instances (the old in-memory Map was per-instance).
+
+const ADMIN_LOGIN_MAX_ATTEMPTS = 5;
+const ADMIN_LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+
+/**
+ * Record a single admin login attempt (success or failure) for durable
+ * brute-force accounting.
+ */
+export async function recordAdminLoginAttempt(params: {
+  username: string;
+  ipAddress?: string;
+  success: boolean;
+}): Promise<void> {
+  try {
+    await prisma.adminLoginAttempt.create({
+      data: {
+        username: params.username,
+        ipAddress: params.ipAddress,
+        success: params.success,
+      },
+    });
+  } catch (error) {
+    // Never let attempt logging break the login flow
+    console.error("Failed to record admin login attempt:", error);
+  }
+}
+
+/**
+ * Check whether the given IP address or username is currently locked out due to
+ * too many recent failed admin login attempts. Counts failures in the trailing
+ * 15-minute window and blocks at the 5-attempt threshold.
+ */
+export async function checkAdminLoginLock(params: {
+  username: string;
+  ipAddress?: string;
+}): Promise<{ locked: boolean; minutesLeft: number }> {
+  const windowStart = new Date(Date.now() - ADMIN_LOGIN_WINDOW_MS);
+
+  // Match on either IP or username so an attacker can't dodge the limit by
+  // rotating one while hammering the other.
+  const orFilters: Array<Record<string, unknown>> = [{ username: params.username }];
+  if (params.ipAddress) orFilters.push({ ipAddress: params.ipAddress });
+
+  const recentFailures = await prisma.adminLoginAttempt.findMany({
+    where: {
+      success: false,
+      createdAt: { gte: windowStart },
+      OR: orFilters,
+    },
+    orderBy: { createdAt: "asc" },
+    select: { createdAt: true },
+  });
+
+  if (recentFailures.length < ADMIN_LOGIN_MAX_ATTEMPTS) {
+    return { locked: false, minutesLeft: 0 };
+  }
+
+  // Lockout expires 15 minutes after the oldest failure in the window.
+  const oldest = recentFailures[0].createdAt.getTime();
+  const unlockAt = oldest + ADMIN_LOGIN_WINDOW_MS;
+  const minutesLeft = Math.max(1, Math.ceil((unlockAt - Date.now()) / 60000));
+  return { locked: true, minutesLeft };
+}

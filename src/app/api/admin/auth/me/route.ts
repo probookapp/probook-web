@@ -18,5 +18,6 @@ export const GET = withPlatformAdmin(async (_req, { adminId }) => {
     display_name: admin.displayName,
     email: admin.email,
     role: admin.role,
+    totp_enabled: admin.totpEnabled,
   });
 });

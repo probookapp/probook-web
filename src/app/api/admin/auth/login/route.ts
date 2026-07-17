@@ -3,50 +3,29 @@ import {
   verifyPassword,
   createAdminToken,
   setAdminSessionCookie,
+  createAdminTotpChallengeToken,
   PlatformSessionPayload,
 } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { logAuditEvent, getClientIp } from "@/lib/admin-api-utils";
+import {
+  logAuditEvent,
+  getClientIp,
+  recordAdminLoginAttempt,
+  checkAdminLoginLock,
+} from "@/lib/admin-api-utils";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { adminLoginSchema } from "@/lib/validations";
 
-// In-memory brute-force protection for admin login
-const MAX_ATTEMPTS = 5;
-const LOCKOUT_MS = 15 * 60 * 1000; // 15 minutes
-const failedAttempts = new Map<string, { count: number; firstAttempt: number }>();
-
-function checkAdminLoginLock(ip: string): { locked: boolean; minutesLeft: number } {
-  const entry = failedAttempts.get(ip);
-  if (!entry) return { locked: false, minutesLeft: 0 };
-  if (Date.now() - entry.firstAttempt > LOCKOUT_MS) {
-    failedAttempts.delete(ip);
-    return { locked: false, minutesLeft: 0 };
-  }
-  if (entry.count >= MAX_ATTEMPTS) {
-    const minutesLeft = Math.ceil((LOCKOUT_MS - (Date.now() - entry.firstAttempt)) / 60000);
-    return { locked: true, minutesLeft: Math.max(1, minutesLeft) };
-  }
-  return { locked: false, minutesLeft: 0 };
-}
-
-function recordAdminLoginFailure(ip: string) {
-  const entry = failedAttempts.get(ip);
-  if (!entry || Date.now() - entry.firstAttempt > LOCKOUT_MS) {
-    failedAttempts.set(ip, { count: 1, firstAttempt: Date.now() });
-  } else {
-    entry.count++;
-  }
-}
-
-function clearAdminLoginFailures(ip: string) {
-  failedAttempts.delete(ip);
-}
-
 export async function POST(req: NextRequest) {
   try {
-    const ip = getClientIp(req) || "unknown";
+    const ip = getClientIp(req);
 
-    const lockStatus = checkAdminLoginLock(ip);
+    const body = await validateBody(req, adminLoginSchema);
+    if (isValidationError(body)) return body;
+    const { username, password } = body;
+
+    // Durable brute-force lockout (AdminLoginAttempt table)
+    const lockStatus = await checkAdminLoginLock({ username, ipAddress: ip });
     if (lockStatus.locked) {
       return NextResponse.json(
         { error: `Too many failed attempts. Try again in ${lockStatus.minutesLeft} minute(s).` },
@@ -54,32 +33,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const body = await validateBody(req, adminLoginSchema);
-    if (isValidationError(body)) return body;
-    const { username, password } = body;
-
     const admin = await prisma.platformAdmin.findUnique({
       where: { username },
     });
 
     if (!admin || !admin.isActive) {
-      recordAdminLoginFailure(ip);
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
-      );
+      await recordAdminLoginAttempt({ username, ipAddress: ip, success: false });
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
     const validPassword = await verifyPassword(password, admin.passwordHash);
     if (!validPassword) {
-      recordAdminLoginFailure(ip);
-      return NextResponse.json(
-        { error: "Invalid credentials" },
-        { status: 401 }
-      );
+      await recordAdminLoginAttempt({ username, ipAddress: ip, success: false });
+      return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    clearAdminLoginFailures(ip);
+    // Password OK — count this as a successful attempt so it clears the window.
+    await recordAdminLoginAttempt({ username, ipAddress: ip, success: true });
+
+    // If 2FA is enabled, require a second step. Return a signed challenge token
+    // (not the raw admin id) proving step 1 was completed.
+    if (admin.totpEnabled && admin.totpSecret) {
+      const challengeToken = await createAdminTotpChallengeToken(admin.id);
+      return NextResponse.json({
+        requires_2fa: true,
+        challenge_token: challengeToken,
+      });
+    }
 
     const payload: PlatformSessionPayload = {
       userId: admin.id,
@@ -95,7 +75,7 @@ export async function POST(req: NextRequest) {
       actorType: "platform_admin",
       actorId: admin.id,
       action: "admin.login",
-      ipAddress: getClientIp(req),
+      ipAddress: ip,
     });
 
     return NextResponse.json({

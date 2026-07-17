@@ -204,3 +204,72 @@ export async function verifyTotpChallengeToken(token: string): Promise<string | 
     return null;
   }
 }
+
+// ========== Platform Admin 2FA Challenge Tokens ==========
+
+/**
+ * Create a short-lived signed token proving a platform admin completed step 1
+ * (username+password). Separate purpose from the tenant challenge so a token
+ * from one realm can never be replayed against the other.
+ */
+export async function createAdminTotpChallengeToken(adminId: string): Promise<string> {
+  return new SignJWT({ adminId, purpose: "admin_totp_challenge" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("5m")
+    .setIssuedAt()
+    .sign(JWT_SECRET);
+}
+
+/**
+ * Verify a platform admin TOTP challenge token and extract the adminId.
+ * Returns null if invalid, expired, or not an admin challenge token.
+ */
+export async function verifyAdminTotpChallengeToken(token: string): Promise<string | null> {
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET);
+    if (payload.purpose !== "admin_totp_challenge" || !payload.adminId) return null;
+    return payload.adminId as string;
+  } catch {
+    return null;
+  }
+}
+
+// ========== Platform Admin TOTP Secret Encryption ==========
+// The admin TOTP secret is stored encrypted at rest (AES-256-GCM). The key is
+// derived from JWT_SECRET so no new env var is required. Ciphertext is stored
+// as base64 of (12-byte IV || ciphertext+tag).
+
+async function getTotpEncKey(): Promise<CryptoKey> {
+  const digest = await crypto.subtle.digest("SHA-256", JWT_SECRET);
+  return crypto.subtle.importKey("raw", digest, { name: "AES-GCM" }, false, [
+    "encrypt",
+    "decrypt",
+  ]);
+}
+
+export async function encryptTotpSecret(secret: string): Promise<string> {
+  const key = await getTotpEncKey();
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    new TextEncoder().encode(secret)
+  );
+  const combined = new Uint8Array(iv.length + ciphertext.byteLength);
+  combined.set(iv, 0);
+  combined.set(new Uint8Array(ciphertext), iv.length);
+  return Buffer.from(combined).toString("base64");
+}
+
+export async function decryptTotpSecret(encrypted: string): Promise<string> {
+  const key = await getTotpEncKey();
+  const combined = new Uint8Array(Buffer.from(encrypted, "base64"));
+  const iv = combined.slice(0, 12);
+  const ciphertext = combined.slice(12);
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv },
+    key,
+    ciphertext
+  );
+  return new TextDecoder().decode(plaintext);
+}

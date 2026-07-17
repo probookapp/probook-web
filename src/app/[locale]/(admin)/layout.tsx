@@ -15,7 +15,11 @@ export default function AdminRouteLayout({
   const router = useRouter();
   const pathname = usePathname();
 
-  const isLoginPage = pathname.endsWith("/admin/login");
+  // Public admin pages that must render without auth or the admin chrome.
+  const isPublicPage =
+    pathname.endsWith("/admin/login") ||
+    pathname.endsWith("/admin/forgot-password") ||
+    pathname.endsWith("/admin/reset-password");
 
   useEffect(() => {
     const checkSession = async () => {
@@ -38,12 +42,12 @@ export default function AdminRouteLayout({
   }, [setAdmin, clearAdmin, setLoading]);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated && !isLoginPage) {
+    if (!isLoading && !isAuthenticated && !isPublicPage) {
       router.replace("/admin/login");
     }
-  }, [isLoading, isAuthenticated, isLoginPage, router]);
+  }, [isLoading, isAuthenticated, isPublicPage, router]);
 
-  if (isLoginPage) {
+  if (isPublicPage) {
     return <>{children}</>;
   }
 
