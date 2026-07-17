@@ -42,5 +42,35 @@
   "messages": {
     "deleteBlocked": "Cannot delete client with existing quotes, invoices, or delivery notes",
     "deleteError": "Failed to delete client"
+  },
+  "statement": {
+    "title": "Statement",
+    "outstanding": "Outstanding",
+    "outstandingBalance": "Outstanding balance",
+    "startDate": "From",
+    "endDate": "To",
+    "from": "From",
+    "to": "To",
+    "openingBalance": "Opening balance",
+    "closingBalance": "Closing balance",
+    "totalInvoiced": "Total invoiced",
+    "totalPaid": "Total paid",
+    "totalCredited": "Total credited",
+    "noEntries": "No entries for this period",
+    "exportPdf": "Export PDF",
+    "exportError": "Failed to export the statement",
+    "columns": {
+      "date": "Date",
+      "type": "Type",
+      "reference": "Reference",
+      "debit": "Debit",
+      "credit": "Credit",
+      "balance": "Balance"
+    },
+    "types": {
+      "invoice": "Invoice",
+      "payment": "Payment",
+      "credit_note": "Credit note"
+    }
   }
 }

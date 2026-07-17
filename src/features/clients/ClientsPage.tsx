@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Trash2, Search, Eye, Users, Upload } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Eye, Users, Upload, Download, FileText } from "lucide-react";
 import {
   Button,
   Card,
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui";
 import { ClientForm } from "./components/ClientForm";
 import { ClientContacts } from "./components/ClientContacts";
+import { ClientStatement } from "./components/ClientStatement";
 import { ImportDialog } from "@/components/shared/ImportDialog";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { toast } from "@/stores/useToastStore";
@@ -25,8 +26,12 @@ import { isApiError } from "@/lib/api-adapter";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { useSelection } from "@/hooks/useSelection";
+import { exportToCsv } from "@/lib/csv-export";
+import { formatCurrency } from "@/lib/utils";
+import { useAuthStore } from "@/stores/useAuthStore";
 import {
   useClients,
+  useClientBalances,
   useCreateClient,
   useUpdateClient,
   useDeleteClient,
@@ -39,15 +44,20 @@ export function ClientsPage() {
   const { t } = useTranslation("clients");
   const { t: tCommon } = useTranslation("common");
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  const canCreate = useAuthStore((s) => s.hasPermission("clients", "create"));
+  const canEdit = useAuthStore((s) => s.hasPermission("clients", "edit"));
+  const canDelete = useAuthStore((s) => s.hasPermission("clients", "delete"));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedClient, setSelectedClient] = useState<Client | undefined>();
   const [viewingClient, setViewingClient] = useState<Client | null>(null);
+  const [statementClient, setStatementClient] = useState<Client | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
   const { data: clients, isLoading } = useClients();
+  const { data: balances } = useClientBalances();
   const createClient = useCreateClient();
   const updateClient = useUpdateClient();
   const deleteClient = useDeleteClient();
@@ -64,6 +74,29 @@ export function ClientsPage() {
   useEffect(() => {
     selection.clear();
   }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleExportCsv = () => {
+    exportToCsv(
+      filteredClients ?? [],
+      [
+        { header: t("fields.name"), accessor: (c) => c.name },
+        { header: t("fields.email"), accessor: (c) => c.email },
+        { header: t("fields.phone"), accessor: (c) => c.phone },
+        { header: t("fields.address"), accessor: (c) => c.address },
+        { header: t("fields.city"), accessor: (c) => c.city },
+        { header: tCommon("labels.postalCode"), accessor: (c) => c.postal_code },
+        { header: tCommon("labels.country"), accessor: (c) => c.country },
+        { header: "SIRET", accessor: (c) => c.siret },
+        { header: tCommon("labels.vat"), accessor: (c) => c.vat_number },
+      ],
+      `clients_${new Date().toISOString().split("T")[0]}.csv`
+    );
+  };
+
+  const handleOpenStatement = (client: Client) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
+    setStatementClient(client);
+  };
 
   const handleOpenModal = (client?: Client) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
@@ -112,14 +145,20 @@ export function ClientsPage() {
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
+          <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredClients?.length}>
+            <Download className="h-4 w-4 mr-2" />
+            {tCommon("buttons.exportCsv")}
+          </Button>
           <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
             <Upload className="h-4 w-4 mr-2" />
             {tCommon("buttons.import")}
           </Button>
-          <Button onClick={() => handleOpenModal()} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            {t("newClient")}
-          </Button>
+          {canCreate && (
+            <Button onClick={() => handleOpenModal()} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              {t("newClient")}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -157,9 +196,10 @@ export function ClientsPage() {
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{client.name}</p>
                       <div className="flex items-center gap-1 shrink-0">
+                        <button onClick={() => handleOpenStatement(client)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={t("statement.title")} aria-label={t("statement.title")}><FileText className="h-4 w-4" /></button>
                         <button onClick={() => setViewingClient(client)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={t("viewContacts")} aria-label={t("viewContacts")}><Eye className="h-4 w-4" /></button>
-                        <button onClick={() => handleOpenModal(client)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={tCommon("buttons.edit")} aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>
-                        <button onClick={() => setDeleteConfirmId(client.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>
+                        {canEdit && <button onClick={() => handleOpenModal(client)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={tCommon("buttons.edit")} aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
+                        {canDelete && <button onClick={() => setDeleteConfirmId(client.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
                       </div>
                     </div>
                     {client.email && <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{client.email}</p>}
@@ -167,6 +207,11 @@ export function ClientsPage() {
                       {client.phone && <span>{client.phone}</span>}
                       {client.city && <span>{client.city}</span>}
                     </div>
+                    {balances?.has(client.id) && (
+                      <p className="text-sm mt-0.5 text-gray-700 dark:text-gray-300">
+                        {t("statement.outstanding")}: <span className="font-medium">{formatCurrency(balances.get(client.id))}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
               ))
@@ -192,6 +237,7 @@ export function ClientsPage() {
                 <TableHead>{t("fields.email")}</TableHead>
                 <TableHead>{t("fields.phone")}</TableHead>
                 <TableHead>{t("fields.city")}</TableHead>
+                <TableHead className="text-right">{t("statement.outstanding")}</TableHead>
                 <TableHead className="w-24">{tCommon("buttons.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -211,8 +257,19 @@ export function ClientsPage() {
                     <TableCell className="text-gray-600 dark:text-gray-400">{client.email || "-"}</TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">{client.phone || "-"}</TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">{client.city || "-"}</TableCell>
+                    <TableCell className="text-right font-medium text-gray-900 dark:text-gray-100">
+                      {balances?.has(client.id) ? formatCurrency(balances.get(client.id)) : "-"}
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => handleOpenStatement(client)}
+                          className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                          title={t("statement.title")}
+                          aria-label={t("statement.title")}
+                        >
+                          <FileText className="h-4 w-4" />
+                        </button>
                         <button
                           onClick={() => setViewingClient(client)}
                           className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
@@ -221,6 +278,7 @@ export function ClientsPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </button>
+                        {canEdit && (
                         <button
                           onClick={() => handleOpenModal(client)}
                           className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
@@ -229,6 +287,8 @@ export function ClientsPage() {
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
+                        )}
+                        {canDelete && (
                         <button
                           onClick={() => setDeleteConfirmId(client.id)}
                           className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -237,13 +297,14 @@ export function ClientsPage() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  <TableCell colSpan={7} className="text-center text-gray-500 dark:text-gray-400 py-8">
                     {t("noClients")}
                   </TableCell>
                 </TableRow>
@@ -302,12 +363,14 @@ export function ClientsPage() {
         entityType="clients"
       />
 
-      <BulkActionBar
-        selectedCount={selection.selectedCount}
-        onDelete={() => setBulkDeleteOpen(true)}
-        onClear={selection.clear}
-        isDeleting={batchDeleteClients.isPending}
-      />
+      {canDelete && (
+        <BulkActionBar
+          selectedCount={selection.selectedCount}
+          onDelete={() => setBulkDeleteOpen(true)}
+          onClear={selection.clear}
+          isDeleting={batchDeleteClients.isPending}
+        />
+      )}
 
       <BulkDeleteModal
         isOpen={bulkDeleteOpen}
@@ -320,6 +383,13 @@ export function ClientsPage() {
         }}
         count={selection.selectedCount}
         isLoading={batchDeleteClients.isPending}
+      />
+
+      <ClientStatement
+        isOpen={!!statementClient}
+        onClose={() => setStatementClient(null)}
+        clientId={statementClient?.id ?? null}
+        clientName={statementClient?.name ?? ""}
       />
 
       {/* Client Details & Contacts Modal */}
@@ -372,15 +442,17 @@ export function ClientsPage() {
               <Button variant="secondary" onClick={() => setViewingClient(null)}>
                 {tCommon("buttons.close")}
               </Button>
-              <Button
-                onClick={() => {
-                  setViewingClient(null);
-                  handleOpenModal(viewingClient);
-                }}
-              >
-                <Pencil className="h-4 w-4 mr-2" />
-                {t("editClient")}
-              </Button>
+              {canEdit && (
+                <Button
+                  onClick={() => {
+                    setViewingClient(null);
+                    handleOpenModal(viewingClient);
+                  }}
+                >
+                  <Pencil className="h-4 w-4 mr-2" />
+                  {t("editClient")}
+                </Button>
+              )}
             </div>
           </div>
         )}

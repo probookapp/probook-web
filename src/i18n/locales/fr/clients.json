@@ -42,5 +42,35 @@
   "messages": {
     "deleteBlocked": "Impossible de supprimer un client ayant des devis, factures ou bons de livraison",
     "deleteError": "Erreur lors de la suppression du client"
+  },
+  "statement": {
+    "title": "Relevé de compte",
+    "outstanding": "Solde dû",
+    "outstandingBalance": "Solde dû",
+    "startDate": "Du",
+    "endDate": "Au",
+    "from": "Du",
+    "to": "Au",
+    "openingBalance": "Solde d'ouverture",
+    "closingBalance": "Solde de clôture",
+    "totalInvoiced": "Total facturé",
+    "totalPaid": "Total payé",
+    "totalCredited": "Total avoirs",
+    "noEntries": "Aucune écriture pour cette période",
+    "exportPdf": "Exporter PDF",
+    "exportError": "Échec de l'export du relevé",
+    "columns": {
+      "date": "Date",
+      "type": "Type",
+      "reference": "Référence",
+      "debit": "Débit",
+      "credit": "Crédit",
+      "balance": "Solde"
+    },
+    "types": {
+      "invoice": "Facture",
+      "payment": "Paiement",
+      "credit_note": "Avoir"
+    }
   }
 }

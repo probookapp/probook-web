@@ -42,5 +42,35 @@
   "messages": {
     "deleteBlocked": "لا يمكن حذف عميل لديه عروض أسعار أو فواتير أو سندات تسليم",
     "deleteError": "فشل في حذف العميل"
+  },
+  "statement": {
+    "title": "كشف الحساب",
+    "outstanding": "الرصيد المستحق",
+    "outstandingBalance": "الرصيد المستحق",
+    "startDate": "من",
+    "endDate": "إلى",
+    "from": "من",
+    "to": "إلى",
+    "openingBalance": "الرصيد الافتتاحي",
+    "closingBalance": "الرصيد الختامي",
+    "totalInvoiced": "إجمالي الفواتير",
+    "totalPaid": "إجمالي المدفوعات",
+    "totalCredited": "إجمالي الإشعارات الدائنة",
+    "noEntries": "لا توجد حركات لهذه الفترة",
+    "exportPdf": "تصدير PDF",
+    "exportError": "فشل تصدير كشف الحساب",
+    "columns": {
+      "date": "التاريخ",
+      "type": "النوع",
+      "reference": "المرجع",
+      "debit": "مدين",
+      "credit": "دائن",
+      "balance": "الرصيد"
+    },
+    "types": {
+      "invoice": "فاتورة",
+      "payment": "دفعة",
+      "credit_note": "إشعار دائن"
+    }
   }
 }
