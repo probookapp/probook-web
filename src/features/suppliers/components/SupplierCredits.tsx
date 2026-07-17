@@ -16,6 +16,7 @@ import { Badge } from "@/components/ui/Badge";
 import { supplierCreditApi } from "@/lib/api";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { SupplierPaymentModal } from "./SupplierPaymentModal";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { Supplier, SupplierPayment } from "@/types";
 
 interface SupplierCreditsProps {
@@ -40,6 +41,8 @@ export function SupplierCredits({ supplier, onClose }: SupplierCreditsProps) {
   const { t } = useTranslation("suppliers");
   const { t: tCommon } = useTranslation("common");
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  // Recording a supplier payment is gated on the suppliers module (edit).
+  const canRecordPayment = useAuthStore((s) => s.hasPermission("suppliers", "edit"));
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
 
@@ -106,12 +109,14 @@ export function SupplierCredits({ supplier, onClose }: SupplierCreditsProps) {
       </div>
 
       {/* Record Payment Button */}
-      <div className="flex justify-end">
-        <Button size="sm" onClick={() => isDemoMode ? showSubscribePrompt() : setIsPaymentModalOpen(true)}>
-          <DollarSign className="h-4 w-4 mr-2" />
-          {t("credits.recordPayment")}
-        </Button>
-      </div>
+      {canRecordPayment && (
+        <div className="flex justify-end">
+          <Button size="sm" onClick={() => isDemoMode ? showSubscribePrompt() : setIsPaymentModalOpen(true)}>
+            <DollarSign className="h-4 w-4 mr-2" />
+            {t("credits.recordPayment")}
+          </Button>
+        </div>
+      )}
 
       {/* Unpaid Purchase Orders */}
       <div>

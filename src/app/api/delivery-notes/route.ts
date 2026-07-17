@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createDeliveryNoteSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 interface DeliveryLineInput {
   product_id?: string | null;
@@ -22,7 +23,9 @@ export const GET = withAuth(async (req, { tenantId }) => {
   return NextResponse.json(toSnakeCase(notes));
 });
 
-export const POST = withAuth(async (req, { tenantId }) => {
+export const POST = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "delivery_notes", "create");
+  if (denied) return denied;
   const body = await validateBody(req, createDeliveryNoteSchema);
   if (isValidationError(body)) return body;
 

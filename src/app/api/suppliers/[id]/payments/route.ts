@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { supplierPaymentSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const payments = await prisma.supplierPayment.findMany({
@@ -12,7 +13,9 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(payments));
 });
 
-export const POST = withAuth(async (req, { tenantId, params }) => {
+export const POST = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "suppliers", "edit");
+  if (denied) return denied;
   const body = await validateBody(req, supplierPaymentSchema);
   if (isValidationError(body)) return body;
 

@@ -6,8 +6,29 @@ import { Button, Input, Select, Modal } from '@/components/ui';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '../hooks/useUsers';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useDemoMode } from '@/components/providers/DemoModeProvider';
-import type { UserInfo, PermissionKey } from '@/types';
+import type { UserInfo, PermissionKey, PermissionAction } from '@/types';
 import { ALL_PERMISSIONS } from '@/types';
+
+type PermFlags = {
+  canView: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+};
+
+const emptyFlags = (): PermFlags => ({
+  canView: false,
+  canCreate: false,
+  canEdit: false,
+  canDelete: false,
+});
+
+const PERM_ACTIONS: { action: PermissionAction; flag: keyof PermFlags; label: string }[] = [
+  { action: 'view', flag: 'canView', label: 'permView' },
+  { action: 'create', flag: 'canCreate', label: 'permCreate' },
+  { action: 'edit', flag: 'canEdit', label: 'permEdit' },
+  { action: 'delete', flag: 'canDelete', label: 'permDelete' },
+];
 
 export function UserManagement() {
   const { t } = useTranslation('auth');
@@ -16,7 +37,7 @@ export function UserManagement() {
   const createUser = useCreateUser();
   const updateUser = useUpdateUser();
   const deleteUser = useDeleteUser();
-  const { currentUser } = useAuthStore();
+  const { currentUser, hasPermission } = useAuthStore();
 
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserInfo | null>(null);
@@ -28,9 +49,13 @@ export function UserManagement() {
   const [formPassword, setFormPassword] = useState('');
   const [formRole, setFormRole] = useState('employee');
   const [formIsActive, setFormIsActive] = useState(true);
-  const [formPermissions, setFormPermissions] = useState<string[]>([]);
+  const [formPermissions, setFormPermissions] = useState<Record<string, PermFlags>>({});
   const [showPassword, setShowPassword] = useState(false);
   const [formError, setFormError] = useState('');
+
+  const canCreateUser = hasPermission('settings', 'create');
+  const canEditUser = hasPermission('settings', 'edit');
+  const canDeleteUser = hasPermission('settings', 'delete');
 
   const resetForm = () => {
     setFormUsername('');
@@ -38,7 +63,7 @@ export function UserManagement() {
     setFormPassword('');
     setFormRole('employee');
     setFormIsActive(true);
-    setFormPermissions([]);
+    setFormPermissions({});
     setShowPassword(false);
     setFormError('');
   };
@@ -54,11 +79,43 @@ export function UserManagement() {
     setFormPassword('');
     setFormRole(user.role);
     setFormIsActive(user.is_active);
-    setFormPermissions([...user.permissions]);
+    // Prefill CRUD flags from the user's permission_details; fall back to the
+    // legacy view-list (module on = full access) when details are absent.
+    const map: Record<string, PermFlags> = {};
+    ALL_PERMISSIONS.forEach((key) => {
+      const detail = user.permission_details?.find((p) => p.key === key);
+      if (detail) {
+        map[key] = {
+          canView: detail.can_view,
+          canCreate: detail.can_create,
+          canEdit: detail.can_edit,
+          canDelete: detail.can_delete,
+        };
+      } else {
+        const on = user.permissions.includes(key);
+        map[key] = { canView: on, canCreate: on, canEdit: on, canDelete: on };
+      }
+    });
+    setFormPermissions(map);
     setShowPassword(false);
     setFormError('');
     setEditingUser(user);
   };
+
+  const buildPermissionDetails = () =>
+    ALL_PERMISSIONS.map((key) => {
+      const f = formPermissions[key] ?? emptyFlags();
+      return {
+        key,
+        can_view: f.canView,
+        can_create: f.canCreate,
+        can_edit: f.canEdit,
+        can_delete: f.canDelete,
+      };
+    });
+
+  const derivedViewPermissions = () =>
+    ALL_PERMISSIONS.filter((key) => formPermissions[key]?.canView);
 
   const handleCreate = async () => {
     if (isDemoMode) { showSubscribePrompt(); return; }
@@ -73,7 +130,12 @@ export function UserManagement() {
         display_name: formDisplayName,
         password: formPassword,
         role: formRole,
-        permissions: formRole === 'admin' ? ALL_PERMISSIONS as unknown as string[] : formPermissions,
+        ...(formRole === 'admin'
+          ? { permissions: ALL_PERMISSIONS as unknown as string[] }
+          : {
+              permissions: derivedViewPermissions() as unknown as string[],
+              permission_details: buildPermissionDetails(),
+            }),
       });
       setIsCreateOpen(false);
       resetForm();
@@ -98,7 +160,12 @@ export function UserManagement() {
         password: formPassword || undefined,
         role: formRole,
         is_active: formIsActive,
-        permissions: formRole === 'admin' ? ALL_PERMISSIONS as unknown as string[] : formPermissions,
+        ...(formRole === 'admin'
+          ? { permissions: ALL_PERMISSIONS as unknown as string[] }
+          : {
+              permissions: derivedViewPermissions() as unknown as string[],
+              permission_details: buildPermissionDetails(),
+            }),
       });
       setEditingUser(null);
       resetForm();
@@ -119,10 +186,23 @@ export function UserManagement() {
     }
   };
 
-  const togglePermission = (perm: PermissionKey) => {
-    setFormPermissions((prev) =>
-      prev.includes(perm) ? prev.filter((p) => p !== perm) : [...prev, perm]
-    );
+  const setPermFlag = (perm: PermissionKey, flag: keyof PermFlags, value: boolean) => {
+    setFormPermissions((prev) => {
+      const current = prev[perm] ?? emptyFlags();
+      const next: PermFlags = { ...current, [flag]: value };
+      if (flag === 'canView') {
+        // Unchecking View removes every action for that module.
+        if (!value) {
+          next.canCreate = false;
+          next.canEdit = false;
+          next.canDelete = false;
+        }
+      } else if (value) {
+        // Checking any action implies View.
+        next.canView = true;
+      }
+      return { ...prev, [perm]: next };
+    });
   };
 
   const roleOptions = [
@@ -216,26 +296,61 @@ export function UserManagement() {
 
         {formRole === 'employee' && (
           <div>
-            <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            <span className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t('userManagement.permissions')}
             </span>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              {ALL_PERMISSIONS.map((perm) => (
-                <label
-                  key={perm}
-                  className="flex items-center gap-2 p-2 rounded-lg border border-gray-200 dark:border-gray-700 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800"
-                >
-                  <input
-                    type="checkbox"
-                    checked={formPermissions.includes(perm)}
-                    onChange={() => togglePermission(perm)}
-                    className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                  />
-                  <span className="text-sm text-gray-700 dark:text-gray-300">
-                    {t(`permissions.${perm}`)}
-                  </span>
-                </label>
-              ))}
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+              {t('userManagement.permissionsHint')}
+            </p>
+            <div className="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                    <th className="text-start py-2 px-3 font-medium text-gray-500 dark:text-gray-400">
+                      {t('userManagement.module')}
+                    </th>
+                    {PERM_ACTIONS.map((a) => (
+                      <th
+                        key={a.action}
+                        className="py-2 px-2 font-medium text-gray-500 dark:text-gray-400 text-center w-16"
+                      >
+                        {t(`userManagement.${a.label}`)}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {ALL_PERMISSIONS.map((perm) => {
+                    const flags = formPermissions[perm] ?? emptyFlags();
+                    return (
+                      <tr
+                        key={perm}
+                        className="border-b border-gray-100 dark:border-gray-800 last:border-0"
+                      >
+                        <td className="py-2 px-3 text-gray-700 dark:text-gray-300">
+                          {t(`permissions.${perm}`)}
+                        </td>
+                        {PERM_ACTIONS.map((a) => {
+                          const checked = flags[a.flag];
+                          const disabled = a.action !== 'view' && !flags.canView;
+                          return (
+                            <td key={a.action} className="py-2 px-2 text-center">
+                              <input
+                                type="checkbox"
+                                checked={checked}
+                                disabled={disabled}
+                                onChange={(e) => setPermFlag(perm, a.flag, e.target.checked)}
+                                aria-label={`${t(`permissions.${perm}`)} - ${t(`userManagement.${a.label}`)}`}
+                                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:opacity-40 disabled:cursor-not-allowed"
+                              />
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </div>
           </div>
         )}
@@ -262,10 +377,12 @@ export function UserManagement() {
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
           {t('userManagement.title')}
         </h3>
-        <Button onClick={openCreate} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          {t('userManagement.addUser')}
-        </Button>
+        {canCreateUser && (
+          <Button onClick={openCreate} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            {t('userManagement.addUser')}
+          </Button>
+        )}
       </div>
 
       <div className="overflow-x-auto">
@@ -328,13 +445,15 @@ export function UserManagement() {
                 </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center justify-end gap-2">
-                    <button
-                      onClick={() => openEdit(user)}
-                      className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    {user.id !== currentUser?.id && (
+                    {canEditUser && (
+                      <button
+                        onClick={() => openEdit(user)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-primary-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    )}
+                    {canDeleteUser && user.id !== currentUser?.id && (
                       <button
                         onClick={() => setDeleteConfirmUser(user)}
                         className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

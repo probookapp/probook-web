@@ -16,7 +16,7 @@ export async function GET() {
   }
 
   const permissions = await prisma.userPermission.findMany({
-    where: { userId: user.id, granted: true },
+    where: { userId: user.id },
   });
 
   return NextResponse.json({
@@ -25,7 +25,14 @@ export async function GET() {
     display_name: user.displayName,
     role: user.role,
     is_active: user.isActive,
-    permissions: permissions.map((p) => p.permissionKey),
+    permissions: permissions.filter((p) => p.canView).map((p) => p.permissionKey),
+    permission_details: permissions.map((p) => ({
+      key: p.permissionKey,
+      can_view: p.canView,
+      can_create: p.canCreate,
+      can_edit: p.canEdit,
+      can_delete: p.canDelete,
+    })),
     created_at: user.createdAt.toISOString(),
     updated_at: user.updatedAt.toISOString(),
   });

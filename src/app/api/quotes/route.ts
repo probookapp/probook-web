@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase, markOnboardingStep } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createQuoteSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 interface LineInput {
   product_id?: string | null;
@@ -47,7 +48,9 @@ export const GET = withAuth(async (req, { tenantId }) => {
   return NextResponse.json(toSnakeCase(quotes));
 });
 
-export const POST = withAuth(async (req, { tenantId }) => {
+export const POST = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "quotes", "create");
+  if (denied) return denied;
   const body = await validateBody(req, createQuoteSchema);
   if (isValidationError(body)) return body;
 

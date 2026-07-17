@@ -15,6 +15,7 @@ import {
   useDeleteClientContact,
 } from "../hooks/useClientContacts";
 import type { ClientContact, CreateClientContactInput, UpdateClientContactInput } from "@/types";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 interface ClientContactsProps {
   clientId: string;
@@ -40,6 +41,9 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
   const { t } = useTranslation("clients");
   const { t: tCommon } = useTranslation("common");
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  const canCreate = useAuthStore((s) => s.hasPermission("clients", "create"));
+  const canEdit = useAuthStore((s) => s.hasPermission("clients", "edit"));
+  const canDelete = useAuthStore((s) => s.hasPermission("clients", "delete"));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingContact, setEditingContact] = useState<ClientContact | null>(null);
   const [formData, setFormData] = useState<ContactFormData>(initialFormData);
@@ -123,10 +127,12 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h3 className="font-medium text-gray-900 dark:text-gray-100">{t("contacts.title")}</h3>
-        <Button size="sm" variant="secondary" onClick={handleOpenAdd}>
-          <Plus className="h-4 w-4 mr-1" />
-          {tCommon("buttons.add")}
-        </Button>
+        {canCreate && (
+          <Button size="sm" variant="secondary" onClick={handleOpenAdd}>
+            <Plus className="h-4 w-4 mr-1" />
+            {tCommon("buttons.add")}
+          </Button>
+        )}
       </div>
 
       {contacts && contacts.length > 0 ? (
@@ -168,6 +174,7 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
                 </div>
               </div>
               <div className="flex items-center gap-2">
+                {canEdit && (
                 <button
                   onClick={() => handleOpenEdit(contact)}
                   aria-label={tCommon("buttons.edit")}
@@ -175,6 +182,8 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
+                )}
+                {canDelete && (
                 <button
                   onClick={() => setDeleteConfirmId(contact.id)}
                   aria-label={tCommon("buttons.delete")}
@@ -182,6 +191,7 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
+                )}
               </div>
             </div>
           ))}

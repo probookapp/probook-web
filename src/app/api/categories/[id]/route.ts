@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { categorySchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const category = await prisma.productCategory.findFirst({
@@ -13,7 +14,9 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(category));
 });
 
-export const PUT = withAuth(async (req, { tenantId, params }) => {
+export const PUT = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "products", "edit");
+  if (denied) return denied;
   const body = await validateBody(req, categorySchema);
   if (isValidationError(body)) return body;
   const category = await prisma.productCategory.update({
@@ -27,7 +30,9 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(category));
 });
 
-export const DELETE = withAuth(async (req, { tenantId, params }) => {
+export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "products", "delete");
+  if (denied) return denied;
   await prisma.productCategory.delete({ where: { tenantId, id: params?.id } });
   return new NextResponse(null, { status: 204 });
 });

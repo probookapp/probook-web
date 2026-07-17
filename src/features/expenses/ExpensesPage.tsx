@@ -25,6 +25,7 @@ import { expenseApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_EXPENSES } from "@/lib/demo-data";
 import { useToastStore } from "@/stores/useToastStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { Expense, CreateExpenseInput, UpdateExpenseInput } from "@/types";
 import type { ExpenseFormData } from "./schemas/expenseSchema";
@@ -35,6 +36,9 @@ export function ExpensesPage() {
   const queryClient = useQueryClient();
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const addToast = useToastStore((state) => state.addToast);
+  const canCreate = useAuthStore((s) => s.hasPermission("expenses", "create"));
+  const canEdit = useAuthStore((s) => s.hasPermission("expenses", "edit"));
+  const canDelete = useAuthStore((s) => s.hasPermission("expenses", "delete"));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | undefined>();
   const [searchQuery, setSearchQuery] = useState("");
@@ -152,10 +156,12 @@ export function ExpensesPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
         </div>
-        <Button onClick={() => handleOpenModal()} size="sm" className="self-start sm:self-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          {t("newExpense")}
-        </Button>
+        {canCreate && (
+          <Button onClick={() => handleOpenModal()} size="sm" className="self-start sm:self-auto">
+            <Plus className="h-4 w-4 mr-2" />
+            {t("newExpense")}
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -196,8 +202,8 @@ export function ExpensesPage() {
                     <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(expense.date)}</p>
                     {expense.notes && <p className="text-sm text-gray-400 dark:text-gray-500 truncate mt-0.5">{expense.notes}</p>}
                     <div className="flex justify-end gap-1 mt-2">
-                      <button onClick={() => handleOpenModal(expense)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={tCommon("buttons.edit")} aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>
-                      <button onClick={() => setDeleteConfirmId(expense.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>
+                      {canEdit && <button onClick={() => handleOpenModal(expense)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={tCommon("buttons.edit")} aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
+                      {canDelete && <button onClick={() => setDeleteConfirmId(expense.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
                     </div>
                   </div>
                 </div>
@@ -245,6 +251,7 @@ export function ExpensesPage() {
                     <TableCell className="text-gray-600 dark:text-gray-400">{expense.notes || "-"}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
+                        {canEdit && (
                         <button
                           onClick={() => handleOpenModal(expense)}
                           className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
@@ -253,6 +260,8 @@ export function ExpensesPage() {
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
+                        )}
+                        {canDelete && (
                         <button
                           onClick={() => setDeleteConfirmId(expense.id)}
                           className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -261,6 +270,7 @@ export function ExpensesPage() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -315,12 +325,14 @@ export function ExpensesPage() {
         </div>
       </Modal>
 
-      <BulkActionBar
-        selectedCount={selection.selectedCount}
-        onDelete={() => setBulkDeleteOpen(true)}
-        onClear={selection.clear}
-        isDeleting={batchDeleteExpense.isPending}
-      />
+      {canDelete && (
+        <BulkActionBar
+          selectedCount={selection.selectedCount}
+          onDelete={() => setBulkDeleteOpen(true)}
+          onClear={selection.clear}
+          isDeleting={batchDeleteExpense.isPending}
+        />
+      )}
 
       <BulkDeleteModal
         isOpen={bulkDeleteOpen}

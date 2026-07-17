@@ -20,6 +20,7 @@ import { useProducts } from "@/features/products/hooks/useProducts";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useToastStore } from "@/stores/useToastStore";
 import { formatCurrency } from "@/lib/utils";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { ProductWithPrice, CreateProductSupplierInput } from "@/types";
 
 interface SupplierProductsProps {
@@ -31,6 +32,8 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
   const { t: tCommon } = useTranslation("common");
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const addToast = useToastStore((state) => state.addToast);
+  // Product-supplier links are gated on the products module (edit).
+  const canManage = useAuthStore((s) => s.hasPermission("products", "edit"));
 
   const { data: linkedProducts, isLoading: isLoadingLinked } = useProductsForSupplier(supplierId);
   const { data: allProducts } = useProducts();
@@ -89,7 +92,7 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
           {t("products.title")}
         </h3>
-        {!isAdding && (
+        {!isAdding && canManage && (
           <Button size="sm" onClick={() => setIsAdding(true)}>
             <Plus className="h-4 w-4 mr-2" />
             {t("products.addProduct")}
@@ -184,6 +187,7 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
                     {formatCurrency(product.unit_price)}
                   </TableCell>
                   <TableCell>
+                    {canManage && (
                     <button
                       onClick={() => handleRemoveProduct(product.link_id)}
                       className="p-1 text-gray-500 hover:text-red-600 transition-colors"
@@ -192,6 +196,7 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
                     >
                       <X className="h-4 w-4" />
                     </button>
+                    )}
                   </TableCell>
                 </TableRow>
               ))

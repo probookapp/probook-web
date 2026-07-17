@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { updateProductSupplierSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const link = await prisma.productSupplier.findFirst({
@@ -13,7 +14,9 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(link));
 });
 
-export const PUT = withAuth(async (req, { tenantId, params }) => {
+export const PUT = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "products", "edit");
+  if (denied) return denied;
   const body = await validateBody(req, updateProductSupplierSchema);
   if (isValidationError(body)) return body;
   const link = await prisma.productSupplier.update({
@@ -28,7 +31,9 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(link));
 });
 
-export const DELETE = withAuth(async (req, { tenantId, params }) => {
+export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "products", "edit");
+  if (denied) return denied;
   await prisma.productSupplier.delete({ where: { tenantId, id: params?.linkId } });
   return new NextResponse(null, { status: 204 });
 });

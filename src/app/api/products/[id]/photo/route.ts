@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { uploadFile, deleteFile } from "@/lib/storage";
+import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const product = await prisma.product.findFirst({
@@ -14,7 +15,9 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(product.photoPath);
 });
 
-export const POST = withAuth(async (req, { tenantId, params }) => {
+export const POST = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "products", "edit");
+  if (denied) return denied;
   const productId = params?.id;
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
@@ -42,7 +45,9 @@ export const POST = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(publicUrl);
 });
 
-export const DELETE = withAuth(async (req, { tenantId, params }) => {
+export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "products", "edit");
+  if (denied) return denied;
   const productId = params?.id;
   const product = await prisma.product.findFirst({
     where: { tenantId, id: productId },

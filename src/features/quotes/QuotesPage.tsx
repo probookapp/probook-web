@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { Plus, Eye, Pencil, Trash2, Search, FileText, ArrowRight, Copy } from "lucide-react";
+import { Plus, Eye, Pencil, Trash2, Search, FileText, ArrowRight, Copy, Download } from "lucide-react";
 import {
   Button,
   Card,
@@ -26,12 +26,18 @@ import { useSelection } from "@/hooks/useSelection";
 import { useQuotes, useDeleteQuote, useConvertQuoteToInvoice, useDuplicateQuote, useBatchDeleteQuotes } from "./hooks/useQuotes";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { exportToCsv } from "@/lib/csv-export";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { Quote } from "@/types";
 
 export function QuotesPage() {
   const { t } = useTranslation(["quotes", "common"]);
   const router = useRouter();
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  const canCreate = useAuthStore((s) => s.hasPermission("quotes", "create"));
+  const canEdit = useAuthStore((s) => s.hasPermission("quotes", "edit"));
+  const canDelete = useAuthStore((s) => s.hasPermission("quotes", "delete"));
+  const canConvertToInvoice = useAuthStore((s) => s.hasPermission("invoices", "create"));
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [convertConfirm, setConvertConfirm] = useState<Quote | null>(null);
@@ -54,6 +60,20 @@ export function QuotesPage() {
   useEffect(() => {
     selection.clear();
   }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleExportCsv = () => {
+    exportToCsv(
+      filteredQuotes ?? [],
+      [
+        { header: t("quotes:fields.quoteNumber"), accessor: (q) => q.quote_number },
+        { header: t("quotes:fields.client"), accessor: (q) => q.client?.name ?? "" },
+        { header: t("quotes:fields.issueDate"), accessor: (q) => formatDate(q.issue_date) },
+        { header: t("quotes:fields.status"), accessor: (q) => q.status },
+        { header: t("quotes:fields.totalTtc"), accessor: (q) => q.total },
+      ],
+      `quotes_${new Date().toISOString().split("T")[0]}.csv`
+    );
+  };
 
   const handleDelete = async (id: string) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
@@ -83,10 +103,18 @@ export function QuotesPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-(--color-text-primary)">{t("quotes:title")}</h1>
           <p className="text-sm sm:text-base text-(--color-text-secondary)">{t("quotes:subtitle")}</p>
         </div>
-        <Button onClick={() => router.push("/quotes/new")} size="sm" className="self-start sm:self-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          {t("quotes:newQuote")}
-        </Button>
+        <div className="flex gap-2 self-start sm:self-auto">
+          <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredQuotes?.length}>
+            <Download className="h-4 w-4 mr-2" />
+            {t("common:buttons.exportCsv")}
+          </Button>
+          {canCreate && (
+            <Button onClick={() => router.push("/quotes/new")} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              {t("quotes:newQuote")}
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -133,12 +161,12 @@ export function QuotesPage() {
                     </div>
                     <div className="flex justify-end gap-1 mt-2">
                       <button onClick={() => router.push(`/quotes/${quote.id}`)} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.view")} aria-label={t("common:buttons.view")}><Eye className="h-4 w-4" /></button>
-                      <button onClick={() => router.push(`/quotes/${quote.id}/edit`)} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.edit")} aria-label={t("common:buttons.edit")}><Pencil className="h-4 w-4" /></button>
-                      <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateQuote.mutate(quote.id); }} className="p-1 text-gray-500 hover:text-blue-600" title={t("quotes:actions.duplicate")} aria-label={t("quotes:actions.duplicate")} disabled={duplicateQuote.isPending}><Copy className="h-4 w-4" /></button>
-                      {quote.status === "ACCEPTED" && (
+                      {canEdit && <button onClick={() => router.push(`/quotes/${quote.id}/edit`)} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.edit")} aria-label={t("common:buttons.edit")}><Pencil className="h-4 w-4" /></button>}
+                      {canCreate && <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateQuote.mutate(quote.id); }} className="p-1 text-gray-500 hover:text-blue-600" title={t("quotes:actions.duplicate")} aria-label={t("quotes:actions.duplicate")} disabled={duplicateQuote.isPending}><Copy className="h-4 w-4" /></button>}
+                      {quote.status === "ACCEPTED" && canConvertToInvoice && (
                         <button onClick={() => setConvertConfirm(quote)} className="p-1 text-gray-500 hover:text-green-600" title={t("quotes:actions.convertToInvoice")} aria-label={t("quotes:actions.convertToInvoice")}><ArrowRight className="h-4 w-4" /></button>
                       )}
-                      <button onClick={() => setDeleteConfirmId(quote.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>
+                      {canDelete && <button onClick={() => setDeleteConfirmId(quote.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
                     </div>
                   </div>
                 </div>
@@ -209,6 +237,7 @@ export function QuotesPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </button>
+                        {canEdit && (
                         <button
                           onClick={() => router.push(`/quotes/${quote.id}/edit`)}
                           className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
@@ -217,6 +246,8 @@ export function QuotesPage() {
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
+                        )}
+                        {canCreate && (
                         <button
                           onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateQuote.mutate(quote.id); }}
                           className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
@@ -226,7 +257,8 @@ export function QuotesPage() {
                         >
                           <Copy className="h-4 w-4" />
                         </button>
-                        {quote.status === "ACCEPTED" && (
+                        )}
+                        {quote.status === "ACCEPTED" && canConvertToInvoice && (
                           <button
                             onClick={() => setConvertConfirm(quote)}
                             className="p-1 text-gray-500 hover:text-green-600 transition-colors"
@@ -236,6 +268,7 @@ export function QuotesPage() {
                             <ArrowRight className="h-4 w-4" />
                           </button>
                         )}
+                        {canDelete && (
                         <button
                           onClick={() => setDeleteConfirmId(quote.id)}
                           className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -244,6 +277,7 @@ export function QuotesPage() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -307,12 +341,14 @@ export function QuotesPage() {
         </div>
       </Modal>
 
-      <BulkActionBar
-        selectedCount={selection.selectedCount}
-        onDelete={() => setBulkDeleteOpen(true)}
-        onClear={selection.clear}
-        isDeleting={batchDeleteQuotes.isPending}
-      />
+      {canDelete && (
+        <BulkActionBar
+          selectedCount={selection.selectedCount}
+          onDelete={() => setBulkDeleteOpen(true)}
+          onClear={selection.clear}
+          isDeleting={batchDeleteQuotes.isPending}
+        />
+      )}
 
       <BulkDeleteModal
         isOpen={bulkDeleteOpen}

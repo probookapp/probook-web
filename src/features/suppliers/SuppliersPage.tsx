@@ -33,6 +33,7 @@ import {
   useBatchDeleteSuppliers,
 } from "./hooks/useSuppliers";
 import { useToastStore } from "@/stores/useToastStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { Supplier, CreateSupplierInput, UpdateSupplierInput } from "@/types";
 import type { SupplierFormData } from "./schemas/supplierSchema";
 
@@ -41,6 +42,9 @@ export function SuppliersPage() {
   const { t: tCommon } = useTranslation("common");
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const addToast = useToastStore((state) => state.addToast);
+  const canCreate = useAuthStore((s) => s.hasPermission("suppliers", "create"));
+  const canEdit = useAuthStore((s) => s.hasPermission("suppliers", "edit"));
+  const canDelete = useAuthStore((s) => s.hasPermission("suppliers", "delete"));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedSupplier, setSelectedSupplier] = useState<Supplier | undefined>();
   const [searchQuery, setSearchQuery] = useState("");
@@ -143,10 +147,12 @@ export function SuppliersPage() {
             <Upload className="h-4 w-4 mr-2" />
             {tCommon("buttons.import")}
           </Button>
-          <Button onClick={() => handleOpenModal()} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            {t("newSupplier")}
-          </Button>
+          {canCreate && (
+            <Button onClick={() => handleOpenModal()} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              {t("newSupplier")}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -186,8 +192,8 @@ export function SuppliersPage() {
                       <div className="flex items-center gap-1 shrink-0">
                         <button onClick={() => setProductsSupplier(supplier)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={t("products.title")} aria-label={t("products.title")}><Package className="h-4 w-4" /></button>
                         <button onClick={() => setCreditsSupplier(supplier)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={t("credits.title")} aria-label={t("credits.title")}><CreditCard className="h-4 w-4" /></button>
-                        <button onClick={() => handleOpenModal(supplier)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={tCommon("buttons.edit")} aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>
-                        <button onClick={() => setDeleteConfirmId(supplier.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>
+                        {canEdit && <button onClick={() => handleOpenModal(supplier)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={tCommon("buttons.edit")} aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
+                        {canDelete && <button onClick={() => setDeleteConfirmId(supplier.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
                       </div>
                     </div>
                     {supplier.email && <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{supplier.email}</p>}
@@ -257,6 +263,7 @@ export function SuppliersPage() {
                         >
                           <CreditCard className="h-4 w-4" />
                         </button>
+                        {canEdit && (
                         <button
                           onClick={() => handleOpenModal(supplier)}
                           className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
@@ -265,6 +272,8 @@ export function SuppliersPage() {
                         >
                           <Pencil className="h-4 w-4" />
                         </button>
+                        )}
+                        {canDelete && (
                         <button
                           onClick={() => setDeleteConfirmId(supplier.id)}
                           className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -273,6 +282,7 @@ export function SuppliersPage() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -356,12 +366,14 @@ export function SuppliersPage() {
         {creditsSupplier && <SupplierCredits supplier={creditsSupplier} onClose={() => setCreditsSupplier(null)} />}
       </Modal>
 
-      <BulkActionBar
-        selectedCount={selection.selectedCount}
-        onDelete={() => setBulkDeleteOpen(true)}
-        onClear={selection.clear}
-        isDeleting={batchDeleteSuppliers.isPending}
-      />
+      {canDelete && (
+        <BulkActionBar
+          selectedCount={selection.selectedCount}
+          onDelete={() => setBulkDeleteOpen(true)}
+          onClear={selection.clear}
+          isDeleting={batchDeleteSuppliers.isPending}
+        />
+      )}
       <BulkDeleteModal
         isOpen={bulkDeleteOpen}
         onClose={() => setBulkDeleteOpen(false)}

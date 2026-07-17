@@ -3,8 +3,11 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { posSessionCloseSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
-export const POST = withAuth(async (req, { tenantId }) => {
+export const POST = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "pos", "create");
+  if (denied) return denied;
   const body = await validateBody(req, posSessionCloseSchema);
   if (isValidationError(body)) return body;
 

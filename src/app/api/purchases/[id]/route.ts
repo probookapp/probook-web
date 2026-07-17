@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { purchaseOrderSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 interface LineInput {
   product_id: string;
@@ -27,7 +28,9 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(order));
 });
 
-export const PUT = withAuth(async (req, { tenantId, params }) => {
+export const PUT = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "purchases", "edit");
+  if (denied) return denied;
   const existing = await prisma.purchaseOrder.findFirst({
     where: { tenantId, id: params?.id },
   });
@@ -57,6 +60,7 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
     data: {
       supplierId: body.supplier_id,
       orderDate: body.order_date ? new Date(body.order_date) : existing.orderDate,
+      locationId: body.location_id || null,
       subtotal,
       taxAmount,
       total,
@@ -86,7 +90,9 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(order));
 });
 
-export const DELETE = withAuth(async (req, { tenantId, params }) => {
+export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "purchases", "delete");
+  if (denied) return denied;
   const existing = await prisma.purchaseOrder.findFirst({
     where: { tenantId, id: params?.id },
   });

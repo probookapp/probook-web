@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { clientSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const client = await prisma.client.findFirst({ where: { tenantId, id: params?.id } });
@@ -10,7 +11,9 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(client));
 });
 
-export const PUT = withAuth(async (req, { tenantId, params }) => {
+export const PUT = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "clients", "edit");
+  if (denied) return denied;
   const body = await validateBody(req, clientSchema);
   if (isValidationError(body)) return body;
   const client = await prisma.client.update({
@@ -31,7 +34,9 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(client));
 });
 
-export const DELETE = withAuth(async (req, { tenantId, params }) => {
+export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "clients", "delete");
+  if (denied) return denied;
   const clientId = params?.id as string;
 
   const refCount = await prisma.quote.count({ where: { tenantId, clientId } })

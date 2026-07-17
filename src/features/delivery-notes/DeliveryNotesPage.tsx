@@ -42,11 +42,16 @@ import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { useSelection } from "@/hooks/useSelection";
 import type { DeliveryNote, DeliveryNoteStatus } from "@/types";
 import { formatDate } from "@/lib/utils";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export function DeliveryNotesPage() {
   const { t } = useTranslation(["delivery", "common"]);
   const router = useRouter();
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  const canCreate = useAuthStore((s) => s.hasPermission("delivery_notes", "create"));
+  const canEdit = useAuthStore((s) => s.hasPermission("delivery_notes", "edit"));
+  const canDelete = useAuthStore((s) => s.hasPermission("delivery_notes", "delete"));
+  const canCreateInvoice = useAuthStore((s) => s.hasPermission("invoices", "create"));
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -136,10 +141,12 @@ export function DeliveryNotesPage() {
           <p className="text-sm sm:text-base text-(--color-text-secondary)">{t("delivery:subtitle", "Manage your delivery notes")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          <Button onClick={() => router.push("/delivery-notes/new")} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            {t("delivery:newDeliveryNote")}
-          </Button>
+          {canCreate && (
+            <Button onClick={() => router.push("/delivery-notes/new")} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              {t("delivery:newDeliveryNote")}
+            </Button>
+          )}
         </div>
       </div>
 
@@ -196,11 +203,11 @@ export function DeliveryNotesPage() {
                     </div>
                     <div className="flex justify-end gap-1 mt-2">
                       <Link href={`/delivery-notes/${note.id}`} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.view")} aria-label={t("common:buttons.view")}><Eye className="h-4 w-4" /></Link>
-                      {note.status === "DRAFT" && (
+                      {note.status === "DRAFT" && canEdit && (
                         <Link href={`/delivery-notes/${note.id}/edit`} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.edit")} aria-label={t("common:buttons.edit")}><Pencil className="h-4 w-4" /></Link>
                       )}
-                      <button onClick={() => handleDuplicate(note)} className="p-1 text-gray-500 hover:text-primary-600" title={t("delivery:actions.duplicate", "Duplicate")} aria-label={t("delivery:actions.duplicate", "Duplicate")}><Copy className="h-4 w-4" /></button>
-                      <button onClick={() => setDeleteConfirmId(note.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>
+                      {canCreate && <button onClick={() => handleDuplicate(note)} className="p-1 text-gray-500 hover:text-primary-600" title={t("delivery:actions.duplicate", "Duplicate")} aria-label={t("delivery:actions.duplicate", "Duplicate")}><Copy className="h-4 w-4" /></button>}
+                      {canDelete && <button onClick={() => setDeleteConfirmId(note.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
                     </div>
                   </div>
                 </div>
@@ -281,7 +288,7 @@ export function DeliveryNotesPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </Link>
-                        {note.status === "DRAFT" && (
+                        {note.status === "DRAFT" && canEdit && (
                           <Link
                             href={`/delivery-notes/${note.id}/edit`}
                             className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
@@ -291,6 +298,7 @@ export function DeliveryNotesPage() {
                             <Pencil className="h-4 w-4" />
                           </Link>
                         )}
+                        {canCreate && (
                         <button
                           onClick={() => handleDuplicate(note)}
                           className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
@@ -299,6 +307,8 @@ export function DeliveryNotesPage() {
                         >
                           <Copy className="h-4 w-4" />
                         </button>
+                        )}
+                        {canDelete && (
                         <button
                           onClick={() => setDeleteConfirmId(note.id)}
                           className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -307,6 +317,7 @@ export function DeliveryNotesPage() {
                         >
                           <Trash2 className="h-4 w-4" />
                         </button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -347,24 +358,26 @@ export function DeliveryNotesPage() {
         </div>
       </Modal>
 
-      <BulkActionBar
-        selectedCount={selection.selectedCount}
-        onDelete={() => setBulkDeleteOpen(true)}
-        onClear={selection.clear}
-        isDeleting={batchDeleteDNs.isPending}
-      >
-        {canCreateInvoiceFromSelection && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={handleCreateInvoiceFromSelection}
-            isLoading={createInvoiceFromDNs.isPending}
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            {t("delivery:createInvoiceFromSelection")}
-          </Button>
-        )}
-      </BulkActionBar>
+      {canDelete && (
+        <BulkActionBar
+          selectedCount={selection.selectedCount}
+          onDelete={() => setBulkDeleteOpen(true)}
+          onClear={selection.clear}
+          isDeleting={batchDeleteDNs.isPending}
+        >
+          {canCreateInvoiceFromSelection && canCreateInvoice && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleCreateInvoiceFromSelection}
+              isLoading={createInvoiceFromDNs.isPending}
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              {t("delivery:createInvoiceFromSelection")}
+            </Button>
+          )}
+        </BulkActionBar>
+      )}
       <BulkDeleteModal
         isOpen={bulkDeleteOpen}
         onClose={() => setBulkDeleteOpen(false)}

@@ -20,6 +20,7 @@ import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCompanySettings } from "@/features/settings";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export function QuoteViewPage() {
   const { t } = useTranslation(["quotes", "common"]);
@@ -29,6 +30,9 @@ export function QuoteViewPage() {
   const [showEmailDialog, setShowEmailDialog] = useState(false);
 
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  const canEdit = useAuthStore((s) => s.hasPermission("quotes", "edit"));
+  const canCreateDeliveryNote = useAuthStore((s) => s.hasPermission("delivery_notes", "create"));
+  const canConvertToInvoice = useAuthStore((s) => s.hasPermission("invoices", "create"));
   const { data: quote, isLoading } = useQuote(id ?? "");
   const { data: company } = useCompanySettings();
   const convertToInvoice = useConvertQuoteToInvoice();
@@ -94,29 +98,35 @@ export function QuoteViewPage() {
             <Mail className="h-4 w-4 mr-2" />
             {t("quotes:actions.sendByEmail")}
           </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => router.push(`/quotes/${id}/edit`)}
-          >
-            <Pencil className="h-4 w-4 mr-2" />
-            {t("common:buttons.edit")}
-          </Button>
+          {canEdit && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => router.push(`/quotes/${id}/edit`)}
+            >
+              <Pencil className="h-4 w-4 mr-2" />
+              {t("common:buttons.edit")}
+            </Button>
+          )}
           {quote.status === "ACCEPTED" && (
             <>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleConvertToDeliveryNote}
-                isLoading={convertToDeliveryNote.isPending}
-              >
-                <Truck className="h-4 w-4 mr-2" />
-                {t("quotes:createDeliveryNote")}
-              </Button>
-              <Button size="sm" onClick={() => setShowConvertModal(true)}>
-                <ArrowRight className="h-4 w-4 mr-2" />
-                {t("quotes:actions.convertToInvoice")}
-              </Button>
+              {canCreateDeliveryNote && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleConvertToDeliveryNote}
+                  isLoading={convertToDeliveryNote.isPending}
+                >
+                  <Truck className="h-4 w-4 mr-2" />
+                  {t("quotes:createDeliveryNote")}
+                </Button>
+              )}
+              {canConvertToInvoice && (
+                <Button size="sm" onClick={() => setShowConvertModal(true)}>
+                  <ArrowRight className="h-4 w-4 mr-2" />
+                  {t("quotes:actions.convertToInvoice")}
+                </Button>
+              )}
             </>
           )}
         </div>

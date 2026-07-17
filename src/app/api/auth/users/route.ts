@@ -4,6 +4,7 @@ import { hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createUserSchema } from "@/lib/validations";
+import { buildPermissionRows, serializeUser } from "./permissions";
 
 export const GET = withAuth(async (req, { tenantId }) => {
   const users = await prisma.user.findMany({
@@ -14,18 +15,9 @@ export const GET = withAuth(async (req, { tenantId }) => {
   const result = await Promise.all(
     users.map(async (u) => {
       const perms = await prisma.userPermission.findMany({
-        where: { userId: u.id, granted: true },
+        where: { userId: u.id },
       });
-      return {
-        id: u.id,
-        username: u.username,
-        display_name: u.displayName,
-        role: u.role,
-        is_active: u.isActive,
-        permissions: perms.map((p) => p.permissionKey),
-        created_at: u.createdAt.toISOString(),
-        updated_at: u.updatedAt.toISOString(),
-      };
+      return serializeUser(u, perms);
     })
   );
 
@@ -35,7 +27,7 @@ export const GET = withAuth(async (req, { tenantId }) => {
 export const POST = withAdmin(async (req, { tenantId }) => {
   const body = await validateBody(req, createUserSchema);
   if (isValidationError(body)) return body;
-  const { username, display_name, password, role, permissions } = body;
+  const { username, display_name, password, role, permissions, permission_details } = body;
 
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({
@@ -48,28 +40,14 @@ export const POST = withAdmin(async (req, { tenantId }) => {
     },
   });
 
-  if (permissions && Array.isArray(permissions)) {
-    await prisma.userPermission.createMany({
-      data: permissions.map((key: string) => ({
-        userId: user.id,
-        permissionKey: key,
-        granted: true,
-      })),
-    });
+  const rows = buildPermissionRows(user.id, permission_details, permissions);
+  if (rows.length > 0) {
+    await prisma.userPermission.createMany({ data: rows });
   }
 
   const perms = await prisma.userPermission.findMany({
-    where: { userId: user.id, granted: true },
+    where: { userId: user.id },
   });
 
-  return NextResponse.json({
-    id: user.id,
-    username: user.username,
-    display_name: user.displayName,
-    role: user.role,
-    is_active: user.isActive,
-    permissions: perms.map((p) => p.permissionKey),
-    created_at: user.createdAt.toISOString(),
-    updated_at: user.updatedAt.toISOString(),
-  });
+  return NextResponse.json(serializeUser(user, perms));
 });

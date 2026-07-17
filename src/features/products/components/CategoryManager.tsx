@@ -23,10 +23,14 @@ import {
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { createProductCategorySchema, type ProductCategoryFormData } from "../schemas/productSchema";
 import type { ProductCategory } from "@/types";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export function CategoryManager() {
   const { t } = useTranslation(["products", "common"]);
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  const canCreate = useAuthStore((s) => s.hasPermission("products", "create"));
+  const canEdit = useAuthStore((s) => s.hasPermission("products", "edit"));
+  const canDelete = useAuthStore((s) => s.hasPermission("products", "delete"));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<ProductCategory | undefined>();
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
@@ -118,6 +122,7 @@ export function CategoryManager() {
             )}
           </div>
           <div className="flex items-center gap-2">
+            {canEdit && (
             <button
               onClick={() => handleOpenModal(category)}
               className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
@@ -126,6 +131,8 @@ export function CategoryManager() {
             >
               <Pencil className="h-4 w-4" />
             </button>
+            )}
+            {canDelete && (
             <button
               onClick={() => setDeleteConfirmId(category.id)}
               className="p-1 text-gray-500 hover:text-red-600 transition-colors"
@@ -134,6 +141,7 @@ export function CategoryManager() {
             >
               <Trash2 className="h-4 w-4" />
             </button>
+            )}
           </div>
         </div>
         {hasChildren && isExpanded && children.map((child) => renderCategory(child, level + 1))}
@@ -156,10 +164,12 @@ export function CategoryManager() {
           <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{t("categories.title")}</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400">{t("categories.subtitle")}</p>
         </div>
-        <Button onClick={() => handleOpenModal()} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          {t("categories.newCategory")}
-        </Button>
+        {canCreate && (
+          <Button onClick={() => handleOpenModal()} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            {t("categories.newCategory")}
+          </Button>
+        )}
       </div>
 
       <Card>

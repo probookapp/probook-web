@@ -3,8 +3,11 @@ import { withAuth } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { batchDeleteSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
-export const POST = withAuth(async (req, { tenantId }) => {
+export const POST = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "suppliers", "delete");
+  if (denied) return denied;
   const ids = await validateBody(req, batchDeleteSchema);
   if (isValidationError(ids)) return ids;
 

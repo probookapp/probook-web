@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { updateDeliveryNoteSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 interface DeliveryLineInput {
   product_id?: string | null;
@@ -22,7 +23,9 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(note));
 });
 
-export const PUT = withAuth(async (req, { tenantId, params }) => {
+export const PUT = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "delivery_notes", "edit");
+  if (denied) return denied;
   const body = await validateBody(req, updateDeliveryNoteSchema);
   if (isValidationError(body)) return body;
   const lines = body.lines || [];
@@ -56,7 +59,9 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(note));
 });
 
-export const DELETE = withAuth(async (req, { tenantId, params }) => {
+export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "delivery_notes", "delete");
+  if (denied) return denied;
   await prisma.deliveryNote.delete({ where: { tenantId, id: params?.id } });
   return new NextResponse(null, { status: 204 });
 });

@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { updateQuoteSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 interface LineInput {
   product_id?: string | null;
@@ -47,7 +48,9 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(quote));
 });
 
-export const PUT = withAuth(async (req, { tenantId, params }) => {
+export const PUT = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "quotes", "edit");
+  if (denied) return denied;
   const body = await validateBody(req, updateQuoteSchema);
   if (isValidationError(body)) return body;
   const lines = body.lines || [];
@@ -98,7 +101,9 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(quote));
 });
 
-export const DELETE = withAuth(async (req, { tenantId, params }) => {
+export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "quotes", "delete");
+  if (denied) return denied;
   await prisma.quote.delete({ where: { tenantId, id: params?.id } });
   return new NextResponse(null, { status: 204 });
 });

@@ -1,10 +1,14 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { requirePermission } from "@/lib/permissions-server";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { invoiceFromDeliveryNotesSchema } from "@/lib/validations";
 
-export const POST = withAuth(async (req, { tenantId }) => {
+export const POST = withAuth(async (req, { session, tenantId }) => {
+  const denied = await requirePermission(session, "invoices", "create");
+  if (denied) return denied;
+
   const raw = await validateBody(req, invoiceFromDeliveryNotesSchema);
   if (isValidationError(raw)) return raw;
   const deliveryNoteIds = raw.delivery_note_ids;

@@ -6,6 +6,7 @@ import { Button, Input } from "@/components/ui";
 import { productVariantApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { toast } from "@/stores/useToastStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { ProductVariant, CreateProductVariantInput } from "@/types";
 
 const PRESET_ATTRIBUTES = ["size", "color", "material"];
@@ -36,6 +37,9 @@ const emptyForm: VariantFormState = {
 export function VariantManager({ productId }: VariantManagerProps) {
   const { t } = useTranslation(["products", "common"]);
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  const canCreate = useAuthStore((s) => s.hasPermission("products", "create"));
+  const canEdit = useAuthStore((s) => s.hasPermission("products", "edit"));
+  const canDelete = useAuthStore((s) => s.hasPermission("products", "delete"));
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -152,7 +156,7 @@ export function VariantManager({ productId }: VariantManagerProps) {
             </p>
           )}
         </div>
-        {!showForm && (
+        {!showForm && canCreate && (
           <button
             type="button"
             onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } resetForm(); setShowForm(true); }}
@@ -200,6 +204,7 @@ export function VariantManager({ productId }: VariantManagerProps) {
                   </td>
                   <td className="px-3 py-2">
                     <div className="flex items-center gap-1 justify-end">
+                      {canEdit && (
                       <button
                         type="button"
                         onClick={() => isDemoMode ? showSubscribePrompt() : startEdit(v)}
@@ -207,6 +212,8 @@ export function VariantManager({ productId }: VariantManagerProps) {
                       >
                         <Edit2 className="h-3.5 w-3.5" />
                       </button>
+                      )}
+                      {canDelete && (
                       <button
                         type="button"
                         onClick={() => {
@@ -217,6 +224,7 @@ export function VariantManager({ productId }: VariantManagerProps) {
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
+                      )}
                     </div>
                   </td>
                 </tr>

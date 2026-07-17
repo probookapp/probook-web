@@ -30,6 +30,7 @@ import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCompanySettings, useLogoBase64 } from "@/features/settings/hooks/useSettings";
 import { PDFViewer } from "../pdf/PDFViewer";
 import { formatDate } from "@/lib/utils";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { DeliveryNoteStatus } from "@/types";
 
 export function DeliveryNoteViewPage() {
@@ -48,6 +49,9 @@ export function DeliveryNoteViewPage() {
   };
 
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  const canEdit = useAuthStore((s) => s.hasPermission("delivery_notes", "edit"));
+  const canCreate = useAuthStore((s) => s.hasPermission("delivery_notes", "create"));
+  const canConvertToInvoice = useAuthStore((s) => s.hasPermission("invoices", "create"));
   const { data: deliveryNote, isLoading } = useDeliveryNote(id || "");
   const { data: company } = useCompanySettings();
   const { data: logoBase64 } = useLogoBase64();
@@ -149,7 +153,7 @@ export function DeliveryNoteViewPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {deliveryNote.status === "DRAFT" && (
+          {deliveryNote.status === "DRAFT" && canEdit && (
             <>
               <Button
                 variant="secondary"
@@ -174,7 +178,7 @@ export function DeliveryNoteViewPage() {
             <Mail className="h-4 w-4 mr-2" />
             {t("delivery:actions.sendByEmail")}
           </Button>
-          {deliveryNote.status === "DELIVERED" && !deliveryNote.invoice_id && (
+          {deliveryNote.status === "DELIVERED" && !deliveryNote.invoice_id && canConvertToInvoice && (
             <Button
               variant="secondary"
               size="sm"
@@ -185,10 +189,12 @@ export function DeliveryNoteViewPage() {
               {t("delivery:actions.createInvoice")}
             </Button>
           )}
-          <Button variant="secondary" size="sm" onClick={handleDuplicate}>
-            <Copy className="h-4 w-4 mr-2" />
-            {t("delivery:actions.duplicate")}
-          </Button>
+          {canCreate && (
+            <Button variant="secondary" size="sm" onClick={handleDuplicate}>
+              <Copy className="h-4 w-4 mr-2" />
+              {t("delivery:actions.duplicate")}
+            </Button>
+          )}
         </div>
       </div>
 

@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { supplierSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const supplier = await prisma.supplier.findFirst({ where: { tenantId, id: params?.id } });
@@ -10,7 +11,9 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(supplier));
 });
 
-export const PUT = withAuth(async (req, { tenantId, params }) => {
+export const PUT = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "suppliers", "edit");
+  if (denied) return denied;
   const body = await validateBody(req, supplierSchema);
   if (isValidationError(body)) return body;
   const supplier = await prisma.supplier.update({
@@ -26,7 +29,9 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(supplier));
 });
 
-export const DELETE = withAuth(async (req, { tenantId, params }) => {
+export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "suppliers", "delete");
+  if (denied) return denied;
   const supplierId = params?.id as string;
 
   // Prevent deleting suppliers with purchase orders
