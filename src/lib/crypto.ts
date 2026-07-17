@@ -1,6 +1,7 @@
 // ─── AES-256-GCM Encrypted Backup via Web Crypto API ───
 
 import { API_BASE_URL } from "./config";
+import { exportQuery } from "./api";
 
 const SALT_LENGTH = 16;
 const NONCE_LENGTH = 12;
@@ -80,12 +81,23 @@ export async function decryptBackup(
   }
 }
 
+/**
+ * Export the tenant and encrypt it in the browser before it ever touches disk.
+ *
+ * This is the only export allowed to carry secrets (`include_secrets=1`, i.e.
+ * users' password hashes): the plaintext exists only in memory here, and what
+ * gets written out is AES-encrypted with the user's password. Restoring such a
+ * backup can recreate a deleted user WITH their original password — the plain
+ * JSON export recreates them with an unusable one instead.
+ */
 export async function downloadEncryptedBackup(
   password: string,
+  options?: { includePhotos?: boolean },
 ): Promise<void> {
-  const res = await fetch(`${API_BASE_URL}/api/export`, {
-    credentials: "include",
-  });
+  const res = await fetch(
+    `${API_BASE_URL}/api/export${exportQuery({ ...options, includeSecrets: true })}`,
+    { credentials: "include" },
+  );
   if (!res.ok) throw new Error("Export failed");
 
   const jsonData = await res.text();

@@ -12,6 +12,9 @@ export function BackupSection() {
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const [exportPassword, setExportPassword] = useState("");
   const [exportPasswordConfirm, setExportPasswordConfirm] = useState("");
+  // Off by default: photos are by far the largest thing in a backup, and most
+  // restores only need the catalogue's data.
+  const [includePhotos, setIncludePhotos] = useState(false);
   const [importPassword, setImportPassword] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [isExportingEncrypted, setIsExportingEncrypted] = useState(false);
@@ -24,7 +27,7 @@ export function BackupSection() {
     if (isDemoMode) { showSubscribePrompt(); return; }
     setIsExporting(true);
     try {
-      await exportApi.download();
+      await exportApi.download({ includePhotos });
       toast.success(t("backup.exportSuccess"));
     } catch {
       toast.error(t("backup.exportFailed"));
@@ -45,7 +48,7 @@ export function BackupSection() {
     }
     setIsExportingEncrypted(true);
     try {
-      await downloadEncryptedBackup(exportPassword);
+      await downloadEncryptedBackup(exportPassword, { includePhotos });
       setExportPassword("");
       setExportPasswordConfirm("");
       toast.success(t("backup.exportSuccess"));
@@ -113,6 +116,24 @@ export function BackupSection() {
           {t("backup.exportDescription")}
         </p>
 
+        {/* Applies to BOTH export paths below */}
+        <div>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              checked={includePhotos}
+              onChange={(e) => setIncludePhotos(e.target.checked)}
+            />
+            <span className="text-sm text-gray-700 dark:text-gray-300">
+              {t("backup.includePhotos")}
+            </span>
+          </label>
+          <p className="mt-1 ml-7 text-xs text-gray-500 dark:text-gray-400">
+            {t("backup.includePhotosHint")}
+          </p>
+        </div>
+
         {/* Plain export */}
         <div className="flex items-center gap-3">
           <Button
@@ -132,6 +153,9 @@ export function BackupSection() {
             <Lock className="h-4 w-4" />
             {t("backup.exportEncrypted")}
           </div>
+          <p className="text-xs text-gray-500 dark:text-gray-400">
+            {t("backup.exportEncryptedHint")}
+          </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input
               type="password"
