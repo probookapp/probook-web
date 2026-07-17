@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { reportApi } from "@/lib/api";
+import { reportApi, posApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import {
   DEMO_REVENUE_BY_MONTH,
@@ -52,5 +52,68 @@ export function useQuoteConversionStats(startDate?: string, endDate?: string) {
       ? () => ({ total_quotes: 3, converted_quotes: 1, conversion_rate: 33.3, total_quoted_amount: 346885, converted_amount: 59500 })
       : () => reportApi.getQuoteConversionStats(startDate, endDate),
     staleTime: isDemoMode ? Infinity : undefined,
+  });
+}
+
+export function useExpensesReport(startDate?: string, endDate?: string) {
+  const { isDemoMode } = useDemoMode();
+  return useQuery({
+    queryKey: ["reports", "expenses", startDate, endDate, { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => [] : () => reportApi.getExpensesReport(startDate, endDate),
+    staleTime: isDemoMode ? Infinity : undefined,
+  });
+}
+
+export function useProfitMargin(startDate?: string, endDate?: string) {
+  const { isDemoMode } = useDemoMode();
+  return useQuery({
+    queryKey: ["reports", "profit-margin", startDate, endDate, { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => [] : () => reportApi.getProfitMargin(startDate, endDate),
+    staleTime: isDemoMode ? Infinity : undefined,
+  });
+}
+
+export function useSupplierSpend(startDate?: string, endDate?: string) {
+  const { isDemoMode } = useDemoMode();
+  return useQuery({
+    queryKey: ["reports", "supplier-spend", startDate, endDate, { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => [] : () => reportApi.getSupplierSpend(startDate, endDate),
+    staleTime: isDemoMode ? Infinity : undefined,
+  });
+}
+
+export function useInventoryValuation(locationId?: string) {
+  const { isDemoMode } = useDemoMode();
+  return useQuery({
+    queryKey: ["reports", "inventory-valuation", locationId ?? null, { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => [] : () => reportApi.getInventoryValuation(locationId),
+    staleTime: isDemoMode ? Infinity : undefined,
+  });
+}
+
+export function useTaxSummary(startDate?: string, endDate?: string) {
+  const { isDemoMode } = useDemoMode();
+  return useQuery({
+    queryKey: ["reports", "tax-summary", startDate, endDate, { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => null : () => reportApi.getTaxSummary(startDate, endDate),
+    staleTime: isDemoMode ? Infinity : undefined,
+  });
+}
+
+export function useAccountingExport(startDate?: string, endDate?: string) {
+  const { isDemoMode } = useDemoMode();
+  return useQuery({
+    queryKey: ["reports", "accounting-export", startDate, endDate, { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => null : () => reportApi.getAccountingExport(startDate, endDate),
+    staleTime: isDemoMode ? Infinity : undefined,
+  });
+}
+
+export function usePosDailyReport(date: string, registerId?: string) {
+  const { isDemoMode } = useDemoMode();
+  return useQuery({
+    queryKey: ["reports", "pos-daily", date, registerId, { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => null : () => posApi.getDailyReport(date, registerId),
+    enabled: !!date && !isDemoMode,
   });
 }

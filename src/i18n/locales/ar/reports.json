@@ -2,8 +2,12 @@
   "title": "التقارير",
   "subtitle": "تحليل أداء عملك التجاري",
   "exportCsv": "CSV تصدير ",
-  "exportSuccess": "تم حفظ CSV في {{path}}",
-  "exportError": "فشل في حفظ CSV",
+  "exportPdf": "PDF تصدير",
+  "exportSuccess": "تم الحفظ في {{path}}",
+  "exportError": "فشل التصدير",
+  "pdf": {
+    "generatedAt": "تم الإنشاء في {{date}}"
+  },
   "totalHt": "المجموع (بدون ضريبة)",
   "totalTtc": "المجموع (شامل الضريبة)",
   "noUnpaidInvoices": "لا توجد فواتير غير مدفوعة",
@@ -12,6 +16,8 @@
   "dueNow": "مستحق الآن",
   "from": "من",
   "to": "إلى",
+  "date": "التاريخ",
+  "chart": "الرسم البياني",
   "acceptedQuotes": "العروض المقبولة",
   "revenueByPeriod": {
     "title": "الإيرادات حسب الفترة",
@@ -34,6 +40,22 @@
     "revenueHt": "الإيرادات (بدون ضريبة)",
     "revenueTtc": "الإيرادات (شامل الضريبة)"
   },
+  "profitMargin": {
+    "title": "الربح / الهامش",
+    "product": "المنتج",
+    "quantity": "الكمية",
+    "revenue": "الإيرادات (بدون ضريبة)",
+    "cost": "التكلفة",
+    "margin": "الهامش",
+    "marginPercent": "نسبة الهامش %"
+  },
+  "supplierSpend": {
+    "title": "إنفاق الموردين",
+    "supplier": "المورّد",
+    "orderCount": "الطلبات",
+    "totalSpend": "إجمالي الإنفاق",
+    "total": "إجمالي الإنفاق"
+  },
   "outstanding": {
     "title": "المستحقات",
     "invoice": "الفاتورة",
@@ -48,10 +70,91 @@
     "totalQuotes": "إجمالي العروض",
     "conversionRate": "معدل التحويل",
     "totalQuotedAmount": "إجمالي المبلغ المعروض",
-    "convertedAmount": "المبلغ المحول"
+    "convertedAmount": "المبلغ المحول",
+    "metric": "المؤشر",
+    "value": "القيمة"
+  },
+  "posDaily": {
+    "title": "تقرير الكاشير اليومي (تقرير Z)",
+    "date": "التاريخ",
+    "sessionCount": "الجلسات",
+    "transactionCount": "المعاملات",
+    "totalSales": "إجمالي المبيعات",
+    "subtotal": "المجموع الفرعي (بدون ضريبة)",
+    "taxAmount": "الضريبة",
+    "cashSales": "المبيعات النقدية",
+    "cardSales": "المبيعات بالبطاقة",
+    "cancelledCount": "المعاملات الملغاة",
+    "cancelledTotal": "إجمالي الملغى",
+    "metric": "المؤشر",
+    "value": "القيمة",
+    "noData": "لا توجد مبيعات لهذا اليوم"
+  },
+  "expenses": {
+    "title": "المصاريف",
+    "period": "الفترة",
+    "totalAmount": "المبلغ الإجمالي",
+    "expenseCount": "عدد المصاريف",
+    "total": "إجمالي المصاريف"
+  },
+  "lowStock": {
+    "title": "المخزون المنخفض",
+    "product": "المنتج",
+    "variant": "المتغير",
+    "quantity": "الكمية",
+    "threshold": "الحد",
+    "noData": "لا توجد عناصر بمخزون منخفض"
+  },
+  "inventoryValuation": {
+    "title": "تقييم المخزون",
+    "product": "المنتج",
+    "quantity": "الكمية",
+    "purchasePrice": "سعر الشراء",
+    "stockValue": "قيمة المخزون",
+    "totalValue": "إجمالي قيمة المخزون"
+  },
+  "taxSummary": {
+    "title": "ملخص الضريبة",
+    "sales": "المبيعات",
+    "purchases": "المشتريات",
+    "salesVat": "ضريبة القيمة المضافة المحصّلة (المبيعات)",
+    "purchasesVat": "ضريبة القيمة المضافة القابلة للخصم (المشتريات)",
+    "netVat": "صافي ضريبة القيمة المضافة المستحقة",
+    "stampDutyDue": "رسم الطابع المستحق",
+    "type": "النوع",
+    "rate": "المعدل",
+    "ht": "بدون ضريبة",
+    "vat": "ض.ق.م",
+    "ttc": "شامل الضريبة",
+    "stampDutyNote": "رسم الطابع بنسبة {{rate}}% على المدفوعات النقدية بإجمالي {{base}}."
+  },
+  "accountingExport": {
+    "title": "تصدير محاسبي",
+    "description": "قم بتنزيل بيانات الفترة لتسليمها إلى محاسبك.",
+    "downloadJournal": "اليومية (مجمّعة)",
+    "sales": "المبيعات",
+    "purchases": "المشتريات",
+    "payments": "المدفوعات",
+    "expenses": "المصاريف",
+    "date": "التاريخ",
+    "entryType": "النوع",
+    "document": "المستند",
+    "party": "الطرف",
+    "ht": "بدون ضريبة",
+    "vat": "ض.ق.م",
+    "ttc": "شامل الضريبة",
+    "types": {
+      "sale": "بيع",
+      "purchase": "شراء",
+      "payment": "دفعة",
+      "expense": "مصروف"
+    },
+    "truncatedNote": "عرض أول 100 من أصل {{count}} سجل. قم بتصدير CSV للحصول على اليومية الكاملة."
   },
   "filters": {
-    "dateRange": "نطاق التاريخ"
+    "dateRange": "نطاق التاريخ",
+    "location": "الموقع",
+    "allLocations": "كل المواقع"
   },
   "noData": "لا توجد بيانات لهذه الفترة"
 }

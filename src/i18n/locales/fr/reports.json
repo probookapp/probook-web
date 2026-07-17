@@ -2,8 +2,12 @@
   "title": "Rapports",
   "subtitle": "Analysez vos performances commerciales",
   "exportCsv": "Exporter CSV",
-  "exportSuccess": "CSV enregistré dans {{path}}",
-  "exportError": "Échec de l'enregistrement du CSV",
+  "exportPdf": "Exporter PDF",
+  "exportSuccess": "Enregistré dans {{path}}",
+  "exportError": "Échec de l'exportation",
+  "pdf": {
+    "generatedAt": "Généré le {{date}}"
+  },
   "totalHt": "Total HT",
   "totalTtc": "Total TTC",
   "noUnpaidInvoices": "Aucune facture impayée",
@@ -12,6 +16,8 @@
   "dueNow": "À échéance",
   "from": "Du",
   "to": "Au",
+  "date": "Date",
+  "chart": "Graphique",
   "acceptedQuotes": "Devis acceptés",
   "revenueByPeriod": {
     "title": "CA par période",
@@ -34,6 +40,22 @@
     "revenueHt": "CA HT",
     "revenueTtc": "CA TTC"
   },
+  "profitMargin": {
+    "title": "Profit / Marge",
+    "product": "Produit",
+    "quantity": "Quantité",
+    "revenue": "CA HT",
+    "cost": "Coût",
+    "margin": "Marge",
+    "marginPercent": "Marge %"
+  },
+  "supplierSpend": {
+    "title": "Dépenses fournisseurs",
+    "supplier": "Fournisseur",
+    "orderCount": "Commandes",
+    "totalSpend": "Total dépensé",
+    "total": "Total dépensé"
+  },
   "outstanding": {
     "title": "Impayés",
     "invoice": "Facture",
@@ -48,10 +70,91 @@
     "totalQuotes": "Total devis",
     "conversionRate": "Taux de conversion",
     "totalQuotedAmount": "Montant total devisé",
-    "convertedAmount": "Montant converti"
+    "convertedAmount": "Montant converti",
+    "metric": "Indicateur",
+    "value": "Valeur"
+  },
+  "posDaily": {
+    "title": "Caisse du jour (Rapport Z)",
+    "date": "Date",
+    "sessionCount": "Sessions",
+    "transactionCount": "Transactions",
+    "totalSales": "Total des ventes",
+    "subtotal": "Sous-total HT",
+    "taxAmount": "TVA",
+    "cashSales": "Ventes en espèces",
+    "cardSales": "Ventes par carte",
+    "cancelledCount": "Transactions annulées",
+    "cancelledTotal": "Total annulé",
+    "metric": "Indicateur",
+    "value": "Valeur",
+    "noData": "Aucune vente pour cette journée"
+  },
+  "expenses": {
+    "title": "Dépenses",
+    "period": "Période",
+    "totalAmount": "Montant total",
+    "expenseCount": "Nombre de dépenses",
+    "total": "Total des dépenses"
+  },
+  "lowStock": {
+    "title": "Stock faible",
+    "product": "Produit",
+    "variant": "Variante",
+    "quantity": "Quantité",
+    "threshold": "Seuil",
+    "noData": "Aucun article en stock faible"
+  },
+  "inventoryValuation": {
+    "title": "Valorisation du stock",
+    "product": "Produit",
+    "quantity": "Quantité",
+    "purchasePrice": "Prix d'achat",
+    "stockValue": "Valeur du stock",
+    "totalValue": "Valeur totale du stock"
+  },
+  "taxSummary": {
+    "title": "Récapitulatif TVA",
+    "sales": "Ventes",
+    "purchases": "Achats",
+    "salesVat": "TVA collectée (ventes)",
+    "purchasesVat": "TVA déductible (achats)",
+    "netVat": "TVA nette à payer",
+    "stampDutyDue": "Droit de timbre dû",
+    "type": "Type",
+    "rate": "Taux",
+    "ht": "HT",
+    "vat": "TVA",
+    "ttc": "TTC",
+    "stampDutyNote": "Droit de timbre à {{rate}}% sur les paiements en espèces totalisant {{base}}."
+  },
+  "accountingExport": {
+    "title": "Export comptable",
+    "description": "Téléchargez les données de la période à remettre à votre comptable.",
+    "downloadJournal": "Journal (combiné)",
+    "sales": "Ventes",
+    "purchases": "Achats",
+    "payments": "Règlements",
+    "expenses": "Dépenses",
+    "date": "Date",
+    "entryType": "Type",
+    "document": "Document",
+    "party": "Tiers",
+    "ht": "HT",
+    "vat": "TVA",
+    "ttc": "TTC",
+    "types": {
+      "sale": "Vente",
+      "purchase": "Achat",
+      "payment": "Règlement",
+      "expense": "Dépense"
+    },
+    "truncatedNote": "Affichage des 100 premières lignes sur {{count}}. Exportez le CSV pour le journal complet."
   },
   "filters": {
-    "dateRange": "Période"
+    "dateRange": "Période",
+    "location": "Emplacement",
+    "allLocations": "Tous les emplacements"
   },
   "noData": "Aucune donnée pour cette période"
 }

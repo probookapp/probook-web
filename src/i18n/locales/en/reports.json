@@ -2,8 +2,12 @@
   "title": "Reports",
   "subtitle": "Analyze your business performance",
   "exportCsv": "Export CSV",
-  "exportSuccess": "CSV saved to {{path}}",
-  "exportError": "Failed to save CSV",
+  "exportPdf": "Export PDF",
+  "exportSuccess": "Saved to {{path}}",
+  "exportError": "Export failed",
+  "pdf": {
+    "generatedAt": "Generated on {{date}}"
+  },
   "totalHt": "Total (excl. VAT)",
   "totalTtc": "Total (incl. VAT)",
   "noUnpaidInvoices": "No unpaid invoices",
@@ -12,6 +16,8 @@
   "dueNow": "Due now",
   "from": "From",
   "to": "To",
+  "date": "Date",
+  "chart": "Chart",
   "acceptedQuotes": "Accepted quotes",
   "revenueByPeriod": {
     "title": "Revenue by Period",
@@ -34,6 +40,22 @@
     "revenueHt": "Revenue (excl. VAT)",
     "revenueTtc": "Revenue (incl. VAT)"
   },
+  "profitMargin": {
+    "title": "Profit / Margin",
+    "product": "Product",
+    "quantity": "Quantity",
+    "revenue": "Revenue (excl. VAT)",
+    "cost": "Cost",
+    "margin": "Margin",
+    "marginPercent": "Margin %"
+  },
+  "supplierSpend": {
+    "title": "Supplier Spend",
+    "supplier": "Supplier",
+    "orderCount": "Orders",
+    "totalSpend": "Total Spend",
+    "total": "Total spend"
+  },
   "outstanding": {
     "title": "Outstanding",
     "invoice": "Invoice",
@@ -48,10 +70,91 @@
     "totalQuotes": "Total Quotes",
     "conversionRate": "Conversion Rate",
     "totalQuotedAmount": "Total Quoted Amount",
-    "convertedAmount": "Converted Amount"
+    "convertedAmount": "Converted Amount",
+    "metric": "Metric",
+    "value": "Value"
+  },
+  "posDaily": {
+    "title": "POS Daily (Z-Report)",
+    "date": "Date",
+    "sessionCount": "Sessions",
+    "transactionCount": "Transactions",
+    "totalSales": "Total Sales",
+    "subtotal": "Subtotal (excl. VAT)",
+    "taxAmount": "VAT",
+    "cashSales": "Cash Sales",
+    "cardSales": "Card Sales",
+    "cancelledCount": "Cancelled Transactions",
+    "cancelledTotal": "Cancelled Total",
+    "metric": "Metric",
+    "value": "Value",
+    "noData": "No sales for this day"
+  },
+  "expenses": {
+    "title": "Expenses",
+    "period": "Period",
+    "totalAmount": "Total Amount",
+    "expenseCount": "Expense Count",
+    "total": "Total expenses"
+  },
+  "lowStock": {
+    "title": "Low Stock",
+    "product": "Product",
+    "variant": "Variant",
+    "quantity": "Quantity",
+    "threshold": "Threshold",
+    "noData": "No low-stock items"
+  },
+  "inventoryValuation": {
+    "title": "Inventory Valuation",
+    "product": "Product",
+    "quantity": "Quantity",
+    "purchasePrice": "Purchase Price",
+    "stockValue": "Stock Value",
+    "totalValue": "Total inventory value"
+  },
+  "taxSummary": {
+    "title": "Tax Summary",
+    "sales": "Sales",
+    "purchases": "Purchases",
+    "salesVat": "Collected VAT (sales)",
+    "purchasesVat": "Deductible VAT (purchases)",
+    "netVat": "Net VAT due",
+    "stampDutyDue": "Stamp duty due",
+    "type": "Type",
+    "rate": "Rate",
+    "ht": "Excl. VAT",
+    "vat": "VAT",
+    "ttc": "Incl. VAT",
+    "stampDutyNote": "Stamp duty at {{rate}}% on cash payments totalling {{base}}."
+  },
+  "accountingExport": {
+    "title": "Accounting Export",
+    "description": "Download a period dataset to hand over to your accountant.",
+    "downloadJournal": "Journal (combined)",
+    "sales": "Sales",
+    "purchases": "Purchases",
+    "payments": "Payments",
+    "expenses": "Expenses",
+    "date": "Date",
+    "entryType": "Type",
+    "document": "Document",
+    "party": "Party",
+    "ht": "Excl. VAT",
+    "vat": "VAT",
+    "ttc": "Incl. VAT",
+    "types": {
+      "sale": "Sale",
+      "purchase": "Purchase",
+      "payment": "Payment",
+      "expense": "Expense"
+    },
+    "truncatedNote": "Showing the first 100 of {{count}} entries. Export the CSV for the full journal."
   },
   "filters": {
-    "dateRange": "Date Range"
+    "dateRange": "Date Range",
+    "location": "Location",
+    "allLocations": "All locations"
   },
   "noData": "No data for this period"
 }

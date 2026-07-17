@@ -15,6 +15,7 @@
     "search": "Search",
     "filter": "Filter",
     "export": "Export",
+    "exportCsv": "Export CSV",
     "import": "Import",
     "print": "Print",
     "download": "Download",
