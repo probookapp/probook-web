@@ -25,8 +25,11 @@ import {
   useUpdateAnnouncement,
   useDeleteAnnouncement,
 } from "./hooks/useAnnouncements";
+import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
+import { useAdminPlans } from "@/features/admin/plans/hooks/usePlans";
 
 type Announcement = Record<string, unknown>;
+type NamedOption = { id: string; name?: string; slug?: string };
 
 interface AnnouncementFormState {
   title: string;
@@ -59,6 +62,11 @@ export function AnnouncementsPage() {
   const createAnnouncement = useCreateAnnouncement();
   const updateAnnouncement = useUpdateAnnouncement();
   const deleteAnnouncement = useDeleteAnnouncement();
+
+  const { data: tenantsData } = useAdminTenants();
+  const { data: plansData } = useAdminPlans();
+  const tenants = (tenantsData || []) as unknown as NamedOption[];
+  const plans = (plansData || []) as unknown as NamedOption[];
 
   const handleOpenCreate = () => {
     setEditingAnnouncement(null);
@@ -157,6 +165,7 @@ export function AnnouncementsPage() {
                   <TableHead>{t("announcements.target")}</TableHead>
                   <TableHead>{t("announcements.published")}</TableHead>
                   <TableHead>{t("announcements.expires")}</TableHead>
+                  <TableHead>{t("announcements.dismissals")}</TableHead>
                   <TableHead className="text-right">{t("announcements.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -186,6 +195,9 @@ export function AnnouncementsPage() {
                         ? new Date(String(a.expires_at)).toLocaleDateString()
                         : "-"}
                     </TableCell>
+                    <TableCell className="text-gray-600 dark:text-gray-400">
+                      <Badge variant="default">{String(a.dismissal_count ?? 0)}</Badge>
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         <Button
@@ -208,7 +220,7 @@ export function AnnouncementsPage() {
                 ))}
                 {list.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <TableCell colSpan={6} className="text-center text-gray-500 dark:text-gray-400 py-8">
                       {t("announcements.empty")}
                     </TableCell>
                   </TableRow>
@@ -258,21 +270,42 @@ export function AnnouncementsPage() {
               name="announcement-target-type"
               label={t("announcements.target_type")}
               value={formData.target_type}
-              onChange={(e) => updateField("target_type", e.target.value)}
+              onChange={(e) =>
+                setFormData((prev) => ({ ...prev, target_type: e.target.value, target_id: "" }))
+              }
               options={[
                 { value: "all", label: t("announcements.target_all") },
                 { value: "plan", label: t("announcements.target_plan") },
                 { value: "tenant", label: t("announcements.target_tenant") },
               ]}
             />
-            <Input
-              name="announcement-target-id"
-              label={t("announcements.target_id")}
-              value={formData.target_id}
-              onChange={(e) => updateField("target_id", e.target.value)}
-              placeholder={t("announcements.target_id_placeholder")}
-              disabled={formData.target_type === "all"}
-            />
+            {formData.target_type === "tenant" ? (
+              <Select
+                name="announcement-target-tenant"
+                label={t("announcements.target_tenant")}
+                value={formData.target_id}
+                onChange={(e) => updateField("target_id", e.target.value)}
+                required
+                options={[
+                  { value: "", label: t("announcements.select_target") },
+                  ...tenants.map((tn) => ({ value: tn.id, label: String(tn.name || tn.id) })),
+                ]}
+              />
+            ) : formData.target_type === "plan" ? (
+              <Select
+                name="announcement-target-plan"
+                label={t("announcements.target_plan")}
+                value={formData.target_id}
+                onChange={(e) => updateField("target_id", e.target.value)}
+                required
+                options={[
+                  { value: "", label: t("announcements.select_target") },
+                  ...plans.map((pl) => ({ value: pl.id, label: String(pl.name || pl.slug || pl.id) })),
+                ]}
+              />
+            ) : (
+              <div />
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

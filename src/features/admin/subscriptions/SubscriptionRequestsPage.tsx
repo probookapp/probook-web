@@ -62,7 +62,7 @@ export function SubscriptionRequestsPage() {
   const handleReject = async (id: string) => {
     await rejectRequest.mutateAsync({
       id,
-      input: { notes: rejectNotes },
+      input: { admin_notes: rejectNotes },
     });
     setRejectId(null);
     setRejectNotes("");
@@ -164,7 +164,7 @@ export function SubscriptionRequestsPage() {
           </div>
           {/* Desktop table view */}
           <div className="hidden md:block overflow-x-auto">
-            <Table className="min-w-[800px]">
+            <Table className="min-w-200">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("subscriptionRequests.tenant")}</TableHead>

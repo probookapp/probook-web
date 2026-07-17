@@ -3,6 +3,34 @@ import { type Page, expect } from "@playwright/test";
 const LOCALE = "en";
 
 /**
+ * Stop the app's service worker from registering during tests.
+ *
+ * ServiceWorkerRegistration.tsx registers /sw.js and reloads the page on
+ * `controllerchange`; sw.js calls clients.claim(). On a first load the worker
+ * claims the page and triggers window.location.reload(), which tears down any
+ * in-flight page.evaluate — surfacing as spurious "Execution context was
+ * destroyed" / "Failed to fetch" during signUp/logIn. Stubbing registration
+ * makes test navigation deterministic.
+ *
+ * Must be called BEFORE the first navigation (addInitScript runs pre-page-scripts).
+ */
+export async function stubServiceWorker(page: Page) {
+  await page.addInitScript(() => {
+    const sw = (navigator as unknown as { serviceWorker?: Record<string, unknown> })
+      .serviceWorker;
+    if (!sw) return;
+    try {
+      // Never registers, so the worker never installs or claims the page.
+      sw.register = () => new Promise(() => {});
+      // Belt-and-braces: controllerchange -> reload can never fire.
+      sw.addEventListener = () => {};
+    } catch {
+      // Best-effort only; a failed stub must not fail the test.
+    }
+  });
+}
+
+/**
  * Sign up a new account and return credentials.
  * After this, the browser is logged in and on the dashboard.
  */
@@ -15,6 +43,7 @@ export async function signUp(
   const username = opts?.username ?? `e2euser_${id}`;
   const password = opts?.password ?? "Test1234!";
 
+  await stubServiceWorker(page);
   await page.goto(`/${LOCALE}/signup`);
   await page.waitForLoadState("networkidle");
   await page.locator('input[autocomplete="organization"]').fill(company);
@@ -43,6 +72,7 @@ export async function logIn(
   username: string,
   password: string
 ) {
+  await stubServiceWorker(page);
   await page.goto(`/${LOCALE}/login`);
   await page.waitForLoadState("networkidle");
   await page.locator('input[autocomplete="username"]').fill(username);
@@ -60,6 +90,7 @@ export async function logIn(
  * Works regardless of whether we're on the subscription wall or main app.
  */
 export async function logOut(page: Page) {
+  await stubServiceWorker(page);
   await page.evaluate(() =>
     fetch("/api/auth/logout", { method: "POST", credentials: "include" })
   );
@@ -153,6 +184,7 @@ export async function assertNoDataVisible(page: Page, forbiddenText: string) {
  * Navigate to a specific app page.
  */
 export async function navigateTo(page: Page, path: string) {
+  await stubServiceWorker(page);
   await page.goto(`/${LOCALE}/${path}`);
   await page.waitForLoadState("networkidle");
 }

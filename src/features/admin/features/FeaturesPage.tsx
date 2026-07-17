@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Globe } from "lucide-react";
+import { Plus, Pencil, Globe, Trash2 } from "lucide-react";
 import {
   Button,
   Card,
@@ -22,6 +22,7 @@ import {
   useAdminFeatures,
   useCreateFeature,
   useUpdateFeature,
+  useDeleteFeature,
 } from "./hooks/useFeatureFlags";
 
 type Feature = Record<string, unknown>;
@@ -62,11 +63,19 @@ export function FeaturesPage() {
   const { t } = useTranslation("admin");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
+  const [deletingFeature, setDeletingFeature] = useState<Feature | null>(null);
   const [formData, setFormData] = useState<FeatureFormState>(emptyForm);
 
   const { data: features, isLoading } = useAdminFeatures();
   const createFeature = useCreateFeature();
   const updateFeature = useUpdateFeature();
+  const deleteFeature = useDeleteFeature();
+
+  const handleDelete = async () => {
+    if (!deletingFeature) return;
+    await deleteFeature.mutateAsync(String(deletingFeature.id));
+    setDeletingFeature(null);
+  };
 
   const handleOpenCreate = () => {
     setEditingFeature(null);
@@ -231,13 +240,25 @@ export function FeaturesPage() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleOpenEdit(feature)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center justify-end gap-2">
+                          <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleOpenEdit(feature)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDeletingFeature(feature)}
+                            aria-label={t("features.delete")}
+                            title={t("features.delete")}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -254,6 +275,28 @@ export function FeaturesPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete confirmation Modal */}
+      <Modal
+        isOpen={!!deletingFeature}
+        onClose={() => setDeletingFeature(null)}
+        title={t("features.delete_title")}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {t("features.delete_confirm", { name: String(deletingFeature?.name || deletingFeature?.key || "") })}
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setDeletingFeature(null)}>
+              {t("features.cancel")}
+            </Button>
+            <Button variant="danger" onClick={handleDelete} isLoading={deleteFeature.isPending}>
+              {t("features.delete")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Create/Edit Modal */}
       <Modal

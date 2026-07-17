@@ -13,21 +13,25 @@ import {
   TableRow,
   TableHead,
   TableCell,
-  Input,
   Select,
 } from "@/components/ui";
 import { useAdminAuditLogs } from "./hooks/useAuditLogs";
+import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 
 type AuditLog = Record<string, unknown>;
+type TenantOption = { id: string; name: string };
 
 export function AuditLogsPage() {
   const { t } = useTranslation("admin");
   const [actionFilter, setActionFilter] = useState("");
-  const [tenantSearch, setTenantSearch] = useState("");
+  const [tenantId, setTenantId] = useState("");
+
+  const { data: tenantsData } = useAdminTenants();
+  const tenants = (tenantsData || []) as unknown as TenantOption[];
 
   const { data, isLoading } = useAdminAuditLogs({
     action: actionFilter || undefined,
-    tenantId: tenantSearch || undefined,
+    tenantId: tenantId || undefined,
   });
 
   if (isLoading) {
@@ -76,13 +80,18 @@ export function AuditLogsPage() {
                   { value: "reject", label: t("auditLogs.reject") },
                 ]}
               />
-              <Input
-                name="tenant-search"
-                placeholder={t("auditLogs.filterByTenant")}
-                value={tenantSearch}
-                onChange={(e) => setTenantSearch(e.target.value)}
-                autoComplete="off"
+              <Select
+                name="tenant-filter"
+                value={tenantId}
+                onChange={(e) => setTenantId(e.target.value)}
                 className="w-full sm:w-56"
+                options={[
+                  { value: "", label: t("auditLogs.allTenants") },
+                  ...tenants.map((tenant) => ({
+                    value: tenant.id,
+                    label: tenant.name,
+                  })),
+                ]}
               />
             </div>
           </div>
@@ -125,7 +134,7 @@ export function AuditLogsPage() {
           </div>
           {/* Desktop table view */}
           <div className="hidden md:block overflow-x-auto">
-            <Table className="min-w-[800px]">
+            <Table className="min-w-200">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("auditLogs.dateTime")}</TableHead>

@@ -8,17 +8,17 @@ export function useAdminOverview() {
   });
 }
 
-export function useAdminSignups(months?: number) {
+export function useAdminSignups(startDate?: string, endDate?: string) {
   return useQuery({
-    queryKey: ["admin-analytics-signups", months],
-    queryFn: () => adminAnalyticsApi.getSignups(),
+    queryKey: ["admin-analytics-signups", startDate, endDate],
+    queryFn: () => adminAnalyticsApi.getSignups(startDate, endDate),
   });
 }
 
-export function useAdminRevenue(months?: number) {
+export function useAdminRevenue(startDate?: string, endDate?: string) {
   return useQuery({
-    queryKey: ["admin-analytics-revenue", months],
-    queryFn: () => adminAnalyticsApi.getRevenue(),
+    queryKey: ["admin-analytics-revenue", startDate, endDate],
+    queryFn: () => adminAnalyticsApi.getRevenue(startDate, endDate),
   });
 }
 

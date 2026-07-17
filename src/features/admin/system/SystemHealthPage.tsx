@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import {
   Database,
   Clock,
@@ -9,11 +10,14 @@ import {
   Receipt,
   Package,
   AlertTriangle,
+  Gauge,
 } from "lucide-react";
 import { Card, CardContent, Badge } from "@/components/ui";
+import { adminSystemApi } from "@/lib/admin-api";
 import { useSystemHealth } from "./hooks/useSystemHealth";
 
 type HealthData = Record<string, unknown>;
+type ErrorLog = Record<string, unknown>;
 
 function formatUptime(seconds: number): string {
   const days = Math.floor(seconds / 86400);
@@ -76,6 +80,11 @@ function StatusCard({
 export function SystemHealthPage() {
   const { t } = useTranslation("admin");
   const { data, isLoading } = useSystemHealth();
+  const { data: errorData } = useQuery({
+    queryKey: ["admin-system-errors"],
+    queryFn: adminSystemApi.getErrors,
+  });
+  const errorLogs = (errorData || []) as ErrorLog[];
 
   if (isLoading) {
     return (
@@ -142,6 +151,12 @@ export function SystemHealthPage() {
           value={Number(health.total_products ?? 0)}
           icon={Package}
         />
+        <StatusCard
+          title={t("system.flagged_rate_limits")}
+          value={Number(health.flagged_rate_limits ?? 0)}
+          icon={Gauge}
+          status={Number(health.flagged_rate_limits ?? 0) > 0 ? "danger" : "success"}
+        />
       </div>
 
       {/* Recent Errors */}
@@ -177,6 +192,27 @@ export function SystemHealthPage() {
               {recentErrors}
             </Badge>
           </div>
+
+          {errorLogs.length > 0 && (
+            <ul className="mt-4 divide-y divide-gray-200 dark:divide-gray-700 border-t border-gray-200 dark:border-gray-700">
+              {errorLogs.map((log, idx) => (
+                <li key={String(log.id || idx)} className="py-2 flex items-start justify-between gap-3 text-sm">
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {String(log.action || "-")}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      {String(log.tenant_name || log.actor_name || "-")}
+                      {log.target_type ? ` · ${String(log.target_type)}` : ""}
+                    </p>
+                  </div>
+                  <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap shrink-0">
+                    {log.created_at ? new Date(String(log.created_at)).toLocaleString() : "-"}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </CardContent>
       </Card>
     </div>

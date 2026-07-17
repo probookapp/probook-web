@@ -18,3 +18,27 @@ export function useCreateDataRequest() {
     },
   });
 }
+
+export function useUpdateDataRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Record<string, unknown> }) =>
+      adminDataRequestsApi.update(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-data-requests"] });
+    },
+  });
+}
+
+export function useExecuteDataRequest() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => adminDataRequestsApi.execute(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-data-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
+    },
+  });
+}

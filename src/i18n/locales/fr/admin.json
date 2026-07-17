@@ -23,6 +23,7 @@
     "dataRequests": "Demandes de données",
     "platformAdmins": "Administrateurs",
     "systemHealth": "État du système",
+    "rateLimits": "Limites de débit",
     "platformAdmin": "Administration de la plateforme",
     "logout": "Déconnexion",
     "closeSidebar": "Fermer le menu",
@@ -40,7 +41,60 @@
     "password": "Mot de passe",
     "signIn": "Se connecter",
     "invalidCredentials": "Identifiants invalides",
-    "loginFailed": "Échec de la connexion"
+    "loginFailed": "Échec de la connexion",
+    "forgotPassword": "Mot de passe oublié ?",
+    "twoFactor": {
+      "heading": "Authentification à deux facteurs",
+      "prompt": "Saisissez le code à 6 chiffres de votre application d'authentification.",
+      "code": "Code d'authentification",
+      "verify": "Vérifier",
+      "back": "Retour à la connexion",
+      "invalidCode": "Code invalide"
+    }
+  },
+  "forgotPassword": {
+    "heading": "Réinitialiser votre mot de passe",
+    "prompt": "Saisissez votre e-mail d'administrateur et nous vous enverrons un lien de réinitialisation.",
+    "email": "E-mail",
+    "send": "Envoyer le lien",
+    "sent": "Si cet e-mail correspond à un compte administrateur, un lien de réinitialisation a été envoyé. Vérifiez votre boîte de réception.",
+    "backToLogin": "Retour à la connexion",
+    "failed": "Impossible d'envoyer le lien"
+  },
+  "resetPassword": {
+    "heading": "Définir un nouveau mot de passe",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "submit": "Réinitialiser le mot de passe",
+    "success": "Votre mot de passe a été réinitialisé. Vous pouvez maintenant vous connecter.",
+    "goToLogin": "Aller à la connexion",
+    "noToken": "Lien de réinitialisation manquant ou invalide.",
+    "mismatch": "Les mots de passe ne correspondent pas",
+    "failed": "Impossible de réinitialiser le mot de passe"
+  },
+  "security": {
+    "title": "Sécurité",
+    "twoFactor": {
+      "title": "Authentification à deux facteurs",
+      "description": "Ajoutez une couche de sécurité supplémentaire à votre compte administrateur en exigeant un code d'une application d'authentification lors de la connexion.",
+      "enabled": "L'authentification à deux facteurs est activée",
+      "disabled": "L'authentification à deux facteurs est désactivée",
+      "enable": "Activer",
+      "disable": "Désactiver",
+      "setupTitle": "Configurer l'application d'authentification",
+      "setupDescription": "Scannez le code QR avec votre application d'authentification, ou saisissez la clé manuellement, puis entrez le code généré ci-dessous.",
+      "manualKey": "Clé de saisie manuelle",
+      "keyCopied": "Clé copiée",
+      "verifyCode": "Code de vérification",
+      "verify": "Vérifier",
+      "disableConfirm": "Saisissez votre mot de passe pour désactiver l'authentification à deux facteurs.",
+      "disablePassword": "Mot de passe",
+      "setupError": "Échec du démarrage de la configuration 2FA",
+      "enabledToast": "Authentification à deux facteurs activée",
+      "disabledToast": "Authentification à deux facteurs désactivée",
+      "invalidCode": "Code invalide. Veuillez réessayer.",
+      "invalidPassword": "Mot de passe invalide"
+    }
   },
   "dashboard": {
     "title": "Tableau de bord",
@@ -65,7 +119,10 @@
     "signups_per_month": "Inscriptions par mois",
     "revenue_trend": "Tendance des revenus",
     "revenue_per_month": "Revenus par mois",
-    "no_data": "Aucune donnée disponible"
+    "no_data": "Aucune donnée disponible",
+    "from": "Du",
+    "to": "Au",
+    "reset": "Réinitialiser"
   },
   "tenants": {
     "title": "Locataires",
@@ -86,6 +143,11 @@
     "created": "Créé le",
     "actions": "Actions",
     "view": "Voir",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "editTenant": "Modifier le locataire",
+    "impersonate": "Se connecter en tant que",
+    "impersonateConfirm": "Se connecter en tant que « {{name}} » pour voir son compte ? Une bannière d'emprunt d'identité s'affichera et vous pourrez arrêter à tout moment.",
     "activate": "Activer",
     "suspend": "Suspendre",
     "delete": "Supprimer",
@@ -96,11 +158,21 @@
     "notFound": "Locataire introuvable",
     "unnamedTenant": "Locataire sans nom",
     "backToTenants": "Retour aux locataires",
+    "features": {
+      "title": "Remplacements de fonctionnalités",
+      "help": "Forcer l'activation ou la désactivation de fonctionnalités pour ce locataire, en remplaçant la valeur par défaut du forfait. Laissez sur « Hériter » pour utiliser la valeur par défaut.",
+      "inherit": "Hériter",
+      "forceOn": "Forcer activé",
+      "forceOff": "Forcer désactivé",
+      "save": "Enregistrer les remplacements",
+      "empty": "Aucune fonctionnalité définie."
+    },
     "detail": {
       "info": "Infos",
       "subscription": "Abonnement",
       "users": "Utilisateurs",
       "onboarding": "Intégration",
+      "features": "Fonctionnalités",
       "tenantInformation": "Informations du locataire",
       "subscriptionDetails": "Détails de l'abonnement",
       "onboardingStatus": "Statut de l'intégration",
@@ -120,7 +192,8 @@
       "noOnboarding": "Aucune donnée d'intégration disponible",
       "completed": "Terminé",
       "confirmDeleteMessage": "Êtes-vous sûr de vouloir supprimer le locataire « {{name}} » ? Cette action est irréversible."
-    }
+    },
+    "exportCsv": "Exporter CSV"
   },
   "subscriptions": {
     "title": "Abonnements",
@@ -138,17 +211,24 @@
     "status": "Statut",
     "billingCycle": "Cycle de facturation",
     "period": "Période",
+    "periodEnd": "Fin de période",
     "price": "Prix",
     "actions": "Actions",
     "renew": "Renouveler",
     "cancel": "Annuler",
+    "edit": "Modifier",
+    "editTitle": "Modifier l'abonnement",
+    "save": "Enregistrer",
+    "monthly": "Mensuel",
+    "yearly": "Annuel",
     "noSubscriptions": "Aucun abonnement trouvé",
     "confirmRenewalTitle": "Confirmer le renouvellement",
     "confirmRenewalMessage": "Êtes-vous sûr de vouloir renouveler cet abonnement ?",
     "confirmCancellationTitle": "Confirmer l'annulation",
     "confirmCancellationMessage": "Êtes-vous sûr de vouloir annuler cet abonnement ? Le locataire perdra l'accès à la fin de la période en cours.",
     "keepActive": "Maintenir actif",
-    "cancelSubscription": "Annuler l'abonnement"
+    "cancelSubscription": "Annuler l'abonnement",
+    "exportCsv": "Exporter CSV"
   },
   "subscriptionRequests": {
     "title": "Demandes d'abonnement",
@@ -192,6 +272,9 @@
     "edit": "Modifier",
     "activate": "Activer",
     "deactivate": "Désactiver",
+    "delete": "Supprimer",
+    "deletePlan": "Supprimer le plan",
+    "deleteConfirm": "Voulez-vous vraiment supprimer le plan « {{name}} » ? Cette action est irréversible.",
     "noPlans": "Aucun forfait créé. Créez votre premier forfait pour commencer.",
     "cancel": "Annuler",
     "updatePlan": "Mettre à jour le forfait",
@@ -266,6 +349,9 @@
     "create": "Nouvelle fonctionnalité",
     "create_title": "Créer une fonctionnalité",
     "edit_title": "Modifier la fonctionnalité",
+    "delete": "Supprimer",
+    "delete_title": "Supprimer la fonctionnalité",
+    "delete_confirm": "Supprimer la fonctionnalité « {{name}} » ? Les locataires qui en dépendent perdront l'accès. Cette action est irréversible.",
     "key": "Clé",
     "name": "Nom",
     "description": "Description",
@@ -314,6 +400,8 @@
     "target_tenant": "Locataire spécifique",
     "target_id": "ID de la cible",
     "target_id_placeholder": "ID du forfait ou du locataire",
+    "select_target": "Sélectionner…",
+    "dismissals": "Rejets",
     "published_at": "Date de publication",
     "expires_at": "Date d'expiration",
     "delete_confirm_title": "Supprimer l'annonce",
@@ -334,6 +422,7 @@
     "approve": "Approbation",
     "reject": "Rejet",
     "filterByTenant": "Filtrer par locataire...",
+    "allTenants": "Tous les locataires",
     "dateTime": "Date/Heure",
     "actor": "Auteur",
     "action": "Action",
@@ -365,6 +454,20 @@
     "paymentMethodLabel": "Mode de paiement",
     "cancel": "Annuler",
     "confirmMarkPaid": "Confirmer le paiement",
+    "refunded": "Remboursé",
+    "refund": "Rembourser",
+    "refundConfirm": "Marquer la facture {{invoiceNumber}} comme remboursée ?",
+    "newInvoice": "Nouvelle facture",
+    "subscription": "Abonnement",
+    "selectSubscription": "Sélectionner un abonnement",
+    "amountMajor": "Montant",
+    "currency": "Devise",
+    "periodStart": "Début de période",
+    "periodEnd": "Fin de période",
+    "create": "Créer",
+    "editTitle": "Modifier la facture",
+    "edit": "Modifier",
+    "save": "Enregistrer",
     "method": {
       "cash": "Espèces",
       "bank_transfer": "Virement bancaire"
@@ -388,16 +491,28 @@
     "reset_password_title": "Réinitialiser le mot de passe",
     "reset_password_for": "Définir un nouveau mot de passe pour l'utilisateur « {{username}} ».",
     "new_password": "Nouveau mot de passe",
-    "new_password_placeholder": "Minimum 6 caractères"
+    "new_password_placeholder": "Minimum 6 caractères",
+    "email": "E-mail",
+    "status": "Statut",
+    "exportCsv": "Exporter CSV"
   },
   "referrals": {
     "title": "Parrainages",
     "description": "Consulter les codes de parrainage et les statistiques",
+    "newCode": "Nouveau code de parrainage",
+    "selectTenant": "Sélectionner un locataire",
+    "codeOptional": "Code (facultatif)",
+    "codePlaceholder": "Laisser vide pour générer automatiquement",
+    "cancel": "Annuler",
+    "create": "Créer",
     "tenant": "Locataire",
     "code": "Code",
     "active": "Actif",
     "referrals_count": "Parrainages",
     "converted_count": "Convertis",
+    "actions": "Actions",
+    "activate": "Activer",
+    "deactivate": "Désactiver",
     "empty": "Aucun code de parrainage trouvé."
   },
   "data_requests": {
@@ -415,6 +530,12 @@
     "empty": "Aucune demande de données trouvée.",
     "tenant_id": "ID du locataire",
     "tenant_id_placeholder": "Saisir l'ID du locataire",
+    "select_tenant": "Sélectionner un locataire",
+    "mark_completed": "Marquer comme terminé",
+    "mark_failed": "Marquer comme échoué",
+    "execute_deletion": "Exécuter la suppression",
+    "execute_warning": "Ceci supprime définitivement le locataire « {{name}} » et TOUTES ses données (utilisateurs, clients, produits, factures, tout). Action irréversible.",
+    "execute_confirm_label": "Saisissez le nom du locataire « {{name}} » pour confirmer",
     "request_type": "Type de demande",
     "type_export": "Export de données",
     "type_deletion": "Suppression de données",
@@ -432,7 +553,8 @@
     "invoices": "Total des factures",
     "products": "Total des produits",
     "recent_errors": "Erreurs récentes",
-    "recent_errors_desc": "Erreurs des dernières 24 heures"
+    "recent_errors_desc": "Erreurs des dernières 24 heures",
+    "flagged_rate_limits": "Limites de débit signalées (24 h)"
   },
   "impersonation": {
     "viewing_as": "Consultation en tant que : {{tenant}}",
@@ -501,5 +623,17 @@
     "createSubmit": "Créer l'admin",
     "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce compte administrateur ?",
     "empty": "Aucun administrateur trouvé."
+  },
+  "onboardingFunnel": {
+    "title": "Entonnoir d’intégration",
+    "subtitle": "Progression des étapes sur {{count}} locataires",
+    "empty": "Aucun locataire pour le moment.",
+    "steps": {
+      "company_setup": "Configuration de l’entreprise",
+      "first_client": "Premier client",
+      "first_product": "Premier produit",
+      "first_quote": "Premier devis",
+      "first_invoice": "Première facture"
+    }
   }
 }

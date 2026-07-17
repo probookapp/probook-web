@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, RefreshCw, XCircle } from "lucide-react";
+import { Search, RefreshCw, XCircle, Pencil, Download } from "lucide-react";
+import { exportToCsv } from "@/lib/csv-export";
 import {
   Button,
   Card,
@@ -24,9 +25,12 @@ import {
   useAdminSubscriptions,
   useRenewSubscription,
   useCancelSubscription,
+  useUpdateSubscription,
 } from "./hooks/useSubscriptions";
+import { useAdminPlans } from "@/features/admin/plans/hooks/usePlans";
 
 type Subscription = Record<string, unknown>;
+type PlanOption = { id: string; name?: string; slug?: string };
 
 function getStatusVariant(status: string): "success" | "warning" | "danger" | "default" {
   switch (status) {
@@ -50,13 +54,18 @@ export function SubscriptionsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [renewConfirmId, setRenewConfirmId] = useState<string | null>(null);
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
+  const [editSub, setEditSub] = useState<Subscription | null>(null);
+  const [editForm, setEditForm] = useState({ plan_id: "", billing_cycle: "yearly", status: "active", current_period_end: "" });
 
   const { data: subscriptions, isLoading } = useAdminSubscriptions({
     status: statusFilter || undefined,
     search: searchQuery || undefined,
   });
+  const { data: plansData } = useAdminPlans();
+  const plans = (plansData || []) as unknown as PlanOption[];
   const renewSubscription = useRenewSubscription();
   const cancelSubscription = useCancelSubscription();
+  const updateSubscription = useUpdateSubscription();
 
   const handleRenew = async (id: string) => {
     await renewSubscription.mutateAsync({ id, input: {} });
@@ -66,6 +75,32 @@ export function SubscriptionsPage() {
   const handleCancel = async (id: string) => {
     await cancelSubscription.mutateAsync(id);
     setCancelConfirmId(null);
+  };
+
+  const handleOpenEdit = (sub: Subscription) => {
+    setEditSub(sub);
+    setEditForm({
+      plan_id: String(sub.plan_id || ""),
+      billing_cycle: String(sub.billing_cycle || "yearly"),
+      status: String(sub.status || "active"),
+      current_period_end: sub.period_end
+        ? new Date(String(sub.period_end)).toISOString().slice(0, 10)
+        : "",
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editSub) return;
+    await updateSubscription.mutateAsync({
+      id: String(editSub.id),
+      input: {
+        plan_id: editForm.plan_id || undefined,
+        billing_cycle: editForm.billing_cycle,
+        status: editForm.status,
+        current_period_end: editForm.current_period_end || undefined,
+      },
+    });
+    setEditSub(null);
   };
 
   if (isLoading) {
@@ -85,6 +120,27 @@ export function SubscriptionsPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("subscriptions.title")}</h1>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subscriptions.subtitle")}</p>
         </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={subList.length === 0}
+          onClick={() =>
+            exportToCsv(
+              subList,
+              [
+                { header: t("subscriptions.tenant"), accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? r.tenant_name ?? "") },
+                { header: t("subscriptions.plan"), accessor: (r) => String(r.plan_name ?? r.plan ?? "") },
+                { header: t("subscriptions.status"), accessor: (r) => String(r.status ?? "") },
+                { header: t("subscriptions.billingCycle"), accessor: (r) => String(r.billing_cycle ?? "") },
+                { header: t("subscriptions.price"), accessor: (r) => (r.price != null ? Number(r.price) / 100 : "") },
+              ],
+              "subscriptions"
+            )
+          }
+        >
+          <Download className="h-4 w-4 mr-2" />
+          {t("subscriptions.exportCsv")}
+        </Button>
       </div>
 
       <Card>
@@ -136,6 +192,14 @@ export function SubscriptionsPage() {
                     </span>
                     <div className="flex items-center gap-2">
                       <button
+                        onClick={() => handleOpenEdit(sub)}
+                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                        title={t("subscriptions.edit")}
+                        aria-label={t("subscriptions.edit")}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
                         onClick={() => setRenewConfirmId(String(sub.id))}
                         className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                         title={t("subscriptions.renew")}
@@ -185,7 +249,7 @@ export function SubscriptionsPage() {
 
           {/* Desktop table view */}
           <div className="hidden md:block overflow-x-auto">
-            <Table className="min-w-[900px]">
+            <Table className="min-w-225">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("subscriptions.tenant")}</TableHead>
@@ -263,6 +327,62 @@ export function SubscriptionsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Subscription */}
+      <Modal
+        isOpen={!!editSub}
+        onClose={() => setEditSub(null)}
+        title={t("subscriptions.editTitle")}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <Select
+            name="edit-plan"
+            label={t("subscriptions.plan")}
+            value={editForm.plan_id}
+            onChange={(e) => setEditForm((p) => ({ ...p, plan_id: e.target.value }))}
+            options={plans.map((pl) => ({ value: pl.id, label: String(pl.name || pl.slug || pl.id) }))}
+          />
+          <Select
+            name="edit-cycle"
+            label={t("subscriptions.billingCycle")}
+            value={editForm.billing_cycle}
+            onChange={(e) => setEditForm((p) => ({ ...p, billing_cycle: e.target.value }))}
+            options={[
+              { value: "monthly", label: t("subscriptions.monthly") },
+              { value: "yearly", label: t("subscriptions.yearly") },
+            ]}
+          />
+          <Select
+            name="edit-status"
+            label={t("subscriptions.status")}
+            value={editForm.status}
+            onChange={(e) => setEditForm((p) => ({ ...p, status: e.target.value }))}
+            options={[
+              { value: "active", label: t("subscriptions.active") },
+              { value: "pending", label: t("subscriptions.pending") },
+              { value: "expired", label: t("subscriptions.expired") },
+              { value: "suspended", label: t("subscriptions.suspended") },
+              { value: "cancelled", label: t("subscriptions.cancelled") },
+            ]}
+          />
+          <Input
+            name="edit-period-end"
+            type="date"
+            label={t("subscriptions.periodEnd")}
+            value={editForm.current_period_end}
+            onChange={(e) => setEditForm((p) => ({ ...p, current_period_end: e.target.value }))}
+          />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={() => setEditSub(null)}>
+              {t("subscriptions.cancel")}
+            </Button>
+            <Button onClick={handleSaveEdit} isLoading={updateSubscription.isPending}>
+              {t("subscriptions.save")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Renew Confirmation */}
       <Modal

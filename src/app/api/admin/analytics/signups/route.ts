@@ -1,28 +1,24 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withPlatformAdmin } from "@/lib/admin-api-utils";
+import { resolveMonthRange } from "@/lib/admin-analytics-range";
 
 export const GET = withPlatformAdmin(async (req) => {
   const url = new URL(req.url);
-  const months = parseInt(url.searchParams.get("months") || "12", 10);
-
-  const now = new Date();
-  const startDate = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
+  const { rangeStart, rangeEnd, monthKeys } = resolveMonthRange(
+    url.searchParams.get("startDate"),
+    url.searchParams.get("endDate"),
+    url.searchParams.get("months")
+  );
 
   const tenants = await prisma.tenant.findMany({
-    where: { createdAt: { gte: startDate } },
+    where: { createdAt: { gte: rangeStart, lt: rangeEnd } },
     select: { createdAt: true },
   });
 
   // Group by month
   const monthMap: Record<string, number> = {};
-
-  // Initialize all months
-  for (let i = 0; i < months; i++) {
-    const d = new Date(now.getFullYear(), now.getMonth() - months + 1 + i, 1);
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    monthMap[key] = 0;
-  }
+  for (const key of monthKeys) monthMap[key] = 0;
 
   // Count tenants per month
   for (const tenant of tenants) {

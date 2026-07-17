@@ -15,7 +15,7 @@ export const GET = withPlatformAdmin(async () => {
 
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const [totalTenants, totalUsers, totalInvoices, totalProducts, recentErrors] =
+  const [totalTenants, totalUsers, totalInvoices, totalProducts, recentErrors, flaggedRateLimits] =
     await Promise.all([
       prisma.tenant.count().catch(() => 0),
       prisma.user.count().catch(() => 0),
@@ -29,6 +29,11 @@ export const GET = withPlatformAdmin(async () => {
           },
         })
         .catch(() => 0),
+      prisma.rateLimitLog
+        .count({
+          where: { flagged: true, createdAt: { gte: twentyFourHoursAgo } },
+        })
+        .catch(() => 0),
     ]);
 
   return NextResponse.json({
@@ -38,6 +43,7 @@ export const GET = withPlatformAdmin(async () => {
     total_invoices: totalInvoices,
     total_products: totalProducts,
     recent_errors: recentErrors,
+    flagged_rate_limits: flaggedRateLimits,
     uptime: process.uptime(),
   });
 });

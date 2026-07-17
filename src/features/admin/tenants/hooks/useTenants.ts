@@ -66,3 +66,20 @@ export function useDeleteTenant() {
     },
   });
 }
+
+export function useUpdateTenant() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: Record<string, unknown>) => adminTenantsApi.update(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
+    },
+  });
+}
+
+export function useImpersonateTenant() {
+  return useMutation({
+    mutationFn: (id: string) => adminTenantsApi.impersonate(id),
+  });
+}

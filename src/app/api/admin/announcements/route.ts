@@ -8,9 +8,15 @@ import { createAnnouncementSchema } from "@/lib/validations";
 export const GET = withPlatformAdmin(async (_req, _ctx) => {
   const announcements = await prisma.announcement.findMany({
     orderBy: { createdAt: "desc" },
+    include: { _count: { select: { dismissals: true } } },
   });
 
-  return NextResponse.json(toSnakeCase(announcements));
+  const result = announcements.map((a) => {
+    const { _count, ...rest } = a;
+    return { ...rest, dismissalCount: _count.dismissals };
+  });
+
+  return NextResponse.json(toSnakeCase(result));
 });
 
 export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {

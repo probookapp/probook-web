@@ -30,6 +30,17 @@ export function useUpdateFeature() {
   });
 }
 
+export function useDeleteFeature() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => adminFeaturesApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-features"] });
+    },
+  });
+}
+
 export function useTenantFeatures(tenantId: string) {
   return useQuery({
     queryKey: ["admin-tenant-features", tenantId],

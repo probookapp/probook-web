@@ -24,6 +24,7 @@ import {
   useUpdatePlatformAdmin,
   useDeletePlatformAdmin,
 } from "./hooks/usePlatformAdmins";
+import { AdminSecuritySection } from "./AdminSecuritySection";
 
 type PlatformAdmin = Record<string, unknown>;
 
@@ -143,6 +144,13 @@ export function PlatformAdminsPage() {
           <Plus className="h-4 w-4 mr-2" />
           {t("platformAdmins.create")}
         </Button>
+      </div>
+
+      <div className="max-w-2xl">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
+          {t("security.title")}
+        </h2>
+        <AdminSecuritySection />
       </div>
 
       <Card>

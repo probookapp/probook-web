@@ -1,10 +1,13 @@
 import { test, expect } from "@playwright/test";
-import { signUp } from "./helpers";
+import { signUp, stubServiceWorker } from "./helpers";
 import { setupPlatformAdmin, adminGet, adminPost, adminPut, adminDelete } from "./admin-helpers";
 
 test.describe("Admin panel", () => {
   test.beforeEach(async ({ page }) => {
-    // Need a page context — navigate to app first
+    // Need a page context — navigate to app first.
+    // Stub the service worker BEFORE navigating: it claims the page and reloads
+    // it, which would tear down the page.evaluate inside setupPlatformAdmin.
+    await stubServiceWorker(page);
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
   });

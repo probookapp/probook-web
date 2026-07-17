@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, Power, KeyRound } from "lucide-react";
+import { Search, Power, KeyRound, Download } from "lucide-react";
+import { exportToCsv } from "@/lib/csv-export";
 import {
   Button,
   Card,
@@ -84,6 +85,28 @@ export function AdminUsersPage() {
             {t("users.description")}
           </p>
         </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={filteredUsers.length === 0}
+          onClick={() =>
+            exportToCsv(
+              filteredUsers,
+              [
+                { header: t("users.username"), accessor: (r) => String(r.username ?? "") },
+                { header: t("users.display_name"), accessor: (r) => String(r.display_name ?? "") },
+                { header: t("users.email"), accessor: (r) => String(r.email ?? "") },
+                { header: t("users.role"), accessor: (r) => String(r.role ?? "") },
+                { header: t("users.tenant"), accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? r.tenant_name ?? "") },
+                { header: t("users.status"), accessor: (r) => (r.is_active ? "active" : "inactive") },
+              ],
+              "users"
+            )
+          }
+        >
+          <Download className="h-4 w-4 mr-2" />
+          {t("users.exportCsv")}
+        </Button>
       </div>
 
       <Card>
@@ -153,7 +176,7 @@ export function AdminUsersPage() {
             )}
           </div>
           <div className="hidden md:block overflow-x-auto">
-            <Table className="min-w-[900px]">
+            <Table className="min-w-225">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("users.username")}</TableHead>

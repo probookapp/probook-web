@@ -60,6 +60,18 @@ export function useCancelSubscription() {
   });
 }
 
+export function useUpdateSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Record<string, unknown> }) =>
+      adminSubscriptionsApi.update(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-subscriptions"] });
+    },
+  });
+}
+
 export function useAdminSubscriptionRequests(filters?: RequestsFilters) {
   return useQuery({
     queryKey: ["admin-subscription-requests", filters],

@@ -19,3 +19,26 @@ export function useMarkInvoicePaid() {
     },
   });
 }
+
+export function useCreateSubscriptionInvoice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: Record<string, unknown>) => adminSubscriptionInvoicesApi.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-subscription-invoices"] });
+    },
+  });
+}
+
+export function useUpdateSubscriptionInvoice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, input }: { id: string; input: Record<string, unknown> }) =>
+      adminSubscriptionInvoicesApi.update(id, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-subscription-invoices"] });
+    },
+  });
+}

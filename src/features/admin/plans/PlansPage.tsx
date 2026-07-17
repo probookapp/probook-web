@@ -84,6 +84,7 @@ export function PlansPage() {
   const { t } = useTranslation("admin");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
+  const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
   const [formData, setFormData] = useState<PlanFormState>(emptyForm);
 
   const { data: plans, isLoading } = useAdminPlans();
@@ -196,6 +197,12 @@ export function PlansPage() {
       id: plan.id,
       is_active: !plan.is_active,
     });
+  };
+
+  const handleDelete = async () => {
+    if (!deletingPlan) return;
+    await deletePlan.mutateAsync(String(deletingPlan.id));
+    setDeletingPlan(null);
   };
 
   const addPriceRow = () => {
@@ -376,6 +383,16 @@ export function PlansPage() {
                     <Power className="h-4 w-4 mr-1" />
                     {plan.is_active ? t("plans.deactivate") : t("plans.activate")}
                   </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setDeletingPlan(plan)}
+                    aria-label={t("plans.delete")}
+                    title={t("plans.delete")}
+                    className="shrink-0 text-red-600 hover:text-red-700"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -388,6 +405,28 @@ export function PlansPage() {
           </div>
         )}
       </div>
+
+      {/* Delete confirmation Modal */}
+      <Modal
+        isOpen={!!deletingPlan}
+        onClose={() => setDeletingPlan(null)}
+        title={t("plans.deletePlan")}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {t("plans.deleteConfirm", { name: String(deletingPlan?.name || "") })}
+          </p>
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" type="button" onClick={() => setDeletingPlan(null)}>
+              {t("plans.cancel")}
+            </Button>
+            <Button variant="danger" onClick={handleDelete} isLoading={deletePlan.isPending}>
+              {t("plans.delete")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Create/Edit Modal */}
       <Modal

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Building2,
@@ -9,12 +10,13 @@ import {
   UserPlus,
   Activity,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, Badge } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Input, Button } from "@/components/ui";
 import {
   useAdminOverview,
   useAdminSignups,
   useAdminRevenue,
 } from "./hooks/useAdminAnalytics";
+import { OnboardingFunnel } from "./OnboardingFunnel";
 
 type OverviewData = Record<string, unknown>;
 type SignupEntry = { month: string; count: number };
@@ -133,9 +135,16 @@ const STATUS_COLORS: Record<string, "success" | "warning" | "danger" | "default"
 
 export function AdminDashboardPage() {
   const { t } = useTranslation("admin");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   const { data: overview, isLoading: overviewLoading } = useAdminOverview();
-  const { data: signups } = useAdminSignups();
-  const { data: revenue } = useAdminRevenue();
+  const { data: signups } = useAdminSignups(startDate || undefined, endDate || undefined);
+  const { data: revenue } = useAdminRevenue(startDate || undefined, endDate || undefined);
+
+  const handleResetRange = () => {
+    setStartDate("");
+    setEndDate("");
+  };
 
   if (overviewLoading) {
     return (
@@ -224,6 +233,31 @@ export function AdminDashboardPage() {
         </CardContent>
       </Card>
 
+      {/* Date range for charts */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+        <Input
+          name="analytics-start-date"
+          type="date"
+          label={t("dashboard.from")}
+          value={startDate}
+          onChange={(e) => setStartDate(e.target.value)}
+          className="w-full sm:w-44"
+        />
+        <Input
+          name="analytics-end-date"
+          type="date"
+          label={t("dashboard.to")}
+          value={endDate}
+          onChange={(e) => setEndDate(e.target.value)}
+          className="w-full sm:w-44"
+        />
+        {(startDate || endDate) && (
+          <Button variant="secondary" size="sm" onClick={handleResetRange}>
+            {t("dashboard.reset")}
+          </Button>
+        )}
+      </div>
+
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
@@ -253,6 +287,9 @@ export function AdminDashboardPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Onboarding funnel across tenants */}
+      <OnboardingFunnel />
     </div>
   );
 }

@@ -82,3 +82,28 @@ export const PUT = withSuperAdmin(async (req, ctx) => {
 
   return NextResponse.json(toSnakeCase(result));
 });
+
+export const DELETE = withSuperAdmin(async (req, ctx) => {
+  const id = ctx.params?.id;
+
+  const existing = await prisma.featureFlag.findUnique({ where: { id } });
+  if (!existing) {
+    return NextResponse.json({ error: "Feature not found" }, { status: 404 });
+  }
+
+  // Remove plan links first, then the flag itself
+  await prisma.planFeature.deleteMany({ where: { featureId: id } });
+  await prisma.featureFlag.delete({ where: { id } });
+
+  await logAuditEvent({
+    actorType: "platform_admin",
+    actorId: ctx.adminId,
+    action: "feature.delete",
+    targetType: "feature_flag",
+    targetId: id,
+    metadata: { key: existing.key, name: existing.name },
+    ipAddress: getClientIp(req),
+  });
+
+  return new NextResponse(null, { status: 204 });
+});

@@ -28,6 +28,39 @@ export const PUT = withSuperAdmin(async (req: NextRequest, ctx) => {
     data.passwordHash = await bcrypt.hash(body.password, 12);
   }
 
+  // Load current state to enforce self / last-super-admin guards.
+  const target = await prisma.platformAdmin.findUnique({ where: { id } });
+  if (!target) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  const deactivating = data.isActive === false;
+  const demoting =
+    typeof data.role === "string" &&
+    target.role === "super_admin" &&
+    data.role !== "super_admin";
+
+  // Guard 1: an admin cannot deactivate or demote themselves out of access.
+  if (id === ctx.adminId && (deactivating || demoting)) {
+    return NextResponse.json(
+      { error: "You cannot deactivate or change the role of your own account" },
+      { status: 400 }
+    );
+  }
+
+  // Guard 2: never remove the last remaining active super admin.
+  if ((deactivating || demoting) && target.role === "super_admin" && target.isActive) {
+    const otherActiveSuperAdmins = await prisma.platformAdmin.count({
+      where: { role: "super_admin", isActive: true, id: { not: id } },
+    });
+    if (otherActiveSuperAdmins === 0) {
+      return NextResponse.json(
+        { error: "Cannot deactivate or demote the last active super admin" },
+        { status: 409 }
+      );
+    }
+  }
+
   const admin = await prisma.platformAdmin.update({
     where: { id },
     data,
@@ -73,6 +106,19 @@ export const DELETE = withSuperAdmin(async (req: NextRequest, ctx) => {
   const admin = await prisma.platformAdmin.findUnique({ where: { id } });
   if (!admin) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Never delete the last remaining active super admin.
+  if (admin.role === "super_admin" && admin.isActive) {
+    const otherActiveSuperAdmins = await prisma.platformAdmin.count({
+      where: { role: "super_admin", isActive: true, id: { not: id } },
+    });
+    if (otherActiveSuperAdmins === 0) {
+      return NextResponse.json(
+        { error: "Cannot delete the last active super admin" },
+        { status: 409 }
+      );
+    }
   }
 
   await prisma.platformAdmin.delete({ where: { id } });

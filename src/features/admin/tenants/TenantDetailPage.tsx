@@ -19,6 +19,7 @@ import {
   useActivateTenant,
   useDeleteTenant,
 } from "./hooks/useTenants";
+import { TenantFeaturesTab } from "./components/TenantFeaturesTab";
 
 type TenantDetail = Record<string, unknown>;
 
@@ -48,7 +49,7 @@ function InfoField({ label, value }: { label: string; value: string }) {
 export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation("admin");
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"info" | "subscription" | "users" | "onboarding">("info");
+  const [activeTab, setActiveTab] = useState<"info" | "subscription" | "users" | "onboarding" | "features">("info");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
 
   const { data, isLoading } = useAdminTenant(tenantId);
@@ -93,6 +94,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
     { key: "subscription" as const, label: t("tenants.detail.subscription") },
     { key: "users" as const, label: t("tenants.detail.users") },
     { key: "onboarding" as const, label: t("tenants.detail.onboarding") },
+    { key: "features" as const, label: t("tenants.detail.features") },
   ];
 
   const subscription = tenant.subscription as Record<string, unknown> | undefined;
@@ -301,6 +303,8 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
           </CardContent>
         </Card>
       )}
+
+      {activeTab === "features" && <TenantFeaturesTab tenantId={tenantId} />}
 
       {/* Delete Confirmation Modal */}
       <Modal

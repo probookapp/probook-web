@@ -23,6 +23,7 @@
     "dataRequests": "طلبات البيانات",
     "platformAdmins": "المسؤولون",
     "systemHealth": "صحة النظام",
+    "rateLimits": "حدود المعدل",
     "platformAdmin": "إدارة المنصة",
     "logout": "تسجيل الخروج",
     "closeSidebar": "إغلاق القائمة",
@@ -40,7 +41,60 @@
     "password": "كلمة المرور",
     "signIn": "تسجيل الدخول",
     "invalidCredentials": "بيانات الاعتماد غير صالحة",
-    "loginFailed": "فشل تسجيل الدخول"
+    "loginFailed": "فشل تسجيل الدخول",
+    "forgotPassword": "هل نسيت كلمة المرور؟",
+    "twoFactor": {
+      "heading": "المصادقة الثنائية",
+      "prompt": "أدخل الرمز المكوّن من 6 أرقام من تطبيق المصادقة.",
+      "code": "رمز المصادقة",
+      "verify": "تحقق",
+      "back": "العودة إلى تسجيل الدخول",
+      "invalidCode": "رمز غير صالح"
+    }
+  },
+  "forgotPassword": {
+    "heading": "إعادة تعيين كلمة المرور",
+    "prompt": "أدخل بريدك الإلكتروني كمسؤول وسنرسل لك رابط إعادة التعيين.",
+    "email": "البريد الإلكتروني",
+    "send": "إرسال الرابط",
+    "sent": "إذا كان هذا البريد مطابقًا لحساب مسؤول، فقد تم إرسال رابط إعادة التعيين. تحقق من بريدك.",
+    "backToLogin": "العودة إلى تسجيل الدخول",
+    "failed": "تعذّر إرسال الرابط"
+  },
+  "resetPassword": {
+    "heading": "تعيين كلمة مرور جديدة",
+    "newPassword": "كلمة المرور الجديدة",
+    "confirmPassword": "تأكيد كلمة المرور",
+    "submit": "إعادة تعيين كلمة المرور",
+    "success": "تمت إعادة تعيين كلمة المرور. يمكنك الآن تسجيل الدخول.",
+    "goToLogin": "الذهاب إلى تسجيل الدخول",
+    "noToken": "رابط إعادة التعيين مفقود أو غير صالح.",
+    "mismatch": "كلمتا المرور غير متطابقتين",
+    "failed": "تعذّرت إعادة تعيين كلمة المرور"
+  },
+  "security": {
+    "title": "الأمان",
+    "twoFactor": {
+      "title": "المصادقة الثنائية",
+      "description": "أضف طبقة أمان إضافية إلى حساب المسؤول الخاص بك عن طريق طلب رمز من تطبيق المصادقة عند تسجيل الدخول.",
+      "enabled": "المصادقة الثنائية مفعّلة",
+      "disabled": "المصادقة الثنائية معطّلة",
+      "enable": "تفعيل",
+      "disable": "تعطيل",
+      "setupTitle": "إعداد تطبيق المصادقة",
+      "setupDescription": "امسح رمز QR باستخدام تطبيق المصادقة، أو أدخل المفتاح يدويًا، ثم أدخل الرمز المُنشأ أدناه.",
+      "manualKey": "مفتاح الإدخال اليدوي",
+      "keyCopied": "تم نسخ المفتاح",
+      "verifyCode": "رمز التحقق",
+      "verify": "تحقق",
+      "disableConfirm": "أدخل كلمة المرور لتعطيل المصادقة الثنائية.",
+      "disablePassword": "كلمة المرور",
+      "setupError": "فشل بدء إعداد المصادقة الثنائية",
+      "enabledToast": "تم تفعيل المصادقة الثنائية",
+      "disabledToast": "تم تعطيل المصادقة الثنائية",
+      "invalidCode": "رمز غير صالح. يرجى المحاولة مرة أخرى.",
+      "invalidPassword": "كلمة مرور غير صالحة"
+    }
   },
   "dashboard": {
     "title": "لوحة التحكم",
@@ -65,7 +119,10 @@
     "signups_per_month": "التسجيلات شهريًا",
     "revenue_trend": "اتجاه الإيرادات",
     "revenue_per_month": "الإيرادات شهريًا",
-    "no_data": "لا توجد بيانات متاحة"
+    "no_data": "لا توجد بيانات متاحة",
+    "from": "من",
+    "to": "إلى",
+    "reset": "إعادة تعيين"
   },
   "tenants": {
     "title": "المستأجرون",
@@ -86,6 +143,11 @@
     "created": "تاريخ الإنشاء",
     "actions": "الإجراءات",
     "view": "عرض",
+    "edit": "تعديل",
+    "save": "حفظ",
+    "editTenant": "تعديل المستأجر",
+    "impersonate": "تسجيل الدخول بالنيابة",
+    "impersonateConfirm": "تسجيل الدخول باسم «{{name}}» لعرض حسابه؟ ستظهر لافتة انتحال الهوية ويمكنك التوقف في أي وقت.",
     "activate": "تفعيل",
     "suspend": "تعليق",
     "delete": "حذف",
@@ -96,11 +158,21 @@
     "notFound": "المستأجر غير موجود",
     "unnamedTenant": "مستأجر بدون اسم",
     "backToTenants": "العودة إلى المستأجرين",
+    "features": {
+      "title": "تجاوزات الميزات",
+      "help": "فرض تفعيل أو تعطيل الميزات لهذا المستأجر، متجاوزًا الإعداد الافتراضي للخطة. اتركه على «وراثة» لاستخدام الافتراضي.",
+      "inherit": "وراثة",
+      "forceOn": "فرض التفعيل",
+      "forceOff": "فرض التعطيل",
+      "save": "حفظ التجاوزات",
+      "empty": "لا توجد ميزات معرّفة."
+    },
     "detail": {
       "info": "المعلومات",
       "subscription": "الاشتراك",
       "users": "المستخدمون",
       "onboarding": "الإعداد",
+      "features": "الميزات",
       "tenantInformation": "معلومات المستأجر",
       "subscriptionDetails": "تفاصيل الاشتراك",
       "onboardingStatus": "حالة الإعداد",
@@ -120,7 +192,8 @@
       "noOnboarding": "لا تتوفر بيانات إعداد",
       "completed": "مكتمل",
       "confirmDeleteMessage": "هل أنت متأكد من حذف المستأجر \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء."
-    }
+    },
+    "exportCsv": "تصدير CSV"
   },
   "subscriptions": {
     "title": "الاشتراكات",
@@ -138,17 +211,24 @@
     "status": "الحالة",
     "billingCycle": "دورة الفوترة",
     "period": "الفترة",
+    "periodEnd": "نهاية الفترة",
     "price": "السعر",
     "actions": "الإجراءات",
     "renew": "تجديد",
     "cancel": "إلغاء",
+    "edit": "تعديل",
+    "editTitle": "تعديل الاشتراك",
+    "save": "حفظ",
+    "monthly": "شهري",
+    "yearly": "سنوي",
     "noSubscriptions": "لم يتم العثور على اشتراكات",
     "confirmRenewalTitle": "تأكيد التجديد",
     "confirmRenewalMessage": "هل أنت متأكد من تجديد هذا الاشتراك؟",
     "confirmCancellationTitle": "تأكيد الإلغاء",
     "confirmCancellationMessage": "هل أنت متأكد من إلغاء هذا الاشتراك؟ سيفقد المستأجر الوصول في نهاية الفترة الحالية.",
     "keepActive": "الإبقاء نشطًا",
-    "cancelSubscription": "إلغاء الاشتراك"
+    "cancelSubscription": "إلغاء الاشتراك",
+    "exportCsv": "تصدير CSV"
   },
   "subscriptionRequests": {
     "title": "طلبات الاشتراك",
@@ -192,6 +272,9 @@
     "edit": "تعديل",
     "activate": "تفعيل",
     "deactivate": "إلغاء التفعيل",
+    "delete": "حذف",
+    "deletePlan": "حذف الخطة",
+    "deleteConfirm": "هل أنت متأكد من حذف الخطة «{{name}}»؟ لا يمكن التراجع عن هذا الإجراء.",
     "noPlans": "لم يتم إنشاء خطط بعد. أنشئ خطتك الأولى للبدء.",
     "cancel": "إلغاء",
     "updatePlan": "تحديث الخطة",
@@ -266,6 +349,9 @@
     "create": "ميزة جديدة",
     "create_title": "إنشاء ميزة",
     "edit_title": "تعديل الميزة",
+    "delete": "حذف",
+    "delete_title": "حذف الميزة",
+    "delete_confirm": "حذف الميزة «{{name}}»؟ سيفقد المستأجرون الذين يعتمدون عليها إمكانية الوصول. لا يمكن التراجع عن هذا الإجراء.",
     "key": "المفتاح",
     "name": "الاسم",
     "description": "الوصف",
@@ -314,6 +400,8 @@
     "target_tenant": "مستأجر محدد",
     "target_id": "معرّف الهدف",
     "target_id_placeholder": "معرّف الخطة أو المستأجر",
+    "select_target": "اختر…",
+    "dismissals": "الإغلاقات",
     "published_at": "تاريخ النشر",
     "expires_at": "تاريخ الانتهاء",
     "delete_confirm_title": "حذف الإعلان",
@@ -334,6 +422,7 @@
     "approve": "قبول",
     "reject": "رفض",
     "filterByTenant": "تصفية حسب المستأجر...",
+    "allTenants": "جميع المستأجرين",
     "dateTime": "التاريخ/الوقت",
     "actor": "الفاعل",
     "action": "الإجراء",
@@ -365,6 +454,20 @@
     "paymentMethodLabel": "طريقة الدفع",
     "cancel": "إلغاء",
     "confirmMarkPaid": "تأكيد الدفع",
+    "refunded": "مُسترد",
+    "refund": "استرداد",
+    "refundConfirm": "وضع علامة على الفاتورة {{invoiceNumber}} كمُستردة؟",
+    "newInvoice": "فاتورة جديدة",
+    "subscription": "الاشتراك",
+    "selectSubscription": "اختر اشتراكًا",
+    "amountMajor": "المبلغ",
+    "currency": "العملة",
+    "periodStart": "بداية الفترة",
+    "periodEnd": "نهاية الفترة",
+    "create": "إنشاء",
+    "editTitle": "تعديل الفاتورة",
+    "edit": "تعديل",
+    "save": "حفظ",
     "method": {
       "cash": "نقدًا",
       "bank_transfer": "تحويل بنكي"
@@ -388,16 +491,28 @@
     "reset_password_title": "إعادة تعيين كلمة المرور",
     "reset_password_for": "تعيين كلمة مرور جديدة للمستخدم \"{{username}}\".",
     "new_password": "كلمة المرور الجديدة",
-    "new_password_placeholder": "6 أحرف على الأقل"
+    "new_password_placeholder": "6 أحرف على الأقل",
+    "email": "البريد الإلكتروني",
+    "status": "الحالة",
+    "exportCsv": "تصدير CSV"
   },
   "referrals": {
     "title": "الإحالات",
     "description": "عرض رموز الإحالة والإحصائيات",
+    "newCode": "رمز إحالة جديد",
+    "selectTenant": "اختر مستأجرًا",
+    "codeOptional": "الرمز (اختياري)",
+    "codePlaceholder": "اتركه فارغًا للتوليد التلقائي",
+    "cancel": "إلغاء",
+    "create": "إنشاء",
     "tenant": "المستأجر",
     "code": "الرمز",
     "active": "نشط",
     "referrals_count": "الإحالات",
     "converted_count": "المحوّلون",
+    "actions": "الإجراءات",
+    "activate": "تفعيل",
+    "deactivate": "إلغاء التفعيل",
     "empty": "لم يتم العثور على رموز إحالة."
   },
   "data_requests": {
@@ -415,6 +530,12 @@
     "empty": "لم يتم العثور على طلبات بيانات.",
     "tenant_id": "معرّف المستأجر",
     "tenant_id_placeholder": "أدخل معرّف المستأجر",
+    "select_tenant": "اختر مستأجرًا",
+    "mark_completed": "وضع علامة مكتمل",
+    "mark_failed": "وضع علامة فشل",
+    "execute_deletion": "تنفيذ الحذف",
+    "execute_warning": "سيؤدي هذا إلى حذف المستأجر «{{name}}» وجميع بياناته نهائيًا (المستخدمون، العملاء، المنتجات، الفواتير، كل شيء). لا يمكن التراجع.",
+    "execute_confirm_label": "اكتب اسم المستأجر «{{name}}» للتأكيد",
     "request_type": "نوع الطلب",
     "type_export": "تصدير البيانات",
     "type_deletion": "حذف البيانات",
@@ -432,7 +553,8 @@
     "invoices": "إجمالي الفواتير",
     "products": "إجمالي المنتجات",
     "recent_errors": "الأخطاء الأخيرة",
-    "recent_errors_desc": "الأخطاء خلال الـ 24 ساعة الماضية"
+    "recent_errors_desc": "الأخطاء خلال الـ 24 ساعة الماضية",
+    "flagged_rate_limits": "حدود المعدل المُبلّغ عنها (24 س)"
   },
   "impersonation": {
     "viewing_as": "العرض باسم: {{tenant}}",
@@ -501,5 +623,17 @@
     "createSubmit": "إنشاء المسؤول",
     "confirmDelete": "هل أنت متأكد من حذف حساب المسؤول هذا؟",
     "empty": "لم يتم العثور على مسؤولين."
+  },
+  "onboardingFunnel": {
+    "title": "مسار الإعداد",
+    "subtitle": "إكمال الخطوات عبر {{count}} مستأجر",
+    "empty": "لا يوجد مستأجرون بعد.",
+    "steps": {
+      "company_setup": "إعداد الشركة",
+      "first_client": "أول عميل",
+      "first_product": "أول منتج",
+      "first_quote": "أول عرض سعر",
+      "first_invoice": "أول فاتورة"
+    }
   }
 }

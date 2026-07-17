@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/lib/navigation";
+import { useRouter, useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { Search, Eye, Pause, Play, Trash2 } from "lucide-react";
+import { Search, Eye, Pause, Play, Trash2, Pencil, LogIn, Download } from "lucide-react";
+import { exportToCsv } from "@/lib/csv-export";
 import {
   Button,
   Card,
@@ -26,6 +27,8 @@ import {
   useSuspendTenant,
   useActivateTenant,
   useDeleteTenant,
+  useUpdateTenant,
+  useImpersonateTenant,
 } from "./hooks/useTenants";
 
 type Tenant = Record<string, unknown>;
@@ -47,9 +50,13 @@ function getStatusVariant(status: string): "success" | "warning" | "danger" | "d
 export function TenantsPage() {
   const { t } = useTranslation("admin");
   const router = useRouter();
+  const locale = useLocale();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editTenant, setEditTenant] = useState<Tenant | null>(null);
+  const [editForm, setEditForm] = useState({ name: "", slug: "" });
+  const [impersonateTarget, setImpersonateTarget] = useState<Tenant | null>(null);
 
   const { data: tenants, isLoading } = useAdminTenants({
     status: statusFilter || undefined,
@@ -58,10 +65,35 @@ export function TenantsPage() {
   const suspendTenant = useSuspendTenant();
   const activateTenant = useActivateTenant();
   const deleteTenant = useDeleteTenant();
+  const updateTenant = useUpdateTenant();
+  const impersonateTenant = useImpersonateTenant();
 
   const handleDelete = async (id: string) => {
     await deleteTenant.mutateAsync(id);
     setDeleteConfirmId(null);
+  };
+
+  const handleOpenEdit = (tenant: Tenant) => {
+    setEditTenant(tenant);
+    setEditForm({ name: String(tenant.name || ""), slug: String(tenant.slug || "") });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTenant) return;
+    await updateTenant.mutateAsync({
+      id: editTenant.id,
+      name: editForm.name,
+      slug: editForm.slug,
+    });
+    setEditTenant(null);
+  };
+
+  const handleImpersonate = async () => {
+    if (!impersonateTarget) return;
+    await impersonateTenant.mutateAsync(String(impersonateTarget.id));
+    setImpersonateTarget(null);
+    // Full navigation so the impersonation cookie is picked up by the tenant app
+    window.location.href = `/${locale}/dashboard`;
   };
 
   const handleToggleStatus = async (tenant: Tenant) => {
@@ -90,6 +122,28 @@ export function TenantsPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("tenants.title")}</h1>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("tenants.subtitle")}</p>
         </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={tenantList.length === 0}
+          onClick={() =>
+            exportToCsv(
+              tenantList,
+              [
+                { header: t("tenants.name"), accessor: (r) => String(r.name ?? "") },
+                { header: t("tenants.slug"), accessor: (r) => String(r.slug ?? "") },
+                { header: t("tenants.status"), accessor: (r) => String(r.status ?? "") },
+                { header: t("tenants.plan"), accessor: (r) => String(r.plan_name ?? r.plan ?? "") },
+                { header: t("tenants.users"), accessor: (r) => String(r.user_count ?? r.users_count ?? "") },
+                { header: t("tenants.created"), accessor: (r) => (r.created_at ? new Date(String(r.created_at)).toISOString().slice(0, 10) : "") },
+              ],
+              "tenants"
+            )
+          }
+        >
+          <Download className="h-4 w-4 mr-2" />
+          {t("tenants.exportCsv")}
+        </Button>
       </div>
 
       <Card>
@@ -160,6 +214,22 @@ export function TenantsPage() {
                         )}
                       </button>
                       <button
+                        onClick={() => setImpersonateTarget(tenant)}
+                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                        title={t("tenants.impersonate")}
+                        aria-label={t("tenants.impersonate")}
+                      >
+                        <LogIn className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleOpenEdit(tenant)}
+                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                        title={t("tenants.edit")}
+                        aria-label={t("tenants.edit")}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
                         onClick={() => setDeleteConfirmId(String(tenant.id))}
                         className="p-1 text-gray-500 hover:text-red-600 transition-colors"
                         title={t("tenants.delete")}
@@ -195,7 +265,7 @@ export function TenantsPage() {
           </div>
           {/* Desktop table view */}
           <div className="hidden md:block overflow-x-auto">
-            <Table className="min-w-[900px]">
+            <Table className="min-w-225">
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("tenants.name")}</TableHead>
@@ -289,6 +359,57 @@ export function TenantsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit tenant Modal */}
+      <Modal
+        isOpen={!!editTenant}
+        onClose={() => setEditTenant(null)}
+        title={t("tenants.editTenant")}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <Input
+            name="edit-tenant-name"
+            label={t("tenants.name")}
+            value={editForm.name}
+            onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))}
+          />
+          <Input
+            name="edit-tenant-slug"
+            label={t("tenants.slug")}
+            value={editForm.slug}
+            onChange={(e) => setEditForm((p) => ({ ...p, slug: e.target.value }))}
+          />
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={() => setEditTenant(null)}>
+              {t("tenants.cancel")}
+            </Button>
+            <Button onClick={handleSaveEdit} isLoading={updateTenant.isPending}>
+              {t("tenants.save")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Impersonate confirmation Modal */}
+      <Modal
+        isOpen={!!impersonateTarget}
+        onClose={() => setImpersonateTarget(null)}
+        title={t("tenants.impersonate")}
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          {t("tenants.impersonateConfirm", { name: String(impersonateTarget?.name || "") })}
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setImpersonateTarget(null)}>
+            {t("tenants.cancel")}
+          </Button>
+          <Button onClick={handleImpersonate} isLoading={impersonateTenant.isPending}>
+            {t("tenants.impersonate")}
+          </Button>
+        </div>
+      </Modal>
 
       <Modal
         isOpen={!!deleteConfirmId}
