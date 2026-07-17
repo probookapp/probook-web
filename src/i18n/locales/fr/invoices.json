@@ -18,6 +18,8 @@
     "totalHt": "Total HT",
     "totalVat": "Total TVA",
     "totalTtc": "Total TTC",
+    "stampDuty": "Droit de timbre",
+    "totalWithStamp": "Total à payer (timbre inclus)",
     "notes": "Notes",
     "notesHtml": "Notes (HTML)"
   },
@@ -100,6 +102,9 @@
   "generalInfo": "Informations générales",
   "shippingAndDownPayment": "Frais de port et acompte",
   "downPaymentHint": "Saisissez soit un pourcentage, soit un montant fixe pour l'acompte. Si les deux sont renseignés, le montant fixe sera utilisé.",
+  "stampDuty": {
+    "cashSale": "Vente au comptant (appliquer le droit de timbre)"
+  },
   "groupSubtotals": "Sous-totaux par groupe",
   "richDescription": "Description enrichie (formatage HTML)",
   "richDescriptionPlaceholder": "Description détaillée avec mise en forme...",
@@ -113,5 +118,31 @@
   "integrityValid": "Document intègre",
   "signatureValid": "La signature numérique est valide",
   "integrityInvalid": "Intégrité compromise",
-  "documentModified": "Le document a été modifié"
+  "documentModified": "Le document a été modifié",
+  "creditNotes": {
+    "title": "Avoirs",
+    "subtitle": "Remboursements et avoirs émis aux clients",
+    "listTitle": "Liste des avoirs",
+    "searchPlaceholder": "Rechercher des avoirs...",
+    "number": "Numéro",
+    "restocked": "Réintégré",
+    "restockedBadge": "Réintégré",
+    "noCreditNotes": "Aucun avoir trouvé",
+    "deleteTitle": "Supprimer l'avoir",
+    "confirmDelete": "Êtes-vous sûr de vouloir supprimer cet avoir ?",
+    "createTitle": "Créer un avoir",
+    "createSubtitle": "Avoir à partir de la facture {{number}}. Ajustez les quantités à rembourser.",
+    "create": "Créer un avoir",
+    "created": "Avoir créé",
+    "createFailed": "Échec de la création de l'avoir",
+    "reason": "Motif",
+    "reasonPlaceholder": "ex. Marchandise retournée, erreur...",
+    "quantityToRefund": "Qté à rembourser",
+    "restock": "Réintégrer les articles retournés",
+    "noLinesSelected": "Sélectionnez au moins un article à rembourser",
+    "detailsTitle": "Détails de l'avoir",
+    "relatedInvoice": "Facture liée",
+    "stockRestored": "Les articles retournés ont été réintégrés en stock",
+    "stockNotRestored": "Le stock n'a pas été modifié"
+  }
 }

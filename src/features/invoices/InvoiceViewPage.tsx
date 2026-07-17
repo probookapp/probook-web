@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Pencil, CheckCircle, Send, ShieldCheck, ShieldAlert, Truck, Mail } from "lucide-react";
+import { ArrowLeft, Pencil, CheckCircle, Send, ShieldCheck, ShieldAlert, Truck, Mail, Undo2 } from "lucide-react";
 import {
   Button,
   Card,
@@ -15,9 +15,11 @@ import {
 import { EmailDialog } from "@/components/email";
 import { PDFViewer } from "@/features/pdf";
 import { PaymentsList } from "./components";
+import { CreateCreditNoteModal } from "./components/CreateCreditNoteModal";
 import { useInvoice, useMarkInvoicePaid, useIssueInvoice, useVerifyInvoiceIntegrity, useConvertInvoiceToDeliveryNote } from "./hooks/useInvoices";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCompanySettings } from "@/features/settings";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 
@@ -26,8 +28,11 @@ export function InvoiceViewPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [showEmailDialog, setShowEmailDialog] = useState(false);
+  const [showCreditNoteModal, setShowCreditNoteModal] = useState(false);
 
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  const { hasPermission } = useAuthStore();
+  const canEdit = hasPermission("invoices", "edit");
   const { data: invoice, isLoading } = useInvoice(id ?? "");
   const { data: company } = useCompanySettings();
   const { data: isIntegrityValid } = useVerifyInvoiceIntegrity(id ?? "");
@@ -94,7 +99,7 @@ export function InvoiceViewPage() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          {invoice.status === "DRAFT" && (
+          {invoice.status === "DRAFT" && canEdit && (
             <>
               <Button
                 variant="secondary"
@@ -116,10 +121,12 @@ export function InvoiceViewPage() {
                 <Mail className="h-4 w-4 mr-2" />
                 {t("invoices:actions.sendByEmail")}
               </Button>
-              <Button size="sm" onClick={handleMarkPaid} isLoading={markPaid.isPending}>
-                <CheckCircle className="h-4 w-4 mr-2" />
-                {t("invoices:actions.markAsPaid")}
-              </Button>
+              {canEdit && (
+                <Button size="sm" onClick={handleMarkPaid} isLoading={markPaid.isPending}>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {t("invoices:actions.markAsPaid")}
+                </Button>
+              )}
             </>
           )}
           {invoice.status !== "DRAFT" && (
@@ -131,6 +138,16 @@ export function InvoiceViewPage() {
             >
               <Truck className="h-4 w-4 mr-2" />
               {t("invoices:actions.createDeliveryNote")}
+            </Button>
+          )}
+          {invoice.status !== "DRAFT" && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setShowCreditNoteModal(true)}
+            >
+              <Undo2 className="h-4 w-4 mr-2" />
+              {t("invoices:creditNotes.create")}
             </Button>
           )}
         </div>
@@ -223,6 +240,21 @@ export function InvoiceViewPage() {
                     <span>{t("invoices:fields.totalTtc")}</span>
                     <span>{formatCurrency(invoice.total)}</span>
                   </div>
+                  {invoice.stamp_duty > 0 && (
+                    <>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-(--color-text-secondary)">
+                          {t("invoices:fields.stampDuty")}
+                          {company?.stamp_duty_rate ? ` (${company.stamp_duty_rate}%)` : ""}
+                        </span>
+                        <span>{formatCurrency(invoice.stamp_duty)}</span>
+                      </div>
+                      <div className="flex justify-between text-base sm:text-lg font-bold border-t pt-2">
+                        <span>{t("invoices:fields.totalWithStamp")}</span>
+                        <span>{formatCurrency(invoice.total + invoice.stamp_duty)}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 
@@ -314,6 +346,13 @@ export function InvoiceViewPage() {
           )}
         </div>
       </div>
+
+      {/* Create Credit Note Modal */}
+      <CreateCreditNoteModal
+        invoice={invoice}
+        isOpen={showCreditNoteModal}
+        onClose={() => setShowCreditNoteModal(false)}
+      />
 
       {/* Email Dialog */}
       {invoice.client?.email && (

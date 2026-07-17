@@ -11,6 +11,8 @@ import {
   CheckCircle,
   FileDown,
   Copy,
+  Download,
+  Undo2,
 } from "lucide-react";
 import {
   Button,
@@ -35,12 +37,18 @@ import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { useSelection } from "@/hooks/useSelection";
 import { useInvoices, useDeleteInvoice, useMarkInvoicePaid, useDuplicateInvoice, useBatchDeleteInvoices } from "./hooks/useInvoices";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { exportToCsv } from "@/lib/csv-export";
 
 export function InvoicesPage() {
   const { t } = useTranslation(["invoices", "common"]);
   const router = useRouter();
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  const { hasPermission } = useAuthStore();
+  const canCreate = hasPermission("invoices", "create");
+  const canEdit = hasPermission("invoices", "edit");
+  const canDelete = hasPermission("invoices", "delete");
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [markPaidId, setMarkPaidId] = useState<string | null>(null);
@@ -66,6 +74,20 @@ export function InvoicesPage() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { selection.clear(); }, [searchQuery]);
+
+  const handleExportCsv = () => {
+    exportToCsv(
+      filteredInvoices ?? [],
+      [
+        { header: t("invoices:fields.invoiceNumber"), accessor: (i) => i.invoice_number },
+        { header: t("invoices:fields.client"), accessor: (i) => i.client?.name ?? "" },
+        { header: t("invoices:fields.issueDate"), accessor: (i) => formatDate(i.issue_date) },
+        { header: t("invoices:fields.status"), accessor: (i) => i.status },
+        { header: t("invoices:fields.totalTtc"), accessor: (i) => i.total },
+      ],
+      `invoices_${new Date().toISOString().split("T")[0]}.csv`
+    );
+  };
 
   const handleDelete = async (id: string) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
@@ -94,10 +116,22 @@ export function InvoicesPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-(--color-text-primary)">{t("invoices:title")}</h1>
           <p className="text-sm sm:text-base text-(--color-text-secondary)">{t("invoices:subtitle")}</p>
         </div>
-        <Button onClick={() => router.push("/invoices/new")} size="sm" className="self-start sm:self-auto">
-          <Plus className="h-4 w-4 mr-2" />
-          {t("invoices:newInvoice")}
-        </Button>
+        <div className="flex gap-2 self-start sm:self-auto">
+          <Button variant="secondary" onClick={() => router.push("/invoices/credit-notes")} size="sm">
+            <Undo2 className="h-4 w-4 mr-2" />
+            {t("invoices:creditNotes.title")}
+          </Button>
+          <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredInvoices?.length}>
+            <Download className="h-4 w-4 mr-2" />
+            {t("common:buttons.exportCsv")}
+          </Button>
+          {canCreate && (
+            <Button onClick={() => router.push("/invoices/new")} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              {t("invoices:newInvoice")}
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -124,7 +158,7 @@ export function InvoicesPage() {
             {filteredInvoices && filteredInvoices.length > 0 ? (
               filteredInvoices.map((invoice) => (
                 <div key={invoice.id} className="p-4 flex items-start gap-3">
-                  {invoice.status === "DRAFT" && (
+                  {canDelete && invoice.status === "DRAFT" && (
                     <input
                       type="checkbox"
                       checked={selection.isSelected(invoice.id)}
@@ -146,14 +180,16 @@ export function InvoicesPage() {
                     </div>
                     <div className="flex justify-end gap-1 mt-2">
                       <button onClick={() => router.push(`/invoices/${invoice.id}`)} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.view")} aria-label={t("common:buttons.view")}><Eye className="h-4 w-4" /></button>
-                      {invoice.status === "DRAFT" && (
+                      {canEdit && invoice.status === "DRAFT" && (
                         <button onClick={() => router.push(`/invoices/${invoice.id}/edit`)} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.edit")} aria-label={t("common:buttons.edit")}><Pencil className="h-4 w-4" /></button>
                       )}
-                      {invoice.status === "ISSUED" && (
+                      {canEdit && invoice.status === "ISSUED" && (
                         <button onClick={() => setMarkPaidId(invoice.id)} className="p-1 text-gray-500 hover:text-green-600" title={t("invoices:actions.markAsPaid")} aria-label={t("invoices:actions.markAsPaid")}><CheckCircle className="h-4 w-4" /></button>
                       )}
-                      <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateInvoice.mutate(invoice.id); }} className="p-1 text-gray-500 hover:text-blue-600" title={t("invoices:actions.duplicate")} aria-label={t("invoices:actions.duplicate")} disabled={duplicateInvoice.isPending}><Copy className="h-4 w-4" /></button>
-                      {invoice.status === "DRAFT" && (
+                      {canCreate && (
+                        <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateInvoice.mutate(invoice.id); }} className="p-1 text-gray-500 hover:text-blue-600" title={t("invoices:actions.duplicate")} aria-label={t("invoices:actions.duplicate")} disabled={duplicateInvoice.isPending}><Copy className="h-4 w-4" /></button>
+                      )}
+                      {canDelete && invoice.status === "DRAFT" && (
                         <button onClick={() => setDeleteConfirmId(invoice.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>
                       )}
                     </div>
@@ -173,14 +209,16 @@ export function InvoicesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
-                  <input
-                    type="checkbox"
-                    checked={selection.isAllSelected}
-                    ref={(el) => { if (el) el.indeterminate = selection.isIndeterminate; }}
-                    onChange={() => selection.toggleAll(selectableInvoices)}
-                    disabled={selectableInvoices.length === 0}
-                    className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                  />
+                  {canDelete && (
+                    <input
+                      type="checkbox"
+                      checked={selection.isAllSelected}
+                      ref={(el) => { if (el) el.indeterminate = selection.isIndeterminate; }}
+                      onChange={() => selection.toggleAll(selectableInvoices)}
+                      disabled={selectableInvoices.length === 0}
+                      className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                  )}
                 </TableHead>
                 <TableHead>{t("invoices:fields.invoiceNumber")}</TableHead>
                 <TableHead>{t("invoices:fields.client")}</TableHead>
@@ -196,7 +234,7 @@ export function InvoicesPage() {
                 filteredInvoices.map((invoice) => (
                   <TableRow key={invoice.id}>
                     <TableCell>
-                      {invoice.status === "DRAFT" ? (
+                      {canDelete && invoice.status === "DRAFT" ? (
                         <input
                           type="checkbox"
                           checked={selection.isSelected(invoice.id)}
@@ -229,7 +267,7 @@ export function InvoicesPage() {
                         >
                           <Eye className="h-4 w-4" />
                         </button>
-                        {invoice.status === "DRAFT" && (
+                        {canEdit && invoice.status === "DRAFT" && (
                           <button
                             onClick={() => router.push(`/invoices/${invoice.id}/edit`)}
                             className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
@@ -239,7 +277,7 @@ export function InvoicesPage() {
                             <Pencil className="h-4 w-4" />
                           </button>
                         )}
-                        {invoice.status === "ISSUED" && (
+                        {canEdit && invoice.status === "ISSUED" && (
                           <button
                             onClick={() => setMarkPaidId(invoice.id)}
                             className="p-1 text-gray-500 hover:text-green-600 transition-colors"
@@ -249,15 +287,17 @@ export function InvoicesPage() {
                             <CheckCircle className="h-4 w-4" />
                           </button>
                         )}
-                        <button
-                          onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateInvoice.mutate(invoice.id); }}
-                          className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
-                          title={t("invoices:actions.duplicate")}
-                          aria-label={t("invoices:actions.duplicate")}
-                          disabled={duplicateInvoice.isPending}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
+                        {canCreate && (
+                          <button
+                            onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateInvoice.mutate(invoice.id); }}
+                            className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
+                            title={t("invoices:actions.duplicate")}
+                            aria-label={t("invoices:actions.duplicate")}
+                            disabled={duplicateInvoice.isPending}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </button>
+                        )}
                         <button
                           onClick={() => router.push(`/invoices/${invoice.id}`)}
                           className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
@@ -266,7 +306,7 @@ export function InvoicesPage() {
                         >
                           <FileDown className="h-4 w-4" />
                         </button>
-                        {invoice.status === "DRAFT" && (
+                        {canDelete && invoice.status === "DRAFT" && (
                           <button
                             onClick={() => setDeleteConfirmId(invoice.id)}
                             className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -339,24 +379,28 @@ export function InvoicesPage() {
         </div>
       </Modal>
 
-      <BulkActionBar
-        selectedCount={selection.selectedCount}
-        onDelete={() => setBulkDeleteOpen(true)}
-        onClear={selection.clear}
-        isDeleting={batchDeleteInvoices.isPending}
-      />
-      <BulkDeleteModal
-        isOpen={bulkDeleteOpen}
-        onClose={() => setBulkDeleteOpen(false)}
-        onConfirm={async () => {
-          if (isDemoMode) { showSubscribePrompt(); return; }
-          await batchDeleteInvoices.mutateAsync(Array.from(selection.selectedIds));
-          selection.clear();
-          setBulkDeleteOpen(false);
-        }}
-        count={selection.selectedCount}
-        isLoading={batchDeleteInvoices.isPending}
-      />
+      {canDelete && (
+        <>
+          <BulkActionBar
+            selectedCount={selection.selectedCount}
+            onDelete={() => setBulkDeleteOpen(true)}
+            onClear={selection.clear}
+            isDeleting={batchDeleteInvoices.isPending}
+          />
+          <BulkDeleteModal
+            isOpen={bulkDeleteOpen}
+            onClose={() => setBulkDeleteOpen(false)}
+            onConfirm={async () => {
+              if (isDemoMode) { showSubscribePrompt(); return; }
+              await batchDeleteInvoices.mutateAsync(Array.from(selection.selectedIds));
+              selection.clear();
+              setBulkDeleteOpen(false);
+            }}
+            count={selection.selectedCount}
+            isLoading={batchDeleteInvoices.isPending}
+          />
+        </>
+      )}
     </div>
   );
 }

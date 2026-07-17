@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { X, Ban, ChevronDown, ChevronUp, Printer } from "lucide-react";
+import { X, Ban, ChevronDown, ChevronUp, Printer, Undo2 } from "lucide-react";
+import { RefundModal } from "./RefundModal";
 import { formatCurrency } from "@/lib/utils";
 import {
   useSessionTransactions,
@@ -12,6 +13,7 @@ import { toast } from "@/stores/useToastStore";
 import { printReceiptWindow, type ReceiptData } from "@/lib/receipt-printer";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { useSettingsStore } from "@/stores/useSettingsStore";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 const formatAmount = formatCurrency;
 
@@ -25,7 +27,10 @@ function TransactionRow({ tx, companyName, currency }: { tx: PosTransaction; com
   const { t } = useTranslation("pos");
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const [expanded, setExpanded] = useState(false);
+  const [showRefund, setShowRefund] = useState(false);
   const cancelTransaction = useCancelTransaction();
+  // Refunding and cancelling a sale are gated on the pos module (delete).
+  const canVoid = useAuthStore((s) => s.hasPermission("pos", "delete"));
 
   const isCancelled = tx.status === "CANCELLED";
   const time = new Date(tx.transaction_date).toLocaleTimeString([], {
@@ -175,8 +180,17 @@ function TransactionRow({ tx, companyName, currency }: { tx: PosTransaction; com
                 {t("printReceipt")}
               </button>
             )}
+            {!isCancelled && canVoid && (
+              <button
+                onClick={() => setShowRefund(true)}
+                className="flex-1 px-3 py-2 text-sm text-amber-600 dark:text-amber-400 border border-amber-300 dark:border-amber-800 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center justify-center gap-2 transition-colors"
+              >
+                <Undo2 className="h-3.5 w-3.5" />
+                {t("refund.title")}
+              </button>
+            )}
           </div>
-          {!isCancelled && (
+          {!isCancelled && canVoid && (
             <button
               onClick={handleCancel}
               disabled={cancelTransaction.isPending}
@@ -196,6 +210,14 @@ function TransactionRow({ tx, companyName, currency }: { tx: PosTransaction; com
             </p>
           )}
         </div>
+      )}
+
+      {showRefund && (
+        <RefundModal
+          transaction={tx}
+          isOpen={showRefund}
+          onClose={() => setShowRefund(false)}
+        />
       )}
     </div>
   );

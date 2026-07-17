@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { posApi } from "@/lib/api";
 import { posKeys } from "./usePosSession";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
-import type { CreatePosTransactionInput, CreateCashMovementInput } from "@/types";
+import type { CreatePosTransactionInput, CreateCashMovementInput, CreatePosRefundInput } from "@/types";
 
 // Product lookup by barcode
 export function useLookupProductByBarcode() {
@@ -46,6 +46,20 @@ export function useCancelTransaction() {
       queryClient.invalidateQueries({ queryKey: posKeys.transactions() });
       // Invalidate products to reflect stock restoration
       queryClient.invalidateQueries({ queryKey: ["products"] });
+    },
+  });
+}
+
+// Refunds (creates a credit note for returned items)
+export function useCreatePosRefund() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreatePosRefundInput) => posApi.createRefund(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["credit-notes"] });
+      // Restocking may change product quantities
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["pos-products"] });
     },
   });
 }

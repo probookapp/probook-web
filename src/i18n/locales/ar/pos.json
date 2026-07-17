@@ -62,6 +62,8 @@
   "registerNamePlaceholder": "مثال: الصندوق الرئيسي",
   "registerLocation": "الموقع (اختياري)",
   "registerLocationPlaceholder": "مثال: الاستقبال",
+  "stockLocation": "موقع المخزون",
+  "defaultLocation": "الموقع الافتراضي",
   "registerCreated": "تم انشاء الصندوق بنجاح",
   "cancelled": "ملغاة",
   "cancelTransaction": "الغاء المعاملة",
@@ -99,6 +101,19 @@
   "priceTier": "التسعيرة",
   "defaultPrice": "افتراضي",
   "selectPriceTier": "اختر التسعيرة",
+  "refund": {
+    "title": "استرداد",
+    "subtitle": "استرداد عناصر من التذكرة {{ticket}}",
+    "sold": "مباع",
+    "reason": "السبب",
+    "reasonPlaceholder": "مثال: عنصر مرتجع، عيب...",
+    "restock": "إعادة العناصر المرتجعة إلى المخزون",
+    "totalToRefund": "إجمالي المبلغ المسترد",
+    "confirm": "تأكيد الاسترداد",
+    "noItems": "اختر عنصرًا واحدًا على الأقل لاسترداده",
+    "success": "تم تسجيل الاسترداد",
+    "failed": "فشل تسجيل الاسترداد"
+  },
   "errors": {
     "createRegisterFailed": "فشل انشاء الصندوق",
     "noSession": "لا توجد جلسة مفتوحة. يرجى فتح جلسة اولا.",

@@ -4,6 +4,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { LoginPage } from "@/features/auth";
 import { POSPage } from "@/features/pos";
+import { ToastContainer } from "@/components/ui";
 
 export default function POS() {
   const { isLoading, isAuthenticated } = useAuthStore();
@@ -23,6 +24,11 @@ export default function POS() {
   return (
     <ErrorBoundary>
       <POSPage />
+      {/* This route lives outside the (app) group, so it never renders
+          <Layout> — which is the only place ToastContainer was mounted.
+          Without this, every POS toast (sale complete, refund, session
+          open/close, scan errors) was silently dropped. */}
+      <ToastContainer />
     </ErrorBoundary>
   );
 }

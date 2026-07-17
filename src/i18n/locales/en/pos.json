@@ -62,6 +62,8 @@
   "registerNamePlaceholder": "e.g. Main Register",
   "registerLocation": "Location (optional)",
   "registerLocationPlaceholder": "e.g. Front desk",
+  "stockLocation": "Stock location",
+  "defaultLocation": "Default location",
   "registerCreated": "Register created successfully",
   "cancelled": "Cancelled",
   "cancelTransaction": "Cancel Transaction",
@@ -99,6 +101,19 @@
   "priceTier": "Price Tier",
   "defaultPrice": "Default",
   "selectPriceTier": "Select price tier",
+  "refund": {
+    "title": "Refund",
+    "subtitle": "Refund items from ticket {{ticket}}",
+    "sold": "sold",
+    "reason": "Reason",
+    "reasonPlaceholder": "e.g. Returned item, defect...",
+    "restock": "Restock returned items",
+    "totalToRefund": "Total to refund",
+    "confirm": "Confirm Refund",
+    "noItems": "Select at least one item to refund",
+    "success": "Refund recorded",
+    "failed": "Failed to record refund"
+  },
   "errors": {
     "createRegisterFailed": "Failed to create register",
     "noSession": "No session open. Please open a session first.",

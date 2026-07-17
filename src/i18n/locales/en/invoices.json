@@ -18,6 +18,8 @@
     "totalHt": "Total (excl. VAT)",
     "totalVat": "Total VAT",
     "totalTtc": "Total (incl. VAT)",
+    "stampDuty": "Stamp duty",
+    "totalWithStamp": "Total payable (incl. stamp duty)",
     "notes": "Notes",
     "notesHtml": "Notes (HTML)"
   },
@@ -100,6 +102,9 @@
   "generalInfo": "General Information",
   "shippingAndDownPayment": "Shipping and Down Payment",
   "downPaymentHint": "Enter either a percentage or a fixed amount for the down payment. If both are provided, the fixed amount will be used.",
+  "stampDuty": {
+    "cashSale": "This is a cash sale (apply stamp duty)"
+  },
   "groupSubtotals": "Group Subtotals",
   "richDescription": "Rich Description (HTML formatting)",
   "richDescriptionPlaceholder": "Detailed description with formatting...",
@@ -113,5 +118,31 @@
   "integrityValid": "Document is intact",
   "signatureValid": "Digital signature is valid",
   "integrityInvalid": "Integrity compromised",
-  "documentModified": "Document has been modified"
+  "documentModified": "Document has been modified",
+  "creditNotes": {
+    "title": "Credit Notes",
+    "subtitle": "Refunds and credits issued to clients",
+    "listTitle": "Credit Note List",
+    "searchPlaceholder": "Search credit notes...",
+    "number": "Number",
+    "restocked": "Restocked",
+    "restockedBadge": "Restocked",
+    "noCreditNotes": "No credit notes found",
+    "deleteTitle": "Delete Credit Note",
+    "confirmDelete": "Are you sure you want to delete this credit note?",
+    "createTitle": "Create Credit Note",
+    "createSubtitle": "Credit note from invoice {{number}}. Adjust the quantities to refund.",
+    "create": "Create Credit Note",
+    "created": "Credit note created",
+    "createFailed": "Failed to create credit note",
+    "reason": "Reason",
+    "reasonPlaceholder": "e.g. Returned goods, error...",
+    "quantityToRefund": "Qty to refund",
+    "restock": "Restock returned items",
+    "noLinesSelected": "Select at least one item to refund",
+    "detailsTitle": "Credit Note Details",
+    "relatedInvoice": "Related Invoice",
+    "stockRestored": "Returned items were restocked",
+    "stockNotRestored": "Stock was not modified"
+  }
 }

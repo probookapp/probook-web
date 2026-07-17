@@ -18,6 +18,8 @@
     "totalHt": "المجموع (بدون ضريبة)",
     "totalVat": "إجمالي الضريبة",
     "totalTtc": "المجموع (شامل الضريبة)",
+    "stampDuty": "رسم الطابع",
+    "totalWithStamp": "المبلغ الإجمالي للدفع (شامل رسم الطابع)",
     "notes": "ملاحظات",
     "notesHtml": "ملاحظات (HTML)"
   },
@@ -100,6 +102,9 @@
   "generalInfo": "معلومات عامة",
   "shippingAndDownPayment": "الشحن والدفعة المقدمة",
   "downPaymentHint": "أدخل إما نسبة مئوية أو مبلغ ثابت للدفعة المقدمة. إذا تم إدخال كليهما، سيتم استخدام المبلغ الثابت.",
+  "stampDuty": {
+    "cashSale": "بيع نقدي (تطبيق رسم الطابع)"
+  },
   "groupSubtotals": "المجاميع الفرعية للمجموعات",
   "richDescription": "وصف منسق (HTML)",
   "richDescriptionPlaceholder": "وصف تفصيلي مع تنسيق...",
@@ -113,5 +118,31 @@
   "integrityValid": "المستند سليم",
   "signatureValid": "التوقيع الرقمي صالح",
   "integrityInvalid": "السلامة مخترقة",
-  "documentModified": "تم تعديل المستند"
+  "documentModified": "تم تعديل المستند",
+  "creditNotes": {
+    "title": "إشعارات دائنة",
+    "subtitle": "المبالغ المستردة والإشعارات الدائنة الصادرة للعملاء",
+    "listTitle": "قائمة الإشعارات الدائنة",
+    "searchPlaceholder": "البحث في الإشعارات الدائنة...",
+    "number": "الرقم",
+    "restocked": "أُعيد للمخزون",
+    "restockedBadge": "أُعيد للمخزون",
+    "noCreditNotes": "لا توجد إشعارات دائنة",
+    "deleteTitle": "حذف الإشعار الدائن",
+    "confirmDelete": "هل أنت متأكد أنك تريد حذف هذا الإشعار الدائن؟",
+    "createTitle": "إنشاء إشعار دائن",
+    "createSubtitle": "إشعار دائن من الفاتورة {{number}}. عدّل الكميات المراد استردادها.",
+    "create": "إنشاء إشعار دائن",
+    "created": "تم إنشاء الإشعار الدائن",
+    "createFailed": "فشل إنشاء الإشعار الدائن",
+    "reason": "السبب",
+    "reasonPlaceholder": "مثال: بضاعة مرتجعة، خطأ...",
+    "quantityToRefund": "الكمية المستردة",
+    "restock": "إعادة العناصر المرتجعة إلى المخزون",
+    "noLinesSelected": "اختر عنصرًا واحدًا على الأقل لاسترداده",
+    "detailsTitle": "تفاصيل الإشعار الدائن",
+    "relatedInvoice": "الفاتورة المرتبطة",
+    "stockRestored": "تمت إعادة العناصر المرتجعة إلى المخزون",
+    "stockNotRestored": "لم يتم تعديل المخزون"
+  }
 }

@@ -62,6 +62,8 @@
   "registerNamePlaceholder": "ex. Caisse principale",
   "registerLocation": "Emplacement (optionnel)",
   "registerLocationPlaceholder": "ex. Accueil",
+  "stockLocation": "Emplacement de stock",
+  "defaultLocation": "Emplacement par défaut",
   "registerCreated": "Caisse creee avec succes",
   "cancelled": "Annulee",
   "cancelTransaction": "Annuler la transaction",
@@ -99,6 +101,19 @@
   "priceTier": "Tarif",
   "defaultPrice": "Par défaut",
   "selectPriceTier": "Choisir le tarif",
+  "refund": {
+    "title": "Remboursement",
+    "subtitle": "Rembourser des articles du ticket {{ticket}}",
+    "sold": "vendus",
+    "reason": "Motif",
+    "reasonPlaceholder": "ex. Article retourné, défaut...",
+    "restock": "Réintégrer les articles retournés",
+    "totalToRefund": "Total à rembourser",
+    "confirm": "Confirmer le remboursement",
+    "noItems": "Sélectionnez au moins un article à rembourser",
+    "success": "Remboursement enregistré",
+    "failed": "Échec de l'enregistrement du remboursement"
+  },
   "errors": {
     "createRegisterFailed": "Echec de la creation de la caisse",
     "noSession": "Aucune session ouverte. Veuillez d'abord ouvrir une session.",

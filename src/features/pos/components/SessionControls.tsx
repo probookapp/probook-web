@@ -13,6 +13,7 @@ import { useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import { usePosStore } from "../stores/usePosStore";
 import { useTheme } from "@/components/providers/ThemeContext";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 interface SessionControlsProps {
   onCloseSession: () => void;
@@ -30,6 +31,8 @@ export function SessionControls({
   const { clearCart, items } = usePosStore();
   const { resolvedTheme, setTheme } = useTheme();
   const [showMenu, setShowMenu] = useState(false);
+  // Cash movements and closing a session are gated on the pos module (create).
+  const canOperate = useAuthStore((s) => s.hasPermission("pos", "create"));
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -75,17 +78,18 @@ export function SessionControls({
               <History className="h-4 w-4 text-(--color-text-secondary)" />
               {t("transactionHistory")}
             </button>
+            {canOperate && (
             <button
               onClick={() => {
                 setShowMenu(false);
                 onCashMovement();
               }}
-             
               className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-left text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <DollarSign className="h-4 w-4 text-(--color-text-secondary)" />
               {t("cashMovement")}
             </button>
+            )}
             <button
               onClick={toggleTheme}
               className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-left text-sm transition-colors"
@@ -108,6 +112,7 @@ export function SessionControls({
               <Briefcase className="h-4 w-4 text-(--color-text-secondary)" />
               {t("backToOffice")}
             </button>
+            {canOperate && (
             <button
               onClick={() => {
                 setShowMenu(false);
@@ -118,6 +123,7 @@ export function SessionControls({
               <LogOut className="h-4 w-4" />
               {t("closeSession")}
             </button>
+            )}
           </div>
         </>
       )}

@@ -30,13 +30,17 @@ import { queueTransaction, getPendingCount, type OfflineTransactionInput } from 
 import { syncOfflineTransactions, isOnline, startAutoSync } from "@/lib/offline-sync";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { lookupBarcodeOffline } from "@/lib/offline-barcode";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
+import { locationsApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { useAuthStore } from "@/stores/useAuthStore";
 
 export function POSPage() {
   const { t } = useTranslation("pos");
   const router = useRouter();
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  // POS operation (sales, sessions, registers) is gated on the pos module (create).
+  const canOperate = useAuthStore((s) => s.hasPermission("pos", "create"));
   const currency = useSettingsStore((state) => state.currency);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showCloseSessionModal, setShowCloseSessionModal] = useState(false);
@@ -75,6 +79,16 @@ export function POSPage() {
   const [showCreateRegister, setShowCreateRegister] = useState(false);
   const [newRegisterName, setNewRegisterName] = useState("");
   const [newRegisterLocation, setNewRegisterLocation] = useState("");
+  const [newRegisterLocationId, setNewRegisterLocationId] = useState("");
+
+  // Location picker only appears for multi-location tenants; otherwise the
+  // register silently uses the tenant's default location.
+  const { data: locations } = useQuery({
+    queryKey: ["locations"],
+    queryFn: locationsApi.getAll,
+    enabled: !isDemoMode,
+  });
+  const showLocationPicker = (locations?.length ?? 0) >= 2;
 
   // Inline session opening
   const [openingFloat, setOpeningFloat] = useState("0");
@@ -299,11 +313,13 @@ export function POSPage() {
       const register = await createRegister.mutateAsync({
         name: newRegisterName.trim(),
         location: newRegisterLocation.trim() || undefined,
+        location_id: showLocationPicker ? newRegisterLocationId || null : null,
       });
       setSession(null, register);
       setShowCreateRegister(false);
       setNewRegisterName("");
       setNewRegisterLocation("");
+      setNewRegisterLocationId("");
       toast.success(t("registerCreated"));
     } catch {
       toast.error(t("errors.createRegisterFailed"));
@@ -390,6 +406,25 @@ export function POSPage() {
                     onKeyDown={(e) => e.key === "Enter" && handleCreateRegister()}
                   />
                 </div>
+                {showLocationPicker && (
+                  <div>
+                    <label className="block text-sm font-medium mb-1.5">
+                      {t("stockLocation")}
+                    </label>
+                    <select
+                      value={newRegisterLocationId}
+                      onChange={(e) => setNewRegisterLocationId(e.target.value)}
+                      className="w-full px-3 py-2.5 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="">{t("defaultLocation")}</option>
+                      {(locations ?? []).map((loc) => (
+                        <option key={loc.id} value={loc.id}>
+                          {loc.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
                 <div className="flex gap-2 pt-1">
                   <button
                     onClick={() => setShowCreateRegister(false)}
@@ -408,7 +443,7 @@ export function POSPage() {
                   </span>
                 </div>
               </div>
-            ) : (
+            ) : canOperate ? (
               <span>
                 <button
                   onClick={() => setShowCreateRegister(true)}
@@ -418,7 +453,7 @@ export function POSPage() {
                   {t("createRegister")}
                 </button>
               </span>
-            )}
+            ) : null}
           </div>
         </div>
       </div>
@@ -478,6 +513,7 @@ export function POSPage() {
                   onKeyDown={(e) => e.key === "Enter" && handleOpenSession()}
                 />
               </div>
+              {canOperate && (
               <span>
                 <button
                   onClick={handleOpenSession}
@@ -488,6 +524,7 @@ export function POSPage() {
                   {openSession.isPending ? t("loading") : t("openSession")}
                 </button>
               </span>
+              )}
             </div>
           </div>
         </div>
@@ -564,6 +601,7 @@ export function POSPage() {
           <CartDisplay />
           <CartTotals />
           {/* Payment bar */}
+          {canOperate && (
           <div className="p-4 border-t border-(--color-border-primary) shrink-0">
             <span>
               <button
@@ -575,6 +613,7 @@ export function POSPage() {
               </button>
             </span>
           </div>
+          )}
         </div>
 
         {/* Product section (40% on desktop, full on mobile when tab active) */}
