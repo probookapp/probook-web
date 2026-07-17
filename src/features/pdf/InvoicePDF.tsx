@@ -276,6 +276,29 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
                 )}
               </Text>
             </View>
+            {invoice.stamp_duty > 0 && (() => {
+              const grandTotal = invoice.total +
+                (invoice.shipping_cost > 0
+                  ? invoice.shipping_cost + invoice.shipping_cost * (invoice.shipping_tax_rate / 100)
+                  : 0);
+              return (
+                <>
+                  <View style={styles.totalRow}>
+                    <Text style={styles.totalLabel}>
+                      {t("invoice.totals.stampDuty")}
+                      {company.stamp_duty_rate ? ` (${company.stamp_duty_rate}%)` : ""}
+                    </Text>
+                    <Text style={styles.totalValue}>{formatCurrency(invoice.stamp_duty)}</Text>
+                  </View>
+                  <View style={styles.totalRowFinal}>
+                    <Text style={styles.totalLabelFinal}>{t("invoice.totals.totalWithStamp")}</Text>
+                    <Text style={styles.totalValueFinal}>
+                      {formatCurrency(grandTotal + invoice.stamp_duty)}
+                    </Text>
+                  </View>
+                </>
+              );
+            })()}
             {(invoice.down_payment_percent > 0 || invoice.down_payment_amount > 0) && (() => {
               const totalWithShipping = invoice.total +
                 (invoice.shipping_cost > 0
@@ -312,7 +335,8 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
                     invoice.total +
                     (invoice.shipping_cost > 0
                       ? invoice.shipping_cost + invoice.shipping_cost * (invoice.shipping_tax_rate / 100)
-                      : 0),
+                      : 0) +
+                    (invoice.stamp_duty || 0),
                     words.main,
                     words.sub
                   );

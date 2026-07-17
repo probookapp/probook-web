@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase, markOnboardingStep } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { requirePermission } from "@/lib/permissions-server";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createInvoiceSchema } from "@/lib/validations";
+import { computeStampDuty } from "@/lib/stamp-duty";
 
 interface LineInput {
   product_id?: string | null;
@@ -51,7 +53,10 @@ export const GET = withAuth(async (req, { tenantId }) => {
   return NextResponse.json(toSnakeCase(invoices));
 });
 
-export const POST = withAuth(async (req, { tenantId }) => {
+export const POST = withAuth(async (req, { session, tenantId }) => {
+  const denied = await requirePermission(session, "invoices", "create");
+  if (denied) return denied;
+
   const body = await validateBody(req, createInvoiceSchema);
   if (isValidationError(body)) return body;
 
@@ -64,18 +69,33 @@ export const POST = withAuth(async (req, { tenantId }) => {
   const lines = body.lines || [];
   const totals = calculateDocumentTotals(lines, body.shipping_cost || 0, body.shipping_tax_rate ?? 20);
 
+  const status = body.status || "DRAFT";
+  const isCashSale = body.is_cash_sale ?? false;
+  // Droit de timbre applies only to cash-settled, non-draft invoices at/above the
+  // configured threshold. Non-cash invoices carry no timbre (so they can reach PAID).
+  const stampDuty = computeStampDuty({
+    enabled: settings?.stampDutyEnabled,
+    rate: settings?.stampDutyRate,
+    threshold: settings?.stampDutyThreshold,
+    isCashSale,
+    total: totals.total,
+    isDraft: status === "DRAFT",
+  });
+
   const invoice = await prisma.invoice.create({
     data: {
       tenantId,
       invoiceNumber,
       clientId: body.client_id,
       quoteId: body.quote_id || null,
-      status: body.status || "DRAFT",
+      status,
       issueDate: new Date(body.issue_date),
       dueDate: body.due_date ? new Date(body.due_date) : new Date(Date.now() + paymentTerms * 24 * 60 * 60 * 1000),
       subtotal: totals.subtotal,
       taxAmount: totals.taxAmount,
       total: totals.total,
+      isCashSale,
+      stampDuty,
       notes: body.notes || null,
       notesHtml: body.notes_html || null,
       shippingCost: body.shipping_cost || 0,

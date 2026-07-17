@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { updatePaymentSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const payment = await prisma.payment.findFirst({
@@ -13,7 +14,9 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(payment));
 });
 
-export const PUT = withAuth(async (req, { tenantId, params }) => {
+export const PUT = withAuth(async (req, { tenantId, session, params }) => {
+  const denied = await requirePermission(session, "invoices", "edit");
+  if (denied) return denied;
   const body = await validateBody(req, updatePaymentSchema);
   if (isValidationError(body)) return body;
   const payment = await prisma.payment.update({
@@ -29,7 +32,9 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(payment));
 });
 
-export const DELETE = withAuth(async (req, { tenantId, params }) => {
+export const DELETE = withAuth(async (req, { tenantId, session, params }) => {
+  const denied = await requirePermission(session, "invoices", "delete");
+  if (denied) return denied;
   await prisma.payment.delete({ where: { tenantId, id: params?.id } });
   return new NextResponse(null, { status: 204 });
 });

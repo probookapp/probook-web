@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { requirePermission } from "@/lib/permissions-server";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { updateInvoiceSchema } from "@/lib/validations";
+import { computeStampDuty } from "@/lib/stamp-duty";
 
 interface LineInput {
   product_id?: string | null;
@@ -51,11 +53,27 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(invoice));
 });
 
-export const PUT = withAuth(async (req, { tenantId, params }) => {
+export const PUT = withAuth(async (req, { session, tenantId, params }) => {
+  const denied = await requirePermission(session, "invoices", "edit");
+  if (denied) return denied;
+
   const body = await validateBody(req, updateInvoiceSchema);
   if (isValidationError(body)) return body;
   const lines = body.lines || [];
   const totals = calculateDocumentTotals(lines, body.shipping_cost || 0, body.shipping_tax_rate ?? 20);
+
+  // Recompute the timbre snapshot: only for cash-settled, non-DRAFT invoices at/
+  // above the configured threshold. Drafts and non-cash invoices carry none.
+  const settings = await prisma.companySettings.findFirst({ where: { tenantId } });
+  const isCashSale = body.is_cash_sale ?? false;
+  const stampDuty = computeStampDuty({
+    enabled: settings?.stampDutyEnabled,
+    rate: settings?.stampDutyRate,
+    threshold: settings?.stampDutyThreshold,
+    isCashSale,
+    total: totals.total,
+    isDraft: body.status === "DRAFT",
+  });
 
   await prisma.invoiceLine.deleteMany({ where: { invoiceId: params?.id } });
 
@@ -69,6 +87,8 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
       subtotal: totals.subtotal,
       taxAmount: totals.taxAmount,
       total: totals.total,
+      isCashSale,
+      stampDuty,
       notes: body.notes || null,
       notesHtml: body.notes_html || null,
       shippingCost: body.shipping_cost || 0,
@@ -103,7 +123,10 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(invoice));
 });
 
-export const DELETE = withAuth(async (req, { tenantId, params }) => {
+export const DELETE = withAuth(async (req, { session, tenantId, params }) => {
+  const denied = await requirePermission(session, "invoices", "delete");
+  if (denied) return denied;
+
   await prisma.invoice.delete({ where: { tenantId, id: params?.id } });
   return new NextResponse(null, { status: 204 });
 });

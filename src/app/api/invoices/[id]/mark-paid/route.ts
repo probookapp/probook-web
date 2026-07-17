@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { requirePermission } from "@/lib/permissions-server";
 
-export const POST = withAuth(async (req, { tenantId, params }) => {
+export const POST = withAuth(async (req, { session, tenantId, params }) => {
+  const denied = await requirePermission(session, "invoices", "edit");
+  if (denied) return denied;
+
   const invoice = await prisma.invoice.findFirst({
     where: { tenantId, id: params?.id },
     include: { payments: true },
@@ -11,9 +15,11 @@ export const POST = withAuth(async (req, { tenantId, params }) => {
 
   const body = await req.json().catch(() => ({})) as { payment_method?: string; reference?: string; notes?: string };
 
-  // Create a payment for the remaining amount
+  // Create a payment for the remaining amount. The amount owed includes the
+  // stamp duty snapshot (droit de timbre), so the client owes total + stampDuty.
+  const amountOwed = invoice.total + (invoice.stampDuty ?? 0);
   const paidSoFar = invoice.payments.reduce((sum, p) => sum + p.amount, 0);
-  const remaining = invoice.total - paidSoFar;
+  const remaining = amountOwed - paidSoFar;
 
   if (remaining > 0) {
     await prisma.payment.create({

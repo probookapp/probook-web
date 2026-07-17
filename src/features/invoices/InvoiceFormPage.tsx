@@ -18,6 +18,7 @@ import {
 import { RichTextEditor } from "@/components/ui/RichTextEditor";
 import { useInvoice, useCreateInvoice, useUpdateInvoice } from "./hooks/useInvoices";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { useClients } from "@/features/clients";
 import { useProducts } from "@/features/products";
 import { formatCurrency, formatDateISO, calculateLineTotal } from "@/lib/utils";
@@ -47,6 +48,7 @@ const createInvoiceFormSchema = (t: (key: string) => string) => z.object({
   shipping_tax_rate: z.coerce.number().min(0).max(100).optional(),
   down_payment_percent: z.coerce.number().min(0).max(100).optional(),
   down_payment_amount: z.coerce.number().min(0).optional(),
+  is_cash_sale: z.boolean().optional(),
   lines: z.array(createLineSchema(t)).min(1, t("validation:invoice.linesRequired")),
 });
 
@@ -58,6 +60,8 @@ export function InvoiceFormPage() {
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { id } = useParams<{ id: string }>();
   const isEditing = !!id;
+  const { hasPermission } = useAuthStore();
+  const canManage = isEditing ? hasPermission("invoices", "edit") : hasPermission("invoices", "create");
 
   const invoiceFormSchema = useMemo(() => createInvoiceFormSchema(t), [t]);
 
@@ -92,6 +96,9 @@ export function InvoiceFormPage() {
       shipping_tax_rate: defaultTaxRate,
       down_payment_percent: 0,
       down_payment_amount: 0,
+      // Most timbre-enabled businesses are cash-based; default on (only matters
+      // when stamp duty is enabled in settings). Uncheck for transfer/cheque.
+      is_cash_sale: true,
       lines: [{ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate }],
     },
   });
@@ -139,6 +146,13 @@ export function InvoiceFormPage() {
     }
   }, [invoice, isEditing, id, router]);
 
+  // Redirect if the user lacks the create/edit permission for invoices.
+  useEffect(() => {
+    if (!canManage) {
+      router.push("/invoices");
+    }
+  }, [canManage, router]);
+
   const blocker = useUnsavedChangesGuard(() => isDirty && !submittedRef.current);
 
   const [lastResetInvoiceId, setLastResetInvoiceId] = useState<string | null>(null);
@@ -155,6 +169,7 @@ export function InvoiceFormPage() {
       shipping_tax_rate: invoice.shipping_tax_rate ?? 0,
       down_payment_percent: invoice.down_payment_percent ?? 0,
       down_payment_amount: invoice.down_payment_amount ?? 0,
+      is_cash_sale: invoice.is_cash_sale ?? false,
       lines: invoice.lines.map((line) => ({
         product_id: line.product_id,
         description: line.description,
@@ -285,6 +300,7 @@ export function InvoiceFormPage() {
   };
 
   const onSubmit = async (data: InvoiceFormData) => {
+    if (!canManage) return;
     if (isDemoMode) { showSubscribePrompt(); return; }
     const formData = {
       ...data,
@@ -697,6 +713,12 @@ export function InvoiceFormPage() {
             <p className="text-sm text-gray-500 mt-2">
               {t("invoices:downPaymentHint")}
             </p>
+            {settings?.stamp_duty_enabled && (
+              <label className="flex items-center gap-2 mt-4 text-sm text-gray-700 dark:text-gray-300">
+                <input type="checkbox" {...register("is_cash_sale")} className="rounded" />
+                {t("invoices:stampDuty.cashSale")}
+              </label>
+            )}
           </CardContent>
         </Card>
 

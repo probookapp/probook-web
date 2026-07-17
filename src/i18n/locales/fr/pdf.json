@@ -23,6 +23,8 @@
       "shippingHt": "Frais de port HT",
       "shippingVat": "TVA frais de port",
       "totalTtc": "Total TTC",
+      "stampDuty": "Droit de timbre",
+      "totalWithStamp": "Total à payer (timbre inclus)",
       "downPayment": "Acompte versé",
       "remaining": "Reste à payer"
     },

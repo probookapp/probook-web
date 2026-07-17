@@ -29,8 +29,11 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
   const createPayment = useCreatePayment();
   const deletePayment = useDeletePayment();
 
+  const stampDuty = invoice.stamp_duty || 0;
+  // The client owes the TTC total plus the stamp duty (droit de timbre) snapshot.
+  const amountOwed = invoice.total + stampDuty;
   const totalPaid = invoice.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
-  const remaining = invoice.total - totalPaid;
+  const remaining = amountOwed - totalPaid;
 
   const getPaymentMethodLabel = (method: string) => {
     const methodMap: Record<string, string> = {
@@ -81,7 +84,7 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
         <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4">
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">{t("payments.invoiceTotal")}</p>
-            <p className="font-semibold">{formatCurrency(invoice.total)}</p>
+            <p className="font-semibold">{formatCurrency(amountOwed)}</p>
           </div>
           <div>
             <p className="text-sm text-gray-500 dark:text-gray-400">{t("payments.totalPaid")}</p>

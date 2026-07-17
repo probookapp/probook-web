@@ -23,6 +23,8 @@
       "shippingHt": "Shipping (excl. VAT)",
       "shippingVat": "VAT on shipping",
       "totalTtc": "Total (incl. VAT)",
+      "stampDuty": "Stamp duty",
+      "totalWithStamp": "Total payable (incl. stamp duty)",
       "downPayment": "Down Payment",
       "remaining": "Amount Due"
     },
