@@ -30,6 +30,8 @@ export interface CreateCreditNoteInput {
   userId?: string | null;
   clientId: string;
   invoiceId?: string | null;
+  /** Set for POS refunds — links the credit note back to the originating sale. */
+  posTransactionId?: string | null;
   issueDate: string | Date;
   reason?: string | null;
   notes?: string | null;
@@ -68,6 +70,7 @@ export async function createCreditNote(db: Db, input: CreateCreditNoteInput) {
       tenantId: input.tenantId,
       creditNoteNumber,
       invoiceId: input.invoiceId || null,
+      posTransactionId: input.posTransactionId || null,
       clientId: input.clientId,
       status: "ISSUED",
       issueDate: new Date(input.issueDate),

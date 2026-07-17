@@ -836,9 +836,10 @@ model PosTransaction {
   session  PosSession           @relation(fields: [sessionId], references: [id])
   client   Client?              @relation(fields: [clientId], references: [id])
   user     User                 @relation(fields: [userId], references: [id])
-  invoice  Invoice?             @relation(fields: [invoiceId], references: [id])
-  lines    PosTransactionLine[]
-  payments PosPayment[]
+  invoice     Invoice?             @relation(fields: [invoiceId], references: [id])
+  lines       PosTransactionLine[]
+  payments    PosPayment[]
+  creditNotes CreditNote[]
 
   @@unique([tenantId, ticketNumber])
   @@index([sessionId])
@@ -1343,6 +1344,7 @@ model CreditNote {
   tenantId         String   @map("tenant_id")
   creditNoteNumber String   @map("credit_note_number")
   invoiceId        String?  @map("invoice_id")
+  posTransactionId String?  @map("pos_transaction_id") // set for POS refunds; links the credit note back to the sale
   clientId         String   @map("client_id")
   status           String   @default("ISSUED") // "DRAFT" | "ISSUED"
   issueDate        DateTime @map("issue_date") @db.Date
@@ -1355,15 +1357,17 @@ model CreditNote {
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  tenant  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client  Client           @relation(fields: [clientId], references: [id])
-  invoice Invoice?         @relation(fields: [invoiceId], references: [id])
-  lines   CreditNoteLine[]
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client         Client          @relation(fields: [clientId], references: [id])
+  invoice        Invoice?        @relation(fields: [invoiceId], references: [id])
+  posTransaction PosTransaction? @relation(fields: [posTransactionId], references: [id], onDelete: SetNull)
+  lines          CreditNoteLine[]
 
   @@unique([tenantId, creditNoteNumber])
   @@index([tenantId])
   @@index([clientId])
   @@index([invoiceId])
+  @@index([posTransactionId])
   @@map("credit_notes")
 }
 

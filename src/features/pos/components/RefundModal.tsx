@@ -24,9 +24,13 @@ export function RefundModal({ transaction, isOpen, onClose }: RefundModalProps) 
     Object.fromEntries(transaction.lines.map((l) => [l.id, l.quantity]))
   );
 
-  // Effective per-unit price (excl. tax, after any line discount) the customer paid.
+  // Effective per-unit price (excl. tax) the customer actually paid: line price
+  // after its own discount, scaled by the transaction-level discount ratio
+  // (final_amount / total) so a discounted sale isn't over-refunded.
+  const discountRatio =
+    transaction.total > 0 ? transaction.final_amount / transaction.total : 1;
   const unitPriceOf = (line: PosTransaction["lines"][number]) =>
-    line.quantity > 0 ? line.subtotal / line.quantity : line.unit_price;
+    (line.quantity > 0 ? line.subtotal / line.quantity : line.unit_price) * discountRatio;
 
   const selectedLines = transaction.lines
     .filter((l) => (quantities[l.id] ?? 0) > 0)
