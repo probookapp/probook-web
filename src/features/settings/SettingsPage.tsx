@@ -3,12 +3,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
 import { useRouter, useLocale, usePathname } from "@/lib/navigation";
-import { Save, Image, Trash2, Sun, Moon, Monitor, Globe, Upload, Users } from "lucide-react";
+import { Save, Image, Trash2, Sun, Moon, Monitor, Globe, Upload, Users, ShoppingCart, AlertTriangle, Printer, LayoutDashboard } from "lucide-react";
 import { toast } from "@/stores/useToastStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { UserManagement } from "./components/UserManagement";
 import { BackupSection } from "./components/BackupSection";
 import { SecuritySection } from "./components/SecuritySection";
+import { PrinterManagement } from "./components/PrinterManagement";
+import { DashboardCustomization } from "./components/DashboardCustomization";
 import {
   Button,
   Card,
@@ -40,7 +42,17 @@ const createSettingsSchema = (t: (key: string) => string) => z.object({
   postal_code: z.string().nullable().optional(),
   country: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
-  email: z.string().email(t("validation.emailInvalid")).nullable().optional(),
+  // Must tolerate "": signup's email field is optional, and the form seeds
+  // `settings.email ?? ""`. A bare .email() rejects "", which silently blocked
+  // saving EVERY other company setting for tenants without an email.
+  // Mirrors `optionalEmail` in src/lib/validations.ts.
+  email: z
+    .string()
+    .nullable()
+    .optional()
+    .refine((val) => !val || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val), {
+      message: t("validation.emailInvalid"),
+    }),
   website: z.string().nullable().optional(),
   siret: z.string().nullable().optional(),
   vat_number: z.string().nullable().optional(),
@@ -49,9 +61,21 @@ const createSettingsSchema = (t: (key: string) => string) => z.object({
   invoice_prefix: z.string().min(1, t("validation.invoicePrefixRequired")),
   quote_prefix: z.string().min(1, t("validation.quotePrefixRequired")),
   delivery_note_prefix: z.string().min(1, t("validation.deliveryNotePrefixRequired")).nullable().optional(),
+  next_invoice_number: z.coerce.number().int().min(1, t("validation.nextNumberMin")),
+  next_quote_number: z.coerce.number().int().min(1, t("validation.nextNumberMin")),
+  next_delivery_note_number: z.coerce.number().int().min(1, t("validation.nextNumberMin")),
   legal_mentions: z.string().nullable().optional(),
   bank_details: z.string().nullable().optional(),
   currency: z.string().optional().nullable(),
+  // Point of Sale
+  pos_ticket_prefix: z.string().nullable().optional(),
+  pos_auto_print_receipt: z.boolean(),
+  pos_show_stock_warning: z.boolean(),
+  pos_low_stock_threshold: z.coerce.number().int().min(0, t("validation.lowStockThresholdMin")),
+  // Taxes: stamp duty (droit de timbre)
+  stamp_duty_enabled: z.boolean(),
+  stamp_duty_rate: z.coerce.number().min(0).max(100),
+  stamp_duty_threshold: z.coerce.number().min(0),
 });
 
 type SettingsFormData = z.output<ReturnType<typeof createSettingsSchema>>;
@@ -105,6 +129,8 @@ export function SettingsPage() {
       : newLang;
     const validLang = ['fr', 'en', 'ar'].includes(resolvedLang) ? resolvedLang : 'en';
     const newPath = pathname.replace(`/${locale}`, `/${validLang}`);
+    // Full reload so the new locale's server components + i18n resources load.
+    // eslint-disable-next-line react-hooks/immutability
     window.location.href = newPath;
   };
 
@@ -162,9 +188,19 @@ export function SettingsPage() {
       invoice_prefix: "INV-",
       quote_prefix: "QT-",
       delivery_note_prefix: "DN-",
+      next_invoice_number: 1,
+      next_quote_number: 1,
+      next_delivery_note_number: 1,
       legal_mentions: "",
       bank_details: "",
       currency: "EUR",
+      pos_ticket_prefix: "TK-",
+      pos_auto_print_receipt: true,
+      pos_show_stock_warning: true,
+      pos_low_stock_threshold: 5,
+      stamp_duty_enabled: false,
+      stamp_duty_rate: 1,
+      stamp_duty_threshold: 0,
     },
   });
 
@@ -186,9 +222,19 @@ export function SettingsPage() {
         invoice_prefix: settings.invoice_prefix,
         quote_prefix: settings.quote_prefix,
         delivery_note_prefix: settings.delivery_note_prefix ?? "DN-",
+        next_invoice_number: settings.next_invoice_number ?? 1,
+        next_quote_number: settings.next_quote_number ?? 1,
+        next_delivery_note_number: settings.next_delivery_note_number ?? 1,
         legal_mentions: settings.legal_mentions ?? "",
         bank_details: settings.bank_details ?? "",
         currency: settings.currency ?? "EUR",
+        pos_ticket_prefix: settings.pos_ticket_prefix ?? "TK-",
+        pos_auto_print_receipt: settings.pos_auto_print_receipt ?? true,
+        pos_show_stock_warning: settings.pos_show_stock_warning ?? true,
+        pos_low_stock_threshold: settings.pos_low_stock_threshold ?? 5,
+        stamp_duty_enabled: settings.stamp_duty_enabled ?? false,
+        stamp_duty_rate: settings.stamp_duty_rate ?? 1,
+        stamp_duty_threshold: settings.stamp_duty_threshold ?? 0,
       });
     }
   }, [settings, reset]);
@@ -520,6 +566,123 @@ export function SettingsPage() {
                 error={errors.delivery_note_prefix?.message}
               />
             </div>
+
+            <div className="pt-2">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t("numbering.title")}
+              </h3>
+              <div className="mt-2 flex items-start gap-2 rounded-md bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-3">
+                <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  {t("numbering.warning")}
+                </p>
+              </div>
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input
+                  label={t("numbering.nextInvoiceNumber")}
+                  type="number"
+                  min={1}
+                  {...register("next_invoice_number")}
+                  error={errors.next_invoice_number?.message}
+                />
+                <Input
+                  label={t("numbering.nextQuoteNumber")}
+                  type="number"
+                  min={1}
+                  {...register("next_quote_number")}
+                  error={errors.next_quote_number?.message}
+                />
+                <Input
+                  label={t("numbering.nextDeliveryNoteNumber")}
+                  type="number"
+                  min={1}
+                  {...register("next_delivery_note_number")}
+                  error={errors.next_delivery_note_number?.message}
+                />
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t("taxes.title")}
+              </h3>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {t("taxes.description")}
+              </p>
+              <label className="mt-4 flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  {...register("stamp_duty_enabled")}
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  {t("taxes.stampDutyEnabled")}
+                </span>
+              </label>
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Input
+                  label={t("taxes.stampDutyRate")}
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  {...register("stamp_duty_rate")}
+                  error={errors.stamp_duty_rate?.message}
+                />
+                <Input
+                  label={t("taxes.stampDutyThreshold")}
+                  type="number"
+                  step="0.01"
+                  min={0}
+                  {...register("stamp_duty_threshold")}
+                  error={errors.stamp_duty_threshold?.message}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              {t("pos.title")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input
+                label={t("pos.ticketPrefix")}
+                {...register("pos_ticket_prefix")}
+                error={errors.pos_ticket_prefix?.message}
+              />
+              <Input
+                label={t("pos.lowStockThreshold")}
+                type="number"
+                min={0}
+                {...register("pos_low_stock_threshold")}
+                error={errors.pos_low_stock_threshold?.message}
+              />
+            </div>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                {...register("pos_auto_print_receipt")}
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                {t("pos.autoPrintReceipt")}
+              </span>
+            </label>
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                {...register("pos_show_stock_warning")}
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                {t("pos.showStockWarning")}
+              </span>
+            </label>
           </CardContent>
           <CardFooter>
             <div className="flex items-center gap-4 w-full">
@@ -537,6 +700,32 @@ export function SettingsPage() {
           </CardFooter>
         </Card>
       </form>
+
+      {/* POS Printer Management */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Printer className="h-5 w-5" />
+            {t("printers.title")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <PrinterManagement />
+        </CardContent>
+      </Card>
+
+      {/* Dashboard Customization */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <LayoutDashboard className="h-5 w-5" />
+            {t("dashboardCustomization.title")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DashboardCustomization />
+        </CardContent>
+      </Card>
 
       {/* Security: 2FA & Sessions */}
       <SecuritySection totpEnabled={false} />

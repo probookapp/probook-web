@@ -36,6 +36,71 @@
     "currency": "Devise",
     "deliveryNotePrefix": "Préfixe de bon de livraison"
   },
+  "numbering": {
+    "title": "Numérotation des documents",
+    "warning": "Le prochain numéro est appliqué au prochain document que vous créez. Le réduire en dessous d'un numéro déjà utilisé peut créer des doublons. Modifiez avec prudence.",
+    "nextInvoiceNumber": "Prochain numéro de facture",
+    "nextQuoteNumber": "Prochain numéro de devis",
+    "nextDeliveryNoteNumber": "Prochain numéro de bon de livraison"
+  },
+  "pos": {
+    "title": "Point de vente",
+    "ticketPrefix": "Préfixe de ticket",
+    "lowStockThreshold": "Seuil de stock faible",
+    "autoPrintReceipt": "Imprimer automatiquement le ticket après chaque vente",
+    "showStockWarning": "Afficher un avertissement lorsque le stock est faible"
+  },
+  "taxes": {
+    "title": "Taxes",
+    "description": "Configurez le droit de timbre appliqué aux paiements en espèces pour vos déclarations fiscales.",
+    "stampDutyEnabled": "Appliquer le droit de timbre sur les paiements en espèces",
+    "stampDutyRate": "Taux du droit de timbre (%)",
+    "stampDutyThreshold": "Seuil du droit de timbre (montant min.)"
+  },
+  "printers": {
+    "title": "Imprimantes de tickets",
+    "addPrinter": "Ajouter une imprimante",
+    "addTitle": "Ajouter une imprimante",
+    "editTitle": "Modifier l'imprimante",
+    "name": "Nom",
+    "connection": "Connexion",
+    "connectionType": "Type de connexion",
+    "connectionAddress": "Adresse",
+    "connectionAddressPlaceholder": "ex. 192.168.1.50:9100",
+    "connectionTypes": {
+      "network": "Réseau"
+    },
+    "register": "Caisse",
+    "allRegisters": "Toutes les caisses",
+    "paperWidth": "Largeur du papier",
+    "status": "Statut",
+    "active": "Active",
+    "inactive": "Inactive",
+    "activeLabel": "L'imprimante est active",
+    "default": "Par défaut",
+    "setDefault": "Définir par défaut",
+    "setAsDefault": "Définir comme imprimante par défaut",
+    "defaultUpdated": "Imprimante par défaut mise à jour",
+    "actions": "Actions",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "deleteConfirm": "Supprimer l'imprimante « {{name}} » ?",
+    "deleteSuccess": "Imprimante supprimée",
+    "deleteFailed": "Échec de la suppression de l'imprimante",
+    "saveSuccess": "Imprimante enregistrée",
+    "saveFailed": "Échec de l'enregistrement de l'imprimante",
+    "validationRequired": "Le nom et l'adresse sont requis",
+    "noPrinters": "Aucune imprimante configurée",
+    "cancel": "Annuler",
+    "save": "Enregistrer"
+  },
+  "dashboardCustomization": {
+    "title": "Disposition du tableau de bord",
+    "description": "Choisissez les cartes de statistiques affichées sur votre tableau de bord et réorganisez-les. Enregistré sur cet appareil.",
+    "moveUp": "Monter",
+    "moveDown": "Descendre",
+    "reset": "Réinitialiser"
+  },
   "legal": {
     "title": "Informations légales",
     "legalMentions": "Mentions légales",
@@ -70,6 +135,9 @@
     "exportEncrypted": "Exporter chiffré",
     "importEncrypted": "Importer une sauvegarde chiffrée",
     "exportDescription": "Téléchargez une sauvegarde complète de vos données. Les sauvegardes chiffrées sont protégées par un chiffrement AES-256.",
+    "includePhotos": "Inclure les photos des produits",
+    "includePhotosHint": "Les photos alourdissent fortement la sauvegarde. Laissez cette option désactivée si vous n'en avez pas besoin.",
+    "exportEncryptedHint": "Seule la sauvegarde chiffrée contient les mots de passe des comptes utilisateurs, ce qui permet de restaurer entièrement un utilisateur supprimé. Une restauration ne modifie jamais le mot de passe d'un utilisateur existant.",
     "passwordLabel": "Mot de passe de chiffrement",
     "passwordPlaceholder": "Entrez un mot de passe fort...",
     "passwordConfirmLabel": "Confirmer le mot de passe",
@@ -127,6 +195,8 @@
     "emailInvalid": "Email invalide",
     "invoicePrefixRequired": "Le préfixe de facture est requis",
     "quotePrefixRequired": "Le préfixe de devis est requis",
-    "deliveryNotePrefixRequired": "Le préfixe de bon de livraison est requis"
+    "deliveryNotePrefixRequired": "Le préfixe de bon de livraison est requis",
+    "nextNumberMin": "Doit être au moins 1",
+    "lowStockThresholdMin": "Doit être supérieur ou égal à 0"
   }
 }

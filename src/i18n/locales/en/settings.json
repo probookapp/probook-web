@@ -36,6 +36,71 @@
     "currency": "Currency",
     "deliveryNotePrefix": "Delivery Note Prefix"
   },
+  "numbering": {
+    "title": "Document Numbering",
+    "warning": "The next number is applied to the next document you create. Lowering it below an already-used number can create duplicate numbers. Change with care.",
+    "nextInvoiceNumber": "Next Invoice Number",
+    "nextQuoteNumber": "Next Quote Number",
+    "nextDeliveryNoteNumber": "Next Delivery Note Number"
+  },
+  "pos": {
+    "title": "Point of Sale",
+    "ticketPrefix": "Ticket Prefix",
+    "lowStockThreshold": "Low Stock Threshold",
+    "autoPrintReceipt": "Automatically print receipt after each sale",
+    "showStockWarning": "Show a warning when stock is low"
+  },
+  "taxes": {
+    "title": "Taxes",
+    "description": "Configure the stamp duty (droit de timbre) applied to cash payments for tax reporting.",
+    "stampDutyEnabled": "Apply stamp duty on cash payments",
+    "stampDutyRate": "Stamp duty rate (%)",
+    "stampDutyThreshold": "Stamp duty threshold (min. amount)"
+  },
+  "printers": {
+    "title": "Receipt Printers",
+    "addPrinter": "Add Printer",
+    "addTitle": "Add Printer",
+    "editTitle": "Edit Printer",
+    "name": "Name",
+    "connection": "Connection",
+    "connectionType": "Connection Type",
+    "connectionAddress": "Address",
+    "connectionAddressPlaceholder": "e.g. 192.168.1.50:9100",
+    "connectionTypes": {
+      "network": "Network"
+    },
+    "register": "Register",
+    "allRegisters": "All registers",
+    "paperWidth": "Paper Width",
+    "status": "Status",
+    "active": "Active",
+    "inactive": "Inactive",
+    "activeLabel": "Printer is active",
+    "default": "Default",
+    "setDefault": "Set as default",
+    "setAsDefault": "Set as default printer",
+    "defaultUpdated": "Default printer updated",
+    "actions": "Actions",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteConfirm": "Delete printer \"{{name}}\"?",
+    "deleteSuccess": "Printer deleted",
+    "deleteFailed": "Failed to delete printer",
+    "saveSuccess": "Printer saved",
+    "saveFailed": "Failed to save printer",
+    "validationRequired": "Name and address are required",
+    "noPrinters": "No printers configured yet",
+    "cancel": "Cancel",
+    "save": "Save"
+  },
+  "dashboardCustomization": {
+    "title": "Dashboard Layout",
+    "description": "Choose which stat cards appear on your dashboard and reorder them. Saved on this device.",
+    "moveUp": "Move up",
+    "moveDown": "Move down",
+    "reset": "Reset to default"
+  },
   "legal": {
     "title": "Legal Information",
     "legalMentions": "Legal Mentions",
@@ -70,6 +135,9 @@
     "exportEncrypted": "Export Encrypted",
     "importEncrypted": "Import Encrypted Backup",
     "exportDescription": "Download a full backup of your data. Encrypted backups are protected with AES-256 encryption.",
+    "includePhotos": "Include product photos",
+    "includePhotosHint": "Photos make the backup much larger. Leave this off unless you need them restored.",
+    "exportEncryptedHint": "Only the encrypted export includes user accounts' passwords, so deleted users can be fully restored. A restore never changes an existing user's password.",
     "passwordLabel": "Encryption Password",
     "passwordPlaceholder": "Enter a strong password...",
     "passwordConfirmLabel": "Confirm Password",
@@ -127,6 +195,8 @@
     "emailInvalid": "Invalid email",
     "invoicePrefixRequired": "Invoice prefix is required",
     "quotePrefixRequired": "Quote prefix is required",
-    "deliveryNotePrefixRequired": "Delivery note prefix is required"
+    "deliveryNotePrefixRequired": "Delivery note prefix is required",
+    "nextNumberMin": "Must be at least 1",
+    "lowStockThresholdMin": "Must be 0 or more"
   }
 }

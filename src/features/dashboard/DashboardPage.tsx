@@ -16,6 +16,9 @@ import { dashboardApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_DASHBOARD_STATS } from "@/lib/demo-data";
 import { AlertsPanel } from "./components";
+import { RemindersWidget } from "@/features/reminders";
+import { useDashboardStore, type DashboardStatId } from "@/stores/useDashboardStore";
+import { useDashboardLayoutSync } from "./hooks/useDashboardLayoutSync";
 
 function StatCard({
   title,
@@ -51,6 +54,9 @@ function StatCard({
 export function DashboardPage() {
   const { t } = useTranslation("dashboard");
   const { isDemoMode } = useDemoMode();
+  const order = useDashboardStore((s) => s.order);
+  const hidden = useDashboardStore((s) => s.hidden);
+  useDashboardLayoutSync(); // hydrate saved layout from server (cross-device)
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats", { demo: isDemoMode }],
     queryFn: isDemoMode ? () => DEMO_DASHBOARD_STATS : dashboardApi.getStats,
@@ -65,6 +71,64 @@ export function DashboardPage() {
     );
   }
 
+  // Stat cards keyed by id so the owner can toggle visibility / reorder them
+  // (persisted client-side via useDashboardStore).
+  const statCards: Record<
+    DashboardStatId,
+    { title: string; value: string | number; icon: React.ElementType; description: string }
+  > = {
+    clients: {
+      title: t("stats.clients"),
+      value: stats?.total_clients ?? 0,
+      icon: Users,
+      description: t("stats.totalClients"),
+    },
+    quotes: {
+      title: t("stats.quotes"),
+      value: stats?.total_quotes ?? 0,
+      icon: FileText,
+      description: t("stats.quotesCreated"),
+    },
+    invoices: {
+      title: t("stats.invoices"),
+      value: stats?.total_invoices ?? 0,
+      icon: Receipt,
+      description: t("stats.invoicesIssued"),
+    },
+    monthlyRevenue: {
+      title: t("stats.monthlyRevenue"),
+      value: formatCurrency(stats?.revenue_this_month ?? 0),
+      icon: Euro,
+      description: t("stats.monthlyRevenueDesc"),
+    },
+    yearlyRevenue: {
+      title: t("stats.yearlyRevenue"),
+      value: formatCurrency(stats?.revenue_this_year ?? 0),
+      icon: TrendingUp,
+      description: t("stats.yearlyRevenueDesc"),
+    },
+    pending: {
+      title: t("stats.pending"),
+      value: formatCurrency(stats?.pending_payments ?? 0),
+      icon: Clock,
+      description: t("stats.pendingPayments"),
+    },
+    totalExpenses: {
+      title: t("stats.totalExpenses"),
+      value: formatCurrency(stats?.total_expenses ?? 0),
+      icon: Wallet,
+      description: t("stats.totalExpensesDesc"),
+    },
+    profit: {
+      title: t("stats.profit"),
+      value: formatCurrency(stats?.profit ?? 0),
+      icon: DollarSign,
+      description: t("stats.profitDesc"),
+    },
+  };
+
+  const visibleStats = order.filter((id) => !hidden.includes(id));
+
   return (
     <div className="space-y-8">
       <div>
@@ -72,59 +136,28 @@ export function DashboardPage() {
         <p className="text-gray-500 dark:text-gray-400">{t("welcome")}</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard
-          title={t("stats.clients")}
-          value={stats?.total_clients ?? 0}
-          icon={Users}
-          description={t("stats.totalClients")}
-        />
-        <StatCard
-          title={t("stats.quotes")}
-          value={stats?.total_quotes ?? 0}
-          icon={FileText}
-          description={t("stats.quotesCreated")}
-        />
-        <StatCard
-          title={t("stats.invoices")}
-          value={stats?.total_invoices ?? 0}
-          icon={Receipt}
-          description={t("stats.invoicesIssued")}
-        />
-        <StatCard
-          title={t("stats.monthlyRevenue")}
-          value={formatCurrency(stats?.revenue_this_month ?? 0)}
-          icon={Euro}
-          description={t("stats.monthlyRevenueDesc")}
-        />
-        <StatCard
-          title={t("stats.yearlyRevenue")}
-          value={formatCurrency(stats?.revenue_this_year ?? 0)}
-          icon={TrendingUp}
-          description={t("stats.yearlyRevenueDesc")}
-        />
-        <StatCard
-          title={t("stats.pending")}
-          value={formatCurrency(stats?.pending_payments ?? 0)}
-          icon={Clock}
-          description={t("stats.pendingPayments")}
-        />
-        <StatCard
-          title={t("stats.totalExpenses")}
-          value={formatCurrency(stats?.total_expenses ?? 0)}
-          icon={Wallet}
-          description={t("stats.totalExpensesDesc")}
-        />
-        <StatCard
-          title={t("stats.profit")}
-          value={formatCurrency(stats?.profit ?? 0)}
-          icon={DollarSign}
-          description={t("stats.profitDesc")}
-        />
-      </div>
+      {visibleStats.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {visibleStats.map((id) => {
+            const card = statCards[id];
+            return (
+              <StatCard
+                key={id}
+                title={card.title}
+                value={card.value}
+                icon={card.icon}
+                description={card.description}
+              />
+            );
+          })}
+        </div>
+      )}
 
-      {/* Alerts Panel */}
-      <AlertsPanel />
+      {/* Alerts & Reminders */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <AlertsPanel />
+        <RemindersWidget />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>

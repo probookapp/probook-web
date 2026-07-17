@@ -36,6 +36,71 @@
     "currency": "العملة",
     "deliveryNotePrefix": "بادئة إشعار التسليم"
   },
+  "numbering": {
+    "title": "ترقيم المستندات",
+    "warning": "يُطبَّق الرقم التالي على المستند التالي الذي تنشئه. خفضه إلى ما دون رقم مستخدم بالفعل قد يؤدي إلى أرقام مكررة. غيّره بحذر.",
+    "nextInvoiceNumber": "رقم الفاتورة التالي",
+    "nextQuoteNumber": "رقم عرض السعر التالي",
+    "nextDeliveryNoteNumber": "رقم إشعار التسليم التالي"
+  },
+  "pos": {
+    "title": "نقطة البيع",
+    "ticketPrefix": "بادئة التذكرة",
+    "lowStockThreshold": "حد المخزون المنخفض",
+    "autoPrintReceipt": "طباعة الإيصال تلقائيًا بعد كل عملية بيع",
+    "showStockWarning": "إظهار تحذير عند انخفاض المخزون"
+  },
+  "taxes": {
+    "title": "الضرائب",
+    "description": "قم بإعداد رسم الطابع المطبّق على المدفوعات النقدية لأغراض الإقرار الضريبي.",
+    "stampDutyEnabled": "تطبيق رسم الطابع على المدفوعات النقدية",
+    "stampDutyRate": "معدل رسم الطابع (%)",
+    "stampDutyThreshold": "عتبة رسم الطابع (الحد الأدنى للمبلغ)"
+  },
+  "printers": {
+    "title": "طابعات الإيصالات",
+    "addPrinter": "إضافة طابعة",
+    "addTitle": "إضافة طابعة",
+    "editTitle": "تعديل الطابعة",
+    "name": "الاسم",
+    "connection": "الاتصال",
+    "connectionType": "نوع الاتصال",
+    "connectionAddress": "العنوان",
+    "connectionAddressPlaceholder": "مثال: 192.168.1.50:9100",
+    "connectionTypes": {
+      "network": "شبكة"
+    },
+    "register": "الصندوق",
+    "allRegisters": "جميع الصناديق",
+    "paperWidth": "عرض الورق",
+    "status": "الحالة",
+    "active": "نشطة",
+    "inactive": "غير نشطة",
+    "activeLabel": "الطابعة نشطة",
+    "default": "افتراضية",
+    "setDefault": "تعيين كافتراضية",
+    "setAsDefault": "تعيين كطابعة افتراضية",
+    "defaultUpdated": "تم تحديث الطابعة الافتراضية",
+    "actions": "إجراءات",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "deleteConfirm": "حذف الطابعة \"{{name}}\"؟",
+    "deleteSuccess": "تم حذف الطابعة",
+    "deleteFailed": "فشل حذف الطابعة",
+    "saveSuccess": "تم حفظ الطابعة",
+    "saveFailed": "فشل حفظ الطابعة",
+    "validationRequired": "الاسم والعنوان مطلوبان",
+    "noPrinters": "لم يتم تكوين أي طابعة بعد",
+    "cancel": "إلغاء",
+    "save": "حفظ"
+  },
+  "dashboardCustomization": {
+    "title": "تخطيط لوحة التحكم",
+    "description": "اختر بطاقات الإحصائيات التي تظهر في لوحة التحكم وأعد ترتيبها. يُحفظ على هذا الجهاز.",
+    "moveUp": "تحريك لأعلى",
+    "moveDown": "تحريك لأسفل",
+    "reset": "إعادة التعيين"
+  },
   "legal": {
     "title": "المعلومات القانونية",
     "legalMentions": "البيانات القانونية",
@@ -70,6 +135,9 @@
     "exportEncrypted": "تصدير مشفر",
     "importEncrypted": "استيراد نسخة احتياطية مشفرة",
     "exportDescription": "قم بتنزيل نسخة احتياطية كاملة من بياناتك. النسخ المشفرة محمية بتشفير AES-256.",
+    "includePhotos": "تضمين صور المنتجات",
+    "includePhotosHint": "الصور تزيد حجم النسخة الاحتياطية بشكل كبير. اتركه معطلاً إن لم تكن بحاجة إلى استعادتها.",
+    "exportEncryptedHint": "النسخة المشفرة وحدها تتضمن كلمات مرور حسابات المستخدمين، مما يتيح استعادة المستخدم المحذوف بالكامل. الاستعادة لا تغيّر أبداً كلمة مرور مستخدم موجود.",
     "passwordLabel": "كلمة مرور التشفير",
     "passwordPlaceholder": "أدخل كلمة مرور قوية...",
     "passwordConfirmLabel": "تأكيد كلمة المرور",
@@ -127,6 +195,8 @@
     "emailInvalid": "بريد إلكتروني غير صالح",
     "invoicePrefixRequired": "بادئة الفاتورة مطلوبة",
     "quotePrefixRequired": "بادئة عرض السعر مطلوبة",
-    "deliveryNotePrefixRequired": "بادئة إشعار التسليم مطلوبة"
+    "deliveryNotePrefixRequired": "بادئة إشعار التسليم مطلوبة",
+    "nextNumberMin": "يجب أن يكون 1 على الأقل",
+    "lowStockThresholdMin": "يجب أن يكون 0 أو أكثر"
   }
 }

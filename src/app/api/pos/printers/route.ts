@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { posPrinterSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId }) => {
   const configs = await prisma.posPrinterConfig.findMany({
@@ -12,7 +13,9 @@ export const GET = withAuth(async (req, { tenantId }) => {
   return NextResponse.json(toSnakeCase(configs));
 });
 
-export const POST = withAuth(async (req, { tenantId }) => {
+export const POST = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "pos", "create");
+  if (denied) return denied;
   const body = await validateBody(req, posPrinterSchema);
   if (isValidationError(body)) return body;
   const config = await prisma.posPrinterConfig.create({

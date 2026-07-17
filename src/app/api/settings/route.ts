@@ -40,6 +40,14 @@ export const PUT = withAuth(async (req, { tenantId }) => {
   if (body.delivery_note_prefix !== undefined) updateData.deliveryNotePrefix = body.delivery_note_prefix;
   if (body.next_delivery_note_number !== undefined) updateData.nextDeliveryNoteNumber = body.next_delivery_note_number;
   if (body.currency !== undefined) updateData.currency = body.currency;
+  if (body.pos_ticket_prefix !== undefined) updateData.posTicketPrefix = body.pos_ticket_prefix;
+  if (body.pos_auto_print_receipt !== undefined) updateData.posAutoPrintReceipt = body.pos_auto_print_receipt;
+  if (body.pos_show_stock_warning !== undefined) updateData.posShowStockWarning = body.pos_show_stock_warning;
+  if (body.pos_low_stock_threshold !== undefined) updateData.posLowStockThreshold = body.pos_low_stock_threshold;
+  if (body.stamp_duty_enabled !== undefined) updateData.stampDutyEnabled = body.stamp_duty_enabled;
+  if (body.stamp_duty_rate !== undefined) updateData.stampDutyRate = body.stamp_duty_rate;
+  if (body.stamp_duty_threshold !== undefined) updateData.stampDutyThreshold = body.stamp_duty_threshold;
+  if (body.dashboard_layout !== undefined) updateData.dashboardLayout = body.dashboard_layout;
 
   const settings = await prisma.companySettings.upsert({
     where: { tenantId },
