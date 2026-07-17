@@ -10,7 +10,7 @@ export const adminAuthApi = {
   totpSetup: () =>
     adminApiCall<{ secret: string; uri: string }>("admin_totp_setup"),
   totpVerifySetup: (code: string) =>
-    adminApiCall<{ success: boolean }>("admin_totp_verify_setup", { input: { code } }),
+    adminApiCall<{ success: boolean; backup_codes: string[] }>("admin_totp_verify_setup", { input: { code } }),
   totpDisable: (password: string) =>
     adminApiCall<{ success: boolean }>("admin_totp_disable", { input: { password } }),
 };

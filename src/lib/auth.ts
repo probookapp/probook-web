@@ -235,20 +235,35 @@ export async function verifyAdminTotpChallengeToken(token: string): Promise<stri
 }
 
 // ========== Platform Admin TOTP Secret Encryption ==========
-// The admin TOTP secret is stored encrypted at rest (AES-256-GCM). The key is
-// derived from JWT_SECRET so no new env var is required. Ciphertext is stored
-// as base64 of (12-byte IV || ciphertext+tag).
+// The admin TOTP secret is stored encrypted at rest (AES-256-GCM). Ciphertext is
+// stored as base64 of (12-byte IV || ciphertext+tag).
+//
+// The encryption key prefers a DEDICATED env var (TOTP_ENCRYPTION_KEY) so that
+// rotating JWT_SECRET — which signs sessions — never renders stored TOTP secrets
+// undecryptable (which would lock every 2FA admin out). When the dedicated key
+// is unset we fall back to JWT_SECRET, preserving the previous behavior. On
+// decrypt we try each key material in turn, so secrets written under the old
+// (JWT-derived) key keep working after a dedicated key is introduced.
 
-async function getTotpEncKey(): Promise<CryptoKey> {
-  const digest = await crypto.subtle.digest("SHA-256", JWT_SECRET);
+async function importTotpKey(material: BufferSource): Promise<CryptoKey> {
+  const digest = await crypto.subtle.digest("SHA-256", material);
   return crypto.subtle.importKey("raw", digest, { name: "AES-GCM" }, false, [
     "encrypt",
     "decrypt",
   ]);
 }
 
+/** Key materials in preference order: dedicated key first, JWT_SECRET fallback. */
+function totpKeyMaterials(): BufferSource[] {
+  const materials: BufferSource[] = [];
+  const dedicated = process.env.TOTP_ENCRYPTION_KEY;
+  if (dedicated) materials.push(new TextEncoder().encode(dedicated));
+  materials.push(JWT_SECRET);
+  return materials;
+}
+
 export async function encryptTotpSecret(secret: string): Promise<string> {
-  const key = await getTotpEncKey();
+  const key = await importTotpKey(totpKeyMaterials()[0]);
   const iv = crypto.getRandomValues(new Uint8Array(12));
   const ciphertext = await crypto.subtle.encrypt(
     { name: "AES-GCM", iv },
@@ -262,14 +277,22 @@ export async function encryptTotpSecret(secret: string): Promise<string> {
 }
 
 export async function decryptTotpSecret(encrypted: string): Promise<string> {
-  const key = await getTotpEncKey();
   const combined = new Uint8Array(Buffer.from(encrypted, "base64"));
   const iv = combined.slice(0, 12);
   const ciphertext = combined.slice(12);
-  const plaintext = await crypto.subtle.decrypt(
-    { name: "AES-GCM", iv },
-    key,
-    ciphertext
-  );
-  return new TextDecoder().decode(plaintext);
+  let lastError: unknown;
+  for (const material of totpKeyMaterials()) {
+    try {
+      const key = await importTotpKey(material);
+      const plaintext = await crypto.subtle.decrypt(
+        { name: "AES-GCM", iv },
+        key,
+        ciphertext
+      );
+      return new TextDecoder().decode(plaintext);
+    } catch (err) {
+      lastError = err;
+    }
+  }
+  throw lastError ?? new Error("Failed to decrypt TOTP secret");
 }

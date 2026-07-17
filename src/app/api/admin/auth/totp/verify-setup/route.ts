@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withPlatformAdmin, logAuditEvent, getClientIp } from "@/lib/admin-api-utils";
 import { prisma } from "@/lib/db";
-import { decryptTotpSecret } from "@/lib/auth";
-import { verifyTOTP } from "@/lib/totp";
+import { decryptTotpSecret, hashPassword } from "@/lib/auth";
+import { verifyTOTP, generateBackupCodes } from "@/lib/totp";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { totpVerifySetupSchema } from "@/lib/validations";
 
@@ -30,6 +30,16 @@ export const POST = withPlatformAdmin(async (req: NextRequest, ctx) => {
     data: { totpEnabled: true },
   });
 
+  // Issue one-time recovery codes (shown once) so a lost authenticator doesn't
+  // lock the admin out. Replace any previous set.
+  const plainCodes = generateBackupCodes(8);
+  await prisma.adminBackupCode.deleteMany({ where: { adminId: admin.id } });
+  for (const plainCode of plainCodes) {
+    await prisma.adminBackupCode.create({
+      data: { adminId: admin.id, code: await hashPassword(plainCode) },
+    });
+  }
+
   await logAuditEvent({
     actorType: "platform_admin",
     actorId: admin.id,
@@ -37,5 +47,5 @@ export const POST = withPlatformAdmin(async (req: NextRequest, ctx) => {
     ipAddress: getClientIp(req),
   });
 
-  return NextResponse.json({ success: true });
+  return NextResponse.json({ success: true, backup_codes: plainCodes });
 });

@@ -27,6 +27,7 @@ export const POST = withPlatformAdmin(async (req: NextRequest, ctx) => {
     where: { id: admin.id },
     data: { totpEnabled: false, totpSecret: null },
   });
+  await prisma.adminBackupCode.deleteMany({ where: { adminId: admin.id } });
 
   await logAuditEvent({
     actorType: "platform_admin",

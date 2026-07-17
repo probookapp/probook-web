@@ -91,6 +91,11 @@
       "disablePassword": "Password",
       "setupError": "Failed to start 2FA setup",
       "enabledToast": "Two-factor authentication enabled",
+      "backupCodesTitle": "Save your recovery codes",
+      "backupCodesDescription": "Store these somewhere safe. Each code can be used once to sign in if you lose your authenticator. They won't be shown again.",
+      "copyBackupCodes": "Copy codes",
+      "backupCodesCopied": "Recovery codes copied",
+      "backupCodesDone": "I've saved them",
       "disabledToast": "Two-factor authentication disabled",
       "invalidCode": "Invalid code. Please try again.",
       "invalidPassword": "Invalid password"

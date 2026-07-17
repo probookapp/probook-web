@@ -91,6 +91,11 @@
       "disablePassword": "كلمة المرور",
       "setupError": "فشل بدء إعداد المصادقة الثنائية",
       "enabledToast": "تم تفعيل المصادقة الثنائية",
+      "backupCodesTitle": "احفظ رموز الاسترداد",
+      "backupCodesDescription": "احتفظ بها في مكان آمن. يمكن استخدام كل رمز مرة واحدة لتسجيل الدخول إذا فقدت تطبيق المصادقة. لن يتم عرضها مرة أخرى.",
+      "copyBackupCodes": "نسخ الرموز",
+      "backupCodesCopied": "تم نسخ رموز الاسترداد",
+      "backupCodesDone": "لقد حفظتها",
       "disabledToast": "تم تعطيل المصادقة الثنائية",
       "invalidCode": "رمز غير صالح. يرجى المحاولة مرة أخرى.",
       "invalidPassword": "كلمة مرور غير صالحة"

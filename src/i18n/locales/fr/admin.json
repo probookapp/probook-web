@@ -91,6 +91,11 @@
       "disablePassword": "Mot de passe",
       "setupError": "Échec du démarrage de la configuration 2FA",
       "enabledToast": "Authentification à deux facteurs activée",
+      "backupCodesTitle": "Enregistrez vos codes de récupération",
+      "backupCodesDescription": "Conservez-les en lieu sûr. Chaque code est utilisable une seule fois pour vous connecter si vous perdez votre authentificateur. Ils ne seront plus affichés.",
+      "copyBackupCodes": "Copier les codes",
+      "backupCodesCopied": "Codes de récupération copiés",
+      "backupCodesDone": "Je les ai enregistrés",
       "disabledToast": "Authentification à deux facteurs désactivée",
       "invalidCode": "Code invalide. Veuillez réessayer.",
       "invalidPassword": "Mot de passe invalide"

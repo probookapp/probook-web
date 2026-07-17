@@ -41,6 +41,7 @@ export function AdminSecuritySection() {
   const [isSettingUp, setIsSettingUp] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isDisabling, setIsDisabling] = useState(false);
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
 
   useEffect(() => {
     adminAuthApi
@@ -70,10 +71,11 @@ export function AdminSecuritySection() {
     if (verifyCode.length < 6) return;
     setIsVerifying(true);
     try {
-      await adminAuthApi.totpVerifySetup(verifyCode);
+      const res = await adminAuthApi.totpVerifySetup(verifyCode);
       setTotpEnabled(true);
       setSetupMode(false);
       setVerifyCode("");
+      setBackupCodes(res.backup_codes ?? []);
       toast.success(t("security.twoFactor.enabledToast"));
     } catch {
       toast.error(t("security.twoFactor.invalidCode"));
@@ -90,6 +92,7 @@ export function AdminSecuritySection() {
       setTotpEnabled(false);
       setDisableMode(false);
       setDisablePassword("");
+      setBackupCodes([]);
       toast.success(t("security.twoFactor.disabledToast"));
     } catch {
       toast.error(t("security.twoFactor.invalidPassword"));
@@ -164,6 +167,43 @@ export function AdminSecuritySection() {
                 disabled={verifyCode.length < 6}
               >
                 {t("security.twoFactor.verify")}
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {backupCodes.length > 0 && (
+          <div className="border border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/10 rounded-lg p-4 space-y-3">
+            <h4 className="font-medium text-amber-800 dark:text-amber-300">
+              {t("security.twoFactor.backupCodesTitle")}
+            </h4>
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              {t("security.twoFactor.backupCodesDescription")}
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {backupCodes.map((c) => (
+                <code
+                  key={c}
+                  className="bg-white dark:bg-gray-900 rounded px-3 py-2 text-sm font-mono text-center tracking-wider"
+                >
+                  {c}
+                </code>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => {
+                  navigator.clipboard.writeText(backupCodes.join("\n"));
+                  toast.success(t("security.twoFactor.backupCodesCopied"));
+                }}
+              >
+                <Copy className="h-4 w-4 mr-2" />
+                {t("security.twoFactor.copyBackupCodes")}
+              </Button>
+              <Button type="button" onClick={() => setBackupCodes([])}>
+                {t("security.twoFactor.backupCodesDone")}
               </Button>
             </div>
           </div>

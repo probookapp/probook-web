@@ -4,6 +4,7 @@ import {
   setAdminSessionCookie,
   verifyAdminTotpChallengeToken,
   decryptTotpSecret,
+  verifyPassword,
   PlatformSessionPayload,
 } from "@/lib/auth";
 import { prisma } from "@/lib/db";
@@ -53,7 +54,24 @@ export async function POST(req: NextRequest) {
     }
 
     const secret = await decryptTotpSecret(admin.totpSecret);
-    const valid = await verifyTOTP(secret, code);
+    let valid = await verifyTOTP(secret, code);
+
+    // Fall back to a one-time recovery code when the authenticator isn't available.
+    if (!valid) {
+      const backupCodes = await prisma.adminBackupCode.findMany({
+        where: { adminId: admin.id, usedAt: null },
+      });
+      for (const bc of backupCodes) {
+        if (await verifyPassword(code, bc.code)) {
+          await prisma.adminBackupCode.update({
+            where: { id: bc.id },
+            data: { usedAt: new Date() },
+          });
+          valid = true;
+          break;
+        }
+      }
+    }
 
     if (!valid) {
       await prisma.adminLoginAttempt.create({

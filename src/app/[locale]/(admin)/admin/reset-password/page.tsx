@@ -77,7 +77,7 @@ export default function AdminResetPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
-                minLength={6}
+                minLength={8}
                 autoFocus
                 required
               />
@@ -87,7 +87,7 @@ export default function AdminResetPasswordPage() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 autoComplete="new-password"
-                minLength={6}
+                minLength={8}
                 required
               />
               {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
