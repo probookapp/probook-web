@@ -85,9 +85,13 @@ test.describe("Products permission enforcement", () => {
     await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Delete" })).toHaveCount(0);
 
-    // Server enforcement: GET allowed, POST forbidden.
+    // Server enforcement: products GET allowed (view granted), POST forbidden.
     expect((await apiGet(page, "/api/products")).status).toBe(200);
     expect((await apiPost(page, "/api/products", PRODUCT_BODY)).status).toBe(403);
+
+    // View is enforced server-side on document reads too: this employee has no
+    // "invoices" permission, so reading invoices is forbidden (not just hidden).
+    expect((await apiGet(page, "/api/invoices")).status).toBe(403);
 
     // ── FULL-CRUD employee (no over-gating) ──────────────────────────────
     await logOut(page);

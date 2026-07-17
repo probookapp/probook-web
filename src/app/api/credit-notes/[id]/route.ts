@@ -4,7 +4,9 @@ import { prisma } from "@/lib/db";
 import { requirePermission } from "@/lib/permissions-server";
 import { applyStockChange } from "@/lib/stock";
 
-export const GET = withAuth(async (req, { tenantId, params }) => {
+export const GET = withAuth(async (req, { tenantId, session, params }) => {
+  const denied = await requirePermission(session, "invoices", "view");
+  if (denied) return denied;
   const creditNote = await prisma.creditNote.findFirst({
     where: { tenantId, id: params?.id },
     include: {

@@ -16,7 +16,9 @@ interface LineInput {
   [key: string]: unknown;
 }
 
-export const GET = withAuth(async (req, { tenantId, params }) => {
+export const GET = withAuth(async (req, { tenantId, session, params }) => {
+  const denied = await requirePermission(session, "purchases", "view");
+  if (denied) return denied;
   const order = await prisma.purchaseOrder.findFirst({
     where: { tenantId, id: params?.id },
     include: {

@@ -5,7 +5,9 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { updatePaymentSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 
-export const GET = withAuth(async (req, { tenantId, params }) => {
+export const GET = withAuth(async (req, { tenantId, session, params }) => {
+  const denied = await requirePermission(session, "invoices", "view");
+  if (denied) return denied;
   const payment = await prisma.payment.findFirst({
     where: { tenantId, id: params?.id },
     include: { invoice: true },

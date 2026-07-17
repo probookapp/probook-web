@@ -40,7 +40,9 @@ function calculateDocumentTotals(lines: LineInput[], shippingCost = 0, shippingT
   return { subtotal, taxAmount, total };
 }
 
-export const GET = withAuth(async (req, { tenantId }) => {
+export const GET = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "invoices", "view");
+  if (denied) return denied;
   const invoices = await prisma.invoice.findMany({
     where: { tenantId },
     orderBy: { createdAt: "desc" },

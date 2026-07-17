@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
+import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
 
 // Inventory valuation report: on-hand value = quantity * purchase_price.
 // Variants inherit the parent product's purchase price (matches POS costing).
-export const GET = withAuth(async (req, { tenantId }) => {
+export const GET = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "reports", "view");
+  if (denied) return denied;
   const { searchParams } = new URL(req.url);
   const locationId = searchParams.get("locationId");
 

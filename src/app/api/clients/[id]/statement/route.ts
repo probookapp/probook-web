@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
+import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
 
 // GET /api/clients/[id]/statement?startDate&endDate
@@ -22,7 +23,9 @@ type LedgerEvent = {
   credit: number;
 };
 
-export const GET = withAuth(async (req, { tenantId, params }) => {
+export const GET = withAuth(async (req, { tenantId, session, params }) => {
+  const denied = await requirePermission(session, "clients", "view");
+  if (denied) return denied;
   const clientId = params?.id as string;
 
   const client = await prisma.client.findFirst({

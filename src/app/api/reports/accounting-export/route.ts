@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
+import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
 
 /**
@@ -7,7 +8,9 @@ import { prisma } from "@/lib/db";
  * expenses, plus a combined journal-style list. Deterministically ordered by
  * date then document so exports are reproducible.
  */
-export const GET = withAuth(async (req, { tenantId }) => {
+export const GET = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "reports", "view");
+  if (denied) return denied;
   const { searchParams } = new URL(req.url);
   const startDate = searchParams.get("startDate");
   const endDate = searchParams.get("endDate");

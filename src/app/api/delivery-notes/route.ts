@@ -14,7 +14,9 @@ interface DeliveryLineInput {
   position?: number;
 }
 
-export const GET = withAuth(async (req, { tenantId }) => {
+export const GET = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "delivery_notes", "view");
+  if (denied) return denied;
   const notes = await prisma.deliveryNote.findMany({
     where: { tenantId },
     orderBy: { createdAt: "desc" },

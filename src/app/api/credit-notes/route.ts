@@ -6,7 +6,9 @@ import { createCreditNoteSchema } from "@/lib/validations";
 import { createCreditNote } from "@/lib/credit-notes";
 import { requirePermission } from "@/lib/permissions-server";
 
-export const GET = withAuth(async (req, { tenantId }) => {
+export const GET = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "invoices", "view");
+  if (denied) return denied;
   const creditNotes = await prisma.creditNote.findMany({
     where: { tenantId },
     orderBy: { createdAt: "desc" },

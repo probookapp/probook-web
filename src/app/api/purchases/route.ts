@@ -15,7 +15,9 @@ interface LineInput {
   tax_rate?: number;
 }
 
-export const GET = withAuth(async (req, { tenantId }) => {
+export const GET = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "purchases", "view");
+  if (denied) return denied;
   const orders = await prisma.purchaseOrder.findMany({
     where: { tenantId },
     orderBy: { createdAt: "desc" },

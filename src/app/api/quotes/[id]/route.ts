@@ -39,7 +39,9 @@ function calculateDocumentTotals(lines: LineInput[], shippingCost = 0, shippingT
   return { subtotal, taxAmount, total };
 }
 
-export const GET = withAuth(async (req, { tenantId, params }) => {
+export const GET = withAuth(async (req, { tenantId, session, params }) => {
+  const denied = await requirePermission(session, "quotes", "view");
+  if (denied) return denied;
   const quote = await prisma.quote.findFirst({
     where: { tenantId, id: params?.id },
     include: { lines: { orderBy: { position: "asc" } }, client: true },

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-utils";
+import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
 
 // GET /api/clients/balances
@@ -7,7 +8,9 @@ import { prisma } from "@/lib/db";
 // Lightweight per-client outstanding balance for the clients list, computed in
 // aggregate (no N+1). balance = non-DRAFT invoices - payments - ISSUED credit notes.
 // Payments have no clientId, so they are attributed via their invoice's clientId.
-export const GET = withAuth(async (req, { tenantId }) => {
+export const GET = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "clients", "view");
+  if (denied) return denied;
   const [invoiceSums, creditSums, invoices, paymentSums] = await Promise.all([
     prisma.invoice.groupBy({
       by: ["clientId"],

@@ -5,7 +5,9 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { expenseSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 
-export const GET = withAuth(async (req, { tenantId }) => {
+export const GET = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "expenses", "view");
+  if (denied) return denied;
   const expenses = await prisma.expense.findMany({
     where: { tenantId },
     orderBy: { createdAt: "desc" },

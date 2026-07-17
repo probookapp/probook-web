@@ -1,11 +1,14 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
+import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
 
 // Low-stock report: stock-tracked products (and variants) at or below a
 // threshold. Threshold comes from the `threshold` query param, falling back to
 // the tenant's configured POS low-stock threshold, then 5.
-export const GET = withAuth(async (req, { tenantId }) => {
+export const GET = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "reports", "view");
+  if (denied) return denied;
   const { searchParams } = new URL(req.url);
   const thresholdParam = searchParams.get("threshold");
   const locationId = searchParams.get("locationId");
