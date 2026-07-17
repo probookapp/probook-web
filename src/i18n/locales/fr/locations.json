@@ -1,0 +1,67 @@
+{
+  "title": "Emplacements",
+  "subtitle": "Gérez vos magasins, entrepôts et transferts de stock",
+  "newLocation": "Nouvel emplacement",
+  "editLocation": "Modifier l'emplacement",
+  "locationList": "Emplacements",
+  "noLocations": "Aucun emplacement pour le moment",
+  "deleteConfirmation": "Voulez-vous vraiment supprimer cet emplacement ? Cette action est irréversible.",
+  "tabs": {
+    "locations": "Emplacements",
+    "transfers": "Transferts de stock"
+  },
+  "types": {
+    "store": "Magasin",
+    "warehouse": "Entrepôt"
+  },
+  "fields": {
+    "name": "Nom",
+    "nameRequired": "Nom *",
+    "type": "Type",
+    "address": "Adresse",
+    "default": "Par défaut",
+    "isDefault": "Définir comme emplacement par défaut",
+    "isDefaultLocked": "Il s'agit déjà de l'emplacement par défaut."
+  },
+  "validation": {
+    "nameRequired": "Le nom est obligatoire"
+  },
+  "messages": {
+    "created": "Emplacement créé",
+    "updated": "Emplacement mis à jour",
+    "deleted": "Emplacement supprimé",
+    "createError": "Échec de la création de l'emplacement",
+    "updateError": "Échec de la mise à jour de l'emplacement",
+    "deleteError": "Échec de la suppression de l'emplacement"
+  },
+  "transfers": {
+    "newTransfer": "Nouveau transfert",
+    "transferList": "Transferts de stock",
+    "noTransfers": "Aucun transfert pour le moment",
+    "selectLocation": "Sélectionnez un emplacement",
+    "fields": {
+      "number": "Numéro",
+      "from": "De",
+      "to": "Vers",
+      "date": "Date",
+      "items": "Articles",
+      "lines": "Articles",
+      "addLine": "Ajouter un article",
+      "product": "Produit",
+      "selectProduct": "Sélectionnez un produit",
+      "variant": "Variante",
+      "selectVariant": "Sélectionnez une variante",
+      "quantity": "Quantité",
+      "notes": "Notes"
+    },
+    "validation": {
+      "locationsRequired": "Sélectionnez un emplacement source et un emplacement de destination",
+      "sameLocation": "La source et la destination doivent être différentes",
+      "atLeastOneLine": "Ajoutez au moins un article avec une quantité"
+    },
+    "messages": {
+      "created": "Transfert de stock créé",
+      "createError": "Échec de la création du transfert de stock"
+    }
+  }
+}

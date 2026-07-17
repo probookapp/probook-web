@@ -1,0 +1,67 @@
+{
+  "title": "Locations",
+  "subtitle": "Manage your stores, warehouses and stock transfers",
+  "newLocation": "New location",
+  "editLocation": "Edit location",
+  "locationList": "Locations",
+  "noLocations": "No locations yet",
+  "deleteConfirmation": "Are you sure you want to delete this location? This action cannot be undone.",
+  "tabs": {
+    "locations": "Locations",
+    "transfers": "Stock transfers"
+  },
+  "types": {
+    "store": "Store",
+    "warehouse": "Warehouse"
+  },
+  "fields": {
+    "name": "Name",
+    "nameRequired": "Name *",
+    "type": "Type",
+    "address": "Address",
+    "default": "Default",
+    "isDefault": "Set as default location",
+    "isDefaultLocked": "This is already the default location."
+  },
+  "validation": {
+    "nameRequired": "Name is required"
+  },
+  "messages": {
+    "created": "Location created",
+    "updated": "Location updated",
+    "deleted": "Location deleted",
+    "createError": "Failed to create location",
+    "updateError": "Failed to update location",
+    "deleteError": "Failed to delete location"
+  },
+  "transfers": {
+    "newTransfer": "New transfer",
+    "transferList": "Stock transfers",
+    "noTransfers": "No transfers yet",
+    "selectLocation": "Select a location",
+    "fields": {
+      "number": "Number",
+      "from": "From",
+      "to": "To",
+      "date": "Date",
+      "items": "Items",
+      "lines": "Items",
+      "addLine": "Add item",
+      "product": "Product",
+      "selectProduct": "Select a product",
+      "variant": "Variant",
+      "selectVariant": "Select a variant",
+      "quantity": "Quantity",
+      "notes": "Notes"
+    },
+    "validation": {
+      "locationsRequired": "Select both a source and a destination location",
+      "sameLocation": "Source and destination must be different",
+      "atLeastOneLine": "Add at least one item with a quantity"
+    },
+    "messages": {
+      "created": "Stock transfer created",
+      "createError": "Failed to create stock transfer"
+    }
+  }
+}

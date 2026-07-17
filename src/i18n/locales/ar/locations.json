@@ -1,0 +1,67 @@
+{
+  "title": "المواقع",
+  "subtitle": "إدارة المتاجر والمستودعات وتحويلات المخزون",
+  "newLocation": "موقع جديد",
+  "editLocation": "تعديل الموقع",
+  "locationList": "المواقع",
+  "noLocations": "لا توجد مواقع بعد",
+  "deleteConfirmation": "هل أنت متأكد من حذف هذا الموقع؟ لا يمكن التراجع عن هذا الإجراء.",
+  "tabs": {
+    "locations": "المواقع",
+    "transfers": "تحويلات المخزون"
+  },
+  "types": {
+    "store": "متجر",
+    "warehouse": "مستودع"
+  },
+  "fields": {
+    "name": "الاسم",
+    "nameRequired": "الاسم *",
+    "type": "النوع",
+    "address": "العنوان",
+    "default": "افتراضي",
+    "isDefault": "تعيين كموقع افتراضي",
+    "isDefaultLocked": "هذا هو الموقع الافتراضي بالفعل."
+  },
+  "validation": {
+    "nameRequired": "الاسم مطلوب"
+  },
+  "messages": {
+    "created": "تم إنشاء الموقع",
+    "updated": "تم تحديث الموقع",
+    "deleted": "تم حذف الموقع",
+    "createError": "فشل إنشاء الموقع",
+    "updateError": "فشل تحديث الموقع",
+    "deleteError": "فشل حذف الموقع"
+  },
+  "transfers": {
+    "newTransfer": "تحويل جديد",
+    "transferList": "تحويلات المخزون",
+    "noTransfers": "لا توجد تحويلات بعد",
+    "selectLocation": "اختر موقعًا",
+    "fields": {
+      "number": "الرقم",
+      "from": "من",
+      "to": "إلى",
+      "date": "التاريخ",
+      "items": "العناصر",
+      "lines": "العناصر",
+      "addLine": "إضافة عنصر",
+      "product": "المنتج",
+      "selectProduct": "اختر منتجًا",
+      "variant": "المتغير",
+      "selectVariant": "اختر متغيرًا",
+      "quantity": "الكمية",
+      "notes": "ملاحظات"
+    },
+    "validation": {
+      "locationsRequired": "اختر موقع المصدر وموقع الوجهة",
+      "sameLocation": "يجب أن يكون المصدر والوجهة مختلفين",
+      "atLeastOneLine": "أضف عنصرًا واحدًا على الأقل مع كمية"
+    },
+    "messages": {
+      "created": "تم إنشاء تحويل المخزون",
+      "createError": "فشل إنشاء تحويل المخزون"
+    }
+  }
+}

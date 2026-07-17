@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { posRegisterSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId }) => {
   const registers = await prisma.posRegister.findMany({
@@ -12,7 +13,9 @@ export const GET = withAuth(async (req, { tenantId }) => {
   return NextResponse.json(toSnakeCase(registers));
 });
 
-export const POST = withAuth(async (req, { tenantId }) => {
+export const POST = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "pos", "create");
+  if (denied) return denied;
   const body = await validateBody(req, posRegisterSchema);
   if (isValidationError(body)) return body;
   const register = await prisma.posRegister.create({
@@ -20,6 +23,7 @@ export const POST = withAuth(async (req, { tenantId }) => {
       tenantId,
       name: body.name,
       location: body.location || null,
+      locationId: body.location_id || null,
       isActive: body.is_active ?? true,
     },
   });

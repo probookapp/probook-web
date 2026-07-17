@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { updatePosRegisterSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const register = await prisma.posRegister.findFirst({ where: { tenantId, id: params?.id } });
@@ -10,7 +11,9 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(register));
 });
 
-export const PUT = withAuth(async (req, { tenantId, params }) => {
+export const PUT = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "pos", "edit");
+  if (denied) return denied;
   const body = await validateBody(req, updatePosRegisterSchema);
   if (isValidationError(body)) return body;
   const register = await prisma.posRegister.update({
@@ -18,13 +21,16 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
     data: {
       name: body.name,
       location: body.location || null,
+      locationId: body.location_id || null,
       isActive: body.is_active,
     },
   });
   return NextResponse.json(toSnakeCase(register));
 });
 
-export const DELETE = withAuth(async (req, { tenantId, params }) => {
+export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "pos", "delete");
+  if (denied) return denied;
   await prisma.posRegister.delete({ where: { tenantId, id: params?.id } });
   return new NextResponse(null, { status: 204 });
 });

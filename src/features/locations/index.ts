@@ -1,0 +1,1 @@
+export { LocationsPage } from "./LocationsPage";

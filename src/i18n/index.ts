@@ -21,6 +21,7 @@ import frPos from './locales/fr/pos.json';
 import frAdmin from './locales/fr/admin.json';
 import frPages from './locales/fr/pages.json';
 import frPurchases from './locales/fr/purchases.json';
+import frLocations from './locales/fr/locations.json';
 
 // English translations
 import enCommon from './locales/en/common.json';
@@ -42,6 +43,7 @@ import enPos from './locales/en/pos.json';
 import enAdmin from './locales/en/admin.json';
 import enPages from './locales/en/pages.json';
 import enPurchases from './locales/en/purchases.json';
+import enLocations from './locales/en/locations.json';
 
 // Arabic translations
 import arCommon from './locales/ar/common.json';
@@ -63,6 +65,7 @@ import arPos from './locales/ar/pos.json';
 import arAdmin from './locales/ar/admin.json';
 import arPages from './locales/ar/pages.json';
 import arPurchases from './locales/ar/purchases.json';
+import arLocations from './locales/ar/locations.json';
 
 const resources = {
   fr: {
@@ -85,6 +88,7 @@ const resources = {
     admin: frAdmin,
     pages: frPages,
     purchases: frPurchases,
+    locations: frLocations,
   },
   en: {
     common: enCommon,
@@ -106,6 +110,7 @@ const resources = {
     admin: enAdmin,
     pages: enPages,
     purchases: enPurchases,
+    locations: enLocations,
   },
   ar: {
     common: arCommon,
@@ -127,6 +132,7 @@ const resources = {
     admin: arAdmin,
     pages: arPages,
     purchases: arPurchases,
+    locations: arLocations,
   },
 };
 
@@ -158,6 +164,8 @@ i18n
       'pos',
       'admin',
       'pages',
+      'purchases',
+      'locations',
     ],
     interpolation: {
       escapeValue: false,

@@ -1,0 +1,152 @@
+import { NextResponse } from "next/server";
+import { withAuth, toSnakeCase } from "@/lib/api-utils";
+import { prisma } from "@/lib/db";
+import { applyStockChange } from "@/lib/stock";
+import { requirePermission } from "@/lib/permissions-server";
+
+function generateTransferNumber(): string {
+  const rand = Math.floor(Math.random() * 9000 + 1000);
+  return `TR-${Date.now().toString(36).toUpperCase()}-${rand}`;
+}
+
+export const GET = withAuth(async (_req, { tenantId }) => {
+  const transfers = await prisma.stockTransfer.findMany({
+    where: { tenantId },
+    include: {
+      fromLocation: { select: { id: true, name: true } },
+      toLocation: { select: { id: true, name: true } },
+      lines: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  return NextResponse.json(toSnakeCase(transfers));
+});
+
+interface TransferLineInput {
+  product_id: string;
+  variant_id?: string | null;
+  quantity: number;
+}
+
+export const POST = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "products", "edit");
+  if (denied) return denied;
+  const body = (await req.json().catch(() => ({}))) as {
+    from_location_id?: string;
+    to_location_id?: string;
+    notes?: string;
+    lines?: TransferLineInput[];
+  };
+
+  const { from_location_id, to_location_id, lines } = body;
+
+  if (!from_location_id || !to_location_id) {
+    return NextResponse.json({ error: "Both source and destination locations are required" }, { status: 400 });
+  }
+  if (from_location_id === to_location_id) {
+    return NextResponse.json({ error: "Source and destination must differ" }, { status: 400 });
+  }
+  if (!lines || lines.length === 0) {
+    return NextResponse.json({ error: "At least one line is required" }, { status: 400 });
+  }
+
+  // Validate the two locations belong to the tenant.
+  const locs = await prisma.location.findMany({
+    where: { tenantId, id: { in: [from_location_id, to_location_id] } },
+    select: { id: true },
+  });
+  if (locs.length !== 2) {
+    return NextResponse.json({ error: "Invalid location" }, { status: 400 });
+  }
+
+  // Aggregate requested quantity per product/variant first, so the same item
+  // appearing on multiple lines is validated against the source on its TOTAL
+  // (checking each line independently would let duplicate lines mint stock).
+  const requested = new Map<string, number>();
+  for (const line of lines) {
+    if (!line.product_id || !line.quantity || line.quantity <= 0) {
+      return NextResponse.json({ error: "Each line needs a product and a positive quantity" }, { status: 400 });
+    }
+    const key = `${line.product_id}::${line.variant_id ?? ""}`;
+    requested.set(key, (requested.get(key) ?? 0) + line.quantity);
+  }
+
+  for (const [key, totalQty] of requested) {
+    const [productId, variantId] = key.split("::");
+    const level = await prisma.stockLevel.findFirst({
+      where: {
+        locationId: from_location_id,
+        productId,
+        variantId: variantId || null,
+      },
+      select: { quantity: true },
+    });
+    if ((level?.quantity ?? 0) < totalQty) {
+      return NextResponse.json(
+        { error: "Insufficient stock at source location for one or more items" },
+        { status: 400 }
+      );
+    }
+  }
+
+  const transfer = await prisma.$transaction(async (tx) => {
+    const created = await tx.stockTransfer.create({
+      data: {
+        tenantId,
+        transferNumber: generateTransferNumber(),
+        fromLocationId: from_location_id,
+        toLocationId: to_location_id,
+        notes: body.notes || null,
+        createdBy: session.userId,
+        lines: {
+          create: lines.map((l) => ({
+            productId: l.product_id,
+            variantId: l.variant_id ?? null,
+            quantity: Math.round(l.quantity),
+          })),
+        },
+      },
+    });
+
+    for (const line of lines) {
+      const qty = Math.round(line.quantity);
+      // Out of source
+      await applyStockChange(tx, {
+        tenantId,
+        productId: line.product_id,
+        variantId: line.variant_id ?? null,
+        locationId: from_location_id,
+        type: "transfer_out",
+        quantityChange: -qty,
+        referenceType: "stock_transfer",
+        referenceId: created.id,
+        userId: session.userId,
+      });
+      // Into destination
+      await applyStockChange(tx, {
+        tenantId,
+        productId: line.product_id,
+        variantId: line.variant_id ?? null,
+        locationId: to_location_id,
+        type: "transfer_in",
+        quantityChange: qty,
+        referenceType: "stock_transfer",
+        referenceId: created.id,
+        userId: session.userId,
+      });
+    }
+
+    return created;
+  });
+
+  const full = await prisma.stockTransfer.findUnique({
+    where: { id: transfer.id },
+    include: {
+      fromLocation: { select: { id: true, name: true } },
+      toLocation: { select: { id: true, name: true } },
+      lines: true,
+    },
+  });
+
+  return NextResponse.json(toSnakeCase(full), { status: 201 });
+});
