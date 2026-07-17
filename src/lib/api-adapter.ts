@@ -47,6 +47,17 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     path: "/api/clients/batch-delete",
     body: (a) => a.ids,
   },
+  get_client_statement: {
+    method: "GET",
+    path: (a) => `/api/clients/${a.id}/statement`,
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.startDate) q.startDate = String(a.startDate);
+      if (a.endDate) q.endDate = String(a.endDate);
+      return q;
+    },
+  },
+  get_client_balances: { method: "GET", path: "/api/clients/balances" },
 
   // Products
   get_products: {
@@ -70,6 +81,19 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     method: "POST",
     path: "/api/products/batch-delete",
     body: (a) => a.ids,
+  },
+  adjust_product_stock: {
+    method: "POST",
+    path: (a) => `/api/products/${a.id}/adjust-stock`,
+    body: (a) => a.input,
+  },
+  get_product_movements: {
+    method: "GET",
+    path: (a) => `/api/products/${a.id}/movements`,
+  },
+  get_product_stock_levels: {
+    method: "GET",
+    path: (a) => `/api/products/${a.id}/stock-levels`,
   },
 
   // Product Variants
@@ -190,6 +214,21 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     body: (a) => a.deliveryNoteIds,
   },
 
+  // Credit Notes
+  get_credit_notes: { method: "GET", path: "/api/credit-notes" },
+  get_credit_note: { method: "GET", path: (a) => `/api/credit-notes/${a.id}` },
+  create_credit_note: {
+    method: "POST",
+    path: "/api/credit-notes",
+    body: (a) => a.input,
+  },
+  delete_credit_note: { method: "DELETE", path: (a) => `/api/credit-notes/${a.id}` },
+  create_pos_refund: {
+    method: "POST",
+    path: "/api/pos/refunds",
+    body: (a) => a.input,
+  },
+
   // Payments
   get_payments_by_invoice: {
     method: "GET",
@@ -204,6 +243,11 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
 
   // Settings
   get_company_settings: { method: "GET", path: "/api/settings" },
+  update_dashboard_layout: {
+    method: "PUT",
+    path: "/api/settings",
+    body: (a) => ({ dashboard_layout: a.layout }),
+  },
   update_company_settings: {
     method: "PUT",
     path: "/api/settings",
@@ -455,9 +499,78 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     method: "GET",
     path: "/api/reports/outstanding-payments",
   },
+  get_low_stock: {
+    method: "GET",
+    path: "/api/reports/low-stock",
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.threshold !== undefined) q.threshold = String(a.threshold);
+      if (a.locationId) q.locationId = String(a.locationId);
+      return q;
+    },
+  },
+  get_inventory_valuation: {
+    method: "GET",
+    path: "/api/reports/inventory-valuation",
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.locationId) q.locationId = String(a.locationId);
+      return q;
+    },
+  },
   get_quote_conversion_stats: {
     method: "GET",
     path: "/api/reports/quote-conversion",
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.startDate) q.startDate = String(a.startDate);
+      if (a.endDate) q.endDate = String(a.endDate);
+      return q;
+    },
+  },
+  get_expenses_report: {
+    method: "GET",
+    path: "/api/reports/expenses",
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.startDate) q.startDate = String(a.startDate);
+      if (a.endDate) q.endDate = String(a.endDate);
+      return q;
+    },
+  },
+  get_profit_margin: {
+    method: "GET",
+    path: "/api/reports/profit-margin",
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.startDate) q.startDate = String(a.startDate);
+      if (a.endDate) q.endDate = String(a.endDate);
+      return q;
+    },
+  },
+  get_supplier_spend: {
+    method: "GET",
+    path: "/api/reports/supplier-spend",
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.startDate) q.startDate = String(a.startDate);
+      if (a.endDate) q.endDate = String(a.endDate);
+      return q;
+    },
+  },
+  get_tax_summary: {
+    method: "GET",
+    path: "/api/reports/tax-summary",
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.startDate) q.startDate = String(a.startDate);
+      if (a.endDate) q.endDate = String(a.endDate);
+      return q;
+    },
+  },
+  get_accounting_export: {
+    method: "GET",
+    path: "/api/reports/accounting-export",
     query: (a) => {
       const q: Record<string, string> = {};
       if (a.startDate) q.startDate = String(a.startDate);
@@ -528,6 +641,24 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   // Logo
   get_logo_base64: { method: "GET", path: "/api/settings/logo" },
   delete_logo: { method: "DELETE", path: "/api/settings/logo" },
+
+  // Locations / warehouses
+  get_locations: { method: "GET", path: "/api/locations" },
+  create_location: { method: "POST", path: "/api/locations", body: (a) => a.input },
+  update_location: {
+    method: "PUT",
+    path: (a) => `/api/locations/${(a.input as Record<string, unknown>).id}`,
+    body: (a) => a.input,
+  },
+  delete_location: { method: "DELETE", path: (a) => `/api/locations/${a.id}` },
+
+  // Stock transfers
+  get_stock_transfers: { method: "GET", path: "/api/stock-transfers" },
+  create_stock_transfer: {
+    method: "POST",
+    path: "/api/stock-transfers",
+    body: (a) => a.input,
+  },
 
   // POS
   get_pos_registers: { method: "GET", path: "/api/pos/registers" },

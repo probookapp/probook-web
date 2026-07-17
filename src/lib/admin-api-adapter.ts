@@ -17,6 +17,17 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   admin_login: { method: "POST", path: "/api/admin/auth/login", body: (a) => a.input },
   admin_logout: { method: "POST", path: "/api/admin/auth/logout" },
   admin_get_me: { method: "GET", path: "/api/admin/auth/me" },
+  admin_totp_setup: { method: "POST", path: "/api/admin/auth/totp/setup" },
+  admin_totp_verify_setup: {
+    method: "POST",
+    path: "/api/admin/auth/totp/verify-setup",
+    body: (a) => a.input,
+  },
+  admin_totp_disable: {
+    method: "POST",
+    path: "/api/admin/auth/totp/disable",
+    body: (a) => a.input,
+  },
 
   // Plans
   get_admin_plans: { method: "GET", path: "/api/admin/plans" },
@@ -90,6 +101,11 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     method: "GET",
     path: (a) => `/api/admin/subscriptions/${a.id}`,
   },
+  update_admin_subscription: {
+    method: "PUT",
+    path: (a) => `/api/admin/subscriptions/${a.id}`,
+    body: (a) => a.input,
+  },
   renew_admin_subscription: {
     method: "POST",
     path: (a) => `/api/admin/subscriptions/${a.id}/renew`,
@@ -140,6 +156,10 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     method: "PUT",
     path: (a) => `/api/admin/features/${(a.input as Record<string, unknown>).id}`,
     body: (a) => a.input,
+  },
+  delete_admin_feature: {
+    method: "DELETE",
+    path: (a) => `/api/admin/features/${a.id}`,
   },
   get_tenant_features: {
     method: "GET",
@@ -227,6 +247,16 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     method: "GET",
     path: (a) => `/api/admin/subscription-invoices/${a.id}`,
   },
+  create_subscription_invoice: {
+    method: "POST",
+    path: "/api/admin/subscription-invoices",
+    body: (a) => a.input,
+  },
+  update_subscription_invoice: {
+    method: "PUT",
+    path: (a) => `/api/admin/subscription-invoices/${a.id}`,
+    body: (a) => a.input,
+  },
   mark_subscription_invoice_paid: {
     method: "POST",
     path: (a) => `/api/admin/subscription-invoices/${a.id}/mark-paid`,
@@ -247,6 +277,15 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     path: "/api/admin/data-requests",
     body: (a) => a.input,
   },
+  update_admin_data_request: {
+    method: "PUT",
+    path: (a) => `/api/admin/data-requests/${a.id}`,
+    body: (a) => a.input,
+  },
+  execute_admin_data_request: {
+    method: "POST",
+    path: (a) => `/api/admin/data-requests/${a.id}/execute`,
+  },
   download_admin_data_request: {
     method: "GET",
     path: (a) => `/api/admin/data-requests/${a.id}/download`,
@@ -257,6 +296,16 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   get_admin_tenant_referrals: {
     method: "GET",
     path: (a) => `/api/admin/referrals/tenant/${a.tenantId}`,
+  },
+  toggle_referral_code: {
+    method: "POST",
+    path: "/api/admin/referrals/toggle",
+    body: (a) => a.input,
+  },
+  create_admin_referral: {
+    method: "POST",
+    path: "/api/admin/referrals",
+    body: (a) => a.input,
   },
 
   // System

@@ -4,12 +4,20 @@ import type {
   Client,
   CreateClientInput,
   UpdateClientInput,
+  ClientStatement,
+  ClientBalance,
   Product,
   CreateProductInput,
   UpdateProductInput,
   ProductVariant,
   CreateProductVariantInput,
   UpdateProductVariantInput,
+  StockMovement,
+  AdjustStockInput,
+  StockAdjustmentResult,
+  LowStockItem,
+  InventoryValuationRow,
+  ProductLocationStock,
   PurchaseOrder,
   CreatePurchaseOrderInput,
   UpdatePurchaseOrderInput,
@@ -26,6 +34,9 @@ import type {
   Invoice,
   CreateInvoiceInput,
   UpdateInvoiceInput,
+  CreditNote,
+  CreateCreditNoteInput,
+  CreatePosRefundInput,
   Payment,
   CreatePaymentInput,
   CompanySettings,
@@ -47,6 +58,11 @@ import type {
   ProductSales,
   OutstandingPayment,
   QuoteConversionStats,
+  ExpenseReportEntry,
+  ProfitMarginRow,
+  SupplierSpendRow,
+  TaxSummary,
+  AccountingExport,
   AlertsSummary,
   Supplier,
   CreateSupplierInput,
@@ -87,6 +103,13 @@ export const clientApi = {
   update: (input: UpdateClientInput) => apiCall<Client>("update_client", { input }),
   delete: (id: string) => apiCall<void>("delete_client", { id }),
   batchDelete: (ids: string[]) => apiCall<number>("batch_delete_clients", { ids }),
+  getStatement: (id: string, range?: { startDate?: string; endDate?: string }) =>
+    apiCall<ClientStatement>("get_client_statement", {
+      id,
+      startDate: range?.startDate,
+      endDate: range?.endDate,
+    }),
+  getBalances: () => apiCall<ClientBalance[]>("get_client_balances"),
 };
 
 // Product commands
@@ -116,6 +139,12 @@ export const productApi = {
     apiCall<string | null>("get_product_photo_base64", { productId }),
   deletePhoto: (productId: string) =>
     apiCall<void>("delete_product_photo", { productId }),
+  adjustStock: (id: string, input: AdjustStockInput) =>
+    apiCall<StockAdjustmentResult>("adjust_product_stock", { id, input }),
+  getMovements: (id: string) =>
+    apiCall<StockMovement[]>("get_product_movements", { id }),
+  getStockLevels: (id: string) =>
+    apiCall<ProductLocationStock[]>("get_product_stock_levels", { id }),
 };
 
 // Product Variant commands
@@ -173,6 +202,15 @@ export const invoiceApi = {
     apiCall<Invoice>("create_invoice_from_delivery_notes", { deliveryNoteIds }),
 };
 
+// Credit Note commands
+export const creditNoteApi = {
+  getAll: () => apiCall<CreditNote[]>("get_credit_notes"),
+  getById: (id: string) => apiCall<CreditNote>("get_credit_note", { id }),
+  create: (input: CreateCreditNoteInput) =>
+    apiCall<CreditNote>("create_credit_note", { input }),
+  delete: (id: string) => apiCall<void>("delete_credit_note", { id }),
+};
+
 // Payment commands
 export const paymentApi = {
   getByInvoice: (invoiceId: string) => apiCall<Payment[]>("get_payments_by_invoice", { invoiceId }),
@@ -185,6 +223,8 @@ export const settingsApi = {
   get: () => apiCall<CompanySettings>("get_company_settings"),
   update: (input: UpdateCompanySettingsInput) =>
     apiCall<CompanySettings>("update_company_settings", { input }),
+  updateDashboardLayout: (layout: { order?: string[]; hidden?: string[] }) =>
+    apiCall<CompanySettings>("update_dashboard_layout", { layout }),
   updateAppSettings: (appLanguage: string, appTheme: string) =>
     apiCall<CompanySettings>("update_app_settings", { appLanguage, appTheme }),
   uploadLogo: async (file: File): Promise<string> => {
@@ -261,9 +301,29 @@ export const dashboardApi = {
 };
 
 // Data export (admin only - triggers JSON download)
+/**
+ * Build the /api/export query string.
+ *
+ * `includeSecrets` adds users' password hashes and is ONLY safe on the encrypted
+ * export path, which encrypts client-side before anything reaches disk.
+ */
+export function exportQuery(options?: {
+  includePhotos?: boolean;
+  includeSecrets?: boolean;
+}): string {
+  const params = new URLSearchParams();
+  if (options?.includePhotos) params.set("include_photos", "1");
+  if (options?.includeSecrets) params.set("include_secrets", "1");
+  const qs = params.toString();
+  return qs ? `?${qs}` : "";
+}
+
 export const exportApi = {
-  download: async (): Promise<void> => {
-    const res = await fetch(`${API_BASE_URL}/api/export`, { credentials: "include" });
+  // No `includeSecrets` here by design: this file lands on disk in plaintext.
+  download: async (options?: { includePhotos?: boolean }): Promise<void> => {
+    const res = await fetch(`${API_BASE_URL}/api/export${exportQuery(options)}`, {
+      credentials: "include",
+    });
     if (!res.ok) throw new Error("Export failed");
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
@@ -329,6 +389,26 @@ export const reportApi = {
     apiCall<OutstandingPayment[]>("get_outstanding_payments"),
   getQuoteConversionStats: (startDate?: string, endDate?: string) =>
     apiCall<QuoteConversionStats>("get_quote_conversion_stats", { startDate, endDate }),
+  getExpensesReport: (startDate?: string, endDate?: string) =>
+    apiCall<ExpenseReportEntry[]>("get_expenses_report", { startDate, endDate }),
+  getProfitMargin: (startDate?: string, endDate?: string) =>
+    apiCall<ProfitMarginRow[]>("get_profit_margin", { startDate, endDate }),
+  getSupplierSpend: (startDate?: string, endDate?: string) =>
+    apiCall<SupplierSpendRow[]>("get_supplier_spend", { startDate, endDate }),
+  getLowStock: (threshold?: number, locationId?: string) =>
+    apiCall<LowStockItem[]>("get_low_stock", {
+      ...(threshold !== undefined ? { threshold } : {}),
+      ...(locationId ? { locationId } : {}),
+    }),
+  getInventoryValuation: (locationId?: string) =>
+    apiCall<InventoryValuationRow[]>(
+      "get_inventory_valuation",
+      locationId ? { locationId } : {}
+    ),
+  getTaxSummary: (startDate?: string, endDate?: string) =>
+    apiCall<TaxSummary>("get_tax_summary", { startDate, endDate }),
+  getAccountingExport: (startDate?: string, endDate?: string) =>
+    apiCall<AccountingExport>("get_accounting_export", { startDate, endDate }),
 };
 
 // Alerts commands
@@ -418,6 +498,34 @@ export const authApi = {
 };
 
 // POS commands
+export interface Location {
+  id: string;
+  name: string;
+  type: string;
+  address: string | null;
+  is_default: boolean;
+  is_active: boolean;
+}
+
+export const locationsApi = {
+  getAll: () => apiCall<Location[]>("get_locations"),
+  create: (input: { name: string; type?: string; address?: string; is_default?: boolean }) =>
+    apiCall<Location>("create_location", { input }),
+  update: (input: { id: string } & Partial<Location>) =>
+    apiCall<Location>("update_location", { input }),
+  delete: (id: string) => apiCall<void>("delete_location", { id }),
+};
+
+export const stockTransfersApi = {
+  getAll: () => apiCall<Record<string, unknown>[]>("get_stock_transfers"),
+  create: (input: {
+    from_location_id: string;
+    to_location_id: string;
+    notes?: string;
+    lines: { product_id: string; variant_id?: string | null; quantity: number }[];
+  }) => apiCall<Record<string, unknown>>("create_stock_transfer", { input }),
+};
+
 export const posApi = {
   // Registers
   getRegisters: () => apiCall<PosRegister[]>("get_pos_registers"),
@@ -449,6 +557,10 @@ export const posApi = {
     apiCall<PosTransaction>("cancel_pos_transaction", { id, reason }),
   getSessionTransactions: (sessionId: string) =>
     apiCall<PosTransaction[]>("get_pos_session_transactions", { sessionId }),
+
+  // Refunds (creates a credit note for returned items)
+  createRefund: (input: CreatePosRefundInput) =>
+    apiCall<CreditNote>("create_pos_refund", { input }),
 
   // Cash movements
   createCashMovement: (input: CreateCashMovementInput) =>

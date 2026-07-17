@@ -32,6 +32,35 @@ export interface UpdateClientInput extends CreateClientInput {
   id: string;
 }
 
+// Client statement / ledger types
+export interface StatementEntry {
+  date: string;
+  type: "invoice" | "payment" | "credit_note";
+  reference: string;
+  debit: number;
+  credit: number;
+  running_balance: number;
+}
+
+export interface ClientStatement {
+  client: { id: string; name: string };
+  start_date: string | null;
+  end_date: string | null;
+  opening_balance: number;
+  entries: StatementEntry[];
+  totals: {
+    total_invoiced: number;
+    total_paid: number;
+    total_credited: number;
+    closing_balance: number;
+  };
+}
+
+export interface ClientBalance {
+  client_id: string;
+  balance: number;
+}
+
 // Product Category types
 export interface ProductCategory {
   id: string;
@@ -138,7 +167,7 @@ export interface UpdateProductInput extends CreateProductInput {
 }
 
 // Purchase Order types
-export type PurchaseOrderStatus = "PENDING" | "CONFIRMED" | "CANCELLED";
+export type PurchaseOrderStatus = "PENDING" | "PARTIALLY_RECEIVED" | "CONFIRMED" | "CANCELLED";
 export type PurchasePaymentStatus = "UNPAID" | "PARTIAL" | "PAID";
 
 export interface PurchaseOrder {
@@ -149,6 +178,7 @@ export interface PurchaseOrder {
   status: PurchaseOrderStatus;
   order_date: string;
   confirmed_date: string | null;
+  location_id: string | null;
   paid_from_register: boolean;
   register_id: string | null;
   session_id: string | null;
@@ -169,6 +199,7 @@ export interface PurchaseOrderLine {
   product_id: string;
   variant_id: string | null;
   quantity: number;
+  received_quantity: number;
   unit_price: number;
   previous_price: number | null;
   use_average_price: boolean;
@@ -183,6 +214,7 @@ export interface PurchaseOrderLine {
 export interface CreatePurchaseOrderInput {
   supplier_id: string;
   order_date?: string;
+  location_id?: string | null;
   notes?: string | null;
   lines: CreatePurchaseOrderLineInput[];
 }
@@ -205,6 +237,72 @@ export interface ConfirmPurchaseOrderInput {
   paid_from_register: boolean;
   register_id?: string | null;
   session_id?: string | null;
+  /** Partial receipt: cumulative received quantity per line. Omit to receive all. */
+  lines?: { line_id: string; received_quantity: number }[];
+}
+
+// Inventory / stock ledger types
+export type StockMovementType = "initial" | "sale" | "purchase" | "adjustment" | "return";
+
+export interface StockMovement {
+  id: string;
+  product_id: string;
+  variant_id: string | null;
+  variant_name: string | null;
+  type: StockMovementType;
+  quantity_change: number;
+  balance_after: number;
+  reason: string | null;
+  reference_type: string | null;
+  reference_id: string | null;
+  user_id: string | null;
+  created_at: string;
+}
+
+export interface AdjustStockInput {
+  variant_id?: string | null;
+  location_id?: string | null;
+  new_quantity?: number;
+  quantity_change?: number;
+  reason?: string | null;
+}
+
+export interface StockAdjustmentResult {
+  product_id: string;
+  variant_id: string | null;
+  new_balance: number;
+}
+
+export interface LowStockItem {
+  product_id: string;
+  designation: string;
+  reference: string | null;
+  variant_id: string | null;
+  variant_name: string | null;
+  quantity: number;
+  threshold: number;
+}
+
+export interface InventoryValuationRow {
+  product_id: string;
+  designation: string;
+  reference: string | null;
+  quantity: number;
+  purchase_price: number;
+  stock_value: number;
+}
+
+// Per-location on-hand for a single product (GET /api/products/[id]/stock-levels).
+export interface ProductLocationStock {
+  location_id: string;
+  location_name: string;
+  location_type: string;
+  quantity: number;
+  variants: {
+    variant_id: string;
+    variant_name: string | null;
+    quantity: number;
+  }[];
 }
 
 export interface SupplierPayment {
@@ -328,6 +426,10 @@ export interface Invoice {
   subtotal: number;
   tax_amount: number;
   total: number;
+  // Whether this invoice is settled in cash (drives droit de timbre).
+  is_cash_sale: boolean;
+  // Droit de timbre (stamp duty) snapshot taken at issue time; 0 when disabled/non-cash.
+  stamp_duty: number;
   notes: string | null;
   notes_html: string | null;
   integrity_hash: string | null;
@@ -377,6 +479,7 @@ export interface CreateInvoiceInput {
   down_payment_percent?: number;
   down_payment_amount?: number;
   is_down_payment_invoice?: boolean;
+  is_cash_sale?: boolean;
   parent_quote_id?: string | null;
   lines: CreateInvoiceLineInput[];
 }
@@ -458,6 +561,16 @@ export interface CompanySettings {
   app_theme: string | null;
   // Currency
   currency: string | null;
+  // Point of Sale
+  pos_ticket_prefix: string | null;
+  pos_auto_print_receipt: boolean | null;
+  pos_show_stock_warning: boolean | null;
+  pos_low_stock_threshold: number | null;
+  // Taxes: stamp duty (droit de timbre)
+  stamp_duty_enabled: boolean | null;
+  stamp_duty_rate: number | null;
+  stamp_duty_threshold: number | null;
+  dashboard_layout: { order?: string[]; hidden?: string[] } | null;
   updated_at: string;
 }
 
@@ -476,11 +589,23 @@ export interface UpdateCompanySettingsInput {
   default_payment_terms: number;
   invoice_prefix: string;
   quote_prefix: string;
+  next_invoice_number?: number;
+  next_quote_number?: number;
   legal_mentions?: string | null;
   legal_mentions_html?: string | null;
   bank_details?: string | null;
   delivery_note_prefix?: string | null;
+  next_delivery_note_number?: number;
   currency?: string | null;
+  // Point of Sale
+  pos_ticket_prefix?: string | null;
+  pos_auto_print_receipt?: boolean;
+  pos_show_stock_warning?: boolean;
+  pos_low_stock_threshold?: number;
+  // Taxes: stamp duty (droit de timbre)
+  stamp_duty_enabled?: boolean;
+  stamp_duty_rate?: number;
+  stamp_duty_threshold?: number;
 }
 
 export interface UpdateAppSettingsInput {
@@ -741,6 +866,100 @@ export interface QuoteConversionStats {
   converted_amount: number;
 }
 
+export interface ExpenseReportEntry {
+  period: string;
+  total_amount: number;
+  expense_count: number;
+}
+
+export interface ProfitMarginRow {
+  product_id: string;
+  product_name: string;
+  quantity_sold: number;
+  revenue: number;
+  cost: number;
+  margin: number;
+  margin_percent: number;
+}
+
+export interface SupplierSpendRow {
+  supplier_id: string;
+  supplier_name: string;
+  order_count: number;
+  total_spend: number;
+}
+
+export interface TaxSummaryRateBucket {
+  tax_rate: number;
+  total_ht: number;
+  total_vat: number;
+  total_ttc: number;
+}
+
+export interface TaxSummary {
+  sales: {
+    total_ht: number;
+    total_vat: number;
+    total_ttc: number;
+    invoice_count: number;
+    by_rate: TaxSummaryRateBucket[];
+  };
+  purchases: {
+    total_ht: number;
+    total_vat: number;
+    total_ttc: number;
+    order_count: number;
+    by_rate: TaxSummaryRateBucket[];
+  };
+  net_vat: number;
+  stamp_duty: {
+    enabled: boolean;
+    rate: number;
+    cash_payments_total: number;
+    amount_due: number;
+  };
+}
+
+export interface AccountingExportSaleRow {
+  date: string;
+  number: string;
+  party: string;
+  ht: number;
+  vat: number;
+  ttc: number;
+}
+
+export interface AccountingExportPaymentRow {
+  date: string;
+  number: string;
+  amount: number;
+  method: string;
+}
+
+export interface AccountingExportExpenseRow {
+  date: string;
+  name: string;
+  amount: number;
+}
+
+export interface AccountingExportJournalRow {
+  date: string;
+  type: string;
+  document: string;
+  party: string;
+  ht: number;
+  vat: number;
+  ttc: number;
+}
+
+export interface AccountingExport {
+  sales: AccountingExportSaleRow[];
+  purchases: AccountingExportSaleRow[];
+  payments: AccountingExportPaymentRow[];
+  expenses: AccountingExportExpenseRow[];
+  journal: AccountingExportJournalRow[];
+}
+
 // App Settings types
 export type AppLanguage = 'system' | 'fr' | 'en' | 'ar';
 export type AppTheme = 'system' | 'light' | 'dark';
@@ -796,6 +1015,19 @@ export type PermissionKey =
   | 'settings'
   | 'pos';
 
+// Action-level (CRUD) permission model. Each module key can independently
+// grant view / create / edit / delete. `can_view` maps to the legacy
+// module-level "granted" flag (module visible).
+export type PermissionAction = 'view' | 'create' | 'edit' | 'delete';
+
+export interface PermissionDetail {
+  key: string;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
+
 export const ALL_PERMISSIONS: PermissionKey[] = [
   'dashboard',
   'clients',
@@ -818,7 +1050,10 @@ export interface UserInfo {
   display_name: string;
   role: UserRole;
   is_active: boolean;
+  // Legacy: list of module keys the user can view (can_view === true).
   permissions: string[];
+  // Full per-module CRUD flags. Present on responses from the API.
+  permission_details?: PermissionDetail[];
   created_at: string;
   updated_at: string;
 }
@@ -833,7 +1068,8 @@ export interface CreateUserInput {
   display_name: string;
   password: string;
   role: string;
-  permissions: string[];
+  permissions?: string[];
+  permission_details?: PermissionDetail[];
 }
 
 export interface UpdateUserInput {
@@ -843,7 +1079,8 @@ export interface UpdateUserInput {
   password?: string | null;
   role: string;
   is_active: boolean;
-  permissions: string[];
+  permissions?: string[];
+  permission_details?: PermissionDetail[];
 }
 
 // ========== POS Types ==========
@@ -852,6 +1089,7 @@ export interface PosRegister {
   id: string;
   name: string;
   location: string | null;
+  location_id: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -860,6 +1098,7 @@ export interface PosRegister {
 export interface CreatePosRegisterInput {
   name: string;
   location?: string | null;
+  location_id?: string | null;
 }
 
 export interface UpdatePosRegisterInput extends CreatePosRegisterInput {
@@ -1062,3 +1301,66 @@ export interface DailyPosReport {
 }
 
 
+
+// ─── Credit Notes ────────────────────────────────────────────────────────────
+
+export interface CreditNoteLine {
+  id: string;
+  credit_note_id: string;
+  product_id: string | null;
+  variant_id: string | null;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  tax_rate: number;
+  subtotal: number;
+  tax_amount: number;
+  total: number;
+}
+
+export interface CreditNote {
+  id: string;
+  credit_note_number: string;
+  invoice_id: string | null;
+  invoice?: Invoice | null;
+  client_id: string;
+  client?: Client;
+  status: string;
+  issue_date: string;
+  reason: string | null;
+  subtotal: number;
+  tax_amount: number;
+  total: number;
+  restocked: boolean;
+  notes: string | null;
+  lines: CreditNoteLine[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateCreditNoteLineInput {
+  product_id?: string | null;
+  variant_id?: string | null;
+  description: string;
+  quantity: number;
+  unit_price: number;
+  tax_rate?: number;
+}
+
+export interface CreateCreditNoteInput {
+  client_id: string;
+  invoice_id?: string | null;
+  issue_date: string;
+  reason?: string | null;
+  notes?: string | null;
+  restock: boolean;
+  lines: CreateCreditNoteLineInput[];
+}
+
+export interface CreatePosRefundInput {
+  transaction_id: string;
+  reason?: string | null;
+  notes?: string | null;
+  restock: boolean;
+  lines: CreateCreditNoteLineInput[];
+}

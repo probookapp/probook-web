@@ -6,7 +6,13 @@ export const adminAuthApi = {
     adminApiCall<{ id: string; username: string; display_name: string; email: string; role: string }>("admin_login", { input }),
   logout: () => adminApiCall<void>("admin_logout"),
   getMe: () =>
-    adminApiCall<{ id: string; username: string; display_name: string; email: string; role: string } | null>("admin_get_me"),
+    adminApiCall<{ id: string; username: string; display_name: string; email: string; role: string; totp_enabled?: boolean } | null>("admin_get_me"),
+  totpSetup: () =>
+    adminApiCall<{ secret: string; uri: string }>("admin_totp_setup"),
+  totpVerifySetup: (code: string) =>
+    adminApiCall<{ success: boolean }>("admin_totp_verify_setup", { input: { code } }),
+  totpDisable: (password: string) =>
+    adminApiCall<{ success: boolean }>("admin_totp_disable", { input: { password } }),
 };
 
 // Plans commands
@@ -50,6 +56,8 @@ export const adminUsersApi = {
 export const adminSubscriptionsApi = {
   getAll: () => adminApiCall<unknown[]>("get_admin_subscriptions"),
   getById: (id: string) => adminApiCall<unknown>("get_admin_subscription", { id }),
+  update: (id: string, input: Record<string, unknown>) =>
+    adminApiCall<unknown>("update_admin_subscription", { id, input }),
   renew: (id: string, input: Record<string, unknown>) =>
     adminApiCall<unknown>("renew_admin_subscription", { id, input }),
   cancel: (id: string) => adminApiCall<unknown>("cancel_admin_subscription", { id }),
@@ -76,6 +84,7 @@ export const adminFeaturesApi = {
   getAll: () => adminApiCall<unknown[]>("get_admin_features"),
   create: (input: Record<string, unknown>) => adminApiCall<unknown>("create_admin_feature", { input }),
   update: (input: Record<string, unknown>) => adminApiCall<unknown>("update_admin_feature", { input }),
+  delete: (id: string) => adminApiCall<void>("delete_admin_feature", { id }),
   getTenantFeatures: (tenantId: string) => adminApiCall<unknown[]>("get_tenant_features", { tenantId }),
   updateTenantFeatures: (tenantId: string, input: Record<string, unknown>) =>
     adminApiCall<unknown>("update_tenant_features", { tenantId, input }),
@@ -112,6 +121,10 @@ export const adminSubscriptionInvoicesApi = {
   getAll: (filters?: { status?: string }) =>
     adminApiCall<unknown[]>("get_admin_subscription_invoices", filters as Record<string, unknown>),
   getById: (id: string) => adminApiCall<unknown>("get_admin_subscription_invoice", { id }),
+  create: (input: Record<string, unknown>) =>
+    adminApiCall<unknown>("create_subscription_invoice", { input }),
+  update: (id: string, input: Record<string, unknown>) =>
+    adminApiCall<unknown>("update_subscription_invoice", { id, input }),
   markPaid: (id: string, input: Record<string, unknown>) =>
     adminApiCall<unknown>("mark_subscription_invoice_paid", { id, input }),
 };
@@ -128,6 +141,9 @@ export const adminDataRequestsApi = {
   getAll: () => adminApiCall<unknown[]>("get_admin_data_requests"),
   create: (input: Record<string, unknown>) =>
     adminApiCall<unknown>("create_admin_data_request", { input }),
+  update: (id: string, input: Record<string, unknown>) =>
+    adminApiCall<unknown>("update_admin_data_request", { id, input }),
+  execute: (id: string) => adminApiCall<unknown>("execute_admin_data_request", { id }),
   download: (id: string) => adminApiCall<unknown>("download_admin_data_request", { id }),
 };
 
@@ -136,6 +152,10 @@ export const adminReferralsApi = {
   getAll: () => adminApiCall<unknown[]>("get_admin_referrals"),
   getByTenant: (tenantId: string) =>
     adminApiCall<unknown[]>("get_admin_tenant_referrals", { tenantId }),
+  toggle: (id: string, isActive: boolean) =>
+    adminApiCall<unknown>("toggle_referral_code", { input: { id, is_active: isActive } }),
+  create: (input: { tenant_id: string; code?: string }) =>
+    adminApiCall<unknown>("create_admin_referral", { input }),
 };
 
 // System commands

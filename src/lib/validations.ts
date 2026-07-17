@@ -29,12 +29,21 @@ export const loginSchema = z.object({
   password: requiredString("Password"),
 });
 
+const permissionDetailSchema = z.object({
+  key: z.string().min(1),
+  can_view: z.boolean(),
+  can_create: z.boolean(),
+  can_edit: z.boolean(),
+  can_delete: z.boolean(),
+});
+
 export const createUserSchema = z.object({
   username: requiredString("Username"),
   display_name: requiredString("Display name"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum(["admin", "employee"]).default("employee"),
   permissions: z.array(z.string()).optional(),
+  permission_details: z.array(permissionDetailSchema).optional(),
 });
 
 export const updateUserSchema = z.object({
@@ -44,6 +53,7 @@ export const updateUserSchema = z.object({
   role: z.enum(["admin", "employee"]),
   is_active: z.boolean(),
   permissions: z.array(z.string()).optional(),
+  permission_details: z.array(permissionDetailSchema).optional(),
 });
 
 // ─── Clients ────────────────────────────────────────────────────────────────
@@ -112,6 +122,7 @@ const purchaseOrderLineSchema = z.object({
 export const purchaseOrderSchema = z.object({
   supplier_id: requiredString("Supplier ID"),
   order_date: z.string().optional(),
+  location_id: optionalString,
   notes: optionalString,
   lines: z.array(purchaseOrderLineSchema).min(1, "At least one line is required"),
 });
@@ -208,6 +219,7 @@ export const createInvoiceSchema = z.object({
   down_payment_percent: positiveNumber.default(0),
   down_payment_amount: positiveNumber.default(0),
   is_down_payment_invoice: z.boolean().default(false),
+  is_cash_sale: z.boolean().optional(),
   parent_quote_id: optionalString,
   lines: z.array(documentLineSchema).min(1, "At least one line is required"),
 });
@@ -224,6 +236,7 @@ export const updateInvoiceSchema = z.object({
   down_payment_percent: positiveNumber.default(0),
   down_payment_amount: positiveNumber.default(0),
   is_down_payment_invoice: z.boolean().default(false),
+  is_cash_sale: z.boolean().optional(),
   parent_quote_id: optionalString,
   lines: z.array(documentLineSchema).min(1, "At least one line is required"),
 });
@@ -360,6 +373,17 @@ export const settingsSchema = z.object({
   delivery_note_prefix: optionalString,
   next_delivery_note_number: z.coerce.number().int().min(1).optional(),
   currency: optionalString,
+  // Point of Sale
+  pos_ticket_prefix: optionalString,
+  pos_auto_print_receipt: z.boolean().optional(),
+  pos_show_stock_warning: z.boolean().optional(),
+  pos_low_stock_threshold: z.coerce.number().int().min(0).optional(),
+  // Taxes: stamp duty (droit de timbre) — rate and threshold are configurable
+  stamp_duty_enabled: z.boolean().optional(),
+  stamp_duty_rate: z.coerce.number().min(0).max(100).optional(),
+  stamp_duty_threshold: z.coerce.number().min(0).optional(),
+  // Owner's dashboard card order/visibility (persisted cross-device).
+  dashboard_layout: z.record(z.string(), z.unknown()).nullable().optional(),
 }).partial();
 
 // ─── Admin: Plans ───────────────────────────────────────────────────────────
@@ -606,12 +630,14 @@ export const updateProductSupplierPriceSchema = z.object({
 export const posRegisterSchema = z.object({
   name: requiredString("Name"),
   location: optionalString,
+  location_id: optionalString,
   is_active: z.boolean().default(true),
 });
 
 export const updatePosRegisterSchema = z.object({
   name: requiredString("Name"),
   location: optionalString,
+  location_id: optionalString,
   is_active: z.boolean(),
 });
 
@@ -655,21 +681,75 @@ export const posTransactionCancelSchema = z.object({
 
 export const batchDeleteSchema = z.array(z.string().min(1)).min(1, "At least one ID is required");
 
+// ─── Credit Notes ──────────────────────────────────────────────────────────
+
+const creditNoteLineSchema = z.object({
+  product_id: optionalString,
+  variant_id: optionalString,
+  description: requiredString("Line description"),
+  quantity: z.coerce.number().min(0.01, "Quantity must be positive"),
+  unit_price: z.coerce.number().min(0, "Unit price must be non-negative"),
+  tax_rate: z.coerce.number().min(0).max(100).default(0),
+});
+
+export const createCreditNoteSchema = z.object({
+  client_id: requiredString("Client ID"),
+  invoice_id: optionalString,
+  issue_date: requiredString("Issue date"),
+  reason: optionalString,
+  notes: optionalString,
+  restock: z.boolean().default(false),
+  lines: z.array(creditNoteLineSchema).min(1, "At least one line is required"),
+});
+
+export const posRefundSchema = z.object({
+  transaction_id: requiredString("Transaction ID"),
+  reason: optionalString,
+  notes: optionalString,
+  restock: z.boolean().default(false),
+  lines: z.array(creditNoteLineSchema).min(1, "At least one line is required"),
+});
+
 // ─── Import Backup ─────────────────────────────────────────────────────────
 
 export const importBackupSchema = z.object({
   version: z.any(),
+  // Whether the payload is authoritative about product photos (?include_photos=1).
+  // MUST be declared: Zod strips undeclared keys, which would silently make every
+  // restore look photo-less and skip the "don't destroy existing photos" guard.
+  includes_photos: z.any().optional(),
+  locations: z.array(z.any()).optional(),
   product_categories: z.array(z.any()).optional(),
   products: z.array(z.any()).optional(),
+  product_variants: z.array(z.any()).optional(),
+  product_prices: z.array(z.any()).optional(),
   clients: z.array(z.any()).optional(),
   client_contacts: z.array(z.any()).optional(),
   suppliers: z.array(z.any()).optional(),
   product_suppliers: z.array(z.any()).optional(),
+  pos_registers: z.array(z.any()).optional(),
+  pos_printer_configs: z.array(z.any()).optional(),
+  pos_sessions: z.array(z.any()).optional(),
+  pos_transactions: z.array(z.any()).optional(),
+  pos_cash_movements: z.array(z.any()).optional(),
   quotes: z.array(z.any()).optional(),
   invoices: z.array(z.any()).optional(),
   payments: z.array(z.any()).optional(),
   delivery_notes: z.array(z.any()).optional(),
+  credit_notes: z.array(z.any()).optional(),
+  purchase_orders: z.array(z.any()).optional(),
+  supplier_payments: z.array(z.any()).optional(),
+  stock_levels: z.array(z.any()).optional(),
+  stock_movements: z.array(z.any()).optional(),
+  stock_transfers: z.array(z.any()).optional(),
   expenses: z.array(z.any()).optional(),
   reminders: z.array(z.any()).optional(),
+  // EVERY key the restore reads must be declared here: zod STRIPS undeclared
+  // keys, so a missing entry does not error — it silently yields an empty list
+  // and the table restores as nothing. That has bitten us once already.
+  users: z.array(z.any()).optional(),
+  user_permissions: z.array(z.any()).optional(),
   settings: z.any().optional(),
+  // v3.1 content-addressed media: { "<sha256hex>": "<base64>" }.
+  assets: z.any().optional(),
 });

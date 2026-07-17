@@ -47,6 +47,11 @@ model Tenant {
   onboardingSteps      OnboardingStep[]
   referralCode         ReferralCode?
   dataRequests         DataRequest[]
+  stockMovements       StockMovement[]
+  creditNotes          CreditNote[]
+  locations            Location[]
+  stockLevels          StockLevel[]
+  stockTransfers       StockTransfer[]
 
   @@map("tenants")
 }
@@ -54,30 +59,30 @@ model Tenant {
 // ========== Auth ==========
 
 model User {
-  id            String    @id @default(uuid())
-  tenantId      String    @map("tenant_id")
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
   username      String
-  displayName   String    @map("display_name")
+  displayName   String   @map("display_name")
   email         String?
-  emailVerified Boolean   @default(false) @map("email_verified")
-  passwordHash  String    @map("password_hash")
-  role          String    @default("employee")
-  isActive      Boolean   @default(true) @map("is_active")
-  totpEnabled   Boolean   @default(false) @map("totp_enabled")
-  createdAt     DateTime  @default(now()) @map("created_at")
-  updatedAt     DateTime  @updatedAt @map("updated_at")
+  emailVerified Boolean  @default(false) @map("email_verified")
+  passwordHash  String   @map("password_hash")
+  role          String   @default("employee")
+  isActive      Boolean  @default(true) @map("is_active")
+  totpEnabled   Boolean  @default(false) @map("totp_enabled")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  tenant               Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  permissions          UserPermission[]
-  posSessions          PosSession[]
-  posTransactions      PosTransaction[]
-  posCashMovements     PosCashMovement[]
-  passwordResetTokens  PasswordResetToken[]
-  emailVerifyTokens    EmailVerificationToken[]
-  loginAttempts        LoginAttempt[]
-  sessions             UserSession[]
-  totpSecret           TotpSecret?
-  backupCodes          BackupCode[]
+  tenant              Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  permissions         UserPermission[]
+  posSessions         PosSession[]
+  posTransactions     PosTransaction[]
+  posCashMovements    PosCashMovement[]
+  passwordResetTokens PasswordResetToken[]
+  emailVerifyTokens   EmailVerificationToken[]
+  loginAttempts       LoginAttempt[]
+  sessions            UserSession[]
+  totpSecret          TotpSecret?
+  backupCodes         BackupCode[]
 
   @@unique([tenantId, username])
   @@index([tenantId])
@@ -90,6 +95,12 @@ model UserPermission {
   userId        String  @map("user_id")
   permissionKey String  @map("permission_key")
   granted       Boolean @default(true)
+  // Action-level (CRUD) flags. `granted` is retained for backward-compat and
+  // mirrors canView (module access). New rows should set all four explicitly.
+  canView       Boolean @default(true) @map("can_view")
+  canCreate     Boolean @default(true) @map("can_create")
+  canEdit       Boolean @default(true) @map("can_edit")
+  canDelete     Boolean @default(true) @map("can_delete")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -100,12 +111,12 @@ model UserPermission {
 // ========== Password Reset Tokens ==========
 
 model PasswordResetToken {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  token     String   @unique
-  expiresAt DateTime @map("expires_at")
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
   usedAt    DateTime? @map("used_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -117,13 +128,13 @@ model PasswordResetToken {
 // ========== Email Verification Tokens ==========
 
 model EmailVerificationToken {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  token     String   @unique
+  id        String    @id @default(uuid())
+  userId    String    @map("user_id")
+  token     String    @unique
   email     String
-  expiresAt DateTime @map("expires_at")
+  expiresAt DateTime  @map("expires_at")
   usedAt    DateTime? @map("used_at")
-  createdAt DateTime @default(now()) @map("created_at")
+  createdAt DateTime  @default(now()) @map("created_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -175,7 +186,7 @@ model UserSession {
 model TotpSecret {
   id        String   @id @default(uuid())
   userId    String   @unique @map("user_id")
-  secret    String   // encrypted TOTP secret
+  secret    String // encrypted TOTP secret
   verified  Boolean  @default(false)
   createdAt DateTime @default(now()) @map("created_at")
 
@@ -185,9 +196,9 @@ model TotpSecret {
 }
 
 model BackupCode {
-  id     String  @id @default(uuid())
-  userId String  @map("user_id")
-  code   String  // hashed backup code
+  id     String    @id @default(uuid())
+  userId String    @map("user_id")
+  code   String // hashed backup code
   usedAt DateTime? @map("used_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -214,12 +225,13 @@ model Client {
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
 
-  tenant          Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   quotes          Quote[]
   invoices        Invoice[]
   deliveryNotes   DeliveryNote[]
   contacts        ClientContact[]
   posTransactions PosTransaction[]
+  creditNotes     CreditNote[]
 
   @@index([tenantId])
   @@map("clients")
@@ -231,7 +243,7 @@ model Product {
   designation     String
   description     String?
   descriptionHtml String?  @map("description_html")
-  unitPrice     Float    @map("unit_price")
+  unitPrice       Float    @map("unit_price")
   taxRate         Float    @default(20.0) @map("tax_rate")
   unit            String   @default("unit")
   reference       String?
@@ -240,7 +252,7 @@ model Product {
   categoryId      String?  @map("category_id")
   photoPath       String?  @map("photo_path")
   quantity        Int?     @default(0)
-  purchasePrice Float?   @default(0) @map("purchase_price")
+  purchasePrice   Float?   @default(0) @map("purchase_price")
   hasVariants     Boolean  @default(false) @map("has_variants")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
@@ -255,6 +267,8 @@ model Product {
   invoiceLines        InvoiceLine[]
   deliveryNoteLines   DeliveryNoteLine[]
   posTransactionLines PosTransactionLine[]
+  stockMovements      StockMovement[]
+  stockLevels         StockLevel[]
 
   @@index([tenantId])
   @@index([barcode])
@@ -265,7 +279,7 @@ model ProductPrice {
   id        String   @id @default(uuid())
   tenantId  String   @map("tenant_id")
   productId String   @map("product_id")
-  label     String   // "retail", "wholesale", "semi_wholesale", "super_wholesale", or custom
+  label     String // "retail", "wholesale", "semi_wholesale", "super_wholesale", or custom
   price     Float
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -281,7 +295,7 @@ model ProductVariant {
   id            String   @id @default(uuid())
   tenantId      String   @map("tenant_id")
   productId     String   @map("product_id")
-  name          String   // e.g. "Rouge - XL"
+  name          String // e.g. "Rouge - XL"
   sku           String?
   barcode       String?
   attributes    Json     @default("{}") // { "size": "XL", "color": "Rouge" }
@@ -295,6 +309,8 @@ model ProductVariant {
   product             Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
   posTransactionLines PosTransactionLine[]
   purchaseOrderLines  PurchaseOrderLine[]
+  stockMovements      StockMovement[]
+  stockLevels         StockLevel[]
 
   @@index([productId])
   @@index([tenantId])
@@ -330,13 +346,13 @@ model Quote {
   status             String   @default("DRAFT")
   issueDate          DateTime @map("issue_date") @db.Date
   validityDate       DateTime @map("validity_date") @db.Date
-  subtotal            Float    @default(0) @map("subtotal")
-  taxAmount           Float    @default(0) @map("tax_amount")
-  total           Float    @default(0) @map("total")
+  subtotal           Float    @default(0) @map("subtotal")
+  taxAmount          Float    @default(0) @map("tax_amount")
+  total              Float    @default(0) @map("total")
   notes              String?
   notesHtml          String?  @map("notes_html")
   logoSnapshot       String?  @map("logo_snapshot")
-  shippingCost     Float    @default(0) @map("shipping_cost")
+  shippingCost       Float    @default(0) @map("shipping_cost")
   shippingTaxRate    Float    @default(20) @map("shipping_tax_rate")
   downPaymentPercent Float    @default(0) @map("down_payment_percent")
   downPaymentAmount  Float    @default(0) @map("down_payment_amount")
@@ -362,11 +378,11 @@ model QuoteLine {
   description     String
   descriptionHtml String?  @map("description_html")
   quantity        Float
-  unitPrice     Float    @map("unit_price")
+  unitPrice       Float    @map("unit_price")
   taxRate         Float    @map("tax_rate")
-  subtotal         Float    @map("subtotal")
-  taxAmount        Float    @map("tax_amount")
-  total        Float    @map("total")
+  subtotal        Float    @map("subtotal")
+  taxAmount       Float    @map("tax_amount")
+  total           Float    @map("total")
   position        Int      @default(0)
   groupName       String?  @map("group_name")
   isSubtotalLine  Boolean? @default(false) @map("is_subtotal_line")
@@ -389,19 +405,21 @@ model Invoice {
   status               String   @default("DRAFT")
   issueDate            DateTime @map("issue_date") @db.Date
   dueDate              DateTime @map("due_date") @db.Date
-  subtotal              Float    @default(0) @map("subtotal")
-  taxAmount             Float    @default(0) @map("tax_amount")
-  total             Float    @default(0) @map("total")
+  subtotal             Float    @default(0) @map("subtotal")
+  taxAmount            Float    @default(0) @map("tax_amount")
+  total                Float    @default(0) @map("total")
   notes                String?
   notesHtml            String?  @map("notes_html")
   integrityHash        String?  @map("integrity_hash")
   logoSnapshot         String?  @map("logo_snapshot")
-  shippingCost       Float    @default(0) @map("shipping_cost")
+  shippingCost         Float    @default(0) @map("shipping_cost")
   shippingTaxRate      Float    @default(20) @map("shipping_tax_rate")
   downPaymentPercent   Float    @default(0) @map("down_payment_percent")
   downPaymentAmount    Float    @default(0) @map("down_payment_amount")
   isDownPaymentInvoice Boolean  @default(false) @map("is_down_payment_invoice")
   parentQuoteId        String?  @map("parent_quote_id")
+  isCashSale           Boolean  @default(false) @map("is_cash_sale") // droit de timbre only applies to cash settlements
+  stampDuty            Float    @default(0) @map("stamp_duty") // droit de timbre snapshot (cash invoices, above threshold)
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
@@ -412,6 +430,7 @@ model Invoice {
   payments        Payment[]
   deliveryNotes   DeliveryNote[]   @relation("InvoiceDeliveryNotes")
   posTransactions PosTransaction[]
+  creditNotes     CreditNote[]
 
   @@unique([tenantId, invoiceNumber])
   @@index([tenantId])
@@ -420,23 +439,23 @@ model Invoice {
 }
 
 model InvoiceLine {
-  id              String   @id @default(uuid())
-  invoiceId       String   @map("invoice_id")
-  productId       String?  @map("product_id")
-  description     String
-  descriptionHtml String?  @map("description_html")
-  quantity        Float
-  unitPrice     Float    @map("unit_price")
-  taxRate         Float    @map("tax_rate")
-  subtotal         Float    @map("subtotal")
-  taxAmount        Float    @map("tax_amount")
-  total        Float    @map("total")
-  position        Int      @default(0)
-  groupName       String?  @map("group_name")
-  isSubtotalLine  Boolean? @default(false) @map("is_subtotal_line")
+  id                String   @id @default(uuid())
+  invoiceId         String   @map("invoice_id")
+  productId         String?  @map("product_id")
+  description       String
+  descriptionHtml   String?  @map("description_html")
+  quantity          Float
+  unitPrice         Float    @map("unit_price")
+  taxRate           Float    @map("tax_rate")
+  subtotal          Float    @map("subtotal")
+  taxAmount         Float    @map("tax_amount")
+  total             Float    @map("total")
+  position          Int      @default(0)
+  groupName         String?  @map("group_name")
+  isSubtotalLine    Boolean? @default(false) @map("is_subtotal_line")
   // Snapshot of product.purchasePrice captured at sale time (invoice issue).
   // Frozen so later edits to the product's purchase price never rewrite history.
-  costPriceSnapshot Float  @default(0) @map("cost_price_snapshot")
+  costPriceSnapshot Float    @default(0) @map("cost_price_snapshot")
 
   invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   product Product? @relation(fields: [productId], references: [id])
@@ -547,6 +566,12 @@ model CompanySettings {
   posAutoPrintReceipt    Boolean? @default(true) @map("pos_auto_print_receipt")
   posShowStockWarning    Boolean? @default(true) @map("pos_show_stock_warning")
   posLowStockThreshold   Int?     @default(5) @map("pos_low_stock_threshold")
+  creditNotePrefix       String?  @default("CN-") @map("credit_note_prefix")
+  nextCreditNoteNumber   Int?     @default(1) @map("next_credit_note_number")
+  dashboardLayout        Json?    @map("dashboard_layout") // owner's dashboard card order/visibility
+  stampDutyEnabled       Boolean? @default(false) @map("stamp_duty_enabled") // droit de timbre on cash payments
+  stampDutyRate          Float?   @default(1.0) @map("stamp_duty_rate") // percentage
+  stampDutyThreshold     Float?   @default(0) @map("stamp_duty_threshold") // min TTC for timbre to apply
   updatedAt              DateTime @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -595,12 +620,12 @@ model Supplier {
 }
 
 model ProductSupplier {
-  id              String   @id @default(uuid())
-  tenantId        String   @map("tenant_id")
-  productId       String   @map("product_id")
-  supplierId      String   @map("supplier_id")
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
+  productId     String   @map("product_id")
+  supplierId    String   @map("supplier_id")
   purchasePrice Float    @default(0) @map("purchase_price")
-  createdAt       DateTime @default(now()) @map("created_at")
+  createdAt     DateTime @default(now()) @map("created_at")
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -619,7 +644,7 @@ model PurchaseOrder {
   tenantId         String    @map("tenant_id")
   orderNumber      String    @map("order_number")
   supplierId       String    @map("supplier_id")
-  status           String    @default("PENDING") // PENDING | CONFIRMED | CANCELLED
+  status           String    @default("PENDING") // PENDING | PARTIALLY_RECEIVED | CONFIRMED | CANCELLED
   orderDate        DateTime  @default(now()) @map("order_date") @db.Date
   confirmedDate    DateTime? @map("confirmed_date")
   paidFromRegister Boolean   @default(false) @map("paid_from_register")
@@ -633,9 +658,12 @@ model PurchaseOrder {
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
+  locationId String? @map("location_id")
+
   tenant   Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   supplier Supplier            @relation(fields: [supplierId], references: [id])
   register PosRegister?        @relation(fields: [registerId], references: [id])
+  location Location?           @relation(fields: [locationId], references: [id])
   lines    PurchaseOrderLine[]
   payments SupplierPayment[]
 
@@ -647,18 +675,19 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderLine {
-  id              String  @id @default(uuid())
-  orderId         String  @map("order_id")
-  productId       String  @map("product_id")
-  variantId       String? @map("variant_id")
-  quantity        Float
-  unitPrice       Float   @map("unit_price")
-  previousPrice   Float?  @map("previous_price")
-  useAveragePrice Boolean @default(false) @map("use_average_price")
-  subtotal        Float   @default(0)
-  taxRate         Float   @default(0) @map("tax_rate")
-  taxAmount       Float   @default(0) @map("tax_amount")
-  total           Float   @default(0)
+  id               String  @id @default(uuid())
+  orderId          String  @map("order_id")
+  productId        String  @map("product_id")
+  variantId        String? @map("variant_id")
+  quantity         Float
+  receivedQuantity Float   @default(0) @map("received_quantity")
+  unitPrice        Float   @map("unit_price")
+  previousPrice    Float?  @map("previous_price")
+  useAveragePrice  Boolean @default(false) @map("use_average_price")
+  subtotal         Float   @default(0)
+  taxRate          Float   @default(0) @map("tax_rate")
+  taxAmount        Float   @default(0) @map("tax_amount")
+  total            Float   @default(0)
 
   order   PurchaseOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product         @relation(fields: [productId], references: [id])
@@ -741,7 +770,10 @@ model PosRegister {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  locationId String? @map("location_id")
+
   tenant         Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  locationRef    Location?          @relation(fields: [locationId], references: [id])
   sessions       PosSession[]
   transactions   PosTransaction[]
   printerConfigs PosPrinterConfig[]
@@ -788,9 +820,9 @@ model PosTransaction {
   userId          String   @map("user_id")
   invoiceId       String?  @map("invoice_id")
   transactionDate DateTime @default(now()) @map("transaction_date")
-  subtotal      Float    @default(0) @map("subtotal")
-  taxAmount        Float    @default(0) @map("tax_amount")
-  total        Float    @default(0) @map("total")
+  subtotal        Float    @default(0) @map("subtotal")
+  taxAmount       Float    @default(0) @map("tax_amount")
+  total           Float    @default(0) @map("total")
   discountPercent Float    @default(0) @map("discount_percent")
   discountAmount  Float    @default(0) @map("discount_amount")
   finalAmount     Float    @default(0) @map("final_amount")
@@ -817,26 +849,26 @@ model PosTransaction {
 }
 
 model PosTransactionLine {
-  id              String   @id @default(uuid())
-  transactionId   String   @map("transaction_id")
-  productId       String?  @map("product_id")
-  variantId       String?  @map("variant_id")
-  barcode         String?
-  designation     String
-  quantity        Float
-  unitPrice     Float    @map("unit_price")
-  taxRate         Float    @map("tax_rate")
-  subtotal         Float    @map("subtotal")
-  taxAmount        Float    @map("tax_amount")
-  total        Float    @map("total")
-  discountPercent Float    @default(0) @map("discount_percent")
-  position        Int      @default(0)
+  id                String   @id @default(uuid())
+  transactionId     String   @map("transaction_id")
+  productId         String?  @map("product_id")
+  variantId         String?  @map("variant_id")
+  barcode           String?
+  designation       String
+  quantity          Float
+  unitPrice         Float    @map("unit_price")
+  taxRate           Float    @map("tax_rate")
+  subtotal          Float    @map("subtotal")
+  taxAmount         Float    @map("tax_amount")
+  total             Float    @map("total")
+  discountPercent   Float    @default(0) @map("discount_percent")
+  position          Int      @default(0)
   // Snapshot of product/variant purchase price captured at sale time (transaction creation).
-  costPriceSnapshot Float  @default(0) @map("cost_price_snapshot")
-  createdAt       DateTime @default(now()) @map("created_at")
+  costPriceSnapshot Float    @default(0) @map("cost_price_snapshot")
+  createdAt         DateTime @default(now()) @map("created_at")
 
-  transaction PosTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
-  product     Product?       @relation(fields: [productId], references: [id])
+  transaction PosTransaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  product     Product?        @relation(fields: [productId], references: [id])
   variant     ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@index([transactionId])
@@ -908,12 +940,30 @@ model PlatformAdmin {
   passwordHash String   @map("password_hash")
   role         String   @default("super_admin") // "super_admin" | "support_agent"
   isActive     Boolean  @default(true) @map("is_active")
+  totpSecret   String?  @map("totp_secret") // encrypted TOTP secret
+  totpEnabled  Boolean  @default(false) @map("totp_enabled")
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  auditLogs AuditLog[]
+  auditLogs           AuditLog[]
+  passwordResetTokens AdminPasswordResetToken[]
 
   @@map("platform_admins")
+}
+
+model AdminPasswordResetToken {
+  id        String    @id @default(uuid())
+  adminId   String    @map("admin_id")
+  token     String    @unique
+  expiresAt DateTime  @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  admin PlatformAdmin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([adminId])
+  @@map("admin_password_reset_tokens")
 }
 
 // ========== Subscription Plans ==========
@@ -923,7 +973,7 @@ model Plan {
   slug                    String   @unique
   name                    String
   description             String?
-  nameTranslations        Json?    @map("name_translations")        // { "fr": "...", "ar": "..." }
+  nameTranslations        Json?    @map("name_translations") // { "fr": "...", "ar": "..." }
   descriptionTranslations Json?    @map("description_translations") // { "fr": "...", "ar": "..." }
   monthlyPrice            Int      @map("monthly_price") // centimes (e.g., 1600000 = 16,000 DZD)
   yearlyPrice             Int      @map("yearly_price")
@@ -948,7 +998,7 @@ model PlanPrice {
   planId       String @map("plan_id")
   currency     String // "DZD", "EUR", "USD", "MAD"
   monthlyPrice Int    @map("monthly_price") // centimes
-  yearlyPrice  Int    @map("yearly_price")  // centimes
+  yearlyPrice  Int    @map("yearly_price") // centimes
 
   plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
 
@@ -964,7 +1014,7 @@ model FeatureFlag {
   key                     String   @unique
   name                    String
   description             String?
-  nameTranslations        Json?    @map("name_translations")        // { "fr": "...", "ar": "..." }
+  nameTranslations        Json?    @map("name_translations") // { "fr": "...", "ar": "..." }
   descriptionTranslations Json?    @map("description_translations") // { "fr": "...", "ar": "..." }
   isGlobal                Boolean  @default(true) @map("is_global")
   createdAt               DateTime @default(now()) @map("created_at")
@@ -1230,13 +1280,13 @@ model Referral {
 model DataRequest {
   id          String    @id @default(uuid())
   tenantId    String    @map("tenant_id")
-  requestType String   @map("request_type") // "export" | "deletion"
-  status      String   @default("pending") // "pending" | "processing" | "completed" | "failed"
-  requestedBy String   @map("requested_by")
+  requestType String    @map("request_type") // "export" | "deletion"
+  status      String    @default("pending") // "pending" | "processing" | "completed" | "failed"
+  requestedBy String    @map("requested_by")
   completedAt DateTime? @map("completed_at")
-  filePath    String?  @map("file_path")
+  filePath    String?   @map("file_path")
   notes       String?
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -1257,4 +1307,176 @@ model RateLimitLog {
 
   @@index([tenantId, endpoint, windowStart])
   @@map("rate_limit_logs")
+}
+
+// ========== Inventory Ledger ==========
+
+model StockMovement {
+  id             String   @id @default(uuid())
+  tenantId       String   @map("tenant_id")
+  productId      String   @map("product_id")
+  variantId      String?  @map("variant_id")
+  type           String // "initial" | "sale" | "purchase" | "adjustment" | "return"
+  quantityChange Int      @map("quantity_change") // signed: negative = out, positive = in
+  balanceAfter   Int      @map("balance_after")
+  reason         String?
+  referenceType  String?  @map("reference_type") // "pos_transaction" | "purchase_order" | "credit_note" | "manual"
+  referenceId    String?  @map("reference_id")
+  userId         String?  @map("user_id")
+  locationId     String?  @map("location_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant  ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  location Location?       @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, productId, createdAt])
+  @@index([tenantId, createdAt])
+  @@map("stock_movements")
+}
+
+// ========== Credit Notes (Refunds / Avoirs) ==========
+
+model CreditNote {
+  id               String   @id @default(uuid())
+  tenantId         String   @map("tenant_id")
+  creditNoteNumber String   @map("credit_note_number")
+  invoiceId        String?  @map("invoice_id")
+  clientId         String   @map("client_id")
+  status           String   @default("ISSUED") // "DRAFT" | "ISSUED"
+  issueDate        DateTime @map("issue_date") @db.Date
+  reason           String?
+  subtotal         Float    @default(0)
+  taxAmount        Float    @default(0) @map("tax_amount")
+  total            Float    @default(0)
+  restocked        Boolean  @default(false)
+  notes            String?
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  tenant  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client  Client           @relation(fields: [clientId], references: [id])
+  invoice Invoice?         @relation(fields: [invoiceId], references: [id])
+  lines   CreditNoteLine[]
+
+  @@unique([tenantId, creditNoteNumber])
+  @@index([tenantId])
+  @@index([clientId])
+  @@index([invoiceId])
+  @@map("credit_notes")
+}
+
+model CreditNoteLine {
+  id           String  @id @default(uuid())
+  creditNoteId String  @map("credit_note_id")
+  productId    String? @map("product_id")
+  variantId    String? @map("variant_id")
+  description  String
+  quantity     Float
+  unitPrice    Float   @map("unit_price")
+  taxRate      Float   @default(0) @map("tax_rate")
+  subtotal     Float   @default(0)
+  taxAmount    Float   @default(0) @map("tax_amount")
+  total        Float   @default(0)
+
+  creditNote CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
+
+  @@index([creditNoteId])
+  @@map("credit_note_lines")
+}
+
+// ========== Admin Brute-Force Protection (durable) ==========
+
+model AdminLoginAttempt {
+  id        String   @id @default(uuid())
+  username  String
+  ipAddress String?  @map("ip_address")
+  success   Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([ipAddress, createdAt])
+  @@index([username, createdAt])
+  @@map("admin_login_attempts")
+}
+
+// ========== Multi-location / Warehouses ==========
+
+model Location {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  type      String   @default("store") // "store" | "warehouse"
+  address   String?
+  isDefault Boolean  @default(false) @map("is_default")
+  isActive  Boolean  @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stockLevels    StockLevel[]
+  stockMovements StockMovement[]
+  posRegisters   PosRegister[]
+  purchaseOrders PurchaseOrder[]
+  transfersFrom  StockTransfer[] @relation("TransferFrom")
+  transfersTo    StockTransfer[] @relation("TransferTo")
+
+  @@index([tenantId])
+  @@map("locations")
+}
+
+// Per-location on-hand quantity for a product (or variant). The aggregate
+// Product.quantity / ProductVariant.quantity is kept as the sum across levels.
+model StockLevel {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  locationId String   @map("location_id")
+  productId  String   @map("product_id")
+  variantId  String?  @map("variant_id")
+  quantity   Int      @default(0)
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  location Location        @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  product  Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant  ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, productId, variantId])
+  @@index([tenantId, productId])
+  @@index([locationId])
+  @@map("stock_levels")
+}
+
+model StockTransfer {
+  id             String   @id @default(uuid())
+  tenantId       String   @map("tenant_id")
+  transferNumber String   @map("transfer_number")
+  fromLocationId String   @map("from_location_id")
+  toLocationId   String   @map("to_location_id")
+  status         String   @default("completed") // "completed"
+  notes          String?
+  createdBy      String?  @map("created_by")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  fromLocation Location            @relation("TransferFrom", fields: [fromLocationId], references: [id])
+  toLocation   Location            @relation("TransferTo", fields: [toLocationId], references: [id])
+  lines        StockTransferLine[]
+
+  @@unique([tenantId, transferNumber])
+  @@index([tenantId])
+  @@map("stock_transfers")
+}
+
+model StockTransferLine {
+  id         String  @id @default(uuid())
+  transferId String  @map("transfer_id")
+  productId  String  @map("product_id")
+  variantId  String? @map("variant_id")
+  quantity   Int
+
+  transfer StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+
+  @@index([transferId])
+  @@map("stock_transfer_lines")
 }
