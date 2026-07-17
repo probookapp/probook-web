@@ -24,6 +24,8 @@ export function FailedMutationsPanel() {
   }, []);
 
   useEffect(() => {
+    // Intentional: load the failed-mutation queue from IndexedDB on mount + poll.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh();
     const id = setInterval(refresh, 5000);
     return () => clearInterval(id);

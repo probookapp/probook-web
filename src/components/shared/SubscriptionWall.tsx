@@ -93,6 +93,8 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
 
   useEffect(() => {
     if (plans && plans.length > 0 && !selectedPlanId) {
+      // Intentional: default the selection once plans load.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedPlanId(plans[0].id);
     }
   }, [plans, selectedPlanId]);

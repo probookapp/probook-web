@@ -33,6 +33,8 @@ export function VerifyEmailPage() {
 
   useEffect(() => {
     if (token) {
+      // Intentional: kick off email verification on mount.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       verifyToken();
     }
   }, [token, verifyToken]);

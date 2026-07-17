@@ -25,9 +25,11 @@ export function OfflineIndicator() {
     return () => clearInterval(id);
   }, []);
 
-  // Track sync state transitions
+  // Track sync state transitions (intentional: deriving a UI transition from an
+  // external sync signal, not a render-cascade).
   useEffect(() => {
     if (isSyncing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setWasSyncing(true);
     } else if (wasSyncing) {
       setWasSyncing(false);
