@@ -18,17 +18,27 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   if (denied) return denied;
   const body = await validateBody(req, posPrinterSchema);
   if (isValidationError(body)) return body;
-  const config = await prisma.posPrinterConfig.create({
-    data: {
-      tenantId,
-      registerId: body.register_id || null,
-      printerName: body.printer_name,
-      connectionType: body.connection_type,
-      connectionAddress: body.connection_address,
-      paperWidth: body.paper_width ?? 80,
-      isDefault: body.is_default ?? false,
-      isActive: body.is_active ?? true,
-    },
+  const registerId = body.register_id || null;
+  const config = await prisma.$transaction(async (tx) => {
+    // At most one default printer per register (null register = the tenant-wide scope).
+    if (body.is_default) {
+      await tx.posPrinterConfig.updateMany({
+        where: { tenantId, registerId },
+        data: { isDefault: false },
+      });
+    }
+    return tx.posPrinterConfig.create({
+      data: {
+        tenantId,
+        registerId,
+        printerName: body.printer_name,
+        connectionType: body.connection_type,
+        connectionAddress: body.connection_address,
+        paperWidth: body.paper_width ?? 80,
+        isDefault: body.is_default ?? false,
+        isActive: body.is_active ?? true,
+      },
+    });
   });
   return NextResponse.json(toSnakeCase(config));
 });
