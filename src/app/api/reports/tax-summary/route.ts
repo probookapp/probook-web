@@ -72,6 +72,51 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       if (line.isSubtotalLine) continue;
       addToRate(salesByRate, line.taxRate, line.subtotal, line.taxAmount, line.total);
     }
+    // Invoice.subtotal/taxAmount already include shipping, but the line loop
+    // above doesn't — add shipping to the per-rate breakdown so it reconciles
+    // with the headline totals.
+    if (inv.shippingCost > 0) {
+      const shipVat = inv.shippingCost * (inv.shippingTaxRate / 100);
+      addToRate(salesByRate, inv.shippingTaxRate, inv.shippingCost, shipVat, inv.shippingCost + shipVat);
+    }
+  }
+
+  // ── POS retail sales (collected VAT too) ─────────────────────────────────
+  // POS sales never become invoices, so a VAT return that ignored them would
+  // under-report collected VAT. Scale by the transaction-level discount ratio
+  // (finalAmount / total) so a discounted ticket counts what was actually taken.
+  const posTransactions = await prisma.posTransaction.findMany({
+    where: { tenantId, transactionDate: range, status: { not: "CANCELLED" } },
+    include: { lines: true },
+  });
+  for (const tx of posTransactions) {
+    const ratio = tx.total > 0 ? tx.finalAmount / tx.total : 1;
+    salesHt += tx.subtotal * ratio;
+    salesVat += tx.taxAmount * ratio;
+    salesTtc += tx.finalAmount;
+    for (const line of tx.lines) {
+      addToRate(
+        salesByRate,
+        line.taxRate,
+        line.subtotal * ratio,
+        line.taxAmount * ratio,
+        (line.subtotal + line.taxAmount) * ratio
+      );
+    }
+  }
+
+  // ── Credit notes / refunds reduce collected VAT ──────────────────────────
+  const creditNotes = await prisma.creditNote.findMany({
+    where: { tenantId, status: "ISSUED", issueDate: range },
+    include: { lines: true },
+  });
+  for (const cn of creditNotes) {
+    salesHt -= cn.subtotal;
+    salesVat -= cn.taxAmount;
+    salesTtc -= cn.total;
+    for (const line of cn.lines) {
+      addToRate(salesByRate, line.taxRate, -line.subtotal, -line.taxAmount, -line.total);
+    }
   }
 
   // ── Purchases VAT (deductible) ───────────────────────────────────────────
@@ -127,6 +172,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       totalVat: salesVat,
       totalTtc: salesTtc,
       invoiceCount: invoices.length,
+      posTransactionCount: posTransactions.length,
+      creditNoteCount: creditNotes.length,
       byRate: Array.from(salesByRate.values()).sort(sortByRate),
     },
     purchases: {

@@ -26,11 +26,21 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
           return { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) };
         })();
 
-  const [invoices, orders, payments, expenses] = await Promise.all([
+  const [invoices, posTransactions, creditNotes, orders, payments, expenses] = await Promise.all([
     prisma.invoice.findMany({
       where: { tenantId, status: { not: "DRAFT" }, issueDate: range },
       include: { client: true },
       orderBy: [{ issueDate: "asc" }, { invoiceNumber: "asc" }],
+    }),
+    prisma.posTransaction.findMany({
+      where: { tenantId, transactionDate: range, status: { not: "CANCELLED" } },
+      include: { client: true },
+      orderBy: [{ transactionDate: "asc" }],
+    }),
+    prisma.creditNote.findMany({
+      where: { tenantId, status: "ISSUED", issueDate: range },
+      include: { client: true },
+      orderBy: [{ issueDate: "asc" }, { creditNoteNumber: "asc" }],
     }),
     prisma.purchaseOrder.findMany({
       where: {
@@ -54,13 +64,39 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
 
   const toDay = (d: Date) => d.toISOString().split("T")[0];
 
-  const sales = invoices.map((inv) => ({
-    date: toDay(inv.issueDate),
-    number: inv.invoiceNumber,
-    party: inv.client?.name ?? "",
-    ht: inv.subtotal,
-    vat: inv.taxAmount,
-    ttc: inv.total,
+  const round2 = (n: number) => Math.round(n * 100) / 100;
+
+  const sales = [
+    ...invoices.map((inv) => ({
+      date: toDay(inv.issueDate),
+      number: inv.invoiceNumber,
+      party: inv.client?.name ?? "",
+      ht: inv.subtotal,
+      vat: inv.taxAmount,
+      ttc: inv.total,
+    })),
+    // POS retail sales (scaled by the transaction-level discount ratio).
+    ...posTransactions.map((tx) => {
+      const ratio = tx.total > 0 ? tx.finalAmount / tx.total : 1;
+      return {
+        date: toDay(tx.transactionDate),
+        number: tx.ticketNumber,
+        party: tx.client?.name ?? "POS",
+        ht: round2(tx.subtotal * ratio),
+        vat: round2(tx.taxAmount * ratio),
+        ttc: round2(tx.finalAmount),
+      };
+    }),
+  ].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+
+  // Credit notes / refunds, as negative sales.
+  const refunds = creditNotes.map((cn) => ({
+    date: toDay(cn.issueDate),
+    number: cn.creditNoteNumber,
+    party: cn.client?.name ?? "",
+    ht: -cn.subtotal,
+    vat: -cn.taxAmount,
+    ttc: -cn.total,
   }));
 
   const purchases = orders.map((o) => ({
@@ -96,6 +132,15 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       vat: s.vat,
       ttc: s.ttc,
     })),
+    ...refunds.map((r) => ({
+      date: r.date,
+      type: "refund",
+      document: r.number,
+      party: r.party,
+      ht: r.ht,
+      vat: r.vat,
+      ttc: r.ttc,
+    })),
     ...purchases.map((p) => ({
       date: p.date,
       type: "purchase",
@@ -127,6 +172,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
 
   const result = {
     sales,
+    refunds,
     purchases,
     payments: paymentRows,
     expenses: expenseRows,
