@@ -103,7 +103,8 @@
   "shippingAndDownPayment": "Frais de port et acompte",
   "downPaymentHint": "Saisissez soit un pourcentage, soit un montant fixe pour l'acompte. Si les deux sont renseignés, le montant fixe sera utilisé.",
   "stampDuty": {
-    "cashSale": "Vente au comptant (appliquer le droit de timbre)"
+    "cashSale": "Vente au comptant (appliquer le droit de timbre)",
+    "exempt": "Exonéré du droit de timbre (exonération légale)"
   },
   "groupSubtotals": "Sous-totaux par groupe",
   "richDescription": "Description enrichie (formatage HTML)",

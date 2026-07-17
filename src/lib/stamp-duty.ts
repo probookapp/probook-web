@@ -16,7 +16,9 @@ export interface StampDutyContext {
   threshold?: number | null;
   /** Whether this specific invoice is settled in cash. */
   isCashSale: boolean;
-  /** TTC total the timbre is computed from. */
+  /** Legal exemption on this operation: no timbre even when cash. */
+  exempt?: boolean;
+  /** TTC total the timbre is computed from (includes shipping). */
   total: number;
   /** Drafts never carry timbre. */
   isDraft?: boolean;
@@ -25,6 +27,7 @@ export interface StampDutyContext {
 export function computeStampDuty(ctx: StampDutyContext): number {
   if (ctx.isDraft) return 0;
   if (!ctx.enabled) return 0;
+  if (ctx.exempt) return 0;
   if (!ctx.isCashSale) return 0;
   if (ctx.total < (ctx.threshold ?? 0)) return 0;
   return Math.round(ctx.total * ((ctx.rate ?? 0) / 100) * 100) / 100;

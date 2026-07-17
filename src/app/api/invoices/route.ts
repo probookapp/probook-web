@@ -73,13 +73,15 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
 
   const status = body.status || "DRAFT";
   const isCashSale = body.is_cash_sale ?? false;
-  // Droit de timbre applies only to cash-settled, non-draft invoices at/above the
-  // configured threshold. Non-cash invoices carry no timbre (so they can reach PAID).
+  const stampDutyExempt = body.stamp_duty_exempt ?? false;
+  // Droit de timbre applies only to cash-settled, non-draft, non-exempt invoices
+  // at/above the configured threshold. Others carry no timbre (so they can reach PAID).
   const stampDuty = computeStampDuty({
     enabled: settings?.stampDutyEnabled,
     rate: settings?.stampDutyRate,
     threshold: settings?.stampDutyThreshold,
     isCashSale,
+    exempt: stampDutyExempt,
     total: totals.total,
     isDraft: status === "DRAFT",
   });
@@ -97,6 +99,7 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
       taxAmount: totals.taxAmount,
       total: totals.total,
       isCashSale,
+      stampDutyExempt,
       stampDuty,
       notes: body.notes || null,
       notesHtml: body.notes_html || null,

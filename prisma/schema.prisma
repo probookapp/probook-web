@@ -419,6 +419,7 @@ model Invoice {
   isDownPaymentInvoice Boolean  @default(false) @map("is_down_payment_invoice")
   parentQuoteId        String?  @map("parent_quote_id")
   isCashSale           Boolean  @default(false) @map("is_cash_sale") // droit de timbre only applies to cash settlements
+  stampDutyExempt      Boolean  @default(false) @map("stamp_duty_exempt") // legal exemption: no timbre even when cash
   stampDuty            Float    @default(0) @map("stamp_duty") // droit de timbre snapshot (cash invoices, above threshold)
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")

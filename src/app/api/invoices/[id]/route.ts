@@ -68,11 +68,13 @@ export const PUT = withAuth(async (req, { session, tenantId, params }) => {
   // above the configured threshold. Drafts and non-cash invoices carry none.
   const settings = await prisma.companySettings.findFirst({ where: { tenantId } });
   const isCashSale = body.is_cash_sale ?? false;
+  const stampDutyExempt = body.stamp_duty_exempt ?? false;
   const stampDuty = computeStampDuty({
     enabled: settings?.stampDutyEnabled,
     rate: settings?.stampDutyRate,
     threshold: settings?.stampDutyThreshold,
     isCashSale,
+    exempt: stampDutyExempt,
     total: totals.total,
     isDraft: body.status === "DRAFT",
   });
@@ -90,6 +92,7 @@ export const PUT = withAuth(async (req, { session, tenantId, params }) => {
       taxAmount: totals.taxAmount,
       total: totals.total,
       isCashSale,
+      stampDutyExempt,
       stampDuty,
       notes: body.notes || null,
       notesHtml: body.notes_html || null,

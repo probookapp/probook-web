@@ -103,7 +103,8 @@
   "shippingAndDownPayment": "Shipping and Down Payment",
   "downPaymentHint": "Enter either a percentage or a fixed amount for the down payment. If both are provided, the fixed amount will be used.",
   "stampDuty": {
-    "cashSale": "This is a cash sale (apply stamp duty)"
+    "cashSale": "This is a cash sale (apply stamp duty)",
+    "exempt": "Exempt from stamp duty (legal exemption)"
   },
   "groupSubtotals": "Group Subtotals",
   "richDescription": "Rich Description (HTML formatting)",

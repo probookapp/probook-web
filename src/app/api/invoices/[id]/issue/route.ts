@@ -29,6 +29,7 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
     rate: settings?.stampDutyRate,
     threshold: settings?.stampDutyThreshold,
     isCashSale: invoice.isCashSale,
+    exempt: invoice.stampDutyExempt,
     total: invoice.total,
     isDraft: false,
   });

@@ -49,6 +49,7 @@ const createInvoiceFormSchema = (t: (key: string) => string) => z.object({
   down_payment_percent: z.coerce.number().min(0).max(100).optional(),
   down_payment_amount: z.coerce.number().min(0).optional(),
   is_cash_sale: z.boolean().optional(),
+  stamp_duty_exempt: z.boolean().optional(),
   lines: z.array(createLineSchema(t)).min(1, t("validation:invoice.linesRequired")),
 });
 
@@ -99,6 +100,7 @@ export function InvoiceFormPage() {
       // Most timbre-enabled businesses are cash-based; default on (only matters
       // when stamp duty is enabled in settings). Uncheck for transfer/cheque.
       is_cash_sale: true,
+      stamp_duty_exempt: false,
       lines: [{ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate }],
     },
   });
@@ -170,6 +172,7 @@ export function InvoiceFormPage() {
       down_payment_percent: invoice.down_payment_percent ?? 0,
       down_payment_amount: invoice.down_payment_amount ?? 0,
       is_cash_sale: invoice.is_cash_sale ?? false,
+      stamp_duty_exempt: invoice.stamp_duty_exempt ?? false,
       lines: invoice.lines.map((line) => ({
         product_id: line.product_id,
         description: line.description,
@@ -714,10 +717,16 @@ export function InvoiceFormPage() {
               {t("invoices:downPaymentHint")}
             </p>
             {settings?.stamp_duty_enabled && (
-              <label className="flex items-center gap-2 mt-4 text-sm text-gray-700 dark:text-gray-300">
-                <input type="checkbox" {...register("is_cash_sale")} className="rounded" />
-                {t("invoices:stampDuty.cashSale")}
-              </label>
+              <div className="mt-4 space-y-2">
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" {...register("is_cash_sale")} className="rounded" />
+                  {t("invoices:stampDuty.cashSale")}
+                </label>
+                <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+                  <input type="checkbox" {...register("stamp_duty_exempt")} className="rounded" />
+                  {t("invoices:stampDuty.exempt")}
+                </label>
+              </div>
             )}
           </CardContent>
         </Card>

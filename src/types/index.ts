@@ -428,7 +428,9 @@ export interface Invoice {
   total: number;
   // Whether this invoice is settled in cash (drives droit de timbre).
   is_cash_sale: boolean;
-  // Droit de timbre (stamp duty) snapshot taken at issue time; 0 when disabled/non-cash.
+  // Legal exemption from droit de timbre for this operation (no timbre even if cash).
+  stamp_duty_exempt: boolean;
+  // Droit de timbre (stamp duty) snapshot taken at issue time; 0 when disabled/non-cash/exempt.
   stamp_duty: number;
   notes: string | null;
   notes_html: string | null;
@@ -480,6 +482,7 @@ export interface CreateInvoiceInput {
   down_payment_amount?: number;
   is_down_payment_invoice?: boolean;
   is_cash_sale?: boolean;
+  stamp_duty_exempt?: boolean;
   parent_quote_id?: string | null;
   lines: CreateInvoiceLineInput[];
 }

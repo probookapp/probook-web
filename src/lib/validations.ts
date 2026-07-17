@@ -220,6 +220,7 @@ export const createInvoiceSchema = z.object({
   down_payment_amount: positiveNumber.default(0),
   is_down_payment_invoice: z.boolean().default(false),
   is_cash_sale: z.boolean().optional(),
+  stamp_duty_exempt: z.boolean().optional(),
   parent_quote_id: optionalString,
   lines: z.array(documentLineSchema).min(1, "At least one line is required"),
 });
@@ -237,6 +238,7 @@ export const updateInvoiceSchema = z.object({
   down_payment_amount: positiveNumber.default(0),
   is_down_payment_invoice: z.boolean().default(false),
   is_cash_sale: z.boolean().optional(),
+  stamp_duty_exempt: z.boolean().optional(),
   parent_quote_id: optionalString,
   lines: z.array(documentLineSchema).min(1, "At least one line is required"),
 });
