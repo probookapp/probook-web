@@ -33,10 +33,13 @@
     "tax": "Tax",
     "lineTotal": "Line Total",
     "lines": "Order Lines",
-    "addLine": "Add Product"
+    "addLine": "Add Product",
+    "receivingLocation": "Receiving location",
+    "defaultLocation": "Default location"
   },
   "status": {
     "PENDING": "Pending",
+    "PARTIALLY_RECEIVED": "Partially Received",
     "CONFIRMED": "Confirmed",
     "CANCELLED": "Cancelled"
   },
@@ -58,7 +61,12 @@
     "activeSession": "Active session",
     "openedAt": "Opened at",
     "noActiveSession": "No open session on this register. Please open a session first.",
-    "confirm": "Confirm Receipt"
+    "confirm": "Confirm Receipt",
+    "receiveLines": "Goods received",
+    "receiveAll": "Receive all",
+    "ordered": "Ordered",
+    "alreadyReceived": "Already received",
+    "receivedQty": "Received"
   },
   "cancelModal": {
     "title": "Cancel Purchase Order",
@@ -89,6 +97,7 @@
   "filters": {
     "all": "All",
     "pending": "Pending",
+    "partiallyReceived": "Partially Received",
     "confirmed": "Confirmed",
     "cancelled": "Cancelled"
   }

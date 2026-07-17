@@ -33,10 +33,13 @@
     "tax": "TVA",
     "lineTotal": "Total ligne",
     "lines": "Lignes de commande",
-    "addLine": "Ajouter un produit"
+    "addLine": "Ajouter un produit",
+    "receivingLocation": "Emplacement de réception",
+    "defaultLocation": "Emplacement par défaut"
   },
   "status": {
     "PENDING": "En attente",
+    "PARTIALLY_RECEIVED": "Partiellement reçu",
     "CONFIRMED": "Confirmé",
     "CANCELLED": "Annulé"
   },
@@ -58,7 +61,12 @@
     "activeSession": "Session active",
     "openedAt": "Ouverte le",
     "noActiveSession": "Aucune session ouverte sur cette caisse. Veuillez d'abord ouvrir une session.",
-    "confirm": "Confirmer la réception"
+    "confirm": "Confirmer la réception",
+    "receiveLines": "Marchandises reçues",
+    "receiveAll": "Tout recevoir",
+    "ordered": "Commandé",
+    "alreadyReceived": "Déjà reçu",
+    "receivedQty": "Reçu"
   },
   "cancelModal": {
     "title": "Annuler le bon de commande",
@@ -89,6 +97,7 @@
   "filters": {
     "all": "Tous",
     "pending": "En attente",
+    "partiallyReceived": "Partiellement reçus",
     "confirmed": "Confirmés",
     "cancelled": "Annulés"
   }

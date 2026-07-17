@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { requirePermission } from "@/lib/permissions-server";
 
-export const POST = withAuth(async (req, { tenantId, params }) => {
+export const POST = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "purchases", "edit");
+  if (denied) return denied;
   const order = await prisma.purchaseOrder.findFirst({
     where: { tenantId, id: params?.id },
   });

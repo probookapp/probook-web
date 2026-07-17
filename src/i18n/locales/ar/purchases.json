@@ -33,10 +33,13 @@
     "tax": "الضريبة",
     "lineTotal": "إجمالي السطر",
     "lines": "سطور الطلب",
-    "addLine": "إضافة منتج"
+    "addLine": "إضافة منتج",
+    "receivingLocation": "موقع الاستلام",
+    "defaultLocation": "الموقع الافتراضي"
   },
   "status": {
     "PENDING": "معلق",
+    "PARTIALLY_RECEIVED": "مستلم جزئيًا",
     "CONFIRMED": "مؤكد",
     "CANCELLED": "ملغى"
   },
@@ -58,7 +61,12 @@
     "activeSession": "الجلسة النشطة",
     "openedAt": "فتحت في",
     "noActiveSession": "لا توجد جلسة مفتوحة على هذا الصندوق. يرجى فتح جلسة أولاً.",
-    "confirm": "تأكيد الاستلام"
+    "confirm": "تأكيد الاستلام",
+    "receiveLines": "البضائع المستلمة",
+    "receiveAll": "استلام الكل",
+    "ordered": "المطلوب",
+    "alreadyReceived": "المستلم سابقًا",
+    "receivedQty": "المستلم"
   },
   "cancelModal": {
     "title": "إلغاء طلب الشراء",
@@ -89,6 +97,7 @@
   "filters": {
     "all": "الكل",
     "pending": "معلق",
+    "partiallyReceived": "مستلم جزئيًا",
     "confirmed": "مؤكد",
     "cancelled": "ملغى"
   }

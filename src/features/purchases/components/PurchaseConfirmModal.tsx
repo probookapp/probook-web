@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle } from "lucide-react";
-import { Button, Modal, SearchableSelect } from "@/components/ui";
+import { Button, Modal, SearchableSelect, Input } from "@/components/ui";
 import {
   usePosRegisters,
   useActiveSession,
@@ -28,14 +28,16 @@ export function PurchaseConfirmModal({
 
   const [paidFromRegister, setPaidFromRegister] = useState(false);
   const [selectedRegisterId, setSelectedRegisterId] = useState("");
-
-  // Reset state when modal opens/closes
-  useEffect(() => {
-    if (!open) {
-      setPaidFromRegister(false);
-      setSelectedRegisterId("");
+  // Cumulative received quantity per line id (defaults to the full ordered qty).
+  // This component is remounted per order (keyed on order id by the parent), so
+  // the initializer runs fresh for each order — no reset effect needed.
+  const [receivedQty, setReceivedQty] = useState<Record<string, number>>(() => {
+    const init: Record<string, number> = {};
+    for (const line of purchaseOrder?.lines ?? []) {
+      init[line.id] = line.quantity;
     }
-  }, [open]);
+    return init;
+  });
 
   const { data: registers } = usePosRegisters();
   const { data: activeSession } = useActiveSession(
@@ -49,6 +51,19 @@ export function PurchaseConfirmModal({
       label: r.name + (r.location ? ` (${r.location})` : ""),
     }));
 
+  const lines = purchaseOrder?.lines ?? [];
+
+  const setLineQty = (lineId: string, value: number, ordered: number) => {
+    const clamped = Math.max(0, Math.min(ordered, Number.isNaN(value) ? 0 : value));
+    setReceivedQty((prev) => ({ ...prev, [lineId]: clamped }));
+  };
+
+  const receiveAll = () => {
+    const next: Record<string, number> = {};
+    for (const line of lines) next[line.id] = line.quantity;
+    setReceivedQty(next);
+  };
+
   const handleConfirm = () => {
     if (!purchaseOrder) return;
 
@@ -57,6 +72,10 @@ export function PurchaseConfirmModal({
       register_id: paidFromRegister && selectedRegisterId ? selectedRegisterId : null,
       session_id:
         paidFromRegister && activeSession ? activeSession.id : null,
+      lines: lines.map((line) => ({
+        line_id: line.id,
+        received_quantity: receivedQty[line.id] ?? line.quantity,
+      })),
     };
 
     onConfirm(input);
@@ -65,6 +84,7 @@ export function PurchaseConfirmModal({
   const handleClose = () => {
     setPaidFromRegister(false);
     setSelectedRegisterId("");
+    setReceivedQty({});
     onClose();
   };
 
@@ -73,7 +93,7 @@ export function PurchaseConfirmModal({
       isOpen={open}
       onClose={handleClose}
       title={t("confirmModal.title")}
-      size="md"
+      size="lg"
     >
       <div className="space-y-4">
         <p className="text-gray-600 dark:text-gray-400">
@@ -108,6 +128,58 @@ export function PurchaseConfirmModal({
                   currency: "DZD",
                 }).format(purchaseOrder.total)}
               </span>
+            </div>
+          </div>
+        )}
+
+        {/* Per-line goods receipt */}
+        {lines.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t("confirmModal.receiveLines")}
+              </span>
+              <Button variant="secondary" size="sm" onClick={receiveAll} type="button">
+                {t("confirmModal.receiveAll")}
+              </Button>
+            </div>
+            <div className="border border-gray-200 dark:border-gray-700 rounded-lg divide-y divide-gray-200 dark:divide-gray-700">
+              {lines.map((line) => {
+                const label =
+                  line.product?.designation ??
+                  line.variant?.name ??
+                  t("fields.product");
+                const alreadyReceived = line.received_quantity ?? 0;
+                return (
+                  <div key={line.id} className="p-3 flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {label}
+                        {line.variant?.name ? ` — ${line.variant.name}` : ""}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {t("confirmModal.ordered")}: {line.quantity}
+                        {alreadyReceived > 0
+                          ? ` · ${t("confirmModal.alreadyReceived")}: ${alreadyReceived}`
+                          : ""}
+                      </p>
+                    </div>
+                    <div className="w-24 shrink-0">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={line.quantity}
+                        step="1"
+                        aria-label={t("confirmModal.receivedQty")}
+                        value={receivedQty[line.id] ?? line.quantity}
+                        onChange={(e) =>
+                          setLineQty(line.id, parseFloat(e.target.value), line.quantity)
+                        }
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

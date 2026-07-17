@@ -30,6 +30,7 @@ import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { useSelection } from "@/hooks/useSelection";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { useAuthStore } from "@/stores/useAuthStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   usePurchases,
@@ -52,10 +53,12 @@ type StatusFilter = "ALL" | PurchaseOrderStatus;
 
 function getStatusBadgeVariant(
   status: PurchaseOrderStatus
-): "warning" | "success" | "danger" {
+): "warning" | "success" | "danger" | "info" {
   switch (status) {
     case "PENDING":
       return "warning";
+    case "PARTIALLY_RECEIVED":
+      return "info";
     case "CONFIRMED":
       return "success";
     case "CANCELLED":
@@ -80,6 +83,9 @@ export function PurchasesPage() {
   const { t } = useTranslation("purchases");
   const { t: tCommon } = useTranslation("common");
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  const canCreate = useAuthStore((s) => s.hasPermission("purchases", "create"));
+  const canEdit = useAuthStore((s) => s.hasPermission("purchases", "edit"));
+  const canDelete = useAuthStore((s) => s.hasPermission("purchases", "delete"));
 
   const [showForm, setShowForm] = useState(false);
   const [editingPurchase, setEditingPurchase] = useState<PurchaseOrder | undefined>();
@@ -182,6 +188,7 @@ export function PurchasesPage() {
   const statusFilters: { key: StatusFilter; label: string }[] = [
     { key: "ALL", label: t("filters.all") },
     { key: "PENDING", label: t("filters.pending") },
+    { key: "PARTIALLY_RECEIVED", label: t("filters.partiallyReceived") },
     { key: "CONFIRMED", label: t("filters.confirmed") },
     { key: "CANCELLED", label: t("filters.cancelled") },
   ];
@@ -206,14 +213,16 @@ export function PurchasesPage() {
             {t("subtitle")}
           </p>
         </div>
-        <Button
-          onClick={() => handleOpenForm()}
-          size="sm"
-          className="self-start sm:self-auto"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          {t("newPurchase")}
-        </Button>
+        {canCreate && (
+          <Button
+            onClick={() => handleOpenForm()}
+            size="sm"
+            className="self-start sm:self-auto"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            {t("newPurchase")}
+          </Button>
+        )}
       </div>
 
       <Card>
@@ -258,6 +267,7 @@ export function PurchasesPage() {
             {filteredPurchases.length > 0 ? (
               filteredPurchases.map((purchase) => {
                 const isPending = purchase.status === "PENDING";
+                const isReceivable = isPending || purchase.status === "PARTIALLY_RECEIVED";
                 return (
                   <div key={purchase.id} className="p-4 flex items-start gap-3">
                     {isPending && (
@@ -297,16 +307,19 @@ export function PurchasesPage() {
                           )}
                         </Badge>
                       </div>
-                      {isPending && (
+                      {isReceivable && (
                         <div className="flex justify-end gap-1 mt-2">
-                          <button
-                            onClick={() => handleOpenForm(purchase)}
-                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400"
-                            title={tCommon("buttons.edit")}
-                            aria-label={tCommon("buttons.edit")}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
+                          {isPending && canEdit && (
+                            <button
+                              onClick={() => handleOpenForm(purchase)}
+                              className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400"
+                              title={tCommon("buttons.edit")}
+                              aria-label={tCommon("buttons.edit")}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </button>
+                          )}
+                          {canEdit && (
                           <button
                             onClick={() => setConfirmingPurchase(purchase)}
                             className="p-1 text-gray-500 hover:text-green-600 dark:hover:text-green-400"
@@ -315,22 +328,31 @@ export function PurchasesPage() {
                           >
                             <CheckCircle className="h-4 w-4" />
                           </button>
-                          <button
-                            onClick={() => setCancelConfirmId(purchase.id)}
-                            className="p-1 text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400"
-                            title={t("actions.cancel")}
-                            aria-label={t("actions.cancel")}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirmId(purchase.id)}
-                            className="p-1 text-gray-500 hover:text-red-600"
-                            title={tCommon("buttons.delete")}
-                            aria-label={tCommon("buttons.delete")}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
+                          )}
+                          {isPending && (
+                            <>
+                              {canEdit && (
+                              <button
+                                onClick={() => setCancelConfirmId(purchase.id)}
+                                className="p-1 text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400"
+                                title={t("actions.cancel")}
+                                aria-label={t("actions.cancel")}
+                              >
+                                <XCircle className="h-4 w-4" />
+                              </button>
+                              )}
+                              {canDelete && (
+                              <button
+                                onClick={() => setDeleteConfirmId(purchase.id)}
+                                className="p-1 text-gray-500 hover:text-red-600"
+                                title={tCommon("buttons.delete")}
+                                aria-label={tCommon("buttons.delete")}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                              )}
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
@@ -375,6 +397,7 @@ export function PurchasesPage() {
                 {filteredPurchases.length > 0 ? (
                   filteredPurchases.map((purchase) => {
                     const isPending = purchase.status === "PENDING";
+                    const isReceivable = isPending || purchase.status === "PARTIALLY_RECEIVED";
                     return (
                       <TableRow key={purchase.id}>
                         <TableCell>
@@ -420,16 +443,19 @@ export function PurchasesPage() {
                           {formatCurrency(purchase.total)}
                         </TableCell>
                         <TableCell>
-                          {isPending && (
+                          {isReceivable && (
                             <div className="flex items-center gap-1">
-                              <button
-                                onClick={() => handleOpenForm(purchase)}
-                                className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                                title={tCommon("buttons.edit")}
-                                aria-label={tCommon("buttons.edit")}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </button>
+                              {isPending && canEdit && (
+                                <button
+                                  onClick={() => handleOpenForm(purchase)}
+                                  className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                                  title={tCommon("buttons.edit")}
+                                  aria-label={tCommon("buttons.edit")}
+                                >
+                                  <Pencil className="h-4 w-4" />
+                                </button>
+                              )}
+                              {canEdit && (
                               <button
                                 onClick={() =>
                                   setConfirmingPurchase(purchase)
@@ -440,26 +466,35 @@ export function PurchasesPage() {
                               >
                                 <CheckCircle className="h-4 w-4" />
                               </button>
-                              <button
-                                onClick={() =>
-                                  setCancelConfirmId(purchase.id)
-                                }
-                                className="p-1 text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors"
-                                title={t("actions.cancel")}
-                                aria-label={t("actions.cancel")}
-                              >
-                                <XCircle className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  setDeleteConfirmId(purchase.id)
-                                }
-                                className="p-1 text-gray-500 hover:text-red-600 transition-colors"
-                                title={tCommon("buttons.delete")}
-                                aria-label={tCommon("buttons.delete")}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
+                              )}
+                              {isPending && (
+                                <>
+                                  {canEdit && (
+                                  <button
+                                    onClick={() =>
+                                      setCancelConfirmId(purchase.id)
+                                    }
+                                    className="p-1 text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors"
+                                    title={t("actions.cancel")}
+                                    aria-label={t("actions.cancel")}
+                                  >
+                                    <XCircle className="h-4 w-4" />
+                                  </button>
+                                  )}
+                                  {canDelete && (
+                                  <button
+                                    onClick={() =>
+                                      setDeleteConfirmId(purchase.id)
+                                    }
+                                    className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+                                    title={tCommon("buttons.delete")}
+                                    aria-label={tCommon("buttons.delete")}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
+                                  )}
+                                </>
+                              )}
                             </div>
                           )}
                         </TableCell>
@@ -553,6 +588,7 @@ export function PurchasesPage() {
 
       {/* Confirm purchase modal */}
       <PurchaseConfirmModal
+        key={confirmingPurchase?.id ?? "none"}
         open={!!confirmingPurchase}
         onClose={() => setConfirmingPurchase(null)}
         purchaseOrder={confirmingPurchase}
@@ -561,12 +597,14 @@ export function PurchasesPage() {
       />
 
       {/* Bulk action bar */}
-      <BulkActionBar
-        selectedCount={selection.selectedCount}
-        onDelete={() => setBulkDeleteOpen(true)}
-        onClear={selection.clear}
-        isDeleting={batchDeletePurchases.isPending}
-      />
+      {canDelete && (
+        <BulkActionBar
+          selectedCount={selection.selectedCount}
+          onDelete={() => setBulkDeleteOpen(true)}
+          onClear={selection.clear}
+          isDeleting={batchDeletePurchases.isPending}
+        />
+      )}
 
       {/* Bulk delete modal */}
       <BulkDeleteModal

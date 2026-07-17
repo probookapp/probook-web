@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { purchaseOrderSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 interface LineInput {
   product_id: string;
@@ -46,7 +47,9 @@ async function generateOrderNumber(tenantId: string): Promise<string> {
   return `PO-${today}-${String(seq).padStart(4, "0")}`;
 }
 
-export const POST = withAuth(async (req, { tenantId }) => {
+export const POST = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "purchases", "create");
+  if (denied) return denied;
   const body = await validateBody(req, purchaseOrderSchema);
   if (isValidationError(body)) return body;
 
@@ -72,6 +75,7 @@ export const POST = withAuth(async (req, { tenantId }) => {
           orderNumber,
           supplierId: body.supplier_id,
           orderDate: body.order_date ? new Date(body.order_date) : new Date(),
+          locationId: body.location_id || null,
           status: "PENDING",
           paymentStatus: "UNPAID",
           subtotal,

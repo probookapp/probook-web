@@ -7,9 +7,10 @@ import {
   Button,
   Input,
   Textarea,
+  Select,
   SearchableSelect,
 } from "@/components/ui";
-import { supplierApi, productApi } from "@/lib/api";
+import { supplierApi, productApi, locationsApi } from "@/lib/api";
 import { useQuery } from "@tanstack/react-query";
 import { formatCurrency, formatDateISO } from "@/lib/utils";
 import type {
@@ -31,6 +32,7 @@ interface PurchaseFormLine {
 interface PurchaseFormData {
   supplier_id: string;
   order_date: string;
+  location_id: string;
   notes: string;
   lines: PurchaseFormLine[];
 }
@@ -55,6 +57,14 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
     queryKey: ["products-with-details"],
     queryFn: productApi.getAllWithDetails,
   });
+
+  // Receiving-location picker only appears for multi-location tenants; otherwise
+  // received goods silently land at the tenant's default location.
+  const { data: locations } = useQuery({
+    queryKey: ["locations"],
+    queryFn: locationsApi.getAll,
+  });
+  const showLocationPicker = (locations?.length ?? 0) >= 2;
 
   const supplierOptions = useMemo(
     () =>
@@ -87,6 +97,7 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
       order_date: purchase?.order_date
         ? purchase.order_date.split("T")[0]
         : formatDateISO(new Date()),
+      location_id: purchase?.location_id ?? "",
       notes: purchase?.notes ?? "",
       lines: purchase?.lines?.map((l) => ({
         product_id: l.product_id,
@@ -192,6 +203,7 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
     onSubmit({
       supplier_id: data.supplier_id,
       order_date: data.order_date,
+      location_id: showLocationPicker ? data.location_id || null : null,
       notes: data.notes || null,
       lines,
     });
@@ -226,6 +238,24 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
           })}
           error={errors.order_date?.message}
         />
+
+        {showLocationPicker && (
+          <Controller
+            control={control}
+            name="location_id"
+            render={({ field }) => (
+              <Select
+                label={t("fields.receivingLocation")}
+                value={field.value}
+                onChange={field.onChange}
+                options={[
+                  { value: "", label: t("fields.defaultLocation") },
+                  ...(locations ?? []).map((l) => ({ value: l.id, label: l.name })),
+                ]}
+              />
+            )}
+          />
+        )}
       </div>
 
       {/* Lines section */}
