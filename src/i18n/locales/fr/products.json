@@ -157,5 +157,48 @@
   "messages": {
     "deleteBlocked": "Impossible de supprimer un produit ayant des bons de commande",
     "deleteError": "Erreur lors de la suppression du produit"
+  },
+  "adjustStock": {
+    "title": "Ajuster le stock",
+    "location": "Emplacement",
+    "defaultLocation": "Emplacement par défaut",
+    "variant": "Variante",
+    "currentStock": "Stock actuel",
+    "setMode": "Définir la quantité",
+    "deltaMode": "Ajouter / Retirer",
+    "newQuantity": "Nouvelle quantité",
+    "quantityChange": "Variation de quantité (+/-)",
+    "deltaPlaceholder": "ex. -3 ou 5",
+    "reason": "Motif",
+    "reasonPlaceholder": "Motif de l'ajustement (facultatif)",
+    "apply": "Appliquer",
+    "success": "Stock ajusté",
+    "error": "Échec de l'ajustement du stock",
+    "noChange": "Aucun changement de quantité",
+    "invalidValue": "Saisissez un nombre valide"
+  },
+  "movements": {
+    "title": "Mouvements de stock",
+    "empty": "Aucun mouvement de stock",
+    "balance": "Solde",
+    "types": {
+      "initial": "Initial",
+      "sale": "Vente",
+      "purchase": "Achat",
+      "adjustment": "Ajustement",
+      "return": "Retour"
+    }
+  },
+  "lowStock": {
+    "banner": "{{count}} article(s) en stock faible",
+    "show": "Voir",
+    "hide": "Masquer"
+  },
+  "stockLocations": {
+    "title": "Stock par emplacement",
+    "location": "Emplacement",
+    "variant": "Variante",
+    "quantity": "Quantité",
+    "noData": "Aucun stock enregistré sur les emplacements"
   }
 }

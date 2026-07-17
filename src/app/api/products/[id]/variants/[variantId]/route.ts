@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { applyStockChange } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { productVariantSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const variant = await prisma.productVariant.findFirst({
@@ -12,7 +14,9 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(variant));
 });
 
-export const PUT = withAuth(async (req, { tenantId, params }) => {
+export const PUT = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "products", "edit");
+  if (denied) return denied;
   const body = await validateBody(req, productVariantSchema);
   if (isValidationError(body)) return body;
 
@@ -20,6 +24,22 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
     where: { tenantId, id: params?.variantId, productId: params?.id },
   });
   if (!existing) return NextResponse.json({ error: "Variant not found" }, { status: 404 });
+
+  // Record a manual adjustment when the stock quantity is edited directly.
+  const newQuantity = body.quantity ?? existing.quantity;
+  const quantityDelta = newQuantity - existing.quantity;
+  if (quantityDelta !== 0) {
+    await applyStockChange(prisma, {
+      tenantId,
+      productId: params?.id as string,
+      variantId: existing.id,
+      type: "adjustment",
+      quantityChange: quantityDelta,
+      reason: "manual edit",
+      referenceType: "manual",
+      userId: session.userId,
+    });
+  }
 
   // Ensure barcode uniqueness within tenant (if changed)
   if (body.barcode && body.barcode !== existing.barcode) {
@@ -52,7 +72,9 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(variant));
 });
 
-export const DELETE = withAuth(async (req, { tenantId, params }) => {
+export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "products", "delete");
+  if (denied) return denied;
   const existing = await prisma.productVariant.findFirst({
     where: { tenantId, id: params?.variantId, productId: params?.id },
   });

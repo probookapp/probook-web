@@ -157,5 +157,48 @@
   "messages": {
     "deleteBlocked": "Cannot delete product with existing purchase orders",
     "deleteError": "Failed to delete product"
+  },
+  "adjustStock": {
+    "title": "Adjust Stock",
+    "location": "Location",
+    "defaultLocation": "Default location",
+    "variant": "Variant",
+    "currentStock": "Current stock",
+    "setMode": "Set quantity",
+    "deltaMode": "Add / Remove",
+    "newQuantity": "New quantity",
+    "quantityChange": "Quantity change (+/-)",
+    "deltaPlaceholder": "e.g. -3 or 5",
+    "reason": "Reason",
+    "reasonPlaceholder": "Reason for adjustment (optional)",
+    "apply": "Apply",
+    "success": "Stock adjusted",
+    "error": "Failed to adjust stock",
+    "noChange": "No change in quantity",
+    "invalidValue": "Enter a valid number"
+  },
+  "movements": {
+    "title": "Stock Movements",
+    "empty": "No stock movements yet",
+    "balance": "Balance",
+    "types": {
+      "initial": "Initial",
+      "sale": "Sale",
+      "purchase": "Purchase",
+      "adjustment": "Adjustment",
+      "return": "Return"
+    }
+  },
+  "lowStock": {
+    "banner": "{{count}} item(s) low on stock",
+    "show": "View",
+    "hide": "Hide"
+  },
+  "stockLocations": {
+    "title": "Stock by location",
+    "location": "Location",
+    "variant": "Variant",
+    "quantity": "Quantity",
+    "noData": "No stock recorded across locations"
   }
 }

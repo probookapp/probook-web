@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { recordInitialStock } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { productVariantSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const productId = params?.id as string;
@@ -20,7 +22,9 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(variants));
 });
 
-export const POST = withAuth(async (req, { tenantId, params }) => {
+export const POST = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "products", "create");
+  if (denied) return denied;
   const productId = params?.id as string;
   const body = await validateBody(req, productVariantSchema);
   if (isValidationError(body)) return body;
@@ -61,6 +65,19 @@ export const POST = withAuth(async (req, { tenantId, params }) => {
       isActive: body.is_active ?? true,
     },
   });
+
+  // Seed an "initial" ledger entry when the variant starts with stock on hand.
+  if ((variant.quantity ?? 0) > 0) {
+    await recordInitialStock(prisma, {
+      tenantId,
+      productId,
+      variantId: variant.id,
+      quantity: variant.quantity ?? 0,
+      reason: "initial stock",
+      referenceType: "manual",
+      userId: session.userId,
+    });
+  }
 
   // Ensure product is marked as having variants
   if (!product.hasVariants) {

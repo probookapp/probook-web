@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Trash2, Search, Package, Briefcase, Tags, Upload, Folder, Truck } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Briefcase, Tags, Upload, Folder, Truck, Download, SlidersHorizontal, History, AlertTriangle, MapPin } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import {
@@ -25,7 +25,12 @@ import { useSelection } from "@/hooks/useSelection";
 import { ProductForm } from "./components/ProductForm";
 import { ProductSuppliers } from "./components/ProductSuppliers";
 import { CategoryManager } from "./components/CategoryManager";
+import { AdjustStockModal } from "./components/AdjustStockModal";
+import { StockMovementsModal } from "./components/StockMovementsModal";
+import { StockByLocationModal } from "./components/StockByLocationModal";
+import { useLowStock } from "./hooks/useStock";
 import { ImportDialog } from "@/components/shared/ImportDialog";
+import { exportToCsv } from "@/lib/csv-export";
 import {
   useProducts,
   useCreateProduct,
@@ -37,7 +42,8 @@ import { useProductCategories } from "./hooks/useProductCategories";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { isApiError } from "@/lib/api-adapter";
-import { productSupplierApi } from "@/lib/api";
+import { productSupplierApi, locationsApi } from "@/lib/api";
+import { useAuthStore } from "@/stores/useAuthStore";
 import type { Product } from "@/types";
 import type { ProductFormData } from "./schemas/productSchema";
 
@@ -46,6 +52,9 @@ type TabType = "products" | "categories";
 export function ProductsPage() {
   const { t } = useTranslation("products");
   const { t: tCommon } = useTranslation("common");
+  const canCreate = useAuthStore((s) => s.hasPermission("products", "create"));
+  const canEdit = useAuthStore((s) => s.hasPermission("products", "edit"));
+  const canDelete = useAuthStore((s) => s.hasPermission("products", "delete"));
   const [activeTab, setActiveTab] = useState<TabType>("products");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | undefined>();
@@ -55,9 +64,14 @@ export function ProductsPage() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [supplierProductId, setSupplierProductId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [adjustStockProduct, setAdjustStockProduct] = useState<Product | null>(null);
+  const [movementsProduct, setMovementsProduct] = useState<Product | null>(null);
+  const [stockLocationsProduct, setStockLocationsProduct] = useState<Product | null>(null);
+  const [showLowStock, setShowLowStock] = useState(false);
 
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { data: products, isLoading } = useProducts();
+  const { data: lowStock } = useLowStock();
   const { data: categories } = useProductCategories();
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
@@ -75,6 +89,14 @@ export function ProductsPage() {
     queryFn: isDemoMode ? () => [] : productSupplierApi.getAllSummaries,
     staleTime: isDemoMode ? Infinity : undefined,
   });
+
+  const { data: locations } = useQuery({
+    queryKey: ["locations", { demo: isDemoMode }],
+    queryFn: isDemoMode ? () => [] : locationsApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
+  });
+  // Per-location stock UI stays hidden unless the tenant has 2+ locations.
+  const multiLocation = (locations?.length ?? 0) >= 2;
 
   const suppliersByProduct = useMemo(() => {
     const map: Record<string, { supplier_id: string; supplier_name: string }[]> = {};
@@ -97,6 +119,22 @@ export function ProductsPage() {
 
   useEffect(() => { selection.clear(); }, [searchQuery, categoryFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const handleExportCsv = () => {
+    exportToCsv(
+      filteredProducts ?? [],
+      [
+        { header: t("fields.designation"), accessor: (p) => p.designation },
+        { header: t("fields.reference"), accessor: (p) => p.reference },
+        { header: t("fields.barcode"), accessor: (p) => p.barcode },
+        { header: t("fields.category"), accessor: (p) => getCategoryName(p.category_id) },
+        { header: t("fields.priceHT"), accessor: (p) => p.unit_price },
+        { header: t("fields.purchasePriceHt"), accessor: (p) => p.purchase_price },
+        { header: t("fields.quantity"), accessor: (p) => p.quantity },
+      ],
+      `products_${new Date().toISOString().split("T")[0]}.csv`
+    );
+  };
+
   const handleOpenModal = (product?: Product) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
     setSelectedProduct(product);
@@ -106,6 +144,11 @@ export function ProductsPage() {
   const handleCloseModal = () => {
     setSelectedProduct(undefined);
     setIsModalOpen(false);
+  };
+
+  const handleAdjustStock = (product: Product) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
+    setAdjustStockProduct(product);
   };
 
   const handleSubmit = async (data: ProductFormData) => {
@@ -153,14 +196,20 @@ export function ProductsPage() {
         </div>
         {activeTab === "products" && (
           <div className="flex gap-2 self-start sm:self-auto">
+            <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredProducts?.length}>
+              <Download className="h-4 w-4 mr-2" />
+              {tCommon("buttons.exportCsv")}
+            </Button>
             <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
               <Upload className="h-4 w-4 mr-2" />
               {tCommon("buttons.import")}
             </Button>
-            <Button onClick={() => handleOpenModal()} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              {t("newProduct")}
-            </Button>
+            {canCreate && (
+              <Button onClick={() => handleOpenModal()} size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                {t("newProduct")}
+              </Button>
+            )}
           </div>
         )}
       </div>
@@ -196,6 +245,41 @@ export function ProductsPage() {
       {activeTab === "categories" ? (
         <CategoryManager />
       ) : (
+        <>
+        {lowStock && lowStock.length > 0 && (
+          <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
+            <button
+              onClick={() => setShowLowStock((v) => !v)}
+              className="w-full flex items-center gap-2 px-4 py-3 text-left"
+            >
+              <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+              <span className="text-sm font-medium text-amber-800 dark:text-amber-300">
+                {t("lowStock.banner", { count: lowStock.length })}
+              </span>
+              <span className="ml-auto text-xs text-amber-700 dark:text-amber-400">
+                {showLowStock ? t("lowStock.hide") : t("lowStock.show")}
+              </span>
+            </button>
+            {showLowStock && (
+              <div className="border-t border-amber-200 dark:border-amber-800 divide-y divide-amber-200/60 dark:divide-amber-800/60">
+                {lowStock.map((item) => (
+                  <div
+                    key={`${item.product_id}-${item.variant_id ?? "root"}`}
+                    className="flex items-center justify-between px-4 py-2 text-sm"
+                  >
+                    <span className="text-gray-800 dark:text-gray-200 truncate">
+                      {item.designation}
+                      {item.variant_name ? ` — ${item.variant_name}` : ""}
+                    </span>
+                    <Badge variant={item.quantity > 0 ? "warning" : "danger"}>
+                      {t("fields.quantity")}: {item.quantity}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
         <Card>
           <CardHeader>
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -255,9 +339,15 @@ export function ProductsPage() {
                           <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{product.designation}</p>
                         </div>
                         <div className="flex items-center gap-1 shrink-0">
+                          {!product.is_service && (
+                            <>
+                              {canEdit && <button onClick={() => handleAdjustStock(product)} className="p-1 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400" aria-label={t("adjustStock.title")} title={t("adjustStock.title")}><SlidersHorizontal className="h-4 w-4" /></button>}
+                              <button onClick={() => setMovementsProduct(product)} className="p-1 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400" aria-label={t("movements.title")} title={t("movements.title")}><History className="h-4 w-4" /></button>
+                            </>
+                          )}
                           <button onClick={() => setSupplierProductId(product.id)} className="p-1 text-gray-500 hover:text-amber-600 dark:hover:text-amber-400" aria-label={t("fields.suppliers")} title={t("fields.suppliers")}><Truck className="h-4 w-4" /></button>
-                          <button onClick={() => handleOpenModal(product)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>
-                          <button onClick={() => setDeleteConfirmId(product.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>
+                          {canEdit && <button onClick={() => handleOpenModal(product)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
+                          {canDelete && <button onClick={() => setDeleteConfirmId(product.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
                         </div>
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
@@ -269,9 +359,21 @@ export function ProductsPage() {
                       <div className="flex items-center justify-between mt-1.5">
                         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatCurrency(product.unit_price)}</span>
                         {!product.is_service && (
-                          <Badge variant={(product.quantity ?? 0) > 0 ? "success" : "danger"}>
-                            {t("fields.quantity")}: {product.quantity ?? 0}
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant={(product.quantity ?? 0) > 0 ? "success" : "danger"}>
+                              {t("fields.quantity")}: {product.quantity ?? 0}
+                            </Badge>
+                            {multiLocation && (
+                              <button
+                                onClick={() => setStockLocationsProduct(product)}
+                                aria-label={t("stockLocations.title")}
+                                title={t("stockLocations.title")}
+                                className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
+                              >
+                                <MapPin className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
@@ -355,13 +457,47 @@ export function ProductsPage() {
                         {product.is_service ? (
                           <span className="text-gray-400 dark:text-gray-500">-</span>
                         ) : (
-                          <Badge variant={(product.quantity ?? 0) > 0 ? "success" : "danger"}>
-                            {product.quantity ?? 0}
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant={(product.quantity ?? 0) > 0 ? "success" : "danger"}>
+                              {product.quantity ?? 0}
+                            </Badge>
+                            {multiLocation && (
+                              <button
+                                onClick={() => setStockLocationsProduct(product)}
+                                aria-label={t("stockLocations.title")}
+                                title={t("stockLocations.title")}
+                                className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                              >
+                                <MapPin className="h-4 w-4" />
+                              </button>
+                            )}
+                          </div>
                         )}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
+                          {!product.is_service && (
+                            <>
+                              {canEdit && (
+                              <button
+                                onClick={() => handleAdjustStock(product)}
+                                aria-label={t("adjustStock.title")}
+                                title={t("adjustStock.title")}
+                                className="p-1 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                              >
+                                <SlidersHorizontal className="h-4 w-4" />
+                              </button>
+                              )}
+                              <button
+                                onClick={() => setMovementsProduct(product)}
+                                aria-label={t("movements.title")}
+                                title={t("movements.title")}
+                                className="p-1 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                              >
+                                <History className="h-4 w-4" />
+                              </button>
+                            </>
+                          )}
                           <button
                             onClick={() => setSupplierProductId(product.id)}
                             aria-label={t("fields.suppliers")}
@@ -370,6 +506,7 @@ export function ProductsPage() {
                           >
                             <Truck className="h-4 w-4" />
                           </button>
+                          {canEdit && (
                           <button
                             onClick={() => handleOpenModal(product)}
                             aria-label={tCommon("buttons.edit")}
@@ -377,6 +514,8 @@ export function ProductsPage() {
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
+                          )}
+                          {canDelete && (
                           <button
                             onClick={() => setDeleteConfirmId(product.id)}
                             aria-label={tCommon("buttons.delete")}
@@ -385,6 +524,7 @@ export function ProductsPage() {
                           >
                             <Trash2 className="h-4 w-4" />
                           </button>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -401,6 +541,7 @@ export function ProductsPage() {
             </div>
           </CardContent>
         </Card>
+        </>
       )}
 
       <ImportDialog
@@ -458,12 +599,33 @@ export function ProductsPage() {
         )}
       </Modal>
 
-      <BulkActionBar
-        selectedCount={selection.selectedCount}
-        onDelete={() => setBulkDeleteOpen(true)}
-        onClear={selection.clear}
-        isDeleting={batchDeleteProducts.isPending}
+      <AdjustStockModal
+        key={adjustStockProduct?.id ?? "none"}
+        isOpen={!!adjustStockProduct}
+        onClose={() => setAdjustStockProduct(null)}
+        product={adjustStockProduct}
       />
+
+      <StockMovementsModal
+        isOpen={!!movementsProduct}
+        onClose={() => setMovementsProduct(null)}
+        product={movementsProduct}
+      />
+
+      <StockByLocationModal
+        isOpen={!!stockLocationsProduct}
+        onClose={() => setStockLocationsProduct(null)}
+        product={stockLocationsProduct}
+      />
+
+      {canDelete && (
+        <BulkActionBar
+          selectedCount={selection.selectedCount}
+          onDelete={() => setBulkDeleteOpen(true)}
+          onClear={selection.clear}
+          isDeleting={batchDeleteProducts.isPending}
+        />
+      )}
       <BulkDeleteModal
         isOpen={bulkDeleteOpen}
         onClose={() => setBulkDeleteOpen(false)}

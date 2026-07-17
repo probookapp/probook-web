@@ -1,9 +1,15 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { requirePermission } from "@/lib/permissions-server";
+import { applyStockChange } from "@/lib/stock";
+import { computeStampDuty } from "@/lib/stamp-duty";
 import { createHash } from "crypto";
 
-export const POST = withAuth(async (req, { tenantId, params }) => {
+export const POST = withAuth(async (req, { session, tenantId, params }) => {
+  const denied = await requirePermission(session, "invoices", "edit");
+  if (denied) return denied;
+
   const invoice = await prisma.invoice.findFirst({
     where: { tenantId, id: params?.id },
     include: { lines: { orderBy: { position: "asc" } }, client: true },
@@ -13,6 +19,19 @@ export const POST = withAuth(async (req, { tenantId, params }) => {
   if (invoice.status !== "DRAFT") {
     return NextResponse.json({ error: "Only DRAFT invoices can be issued" }, { status: 400 });
   }
+
+  // Snapshot the droit de timbre at issue time: only for cash-settled invoices
+  // at/above the configured threshold, when the feature is enabled. It's a
+  // surcharge on the TTC total, not part of revenue/VAT. Otherwise stays 0.
+  const settings = await prisma.companySettings.findFirst({ where: { tenantId } });
+  const stampDuty = computeStampDuty({
+    enabled: settings?.stampDutyEnabled,
+    rate: settings?.stampDutyRate,
+    threshold: settings?.stampDutyThreshold,
+    isCashSale: invoice.isCashSale,
+    total: invoice.total,
+    isDraft: false,
+  });
 
   // Compute integrity hash from key fields
   const hashInput = [
@@ -34,6 +53,7 @@ export const POST = withAuth(async (req, { tenantId, params }) => {
     data: {
       status: "ISSUED",
       integrityHash,
+      stampDuty,
     },
     include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
   });
@@ -41,20 +61,33 @@ export const POST = withAuth(async (req, { tenantId, params }) => {
   // Decrement stock and freeze the cost price snapshot on each product line.
   // The snapshot is what makes COGS / profit reports stable when product purchase prices change later.
   for (const line of updated.lines) {
-    if (line.productId) {
-      const product = await prisma.product.findUnique({ where: { id: line.productId } });
-      if (product) {
-        const newQty = Math.max(0, (product.quantity ?? 0) - Math.round(line.quantity));
-        await prisma.product.update({
-          where: { tenantId, id: line.productId },
-          data: { quantity: newQty },
-        });
-        await prisma.invoiceLine.update({
-          where: { id: line.id },
-          data: { costPriceSnapshot: product.purchasePrice ?? 0 },
-        });
-      }
-    }
+    if (!line.productId) continue;
+    const product = await prisma.product.findUnique({ where: { id: line.productId } });
+    if (!product) continue;
+
+    // Freeze the COGS basis before touching stock.
+    await prisma.invoiceLine.update({
+      where: { id: line.id },
+      data: { costPriceSnapshot: product.purchasePrice ?? 0 },
+    });
+
+    // Services carry no stock.
+    if (product.isService) continue;
+
+    // Route through the stock engine rather than writing product.quantity
+    // directly: a direct write skips stock_levels and the ledger, silently
+    // drifting the aggregate away from the sum of per-location levels.
+    // Invoices aren't location-scoped, so this deducts from the tenant's
+    // default location (applyStockChange resolves it when locationId is omitted).
+    await applyStockChange(prisma, {
+      tenantId,
+      productId: line.productId,
+      type: "sale",
+      quantityChange: -Math.round(line.quantity),
+      referenceType: "invoice",
+      referenceId: updated.id,
+      userId: session.userId,
+    });
   }
 
   return NextResponse.json(toSnakeCase(updated));

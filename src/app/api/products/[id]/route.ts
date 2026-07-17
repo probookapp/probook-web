@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { applyStockChange } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { productSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const product = await prisma.product.findFirst({
@@ -13,15 +15,40 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(product));
 });
 
-export const PUT = withAuth(async (req, { tenantId, params }) => {
+export const PUT = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "products", "edit");
+  if (denied) return denied;
   const body = await validateBody(req, productSchema);
   if (isValidationError(body)) return body;
   const productId = params?.id as string;
   const prices = body.prices || [];
 
+  const existing = await prisma.product.findFirst({
+    where: { tenantId, id: productId },
+    select: { quantity: true },
+  });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
+  const newQuantity = body.quantity ?? 0;
+  const quantityDelta = newQuantity - (existing.quantity ?? 0);
+
   const product = await prisma.$transaction(async (tx) => {
     // Delete existing prices and recreate atomically
     await tx.productPrice.deleteMany({ where: { productId, tenantId } });
+
+    // Record a manual adjustment for a direct quantity edit. applyStockChange sets
+    // the new balance, so quantity is intentionally omitted from the update below.
+    if (quantityDelta !== 0) {
+      await applyStockChange(tx, {
+        tenantId,
+        productId,
+        type: "adjustment",
+        quantityChange: quantityDelta,
+        reason: "manual edit",
+        referenceType: "manual",
+        userId: session.userId,
+      });
+    }
 
     return tx.product.update({
       where: { tenantId, id: productId },
@@ -36,7 +63,7 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
         barcode: body.barcode || null,
         isService: body.is_service || false,
         categoryId: body.category_id || null,
-        quantity: body.quantity ?? 0,
+        ...(quantityDelta === 0 ? { quantity: newQuantity } : {}),
         purchasePrice: body.purchase_price ?? 0,
         hasVariants: body.has_variants || false,
         prices: prices.length > 0 ? {
@@ -54,7 +81,9 @@ export const PUT = withAuth(async (req, { tenantId, params }) => {
   return NextResponse.json(toSnakeCase(product));
 });
 
-export const DELETE = withAuth(async (req, { tenantId, params }) => {
+export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "products", "delete");
+  if (denied) return denied;
   const productId = params?.id as string;
 
   // Prevent deleting products referenced in purchase orders

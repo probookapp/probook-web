@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { applyStockChange } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { posTransactionSchema } from "@/lib/validations";
+import { requirePermission } from "@/lib/permissions-server";
 
 interface PosLineInput {
   product_id?: string | null;
@@ -25,6 +27,8 @@ interface PosPaymentInput {
 }
 
 export const POST = withAuth(async (req, { tenantId, session: authSession }) => {
+  const denied = await requirePermission(authSession, "pos", "create");
+  if (denied) return denied;
   const body = await validateBody(req, posTransactionSchema);
   if (isValidationError(body)) return body;
 
@@ -77,6 +81,15 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
   const discountAmount = body.discount_amount || (total * discountPercent / 100);
   const finalAmount = total - discountAmount;
 
+  // Resolve the sale's location from its register. Stock is deducted from the
+  // register's configured location; when the register has none, applyStockChange
+  // falls back to the tenant's default location (null → default).
+  const register = await prisma.posRegister.findFirst({
+    where: { tenantId, id: body.register_id },
+    select: { locationId: true },
+  });
+  const saleLocationId = register?.locationId ?? null;
+
   const transaction = await prisma.posTransaction.create({
     data: {
       tenantId,
@@ -127,22 +140,33 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
     include: { lines: true, payments: true },
   });
 
-  // Update stock for product lines (prevent going below zero)
+  // Update stock for product lines via the inventory ledger (clamps at zero).
   for (const line of lines) {
     const qty = Math.round(line.quantity);
     if (line.variant_id) {
-      const variant = await prisma.productVariant.findUnique({ where: { id: line.variant_id } });
-      const newQty = Math.max(0, (variant?.quantity ?? 0) - qty);
-      await prisma.productVariant.update({
-        where: { id: line.variant_id },
-        data: { quantity: newQty },
+      const productId = variantToProduct.get(line.variant_id) ?? line.product_id;
+      if (!productId) continue;
+      await applyStockChange(prisma, {
+        tenantId,
+        productId,
+        variantId: line.variant_id,
+        locationId: saleLocationId,
+        type: "sale",
+        quantityChange: -qty,
+        referenceType: "pos_transaction",
+        referenceId: transaction.id,
+        userId: authSession.userId,
       });
     } else if (line.product_id) {
-      const product = await prisma.product.findUnique({ where: { id: line.product_id } });
-      const newQty = Math.max(0, (product?.quantity ?? 0) - qty);
-      await prisma.product.update({
-        where: { tenantId, id: line.product_id },
-        data: { quantity: newQty },
+      await applyStockChange(prisma, {
+        tenantId,
+        productId: line.product_id,
+        locationId: saleLocationId,
+        type: "sale",
+        quantityChange: -qty,
+        referenceType: "pos_transaction",
+        referenceId: transaction.id,
+        userId: authSession.userId,
       });
     }
   }

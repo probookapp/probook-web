@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { parseImportFile } from "@/lib/parse-import-file";
+import { recordInitialStock } from "@/lib/stock";
 
 export const POST = withAuth(async (req, { tenantId }) => {
   const formData = await req.formData();
@@ -29,7 +30,10 @@ export const POST = withAuth(async (req, { tenantId }) => {
         continue;
       }
 
-      await prisma.product.create({
+      const isService = row.is_service === "true" || row.service === "true";
+      const quantity = parseFloat(row.quantity || row.quantite || "0");
+
+      const created = await prisma.product.create({
         data: {
           tenantId,
           designation,
@@ -39,11 +43,22 @@ export const POST = withAuth(async (req, { tenantId }) => {
           unit: row.unit || row.unite || "unit",
           reference: row.reference || null,
           barcode: row.barcode || row.code_barre || null,
-          isService: row.is_service === "true" || row.service === "true",
-          quantity: parseFloat(row.quantity || row.quantite || "0"),
+          isService,
+          quantity,
           purchasePrice: parseFloat(row.purchase_price || row.prix_achat || "0"),
         },
       });
+
+      // Seed a per-location stock level so imported products are consistent
+      // with the multi-location stock engine (skips services / zero qty).
+      if (!isService && quantity > 0) {
+        await recordInitialStock(prisma, {
+          tenantId,
+          productId: created.id,
+          quantity,
+          referenceType: "import",
+        });
+      }
       imported++;
     } catch (e: unknown) {
       errors.push(`Row ${i + 2}: ${e instanceof Error ? e.message : "Unknown error"}`);

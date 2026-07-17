@@ -157,5 +157,48 @@
   "messages": {
     "deleteBlocked": "لا يمكن حذف منتج لديه طلبات شراء",
     "deleteError": "فشل في حذف المنتج"
+  },
+  "adjustStock": {
+    "title": "تعديل المخزون",
+    "location": "الموقع",
+    "defaultLocation": "الموقع الافتراضي",
+    "variant": "المتغير",
+    "currentStock": "المخزون الحالي",
+    "setMode": "تحديد الكمية",
+    "deltaMode": "إضافة / إزالة",
+    "newQuantity": "الكمية الجديدة",
+    "quantityChange": "تغيير الكمية (+/-)",
+    "deltaPlaceholder": "مثال: -3 أو 5",
+    "reason": "السبب",
+    "reasonPlaceholder": "سبب التعديل (اختياري)",
+    "apply": "تطبيق",
+    "success": "تم تعديل المخزون",
+    "error": "فشل في تعديل المخزون",
+    "noChange": "لا يوجد تغيير في الكمية",
+    "invalidValue": "أدخل رقمًا صحيحًا"
+  },
+  "movements": {
+    "title": "حركات المخزون",
+    "empty": "لا توجد حركات مخزون بعد",
+    "balance": "الرصيد",
+    "types": {
+      "initial": "أولي",
+      "sale": "بيع",
+      "purchase": "شراء",
+      "adjustment": "تعديل",
+      "return": "إرجاع"
+    }
+  },
+  "lowStock": {
+    "banner": "{{count}} عنصر بمخزون منخفض",
+    "show": "عرض",
+    "hide": "إخفاء"
+  },
+  "stockLocations": {
+    "title": "المخزون حسب الموقع",
+    "location": "الموقع",
+    "variant": "المتغير",
+    "quantity": "الكمية",
+    "noData": "لا يوجد مخزون مسجل عبر المواقع"
   }
 }
