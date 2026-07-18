@@ -37,11 +37,15 @@ test.describe("Stamp duty & tax reporting", () => {
     expect(settings.body.stamp_duty_enabled).toBe(true);
     expect(settings.body.stamp_duty_rate).toBe(1);
 
-    // ── Issue an invoice (total 1000, 0% VAT) => stamp duty snapshot = 10 ─────
+    // ── Issue a CASH invoice (total 1000, 0% VAT) => stamp duty snapshot = 10 ──
+    // Droit de timbre only applies to cash-settled invoices, so the sale must be
+    // flagged is_cash_sale (the invoice form defaults this on when timbre is
+    // enabled; here we set it explicitly since we post via the API).
     const client = await setupClient(page, "Timbre Client");
     const inv = await apiPost(page, "/api/invoices", {
       client_id: client.id,
       issue_date: today(),
+      is_cash_sale: true,
       lines: [{ description: "Cash sale", quantity: 1, unit_price: 1000, tax_rate: 0 }],
     });
     expect(inv.status).toBe(200);
