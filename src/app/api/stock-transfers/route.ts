@@ -68,76 +68,117 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       return NextResponse.json({ error: "Each line needs a product and a positive quantity" }, { status: 400 });
     }
     const key = `${line.product_id}::${line.variant_id ?? ""}`;
-    requested.set(key, (requested.get(key) ?? 0) + line.quantity);
+    requested.set(key, (requested.get(key) ?? 0) + Math.round(line.quantity));
   }
 
-  for (const [key, totalQty] of requested) {
-    const [productId, variantId] = key.split("::");
-    const level = await prisma.stockLevel.findFirst({
-      where: {
-        locationId: from_location_id,
-        productId,
-        variantId: variantId || null,
-      },
-      select: { quantity: true },
+  // Validate every referenced product/variant belongs to the tenant.
+  const productIds = Array.from(new Set(lines.map((l) => l.product_id)));
+  const products = await prisma.product.findMany({
+    where: { tenantId, id: { in: productIds } },
+    select: { id: true },
+  });
+  if (products.length !== productIds.length) {
+    return NextResponse.json({ error: "One or more products do not exist" }, { status: 400 });
+  }
+  const variantIds = Array.from(
+    new Set(lines.map((l) => l.variant_id).filter((id): id is string => !!id))
+  );
+  if (variantIds.length > 0) {
+    const variants = await prisma.productVariant.findMany({
+      where: { tenantId, id: { in: variantIds } },
+      select: { id: true },
     });
-    if ((level?.quantity ?? 0) < totalQty) {
+    if (variants.length !== variantIds.length) {
+      return NextResponse.json({ error: "One or more variants do not exist" }, { status: 400 });
+    }
+  }
+
+  // Sentinel thrown inside the transaction when the source can't cover a line;
+  // rolls the whole transfer back instead of clamping the out leg at zero
+  // (clamping would credit the destination with stock never removed).
+  const INSUFFICIENT = new Error("insufficient stock at source");
+
+  let transfer;
+  try {
+    transfer = await prisma.$transaction(async (tx) => {
+      // Re-check availability UNDER LOCK: `FOR UPDATE` on the source level rows
+      // serializes concurrent transfers of the same item, so the pre-checked
+      // quantity can't be spent by a racing request between check and apply.
+      for (const [key, totalQty] of requested) {
+        const [productId, variantId] = key.split("::");
+        const level = await tx.stockLevel.findFirst({
+          where: {
+            locationId: from_location_id,
+            productId,
+            variantId: variantId || null,
+          },
+          select: { id: true },
+        });
+        let available = 0;
+        if (level) {
+          const locked = await tx.$queryRaw<Array<{ quantity: number }>>`
+            SELECT "quantity" FROM "stock_levels" WHERE "id" = ${level.id} FOR UPDATE`;
+          available = locked[0]?.quantity ?? 0;
+        }
+        if (available < totalQty) throw INSUFFICIENT;
+      }
+      const created = await tx.stockTransfer.create({
+        data: {
+          tenantId,
+          transferNumber: generateTransferNumber(),
+          fromLocationId: from_location_id,
+          toLocationId: to_location_id,
+          notes: body.notes || null,
+          createdBy: session.userId,
+          lines: {
+            create: lines.map((l) => ({
+              productId: l.product_id,
+              variantId: l.variant_id ?? null,
+              quantity: Math.round(l.quantity),
+            })),
+          },
+        },
+      });
+
+      for (const line of lines) {
+        const qty = Math.round(line.quantity);
+        // Out of source (never clamps: availability was verified under lock above)
+        await applyStockChange(tx, {
+          tenantId,
+          productId: line.product_id,
+          variantId: line.variant_id ?? null,
+          locationId: from_location_id,
+          type: "transfer_out",
+          quantityChange: -qty,
+          referenceType: "stock_transfer",
+          referenceId: created.id,
+          userId: session.userId,
+        });
+        // Into destination
+        await applyStockChange(tx, {
+          tenantId,
+          productId: line.product_id,
+          variantId: line.variant_id ?? null,
+          locationId: to_location_id,
+          type: "transfer_in",
+          quantityChange: qty,
+          referenceType: "stock_transfer",
+          referenceId: created.id,
+          userId: session.userId,
+        });
+      }
+
+      return created;
+    });
+  } catch (err) {
+    if (err === INSUFFICIENT) {
       return NextResponse.json(
         { error: "Insufficient stock at source location for one or more items" },
-        { status: 400 }
+        { status: 409 }
       );
     }
+    throw err;
   }
-
-  const transfer = await prisma.$transaction(async (tx) => {
-    const created = await tx.stockTransfer.create({
-      data: {
-        tenantId,
-        transferNumber: generateTransferNumber(),
-        fromLocationId: from_location_id,
-        toLocationId: to_location_id,
-        notes: body.notes || null,
-        createdBy: session.userId,
-        lines: {
-          create: lines.map((l) => ({
-            productId: l.product_id,
-            variantId: l.variant_id ?? null,
-            quantity: Math.round(l.quantity),
-          })),
-        },
-      },
-    });
-
-    for (const line of lines) {
-      const qty = Math.round(line.quantity);
-      // Out of source
-      await applyStockChange(tx, {
-        tenantId,
-        productId: line.product_id,
-        variantId: line.variant_id ?? null,
-        locationId: from_location_id,
-        type: "transfer_out",
-        quantityChange: -qty,
-        referenceType: "stock_transfer",
-        referenceId: created.id,
-        userId: session.userId,
-      });
-      // Into destination
-      await applyStockChange(tx, {
-        tenantId,
-        productId: line.product_id,
-        variantId: line.variant_id ?? null,
-        locationId: to_location_id,
-        type: "transfer_in",
-        quantityChange: qty,
-        referenceType: "stock_transfer",
-        referenceId: created.id,
-        userId: session.userId,
-      });
-    }
-
-    return created;
-  });
 
   const full = await prisma.stockTransfer.findUnique({
     where: { id: transfer.id },

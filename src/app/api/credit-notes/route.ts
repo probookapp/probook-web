@@ -3,7 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createCreditNoteSchema } from "@/lib/validations";
-import { createCreditNote } from "@/lib/credit-notes";
+import { createCreditNote, CreditNoteError } from "@/lib/credit-notes";
 import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId, session }) => {
@@ -27,19 +27,26 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   const body = await validateBody(req, createCreditNoteSchema);
   if (isValidationError(body)) return body;
 
-  const creditNote = await prisma.$transaction((tx) =>
-    createCreditNote(tx, {
-      tenantId,
-      userId: session.userId,
-      clientId: body.client_id,
-      invoiceId: body.invoice_id || null,
-      issueDate: body.issue_date,
-      reason: body.reason || null,
-      notes: body.notes || null,
-      restock: !!body.restock,
-      lines: body.lines,
-    })
-  );
+  try {
+    const creditNote = await prisma.$transaction((tx) =>
+      createCreditNote(tx, {
+        tenantId,
+        userId: session.userId,
+        clientId: body.client_id,
+        invoiceId: body.invoice_id || null,
+        issueDate: body.issue_date,
+        reason: body.reason || null,
+        notes: body.notes || null,
+        restock: !!body.restock,
+        lines: body.lines,
+      })
+    );
 
-  return NextResponse.json(toSnakeCase(creditNote));
+    return NextResponse.json(toSnakeCase(creditNote));
+  } catch (err) {
+    if (err instanceof CreditNoteError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
+    }
+    throw err;
+  }
 });

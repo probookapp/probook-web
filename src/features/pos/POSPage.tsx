@@ -27,7 +27,8 @@ import { useSettingsStore } from "@/stores/useSettingsStore";
 import { toast } from "@/stores/useToastStore";
 import { printReceiptWindow, type ReceiptData } from "@/lib/receipt-printer";
 import { queueTransaction, getPendingCount, type OfflineTransactionInput } from "@/lib/offline-queue";
-import { syncOfflineTransactions, isOnline, startAutoSync } from "@/lib/offline-sync";
+import { syncOfflineTransactions, isOnline, startAutoSync, OFFLINE_SYNC_COMPLETE_EVENT } from "@/lib/offline-sync";
+import { posKeys } from "./hooks/usePosSession";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { lookupBarcodeOffline } from "@/lib/offline-barcode";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
@@ -137,6 +138,21 @@ export function POSPage() {
     return () => { stop(); clearInterval(interval); };
   }, []);
 
+  // Replayed offline sales change server-side stock and session totals, so
+  // refresh the POS caches whenever a sync pass lands transactions.
+  useEffect(() => {
+    const onSynced = () => {
+      getPendingCount().then(setOfflinePending).catch(() => {});
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["pos-products"] });
+      queryClient.invalidateQueries({ queryKey: posKeys.transactions() });
+      queryClient.invalidateQueries({ queryKey: posKeys.sessions() });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    };
+    window.addEventListener(OFFLINE_SYNC_COMPLETE_EVENT, onSynced);
+    return () => window.removeEventListener(OFFLINE_SYNC_COMPLETE_EVENT, onSynced);
+  }, [queryClient]);
+
   // Sync session state
   useEffect(() => {
     if (activeSession && currentRegister) {
@@ -237,6 +253,10 @@ export function POSPage() {
       register_id: currentRegister.id,
       session_id: currentSession.id,
       client_id: clientId,
+      // One key per finalize attempt: the online path, the offline queue and
+      // any later replay all send the SAME key, so the server records the sale
+      // at most once even when a response is lost mid-flight.
+      idempotency_key: crypto.randomUUID(),
       lines: items.map((item) => ({
         product_id: item.productId,
         variant_id: item.variantId,

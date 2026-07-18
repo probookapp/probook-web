@@ -75,7 +75,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
             tenantId,
             sessionId: body.session_id!,
             userId: session.userId,
-            movementType: "CASH_OUT",
+            movementType: "OUT",
             amount: order.total,
             reason: `Purchase Order ${order.orderNumber}`,
           },

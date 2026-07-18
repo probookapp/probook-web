@@ -52,40 +52,48 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
     }
   }
 
-  const variant = await prisma.productVariant.create({
-    data: {
-      tenantId,
-      productId,
-      name: body.name,
-      sku: body.sku || null,
-      barcode: body.barcode || null,
-      attributes: (body.attributes || {}) as Record<string, string>,
-      quantity: body.quantity ?? 0,
-      priceOverride: body.price_override ?? null,
-      isActive: body.is_active ?? true,
-    },
+  // Create the variant, seed its initial stock and flag the parent atomically:
+  // the variant's aggregate quantity, its stock level and the ledger row must
+  // never diverge (stock.ts accounting keeps variant stock on the variant only;
+  // the parent product's aggregate is not part of variant stock).
+  const variant = await prisma.$transaction(async (tx) => {
+    const created = await tx.productVariant.create({
+      data: {
+        tenantId,
+        productId,
+        name: body.name,
+        sku: body.sku || null,
+        barcode: body.barcode || null,
+        attributes: (body.attributes || {}) as Record<string, string>,
+        quantity: body.quantity ?? 0,
+        priceOverride: body.price_override ?? null,
+        isActive: body.is_active ?? true,
+      },
+    });
+
+    // Seed an "initial" ledger entry when the variant starts with stock on hand.
+    if ((created.quantity ?? 0) > 0) {
+      await recordInitialStock(tx, {
+        tenantId,
+        productId,
+        variantId: created.id,
+        quantity: created.quantity ?? 0,
+        reason: "initial stock",
+        referenceType: "manual",
+        userId: session.userId,
+      });
+    }
+
+    // Ensure product is marked as having variants
+    if (!product.hasVariants) {
+      await tx.product.update({
+        where: { tenantId, id: productId },
+        data: { hasVariants: true },
+      });
+    }
+
+    return created;
   });
-
-  // Seed an "initial" ledger entry when the variant starts with stock on hand.
-  if ((variant.quantity ?? 0) > 0) {
-    await recordInitialStock(prisma, {
-      tenantId,
-      productId,
-      variantId: variant.id,
-      quantity: variant.quantity ?? 0,
-      reason: "initial stock",
-      referenceType: "manual",
-      userId: session.userId,
-    });
-  }
-
-  // Ensure product is marked as having variants
-  if (!product.hasVariants) {
-    await prisma.product.update({
-      where: { tenantId, id: productId },
-      data: { hasVariants: true },
-    });
-  }
 
   return NextResponse.json(toSnakeCase(variant));
 });

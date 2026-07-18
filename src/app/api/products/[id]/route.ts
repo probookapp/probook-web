@@ -18,6 +18,15 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
 export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   const denied = await requirePermission(session, "products", "edit");
   if (denied) return denied;
+  // productSchema defaults an omitted quantity to 0, so an "omitted vs explicit
+  // 0" check must look at the raw body before validation fills the default —
+  // otherwise an update that never mentions quantity wipes stock to zero.
+  const rawBody = (await req
+    .clone()
+    .json()
+    .catch(() => null)) as Record<string, unknown> | null;
+  const hasQuantity =
+    !!rawBody && rawBody.quantity !== undefined && rawBody.quantity !== null;
   const body = await validateBody(req, productSchema);
   if (isValidationError(body)) return body;
   const productId = params?.id as string;
@@ -29,8 +38,8 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const newQuantity = body.quantity ?? 0;
-  const quantityDelta = newQuantity - (existing.quantity ?? 0);
+  // Only treat quantity as a stock adjustment when it was actually sent.
+  const quantityDelta = hasQuantity ? body.quantity - (existing.quantity ?? 0) : 0;
 
   const product = await prisma.$transaction(async (tx) => {
     // Delete existing prices and recreate atomically
@@ -63,7 +72,7 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
         barcode: body.barcode || null,
         isService: body.is_service || false,
         categoryId: body.category_id || null,
-        ...(quantityDelta === 0 ? { quantity: newQuantity } : {}),
+        ...(hasQuantity && quantityDelta === 0 ? { quantity: body.quantity } : {}),
         purchasePrice: body.purchase_price ?? 0,
         hasVariants: body.has_variants || false,
         prices: prices.length > 0 ? {

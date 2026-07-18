@@ -25,14 +25,18 @@ export const GET = withAuth(async (req, { tenantId }) => {
     include: { payments: true, lines: true },
   });
 
-  // Get register name if specific register requested
+  // Get register name if specific register requested (tenant-scoped — a foreign
+  // register id must not leak another tenant's register name)
   let registerName: string | null = null;
   if (registerId) {
-    const register = await prisma.posRegister.findUnique({
-      where: { id: registerId },
+    const register = await prisma.posRegister.findFirst({
+      where: { tenantId, id: registerId },
       select: { name: true },
     });
-    registerName = register?.name || null;
+    if (!register) {
+      return NextResponse.json({ error: "Register not found" }, { status: 404 });
+    }
+    registerName = register.name;
   }
 
   // Count distinct sessions
@@ -61,6 +65,20 @@ export const GET = withAuth(async (req, { tenantId }) => {
   const cancelledCount = cancelledTxs.length;
   const cancelledTotal = cancelledTxs.reduce((sum, tx) => sum + tx.finalAmount, 0);
 
+  // The day's cash OUT movements (refunds, drops, cancellations, purchases paid
+  // from the till) reduce the drawer, so net them off the cash figure to make
+  // it tie to what's actually in the drawer.
+  const outMovements = await prisma.posCashMovement.aggregate({
+    where: {
+      tenantId,
+      movementType: "OUT",
+      createdAt: { gte: dayStart, lte: dayEnd },
+      ...(registerId ? { session: { registerId } } : {}),
+    },
+    _sum: { amount: true },
+  });
+  const cashOutTotal = outMovements._sum.amount ?? 0;
+
   return NextResponse.json(
     toSnakeCase({
       date,
@@ -71,7 +89,11 @@ export const GET = withAuth(async (req, { tenantId }) => {
       totalSales,
       subtotal,
       taxAmount,
+      // Gross cash collected on sales; cashOutTotal is the day's cash paid back
+      // out; netCashSales = cashSales - cashOutTotal ties to the drawer.
       cashSales,
+      cashOutTotal,
+      netCashSales: cashSales - cashOutTotal,
       cardSales,
       cancelledCount,
       cancelledTotal,

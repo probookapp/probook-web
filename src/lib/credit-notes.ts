@@ -1,20 +1,29 @@
 import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "./db";
 import { applyStockChange } from "./stock";
+import { allocateDocumentNumber } from "./document-numbering";
 
 /**
  * Shared credit-note creation logic used by both the credit-notes API and the
  * POS refund flow.
  *
- * Handles: separate credit-note numbering (mirrors invoice numbering), total
- * computation from lines, line creation, optional restock via the shared stock
- * ledger, and bumping `nextCreditNoteNumber` on the settings row.
+ * Handles: separate credit-note numbering (atomic counter, mirrors invoice
+ * numbering), total computation from lines, line creation, optional restock via
+ * the shared stock ledger, plus tenant validation of the client/invoice and an
+ * over-credit cap for invoice-linked notes.
  *
  * Pass a transaction client (`prisma.$transaction(tx => ...)`) so numbering,
  * creation, restock and the counter bump all commit atomically.
  */
 
 type Db = Prisma.TransactionClient | typeof prisma;
+
+/** Business-rule failure — callers map it to an HTTP response. */
+export class CreditNoteError extends Error {
+  constructor(message: string, public status: number) {
+    super(message);
+  }
+}
 
 export interface CreditNoteLineInput {
   product_id?: string | null;
@@ -55,15 +64,49 @@ function computeTotals(lines: CreditNoteLineInput[]) {
 /**
  * Create a credit note (with lines) inside the given db/transaction client.
  * Restocks returned product lines when `restock` is true.
+ *
+ * Throws {@link CreditNoteError} when the client/invoice doesn't belong to the
+ * tenant (404) or the note would over-credit its linked invoice (409).
  */
 export async function createCreditNote(db: Db, input: CreateCreditNoteInput) {
-  const settings = await db.companySettings.findFirst({ where: { tenantId: input.tenantId } });
-  const nextNum = settings?.nextCreditNoteNumber ?? 1;
-  const prefix = settings?.creditNotePrefix ?? "CN-";
-  const creditNoteNumber = `${prefix}${String(nextNum).padStart(5, "0")}`;
+  // The client (and invoice, when linked) must belong to the tenant.
+  const client = await db.client.findFirst({
+    where: { tenantId: input.tenantId, id: input.clientId },
+    select: { id: true },
+  });
+  if (!client) throw new CreditNoteError("Client not found", 404);
 
   const lines = input.lines || [];
   const totals = computeTotals(lines);
+
+  if (input.invoiceId) {
+    const invoice = await db.invoice.findFirst({
+      where: { tenantId: input.tenantId, id: input.invoiceId },
+      select: { id: true, total: true, stampDuty: true },
+    });
+    if (!invoice) throw new CreditNoteError("Invoice not found", 404);
+
+    // Cap the total credited against this invoice at what the client actually
+    // owed (total + stamp duty), minus prior credit notes for the same invoice.
+    const prior = await db.creditNote.aggregate({
+      where: { tenantId: input.tenantId, invoiceId: invoice.id },
+      _sum: { total: true },
+    });
+    const alreadyCredited = prior._sum.total ?? 0;
+    const creditable = invoice.total + (invoice.stampDuty ?? 0) - alreadyCredited;
+    if (totals.total > creditable + 1e-6) {
+      throw new CreditNoteError(
+        "Credit note exceeds the remaining creditable amount for this invoice",
+        409
+      );
+    }
+  }
+
+  const settings = await db.companySettings.findFirst({ where: { tenantId: input.tenantId } });
+  const prefix = settings?.creditNotePrefix ?? "CN-";
+  // Atomic counter allocation — two concurrent creates get distinct numbers.
+  const nextNum = await allocateDocumentNumber(db, input.tenantId, "nextCreditNoteNumber");
+  const creditNoteNumber = `${prefix}${String(nextNum).padStart(5, "0")}`;
 
   const creditNote = await db.creditNote.create({
     data: {
@@ -103,10 +146,19 @@ export async function createCreditNote(db: Db, input: CreateCreditNoteInput) {
 
   if (input.restock) {
     for (const line of lines) {
-      if (!line.product_id) continue;
+      // A variant-only line still restocks: resolve its parent product.
+      let productId = line.product_id || null;
+      if (!productId && line.variant_id) {
+        const variant = await db.productVariant.findFirst({
+          where: { tenantId: input.tenantId, id: line.variant_id },
+          select: { productId: true },
+        });
+        productId = variant?.productId ?? null;
+      }
+      if (!productId) continue;
       await applyStockChange(db, {
         tenantId: input.tenantId,
-        productId: line.product_id,
+        productId,
         variantId: line.variant_id || null,
         locationId: input.locationId ?? null,
         type: "return",
@@ -117,13 +169,6 @@ export async function createCreditNote(db: Db, input: CreateCreditNoteInput) {
         userId: input.userId ?? null,
       });
     }
-  }
-
-  if (settings) {
-    await db.companySettings.update({
-      where: { id: settings.id },
-      data: { nextCreditNoteNumber: nextNum + 1 },
-    });
   }
 
   return creditNote;

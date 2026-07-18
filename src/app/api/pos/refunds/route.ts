@@ -3,7 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { posRefundSchema } from "@/lib/validations";
-import { createCreditNote } from "@/lib/credit-notes";
+import { createCreditNote, CreditNoteError } from "@/lib/credit-notes";
 import { requirePermission } from "@/lib/permissions-server";
 
 // POS sales are often made to walk-in customers with no client record, but a
@@ -129,7 +129,14 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       })
     : null;
   const refundLocationId = register?.locationId ?? null;
-  const paidInCash = transaction.payments.some((p) => p.paymentMethod === "CASH");
+
+  // Net cash the customer actually left in the drawer for this sale: the CASH
+  // payment amounts minus any recorded change. A mixed cash+card sale must only
+  // ever debit the till by its cash portion, never the full refund total.
+  const cashTendered = transaction.payments
+    .filter((p) => p.paymentMethod === "CASH")
+    .reduce((sum, p) => sum + Math.max(0, p.amount - (p.changeGiven ?? 0)), 0);
+  const paidInCash = cashTendered > 0;
 
   // Resolve the till a cash refund is paid from: the cashier's CURRENTLY open
   // session (passed from the POS), validated as OPEN. This is what makes a
@@ -154,41 +161,64 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
     );
   }
 
-  const creditNote = await prisma.$transaction(async (tx) => {
-    const clientId = transaction.clientId ?? (await resolveWalkInClientId(tx, tenantId));
-    const cn = await createCreditNote(tx, {
-      tenantId,
-      userId: session.userId,
-      clientId,
-      invoiceId: transaction.invoiceId || null,
-      posTransactionId: transaction.id,
-      issueDate: new Date(),
-      reason: body.reason || `Refund for ticket ${transaction.ticketNumber}`,
-      notes: body.notes || null,
-      restock: !!body.restock,
-      locationId: refundLocationId,
-      lines: refundLines,
-    });
-
-    // A cash refund reduces the current open till (guaranteed present here — a
-    // missing one was blocked above). This is what makes a cross-session refund
-    // correct: it debits whichever drawer is open now, not the sale's original.
-    if (paidInCash && drawerSessionId) {
-      await tx.posCashMovement.create({
-        data: {
-          tenantId,
-          sessionId: drawerSessionId,
-          userId: session.userId,
-          movementType: "OUT",
-          amount: cn.total,
-          reason: `Refund for ticket ${transaction.ticketNumber}`,
-          reference: cn.creditNoteNumber,
-        },
+  let creditNote;
+  let cashRefundAmount: number;
+  try {
+    ({ creditNote, cashRefundAmount } = await prisma.$transaction(async (tx) => {
+      const clientId = transaction.clientId ?? (await resolveWalkInClientId(tx, tenantId));
+      const cn = await createCreditNote(tx, {
+        tenantId,
+        userId: session.userId,
+        clientId,
+        invoiceId: transaction.invoiceId || null,
+        posTransactionId: transaction.id,
+        issueDate: new Date(),
+        reason: body.reason || `Refund for ticket ${transaction.ticketNumber}`,
+        notes: body.notes || null,
+        restock: !!body.restock,
+        locationId: refundLocationId,
+        lines: refundLines,
       });
+
+      // A cash refund reduces the current open till (guaranteed present here — a
+      // missing one was blocked above). This is what makes a cross-session refund
+      // correct: it debits whichever drawer is open now, not the sale's original.
+      // Capped at the cash actually tendered on the sale so the card portion of a
+      // mixed payment is never paid back out of the drawer.
+      const cashOut = Math.round(Math.min(cn.total, cashTendered) * 100) / 100;
+      if (paidInCash && drawerSessionId && cashOut > 0) {
+        await tx.posCashMovement.create({
+          data: {
+            tenantId,
+            sessionId: drawerSessionId,
+            userId: session.userId,
+            movementType: "OUT",
+            amount: cashOut,
+            reason: `Refund for ticket ${transaction.ticketNumber}`,
+            reference: cn.creditNoteNumber,
+          },
+        });
+      }
+
+      return { creditNote: cn, cashRefundAmount: paidInCash ? cashOut : 0 };
+    }));
+  } catch (err) {
+    if (err instanceof CreditNoteError) {
+      return NextResponse.json({ error: err.message }, { status: err.status });
     }
+    throw err;
+  }
 
-    return cn;
+  const nonCashAmount = Math.round((creditNote.total - cashRefundAmount) * 100) / 100;
+  return NextResponse.json({
+    ...toSnakeCase(creditNote),
+    cash_refund_amount: cashRefundAmount,
+    non_cash_refund_amount: nonCashAmount,
+    ...(nonCashAmount > 0
+      ? {
+          warning:
+            "Part of this refund exceeds the cash paid on the original sale and was not debited from the till (refund it via the original non-cash method).",
+        }
+      : {}),
   });
-
-  return NextResponse.json(toSnakeCase(creditNote));
 });

@@ -16,6 +16,16 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   if (denied) return denied;
   const body = await validateBody(req, updatePosRegisterSchema);
   if (isValidationError(body)) return body;
+  // The stock location a register deducts from must belong to this tenant.
+  if (body.location_id) {
+    const location = await prisma.location.findFirst({
+      where: { tenantId, id: body.location_id },
+      select: { id: true },
+    });
+    if (!location) {
+      return NextResponse.json({ error: "Location not found" }, { status: 400 });
+    }
+  }
   const register = await prisma.posRegister.update({
     where: { tenantId, id: params?.id },
     data: {

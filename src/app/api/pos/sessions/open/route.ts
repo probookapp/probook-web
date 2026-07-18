@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@/generated/prisma/client";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { posSessionOpenSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
@@ -22,15 +23,27 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
     );
   }
 
-  const posSession = await prisma.posSession.create({
-    data: {
-      tenantId,
-      registerId: body.register_id,
-      userId: authSession.userId,
-      openingFloat: body.opening_float ?? 0,
-      status: "OPEN",
-      notes: body.notes || null,
-    },
-  });
-  return NextResponse.json(toSnakeCase(posSession));
+  try {
+    const posSession = await prisma.posSession.create({
+      data: {
+        tenantId,
+        registerId: body.register_id,
+        userId: authSession.userId,
+        openingFloat: body.opening_float ?? 0,
+        status: "OPEN",
+        notes: body.notes || null,
+      },
+    });
+    return NextResponse.json(toSnakeCase(posSession));
+  } catch (err) {
+    // Partial unique index (one OPEN session per register): a concurrent open
+    // slipped past the pre-check above → same 409 as the pre-check.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+      return NextResponse.json(
+        { error: "Register already has an open session" },
+        { status: 409 }
+      );
+    }
+    throw err;
+  }
 });

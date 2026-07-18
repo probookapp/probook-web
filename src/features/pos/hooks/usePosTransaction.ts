@@ -21,6 +21,11 @@ export function useCreateTransaction() {
       queryClient.invalidateQueries({
         queryKey: posKeys.sessionTransactions(variables.session_id),
       });
+      // Session totals and dashboard KPIs change with every sale
+      queryClient.invalidateQueries({
+        queryKey: posKeys.sessionSummary(variables.session_id),
+      });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
       // Invalidate products to reflect stock changes
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["pos-products"] });

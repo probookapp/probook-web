@@ -10,6 +10,23 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
   if (denied) return denied;
   const body = await validateBody(req, posCashMovementSchema);
   if (isValidationError(body)) return body;
+
+  // The movement must land in this tenant's session, and only while it's OPEN —
+  // a closed session's counted drawer must never change after the fact.
+  const posSession = await prisma.posSession.findFirst({
+    where: { tenantId, id: body.session_id },
+    select: { status: true },
+  });
+  if (!posSession) {
+    return NextResponse.json({ error: "Session not found" }, { status: 400 });
+  }
+  if (posSession.status !== "OPEN") {
+    return NextResponse.json(
+      { error: "Cannot record a cash movement on a closed session" },
+      { status: 409 }
+    );
+  }
+
   const movement = await prisma.posCashMovement.create({
     data: {
       tenantId,

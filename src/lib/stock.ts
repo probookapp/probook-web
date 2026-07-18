@@ -144,16 +144,17 @@ async function applyStockChangeTx(
     await tx.stockLevel.update({ where: { id: level.id }, data: { quantity: newAtLocation } });
   }
 
-  // Mirror the applied delta onto the aggregate cache atomically.
+  // Mirror the applied delta onto the aggregate cache atomically. Tenant-scoped
+  // so a forged id can never touch another tenant's aggregate.
   if (appliedDelta !== 0) {
     if (variantId) {
       await tx.productVariant.update({
-        where: { id: variantId },
+        where: { tenantId, id: variantId },
         data: { quantity: { increment: appliedDelta } },
       });
     } else {
       await tx.product.update({
-        where: { id: productId },
+        where: { tenantId, id: productId },
         data: { quantity: { increment: appliedDelta } },
       });
     }

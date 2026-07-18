@@ -8,8 +8,14 @@ export interface OfflineTransactionInput {
   register_id: string;
   session_id: string;
   client_id?: string | null;
+  /**
+   * Minted once per finalize attempt (crypto.randomUUID()). The server dedupes
+   * on it, so replaying a lost-response POST can never double-record the sale.
+   */
+  idempotency_key?: string;
   lines: Array<{
     product_id: string | null;
+    variant_id?: string | null;
     barcode: string | null;
     designation: string;
     quantity: number;
