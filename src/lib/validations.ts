@@ -706,6 +706,7 @@ export const createCreditNoteSchema = z.object({
 
 export const posRefundSchema = z.object({
   transaction_id: requiredString("Transaction ID"),
+  session_id: optionalString,
   reason: optionalString,
   notes: optionalString,
   restock: z.boolean().default(false),

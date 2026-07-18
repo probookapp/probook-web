@@ -131,6 +131,29 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   const refundLocationId = register?.locationId ?? null;
   const paidInCash = transaction.payments.some((p) => p.paymentMethod === "CASH");
 
+  // Resolve the till a cash refund is paid from: the cashier's CURRENTLY open
+  // session (passed from the POS), validated as OPEN. This is what makes a
+  // cross-session refund correct — a sale made in an earlier, now-closed session
+  // still debits whichever drawer is open now, not the original one.
+  let drawerSessionId: string | null = null;
+  if (paidInCash && body.session_id) {
+    const openSession = await prisma.posSession.findFirst({
+      where: { tenantId, id: body.session_id, status: "OPEN" },
+      select: { id: true },
+    });
+    drawerSessionId = openSession?.id ?? null;
+  }
+
+  // A cash refund must always come out of an open, accountable till. If none is
+  // open, block it — the operator (including an admin) simply opens a session
+  // first, which produces a proper drawer record.
+  if (paidInCash && !drawerSessionId) {
+    return NextResponse.json(
+      { error: "Open a POS session before issuing a cash refund." },
+      { status: 400 }
+    );
+  }
+
   const creditNote = await prisma.$transaction(async (tx) => {
     const clientId = transaction.clientId ?? (await resolveWalkInClientId(tx, tenantId));
     const cn = await createCreditNote(tx, {
@@ -147,27 +170,21 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       lines: refundLines,
     });
 
-    // A cash refund reduces the drawer. Post an OUT movement to the sale's
-    // session while it's still OPEN (same-session refund — the common case);
-    // a refund against an already-closed session can't touch that drawer.
-    if (paidInCash) {
-      const openSession = await tx.posSession.findFirst({
-        where: { tenantId, id: transaction.sessionId, status: "OPEN" },
-        select: { id: true },
+    // A cash refund reduces the current open till (guaranteed present here — a
+    // missing one was blocked above). This is what makes a cross-session refund
+    // correct: it debits whichever drawer is open now, not the sale's original.
+    if (paidInCash && drawerSessionId) {
+      await tx.posCashMovement.create({
+        data: {
+          tenantId,
+          sessionId: drawerSessionId,
+          userId: session.userId,
+          movementType: "OUT",
+          amount: cn.total,
+          reason: `Refund for ticket ${transaction.ticketNumber}`,
+          reference: cn.creditNoteNumber,
+        },
       });
-      if (openSession) {
-        await tx.posCashMovement.create({
-          data: {
-            tenantId,
-            sessionId: openSession.id,
-            userId: session.userId,
-            movementType: "OUT",
-            amount: cn.total,
-            reason: `Refund for ticket ${transaction.ticketNumber}`,
-            reference: cn.creditNoteNumber,
-          },
-        });
-      }
     }
 
     return cn;

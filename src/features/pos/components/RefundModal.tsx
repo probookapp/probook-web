@@ -9,11 +9,13 @@ import { useCreatePosRefund } from "../hooks/usePosTransaction";
 
 interface RefundModalProps {
   transaction: PosTransaction;
+  /** The cashier's currently open session — the drawer the refund is paid from. */
+  sessionId: string;
   isOpen: boolean;
   onClose: () => void;
 }
 
-export function RefundModal({ transaction, isOpen, onClose }: RefundModalProps) {
+export function RefundModal({ transaction, sessionId, isOpen, onClose }: RefundModalProps) {
   const { t } = useTranslation("pos");
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const createRefund = useCreatePosRefund();
@@ -64,6 +66,7 @@ export function RefundModal({ transaction, isOpen, onClose }: RefundModalProps) 
     try {
       await createRefund.mutateAsync({
         transaction_id: transaction.id,
+        session_id: sessionId,
         reason: reason || null,
         restock,
         lines: selectedLines,

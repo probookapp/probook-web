@@ -23,7 +23,7 @@ interface TransactionHistoryDrawerProps {
   sessionId: string;
 }
 
-function TransactionRow({ tx, companyName, currency }: { tx: PosTransaction; companyName: string; currency: string }) {
+function TransactionRow({ tx, companyName, currency, sessionId }: { tx: PosTransaction; companyName: string; currency: string; sessionId: string }) {
   const { t } = useTranslation("pos");
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const [expanded, setExpanded] = useState(false);
@@ -215,6 +215,7 @@ function TransactionRow({ tx, companyName, currency }: { tx: PosTransaction; com
       {showRefund && (
         <RefundModal
           transaction={tx}
+          sessionId={sessionId}
           isOpen={showRefund}
           onClose={() => setShowRefund(false)}
         />
@@ -281,7 +282,7 @@ export function TransactionHistoryDrawer({
           ) : (
             <div className="space-y-2">
               {transactions.map((tx) => (
-                <TransactionRow key={tx.id} tx={tx} companyName={companyName} currency={currency} />
+                <TransactionRow key={tx.id} tx={tx} companyName={companyName} currency={currency} sessionId={sessionId} />
               ))}
             </div>
           )}

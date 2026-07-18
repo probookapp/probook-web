@@ -1362,6 +1362,8 @@ export interface CreateCreditNoteInput {
 
 export interface CreatePosRefundInput {
   transaction_id: string;
+  /** The cashier's currently open session — the drawer a cash refund is paid from. */
+  session_id?: string | null;
   reason?: string | null;
   notes?: string | null;
   restock: boolean;
