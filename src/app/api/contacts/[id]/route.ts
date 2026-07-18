@@ -3,9 +3,14 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { contactSchema } from "@/lib/validations";
-import { requirePermission } from "@/lib/permissions-server";
+import { requirePermission, userCan, forbidden } from "@/lib/permissions-server";
 
-export const GET = withAuth(async (req, { tenantId, params }) => {
+export const GET = withAuth(async (req, { tenantId, params, session }) => {
+  // Contacts are readable from both the Clients and Phonebook modules.
+  const canView =
+    (await userCan(session, "clients", "view")) ||
+    (await userCan(session, "phonebook", "view"));
+  if (!canView) return forbidden();
   const contact = await prisma.clientContact.findFirst({ where: { tenantId, id: params?.id } });
   if (!contact) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(toSnakeCase(contact));

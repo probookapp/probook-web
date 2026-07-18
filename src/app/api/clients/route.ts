@@ -6,7 +6,9 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { clientSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 
-export const GET = withAuth(async (req, { tenantId }) => {
+export const GET = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "clients", "view");
+  if (denied) return denied;
   const clients = await prisma.client.findMany({
     where: { tenantId },
     orderBy: { createdAt: "desc" },

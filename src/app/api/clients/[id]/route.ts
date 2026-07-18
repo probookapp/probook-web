@@ -5,7 +5,9 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { clientSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 
-export const GET = withAuth(async (req, { tenantId, params }) => {
+export const GET = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "clients", "view");
+  if (denied) return denied;
   const client = await prisma.client.findFirst({ where: { tenantId, id: params?.id } });
   if (!client) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(toSnakeCase(client));

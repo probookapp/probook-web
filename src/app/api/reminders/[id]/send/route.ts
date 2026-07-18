@@ -9,8 +9,10 @@ import {
   paymentOverdueEmailPlainText,
   quoteExpiringEmailPlainText,
 } from "@/lib/email";
+import { requirePermission } from "@/lib/permissions-server";
+import { reminderDocumentModule } from "../../reminders-shared";
 
-export const POST = withAuth(async (req, { tenantId, params }) => {
+export const POST = withAuth(async (req, { tenantId, params, session }) => {
   const reminder = await prisma.reminder.findFirst({
     where: { tenantId, id: params?.id },
   });
@@ -18,6 +20,15 @@ export const POST = withAuth(async (req, { tenantId, params }) => {
   if (!reminder) {
     return NextResponse.json({ error: "Reminder not found" }, { status: 404 });
   }
+
+  // Sending emails a client about a document requires edit rights on that
+  // document's module.
+  const denied = await requirePermission(
+    session,
+    reminderDocumentModule(reminder.documentType) || "dashboard",
+    "edit"
+  );
+  if (denied) return denied;
 
   if (reminder.sentAt) {
     return NextResponse.json({ error: "Reminder already sent" }, { status: 400 });

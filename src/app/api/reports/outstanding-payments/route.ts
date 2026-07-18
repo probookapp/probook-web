@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
+import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
 
-export const GET = withAuth(async (req, { tenantId }) => {
+export const GET = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "reports", "view");
+  if (denied) return denied;
   const invoices = await prisma.invoice.findMany({
     where: { tenantId, status: "ISSUED" },
     include: { client: true, payments: true },

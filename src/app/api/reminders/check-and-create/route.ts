@@ -1,8 +1,13 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { requirePermission } from "@/lib/permissions-server";
 
-export const POST = withAuth(async (req, { tenantId }) => {
+export const POST = withAuth(async (req, { tenantId, session }) => {
+  // Automatic sweep triggered by the dashboard reminders widget: creates
+  // reminders only from the tenant's own overdue/expiring documents.
+  const denied = await requirePermission(session, "dashboard", "view");
+  if (denied) return denied;
   const now = new Date();
   const created: Awaited<ReturnType<typeof prisma.reminder.create>>[] = [];
 

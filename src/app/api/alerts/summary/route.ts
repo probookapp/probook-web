@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
+import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
 
-export const GET = withAuth(async (req, { tenantId }) => {
+export const GET = withAuth(async (req, { tenantId, session }) => {
+  // The alerts panel is a dashboard feature.
+  const denied = await requirePermission(session, "dashboard", "view");
+  if (denied) return denied;
   const now = new Date();
 
   // Overdue invoices (past due date)

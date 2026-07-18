@@ -1,50 +1,71 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
-import { parseImportFile } from "@/lib/parse-import-file";
+import { Prisma } from "@/generated/prisma/client";
+import { parseImportFile, ImportFileError } from "@/lib/parse-import-file";
+import { requirePermission } from "@/lib/permissions-server";
 
-export const POST = withAuth(async (req, { tenantId }) => {
+export const POST = withAuth(async (req, { tenantId, session }) => {
+  const denied = await requirePermission(session, "suppliers", "create");
+  if (denied) return denied;
+
   const formData = await req.formData();
   const file = formData.get("file") as File | null;
   if (!file) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });
   }
 
-  const { rows } = await parseImportFile(file);
+  let rows: Record<string, string>[];
+  try {
+    ({ rows } = await parseImportFile(file));
+  } catch (e: unknown) {
+    if (e instanceof ImportFileError) {
+      return NextResponse.json({ error: e.message }, { status: 400 });
+    }
+    throw e;
+  }
   if (rows.length === 0) {
     return NextResponse.json({ error: "File is empty or has no data rows" }, { status: 400 });
   }
 
-  let imported = 0;
   let skipped = 0;
   const errors: string[] = [];
+  const data: Prisma.SupplierCreateManyInput[] = [];
 
-  for (let i = 0; i < rows.length; i++) {
-    try {
-      const row = rows[i];
-
-      const name = row.name || row.nom || row.fournisseur;
-      if (!name) {
-        skipped++;
-        continue;
-      }
-
-      await prisma.supplier.create({
-        data: {
-          tenantId,
-          name,
-          email: row.email || null,
-          phone: row.phone || row.telephone || null,
-          address: row.address || row.adresse || null,
-          notes: row.notes || null,
-        },
-      });
-      imported++;
-    } catch (e: unknown) {
-      errors.push(`Row ${i + 2}: ${e instanceof Error ? e.message : "Unknown error"}`);
+  rows.forEach((row, i) => {
+    const name = (row.name || row.nom || row.fournisseur || "").trim();
+    if (!name) {
       skipped++;
+      return;
+    }
+    if (name.length > 500) {
+      errors.push(`Row ${i + 2}: name is too long (max 500 characters)`);
+      skipped++;
+      return;
+    }
+
+    data.push({
+      tenantId,
+      name,
+      email: row.email || null,
+      phone: row.phone || row.telephone || null,
+      address: row.address || row.adresse || null,
+      notes: row.notes || null,
+    });
+  });
+
+  let imported = 0;
+  if (data.length > 0) {
+    try {
+      // Single atomic insert: either every valid row imports or none do.
+      const result = await prisma.supplier.createMany({ data });
+      imported = result.count;
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Unknown error";
+      return NextResponse.json({ error: `Import failed: ${message}` }, { status: 500 });
     }
   }
 
-  return NextResponse.json({ imported, skipped, errors });
+  // `added` mirrors `imported` for the ImportDialog UI, which reads `result.added`.
+  return NextResponse.json({ imported, added: imported, updated: 0, skipped, errors });
 });

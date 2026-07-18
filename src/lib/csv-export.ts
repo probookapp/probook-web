@@ -19,8 +19,20 @@ function formatCell(value: string | number | null | undefined): string {
   if (value == null) return "";
 
   // Numbers: use comma as decimal separator (matches ReportsPage export).
-  const raw =
+  let raw =
     typeof value === "number" ? value.toString().replace(".", ",") : String(value);
+
+  // Neutralize spreadsheet formula injection: a string cell starting with
+  // = + - @ or a tab/CR would execute as a formula in Excel/LibreOffice.
+  // Prefix with a single quote so it renders as text. Numbers (including
+  // negatives) and purely-numeric strings are left untouched.
+  if (
+    typeof value === "string" &&
+    /^[=+\-@\t\r]/.test(raw) &&
+    !/^-?\d+([.,]\d+)?$/.test(raw)
+  ) {
+    raw = `'${raw}`;
+  }
 
   // Quote the field when it contains the delimiter, quotes or line breaks.
   if (/[;"\n\r]/.test(raw)) {
