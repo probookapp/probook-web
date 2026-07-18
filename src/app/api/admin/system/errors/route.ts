@@ -18,7 +18,6 @@ export const GET = withPlatformAdmin(async (req: NextRequest) => {
         OR: [{ action: { contains: "error" } }, { action: { contains: "fail" } }],
         createdAt: { gte: twentyFourHoursAgo },
       },
-      include: { admin: { select: { displayName: true } } },
       orderBy: { createdAt: "desc" },
       take: limit,
     }),
@@ -28,6 +27,16 @@ export const GET = withPlatformAdmin(async (req: NextRequest) => {
       take: limit,
     }),
   ]);
+
+  // actorId is polymorphic (no FK): resolve admin display names in a batch
+  const adminActorIds = [...new Set(logs.filter((l) => l.actorType === "platform_admin").map((l) => l.actorId))];
+  const admins = adminActorIds.length > 0
+    ? await prisma.platformAdmin.findMany({
+        where: { id: { in: adminActorIds } },
+        select: { id: true, displayName: true },
+      })
+    : [];
+  const adminMap = new Map(admins.map((a) => [a.id, a.displayName]));
 
   const tenantIds = [...new Set(logs.map((l) => l.tenantId).filter(Boolean))] as string[];
   const tenants = tenantIds.length > 0
@@ -42,7 +51,7 @@ export const GET = withPlatformAdmin(async (req: NextRequest) => {
     id: log.id,
     action: log.action,
     actorType: log.actorType,
-    actorName: log.admin?.displayName || log.actorId,
+    actorName: adminMap.get(log.actorId) || log.actorId,
     targetType: log.targetType,
     targetId: log.targetId,
     tenantId: log.tenantId,

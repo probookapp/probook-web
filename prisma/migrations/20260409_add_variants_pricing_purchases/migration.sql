@@ -1,11 +1,18 @@
--- AlterTable
-ALTER TABLE "pos_transaction_lines" ADD COLUMN     "variant_id" TEXT;
+-- NOTE (audit DATA-2): every object in this migration is already present in
+-- 0000_baseline, so a fresh `migrate deploy` used to abort here with
+-- "relation already exists". All statements are now idempotent (IF NOT EXISTS /
+-- guarded FK adds) so the history replays cleanly on a new database. Databases
+-- that already applied this migration are unaffected (deploy does not re-run
+-- or re-checksum applied migrations).
 
 -- AlterTable
-ALTER TABLE "products" ADD COLUMN     "has_variants" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "pos_transaction_lines" ADD COLUMN IF NOT EXISTS "variant_id" TEXT;
+
+-- AlterTable
+ALTER TABLE "products" ADD COLUMN IF NOT EXISTS "has_variants" BOOLEAN NOT NULL DEFAULT false;
 
 -- CreateTable
-CREATE TABLE "product_prices" (
+CREATE TABLE IF NOT EXISTS "product_prices" (
     "id" TEXT NOT NULL,
     "tenant_id" TEXT NOT NULL,
     "product_id" TEXT NOT NULL,
@@ -18,7 +25,7 @@ CREATE TABLE "product_prices" (
 );
 
 -- CreateTable
-CREATE TABLE "product_variants" (
+CREATE TABLE IF NOT EXISTS "product_variants" (
     "id" TEXT NOT NULL,
     "tenant_id" TEXT NOT NULL,
     "product_id" TEXT NOT NULL,
@@ -36,7 +43,7 @@ CREATE TABLE "product_variants" (
 );
 
 -- CreateTable
-CREATE TABLE "purchase_orders" (
+CREATE TABLE IF NOT EXISTS "purchase_orders" (
     "id" TEXT NOT NULL,
     "tenant_id" TEXT NOT NULL,
     "order_number" TEXT NOT NULL,
@@ -59,7 +66,7 @@ CREATE TABLE "purchase_orders" (
 );
 
 -- CreateTable
-CREATE TABLE "purchase_order_lines" (
+CREATE TABLE IF NOT EXISTS "purchase_order_lines" (
     "id" TEXT NOT NULL,
     "order_id" TEXT NOT NULL,
     "product_id" TEXT NOT NULL,
@@ -77,7 +84,7 @@ CREATE TABLE "purchase_order_lines" (
 );
 
 -- CreateTable
-CREATE TABLE "supplier_payments" (
+CREATE TABLE IF NOT EXISTS "supplier_payments" (
     "id" TEXT NOT NULL,
     "tenant_id" TEXT NOT NULL,
     "supplier_id" TEXT NOT NULL,
@@ -93,77 +100,71 @@ CREATE TABLE "supplier_payments" (
 );
 
 -- CreateIndex
-CREATE INDEX "product_prices_product_id_idx" ON "product_prices"("product_id");
+CREATE INDEX IF NOT EXISTS "product_prices_product_id_idx" ON "product_prices"("product_id");
+CREATE INDEX IF NOT EXISTS "product_variants_product_id_idx" ON "product_variants"("product_id");
+CREATE INDEX IF NOT EXISTS "product_variants_tenant_id_idx" ON "product_variants"("tenant_id");
+CREATE INDEX IF NOT EXISTS "product_variants_barcode_idx" ON "product_variants"("barcode");
+CREATE INDEX IF NOT EXISTS "purchase_orders_tenant_id_idx" ON "purchase_orders"("tenant_id");
+CREATE INDEX IF NOT EXISTS "purchase_orders_supplier_id_idx" ON "purchase_orders"("supplier_id");
+CREATE INDEX IF NOT EXISTS "purchase_orders_status_idx" ON "purchase_orders"("status");
+CREATE UNIQUE INDEX IF NOT EXISTS "purchase_orders_tenant_id_order_number_key" ON "purchase_orders"("tenant_id", "order_number");
+CREATE INDEX IF NOT EXISTS "purchase_order_lines_order_id_idx" ON "purchase_order_lines"("order_id");
+CREATE INDEX IF NOT EXISTS "supplier_payments_supplier_id_idx" ON "supplier_payments"("supplier_id");
+CREATE INDEX IF NOT EXISTS "supplier_payments_tenant_id_idx" ON "supplier_payments"("tenant_id");
 
--- CreateIndex
-CREATE INDEX "product_variants_product_id_idx" ON "product_variants"("product_id");
+-- AddForeignKey (guarded: constraint may already exist from the baseline)
+DO $$ BEGIN
+  ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- CreateIndex
-CREATE INDEX "product_variants_tenant_id_idx" ON "product_variants"("tenant_id");
+DO $$ BEGIN
+  ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- CreateIndex
-CREATE INDEX "product_variants_barcode_idx" ON "product_variants"("barcode");
+DO $$ BEGIN
+  ALTER TABLE "product_variants" ADD CONSTRAINT "product_variants_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- CreateIndex
-CREATE INDEX "purchase_orders_tenant_id_idx" ON "purchase_orders"("tenant_id");
+DO $$ BEGIN
+  ALTER TABLE "product_variants" ADD CONSTRAINT "product_variants_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- CreateIndex
-CREATE INDEX "purchase_orders_supplier_id_idx" ON "purchase_orders"("supplier_id");
+DO $$ BEGIN
+  ALTER TABLE "purchase_orders" ADD CONSTRAINT "purchase_orders_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- CreateIndex
-CREATE INDEX "purchase_orders_status_idx" ON "purchase_orders"("status");
+DO $$ BEGIN
+  ALTER TABLE "purchase_orders" ADD CONSTRAINT "purchase_orders_supplier_id_fkey" FOREIGN KEY ("supplier_id") REFERENCES "suppliers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- CreateIndex
-CREATE UNIQUE INDEX "purchase_orders_tenant_id_order_number_key" ON "purchase_orders"("tenant_id", "order_number");
+DO $$ BEGIN
+  ALTER TABLE "purchase_orders" ADD CONSTRAINT "purchase_orders_register_id_fkey" FOREIGN KEY ("register_id") REFERENCES "pos_registers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- CreateIndex
-CREATE INDEX "purchase_order_lines_order_id_idx" ON "purchase_order_lines"("order_id");
+DO $$ BEGIN
+  ALTER TABLE "purchase_order_lines" ADD CONSTRAINT "purchase_order_lines_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "purchase_orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- CreateIndex
-CREATE INDEX "supplier_payments_supplier_id_idx" ON "supplier_payments"("supplier_id");
+DO $$ BEGIN
+  ALTER TABLE "purchase_order_lines" ADD CONSTRAINT "purchase_order_lines_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- CreateIndex
-CREATE INDEX "supplier_payments_tenant_id_idx" ON "supplier_payments"("tenant_id");
+DO $$ BEGIN
+  ALTER TABLE "purchase_order_lines" ADD CONSTRAINT "purchase_order_lines_variant_id_fkey" FOREIGN KEY ("variant_id") REFERENCES "product_variants"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- AddForeignKey
-ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "supplier_payments" ADD CONSTRAINT "supplier_payments_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- AddForeignKey
-ALTER TABLE "product_prices" ADD CONSTRAINT "product_prices_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "supplier_payments" ADD CONSTRAINT "supplier_payments_supplier_id_fkey" FOREIGN KEY ("supplier_id") REFERENCES "suppliers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- AddForeignKey
-ALTER TABLE "product_variants" ADD CONSTRAINT "product_variants_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "supplier_payments" ADD CONSTRAINT "supplier_payments_purchase_order_id_fkey" FOREIGN KEY ("purchase_order_id") REFERENCES "purchase_orders"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- AddForeignKey
-ALTER TABLE "product_variants" ADD CONSTRAINT "product_variants_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "purchase_orders" ADD CONSTRAINT "purchase_orders_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "purchase_orders" ADD CONSTRAINT "purchase_orders_supplier_id_fkey" FOREIGN KEY ("supplier_id") REFERENCES "suppliers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "purchase_orders" ADD CONSTRAINT "purchase_orders_register_id_fkey" FOREIGN KEY ("register_id") REFERENCES "pos_registers"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "purchase_order_lines" ADD CONSTRAINT "purchase_order_lines_order_id_fkey" FOREIGN KEY ("order_id") REFERENCES "purchase_orders"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "purchase_order_lines" ADD CONSTRAINT "purchase_order_lines_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "purchase_order_lines" ADD CONSTRAINT "purchase_order_lines_variant_id_fkey" FOREIGN KEY ("variant_id") REFERENCES "product_variants"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "supplier_payments" ADD CONSTRAINT "supplier_payments_tenant_id_fkey" FOREIGN KEY ("tenant_id") REFERENCES "tenants"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "supplier_payments" ADD CONSTRAINT "supplier_payments_supplier_id_fkey" FOREIGN KEY ("supplier_id") REFERENCES "suppliers"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "supplier_payments" ADD CONSTRAINT "supplier_payments_purchase_order_id_fkey" FOREIGN KEY ("purchase_order_id") REFERENCES "purchase_orders"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "pos_transaction_lines" ADD CONSTRAINT "pos_transaction_lines_variant_id_fkey" FOREIGN KEY ("variant_id") REFERENCES "product_variants"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-
+DO $$ BEGIN
+  ALTER TABLE "pos_transaction_lines" ADD CONSTRAINT "pos_transaction_lines_variant_id_fkey" FOREIGN KEY ("variant_id") REFERENCES "product_variants"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;

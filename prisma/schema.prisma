@@ -421,6 +421,8 @@ model Invoice {
   isCashSale           Boolean  @default(false) @map("is_cash_sale") // droit de timbre only applies to cash settlements
   stampDutyExempt      Boolean  @default(false) @map("stamp_duty_exempt") // legal exemption: no timbre even when cash
   stampDuty            Float    @default(0) @map("stamp_duty") // droit de timbre snapshot (cash invoices, above threshold)
+  // Client-minted dedupe key so offline replays / lost-response retries cannot create the document twice.
+  idempotencyKey       String?  @map("idempotency_key")
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
 
@@ -434,7 +436,9 @@ model Invoice {
   creditNotes     CreditNote[]
 
   @@unique([tenantId, invoiceNumber])
+  @@unique([tenantId, idempotencyKey])
   @@index([tenantId])
+  @@index([tenantId, status])
   @@index([clientId])
   @@map("invoices")
 }
@@ -476,12 +480,16 @@ model Payment {
   paymentMethod String   @map("payment_method")
   reference     String?
   notes         String?
+  // Client-minted dedupe key so offline replays / double-submits cannot record the payment twice.
+  idempotencyKey String? @map("idempotency_key")
   createdAt     DateTime @default(now()) @map("created_at")
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
 
+  @@unique([tenantId, idempotencyKey])
   @@index([invoiceId])
+  @@index([tenantId, paymentDate])
   @@map("payments")
 }
 
@@ -755,6 +763,7 @@ model Reminder {
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
+  @@index([tenantId, scheduledDate])
   @@index([documentType, documentId])
   @@index([scheduledDate])
   @@map("reminders")
@@ -805,6 +814,7 @@ model PosSession {
   transactions  PosTransaction[]
   cashMovements PosCashMovement[]
 
+  @@index([tenantId])
   @@index([registerId])
   @@index([status])
   @@index([userId])
@@ -829,6 +839,8 @@ model PosTransaction {
   finalAmount     Float    @default(0) @map("final_amount")
   status          String   @default("COMPLETED")
   notes           String?
+  // Client-minted dedupe key so offline replays / lost-response retries cannot book the sale twice.
+  idempotencyKey  String?  @map("idempotency_key")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -843,8 +855,10 @@ model PosTransaction {
   creditNotes CreditNote[]
 
   @@unique([tenantId, ticketNumber])
+  @@unique([tenantId, idempotencyKey])
   @@index([sessionId])
   @@index([registerId])
+  @@index([tenantId, transactionDate])
   @@index([transactionDate])
   @@index([status])
   @@map("pos_transactions")
@@ -909,6 +923,7 @@ model PosCashMovement {
   session PosSession @relation(fields: [sessionId], references: [id])
   user    User       @relation(fields: [userId], references: [id])
 
+  @@index([tenantId])
   @@index([sessionId])
   @@map("pos_cash_movements")
 }
@@ -929,6 +944,8 @@ model PosPrinterConfig {
   tenant   Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   register PosRegister? @relation(fields: [registerId], references: [id])
 
+  @@index([tenantId])
+  @@index([registerId])
   @@map("pos_printer_configs")
 }
 
@@ -947,7 +964,6 @@ model PlatformAdmin {
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
-  auditLogs           AuditLog[]
   passwordResetTokens AdminPasswordResetToken[]
   backupCodes         AdminBackupCode[]
 
@@ -1195,6 +1211,9 @@ model SubscriptionInvoice {
 model AuditLog {
   id         String   @id @default(uuid())
   actorType  String   @map("actor_type") // "platform_admin" | "user"
+  // Polymorphic actor id (PlatformAdmin or User depending on actorType).
+  // Deliberately NOT a foreign key: audit rows are append-only history that
+  // must accept tenant-user actors and survive actor deletion (see DATA-1).
   actorId    String   @map("actor_id")
   action     String // "subscription.approve", "tenant.suspend", etc.
   targetType String?  @map("target_type") // "tenant" | "subscription" | "user"
@@ -1203,8 +1222,6 @@ model AuditLog {
   metadata   String? // JSON string for extra context
   ipAddress  String?  @map("ip_address")
   createdAt  DateTime @default(now()) @map("created_at")
-
-  admin PlatformAdmin? @relation(fields: [actorId], references: [id])
 
   @@index([actorType, actorId])
   @@index([action])
