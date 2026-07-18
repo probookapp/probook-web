@@ -22,6 +22,14 @@ export const PUT = withSuperAdmin(async (req: NextRequest, ctx) => {
     },
   });
 
+  // Disabling a user must log them out everywhere immediately
+  if (!updatedUser.isActive) {
+    await prisma.userSession.updateMany({
+      where: { userId: id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    });
+  }
+
   await logAuditEvent({
     actorType: "platform_admin",
     actorId: ctx.adminId,

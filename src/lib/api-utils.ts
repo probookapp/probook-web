@@ -45,25 +45,31 @@ export function withAuth(
 ) {
   return async (req: NextRequest, context?: { params?: Promise<Record<string, string>> }) => {
     try {
-      // Check for impersonation: admin with impersonation cookie
+      // Check for impersonation: the signed cookie is honored only for a live
+      // super_admin session whose userId matches the cookie's adminId claim.
+      // Any other combination ignores the cookie and uses normal session auth.
       const impersonation = await getImpersonationData();
-      let session: SessionPayload | null = null;
+      const adminSession = impersonation ? await getAdminSession() : null;
+      const impersonating =
+        !!impersonation &&
+        !!adminSession &&
+        adminSession.role === "super_admin" &&
+        adminSession.userId === impersonation.adminId;
+
+      let session: SessionPayload | null;
       let tenantId: string;
 
-      if (impersonation) {
-        // Verify admin session is still valid
-        const adminSession = await getAdminSession();
-        if (adminSession) {
-          tenantId = impersonation.tenantId;
-          // Create a synthetic session for the impersonated tenant
-          session = { userId: impersonation.adminId, tenantId, role: "admin" };
-        } else {
-          // Admin session expired, fall back to normal auth
-          session = await getSession();
-          if (!session) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-          }
-          tenantId = session.tenantId;
+      if (impersonating && impersonation) {
+        tenantId = impersonation.tenantId;
+        // Create a synthetic session for the impersonated tenant
+        session = { userId: impersonation.adminId, tenantId, role: "admin" };
+
+        // Verify tenant still exists (handles stale sessions after DB reset).
+        // Super_admin impersonation deliberately bypasses the suspended check
+        // so platform staff can inspect suspended accounts.
+        const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
+        if (!tenant) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
       } else {
         session = await getSession();
@@ -71,25 +77,30 @@ export function withAuth(
           return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
         tenantId = session.tenantId;
-      }
 
-      // Verify tenant still exists (handles stale sessions after DB reset)
-      const tenant = await prisma.tenant.findUnique({ where: { id: tenantId } });
-      if (!tenant) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-
-      // Check if session has been revoked
-      if (!impersonation) {
+        // One query for the session user + their tenant status, with the
+        // session-revocation lookup in parallel.
         const rawToken = await getSessionToken();
-        if (rawToken) {
-          const tokenHash = await hashToken(rawToken);
-          const userSession = await prisma.userSession.findFirst({
-            where: { tokenHash },
-          });
-          if (userSession?.revokedAt) {
-            return NextResponse.json({ error: "Session revoked" }, { status: 401 });
-          }
+        const [user, userSession] = await Promise.all([
+          prisma.user.findUnique({
+            where: { id: session.userId },
+            include: { tenant: { select: { status: true } } },
+          }),
+          rawToken
+            ? hashToken(rawToken).then((tokenHash) =>
+                prisma.userSession.findUnique({ where: { tokenHash } })
+              )
+            : Promise.resolve(null),
+        ]);
+
+        if (!user || !user.isActive) {
+          return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        if (userSession?.revokedAt) {
+          return NextResponse.json({ error: "Session revoked" }, { status: 401 });
+        }
+        if (user.tenant.status === "suspended") {
+          return NextResponse.json({ error: "Account suspended" }, { status: 403 });
         }
       }
 
@@ -122,8 +133,9 @@ export function withAuth(
       if (message.includes("Forbidden")) {
         return NextResponse.json({ error: message }, { status: 403 });
       }
+      // Don't leak internal error details to clients
       return NextResponse.json(
-        { error: message },
+        { error: "Internal server error" },
         { status: 500 }
       );
     }

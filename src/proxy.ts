@@ -13,11 +13,28 @@ const DEFAULT_LOCALE = "en";
 
 async function verifyTokenMiddleware(token: string) {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ["HS256"] });
     return payload;
   } catch {
     return null;
   }
+}
+
+// A platform admin impersonating a tenant carries no probook_session cookie;
+// admit the request when BOTH the admin session and the signed impersonation
+// cookie verify.
+async function hasValidImpersonation(req: NextRequest): Promise<boolean> {
+  const adminToken = req.cookies.get("probook_admin_session")?.value;
+  const impersonateToken = req.cookies.get("probook_impersonate")?.value;
+  if (!adminToken || !impersonateToken) return false;
+
+  const adminPayload = await verifyTokenMiddleware(adminToken);
+  if (!adminPayload || adminPayload.isPlatformAdmin !== true) return false;
+
+  const impersonatePayload = await verifyTokenMiddleware(impersonateToken);
+  if (!impersonatePayload || impersonatePayload.purpose !== "impersonation") return false;
+
+  return true;
 }
 
 function getPreferredLocale(req: NextRequest): string {
@@ -125,13 +142,10 @@ export async function proxy(req: NextRequest) {
       if (blocked) return blocked;
     }
 
-    // Protected API routes — require tenant session
+    // Protected API routes — require tenant session (or admin impersonation)
     const token = req.cookies.get("probook_session")?.value;
-    if (!token) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    const session = await verifyTokenMiddleware(token);
-    if (!session) {
+    const session = token ? await verifyTokenMiddleware(token) : null;
+    if (!session && !(await hasValidImpersonation(req))) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     return NextResponse.next();
@@ -172,13 +186,10 @@ export async function proxy(req: NextRequest) {
     return response;
   }
 
-  // POS and all other app routes — require tenant session
+  // POS and all other app routes — require tenant session (or admin impersonation)
   const token = req.cookies.get("probook_session")?.value;
-  if (!token) {
-    return NextResponse.redirect(new URL(`/${pathLocale}/login`, req.url));
-  }
-  const session = await verifyTokenMiddleware(token);
-  if (!session) {
+  const session = token ? await verifyTokenMiddleware(token) : null;
+  if (!session && !(await hasValidImpersonation(req))) {
     return NextResponse.redirect(new URL(`/${pathLocale}/login`, req.url));
   }
 

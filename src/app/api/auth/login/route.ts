@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
 
     const user = await prisma.user.findFirst({
       where: { username, isActive: true },
+      include: { tenant: { select: { status: true } } },
     });
 
     if (!user) {
@@ -59,6 +60,15 @@ export async function POST(req: NextRequest) {
         success: false,
       });
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+    }
+
+    // Suspended tenants can't log in (checked after password so we only
+    // disclose suspension to someone holding valid credentials)
+    if (user.tenant.status === "suspended") {
+      return NextResponse.json(
+        { error: "This account has been suspended. Please contact support." },
+        { status: 403 }
+      );
     }
 
     // Record successful attempt
@@ -122,6 +132,6 @@ export async function POST(req: NextRequest) {
     });
   } catch (error: unknown) {
     console.error("Login error:", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Login failed" }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

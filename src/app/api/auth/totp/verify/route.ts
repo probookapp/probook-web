@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { createToken, setSessionCookie, hashToken, verifyPassword, verifyTotpChallengeToken } from "@/lib/auth";
+import { createToken, setSessionCookie, hashToken, verifyPassword, verifyTotpChallengeToken, decryptTotpSecretWithFallback, encryptTotpSecret } from "@/lib/auth";
 import { verifyTOTP } from "@/lib/totp";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { totpVerifySchema } from "@/lib/validations";
@@ -63,8 +63,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Secrets are stored encrypted; legacy rows may still be plaintext base32
+    const { secret, legacyPlaintext } = await decryptTotpSecretWithFallback(
+      totpSecret.secret
+    );
+
     // Try TOTP code first
-    let valid = await verifyTOTP(totpSecret.secret, code);
+    let valid = await verifyTOTP(secret, code);
 
     // If TOTP didn't match, try backup codes
     if (!valid) {
@@ -100,6 +105,15 @@ export async function POST(req: NextRequest) {
         { error: "Invalid code" },
         { status: 401 }
       );
+    }
+
+    // Lazy migration: re-encrypt legacy plaintext secrets after a successful
+    // verification
+    if (legacyPlaintext) {
+      await prisma.totpSecret.update({
+        where: { userId: user.id },
+        data: { secret: await encryptTotpSecret(secret) },
+      });
     }
 
     // Create session

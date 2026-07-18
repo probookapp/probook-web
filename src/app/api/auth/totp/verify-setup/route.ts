@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthContext } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
-import { hashPassword } from "@/lib/auth";
+import { hashPassword, decryptTotpSecretWithFallback, encryptTotpSecret } from "@/lib/auth";
 import { verifyTOTP, generateBackupCodes } from "@/lib/totp";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { totpVerifySetupSchema } from "@/lib/validations";
@@ -22,15 +22,24 @@ export const POST = withAuth(async (req: NextRequest, ctx: AuthContext) => {
     );
   }
 
-  const valid = await verifyTOTP(totpSecret.secret, code);
+  // Secrets are stored encrypted; a row created before encryption shipped may
+  // still hold plaintext base32
+  const { secret, legacyPlaintext } = await decryptTotpSecretWithFallback(
+    totpSecret.secret
+  );
+
+  const valid = await verifyTOTP(secret, code);
   if (!valid) {
     return NextResponse.json({ error: "Invalid code" }, { status: 400 });
   }
 
-  // Mark as verified and enable TOTP on user
+  // Mark as verified and enable TOTP on user (re-encrypting legacy plaintext)
   await prisma.totpSecret.update({
     where: { userId: ctx.session.userId },
-    data: { verified: true },
+    data: {
+      verified: true,
+      ...(legacyPlaintext ? { secret: await encryptTotpSecret(secret) } : {}),
+    },
   });
 
   await prisma.user.update({

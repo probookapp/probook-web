@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withAuth, type AuthContext } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { encryptTotpSecret } from "@/lib/auth";
 import { generateSecret, getTotpUri } from "@/lib/totp";
 
 export const POST = withAuth(async (_req: NextRequest, ctx: AuthContext) => {
@@ -15,11 +16,12 @@ export const POST = withAuth(async (_req: NextRequest, ctx: AuthContext) => {
   const secret = generateSecret();
   const uri = getTotpUri(secret, user.username);
 
-  // Upsert the TOTP secret (not yet verified)
+  // Upsert the TOTP secret (not yet verified) — stored encrypted at rest
+  const encryptedSecret = await encryptTotpSecret(secret);
   await prisma.totpSecret.upsert({
     where: { userId: user.id },
-    update: { secret, verified: false },
-    create: { userId: user.id, secret, verified: false },
+    update: { secret: encryptedSecret, verified: false },
+    create: { userId: user.id, secret: encryptedSecret, verified: false },
   });
 
   return NextResponse.json({ secret, uri });

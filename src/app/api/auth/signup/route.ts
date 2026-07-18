@@ -161,7 +161,7 @@ export async function POST(req: NextRequest) {
   } catch (error: unknown) {
     console.error("Signup error:", error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Signup failed" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

@@ -22,10 +22,17 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
 
   const passwordHash = await hashPassword(new_password);
 
-  await prisma.user.update({
-    where: { id },
-    data: { passwordHash },
-  });
+  await prisma.$transaction([
+    prisma.user.update({
+      where: { id },
+      data: { passwordHash },
+    }),
+    // Revoke all existing sessions — forces re-login with the new password
+    prisma.userSession.updateMany({
+      where: { userId: id, revokedAt: null },
+      data: { revokedAt: new Date() },
+    }),
+  ]);
 
   await logAuditEvent({
     actorType: "platform_admin",

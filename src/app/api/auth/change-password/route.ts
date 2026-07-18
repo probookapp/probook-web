@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-utils";
-import { hashPassword, verifyPassword } from "@/lib/auth";
+import { hashPassword, verifyPassword, getSessionToken, hashToken } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { changePasswordSchema } from "@/lib/validations";
@@ -24,6 +24,19 @@ export const POST = withAuth(async (req, { session }) => {
   await prisma.user.update({
     where: { id: session.userId },
     data: { passwordHash },
+  });
+
+  // Revoke every other session — the current one (matched by token hash)
+  // stays logged in
+  const rawToken = await getSessionToken();
+  const currentTokenHash = rawToken ? await hashToken(rawToken) : null;
+  await prisma.userSession.updateMany({
+    where: {
+      userId: session.userId,
+      revokedAt: null,
+      ...(currentTokenHash ? { tokenHash: { not: currentTokenHash } } : {}),
+    },
+    data: { revokedAt: new Date() },
   });
 
   return new NextResponse(null, { status: 204 });

@@ -34,7 +34,7 @@ export async function createToken(payload: SessionPayload): Promise<string> {
 
 export async function verifyToken(token: string): Promise<SessionPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ["HS256"] });
     return payload as unknown as SessionPayload;
   } catch {
     return null;
@@ -106,7 +106,7 @@ export async function getAdminSession(): Promise<PlatformSessionPayload | null> 
   const token = cookieStore.get(ADMIN_COOKIE_NAME)?.value;
   if (!token) return null;
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ["HS256"] });
     const data = payload as unknown as PlatformSessionPayload;
     if (!data.isPlatformAdmin) return null;
     return data;
@@ -132,11 +132,18 @@ export async function clearAdminSessionCookie() {
 }
 
 // ========== Impersonation ==========
+// The impersonation cookie is a SIGNED JWT (not plain JSON) so a compromised or
+// lower-privileged admin cannot forge one client-side. withAuth additionally
+// requires a live super_admin session whose userId matches the adminId claim.
 
 export async function setImpersonationCookie(tenantId: string, adminId: string) {
   const cookieStore = await cookies();
-  const data = JSON.stringify({ tenantId, adminId });
-  cookieStore.set(IMPERSONATE_COOKIE_NAME, data, {
+  const token = await new SignJWT({ tenantId, adminId, purpose: "impersonation" })
+    .setProtectedHeader({ alg: "HS256" })
+    .setExpirationTime("4h")
+    .setIssuedAt()
+    .sign(JWT_SECRET);
+  cookieStore.set(IMPERSONATE_COOKIE_NAME, token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
@@ -150,7 +157,10 @@ export async function getImpersonationData(): Promise<{ tenantId: string; adminI
   const value = cookieStore.get(IMPERSONATE_COOKIE_NAME)?.value;
   if (!value) return null;
   try {
-    return JSON.parse(value);
+    const { payload } = await jwtVerify(value, JWT_SECRET, { algorithms: ["HS256"] });
+    if (payload.purpose !== "impersonation") return null;
+    if (typeof payload.tenantId !== "string" || typeof payload.adminId !== "string") return null;
+    return { tenantId: payload.tenantId, adminId: payload.adminId };
   } catch {
     return null;
   }
@@ -197,7 +207,7 @@ export async function createTotpChallengeToken(userId: string): Promise<string> 
  */
 export async function verifyTotpChallengeToken(token: string): Promise<string | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ["HS256"] });
     if (payload.purpose !== "totp_challenge" || !payload.userId) return null;
     return payload.userId as string;
   } catch {
@@ -226,7 +236,7 @@ export async function createAdminTotpChallengeToken(adminId: string): Promise<st
  */
 export async function verifyAdminTotpChallengeToken(token: string): Promise<string | null> {
   try {
-    const { payload } = await jwtVerify(token, JWT_SECRET);
+    const { payload } = await jwtVerify(token, JWT_SECRET, { algorithms: ["HS256"] });
     if (payload.purpose !== "admin_totp_challenge" || !payload.adminId) return null;
     return payload.adminId as string;
   } catch {
@@ -295,4 +305,20 @@ export async function decryptTotpSecret(encrypted: string): Promise<string> {
     }
   }
   throw lastError ?? new Error("Failed to decrypt TOTP secret");
+}
+
+/**
+ * Decrypt a stored tenant TOTP secret. Legacy rows hold the raw base32 secret:
+ * on decrypt failure fall back to treating the stored value as plaintext.
+ * Callers should re-encrypt (lazy migration) after a successful verification
+ * when `legacyPlaintext` is true.
+ */
+export async function decryptTotpSecretWithFallback(
+  stored: string
+): Promise<{ secret: string; legacyPlaintext: boolean }> {
+  try {
+    return { secret: await decryptTotpSecret(stored), legacyPlaintext: false };
+  } catch {
+    return { secret: stored, legacyPlaintext: true };
+  }
 }
