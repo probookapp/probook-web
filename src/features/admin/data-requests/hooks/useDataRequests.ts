@@ -35,7 +35,8 @@ export function useExecuteDataRequest() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (id: string) => adminDataRequestsApi.execute(id),
+    mutationFn: ({ id, confirmTenantName }: { id: string; confirmTenantName: string }) =>
+      adminDataRequestsApi.execute(id, { confirm_tenant_name: confirmTenantName }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-data-requests"] });
       queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });

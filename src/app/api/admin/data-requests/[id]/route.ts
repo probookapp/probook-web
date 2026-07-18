@@ -24,7 +24,10 @@ export const GET = withPlatformAdmin(async (_req: NextRequest, ctx) => {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
-  return NextResponse.json(toSnakeCase(dataRequest));
+  // Never expose filePath here: it holds the full tenant export (base64 data
+  // URL). Downloads go through the super-admin-only /download route.
+  const { filePath, ...rest } = dataRequest;
+  return NextResponse.json(toSnakeCase({ ...rest, hasExport: Boolean(filePath) }));
 });
 
 // Update the status of a request (mark processing / completed / failed) and/or notes.
@@ -70,5 +73,6 @@ export const PUT = withSuperAdmin(async (req: NextRequest, ctx) => {
     ipAddress: getClientIp(req),
   });
 
-  return NextResponse.json(toSnakeCase(updated));
+  const { filePath, ...rest } = updated;
+  return NextResponse.json(toSnakeCase({ ...rest, hasExport: Boolean(filePath) }));
 });

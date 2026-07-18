@@ -61,17 +61,38 @@ export const PUT = withSuperAdmin(async (req: NextRequest, ctx) => {
     }
   }
 
-  const updated = await prisma.subscription.update({
-    where: { id },
-    data: {
-      planId: body.plan_id ?? existing.planId,
-      billingCycle: body.billing_cycle ?? existing.billingCycle,
-      status: body.status ?? existing.status,
-      currentPeriodEnd: body.current_period_end
-        ? new Date(body.current_period_end)
-        : existing.currentPeriodEnd,
-    },
-    include: { plan: true, tenant: true },
+  const now = new Date();
+
+  const updated = await prisma.$transaction(async (tx) => {
+    const updatedSubscription = await tx.subscription.update({
+      where: { id },
+      data: {
+        planId: body.plan_id ?? existing.planId,
+        billingCycle: body.billing_cycle ?? existing.billingCycle,
+        status: body.status ?? existing.status,
+        ...(body.status === "cancelled" ? { cancelledAt: now } : {}),
+        currentPeriodEnd: body.current_period_end
+          ? new Date(body.current_period_end)
+          : existing.currentPeriodEnd,
+      },
+      include: { plan: true, tenant: true },
+    });
+
+    // Keep the tenant status in sync with the subscription status, mirroring
+    // the dedicated cancel (suspend tenant) and activate routes.
+    if (body.status === "cancelled" || body.status === "expired") {
+      await tx.tenant.update({
+        where: { id: existing.tenantId },
+        data: { status: "suspended" },
+      });
+    } else if (body.status === "active") {
+      await tx.tenant.update({
+        where: { id: existing.tenantId },
+        data: { status: "active" },
+      });
+    }
+
+    return updatedSubscription;
   });
 
   await logAuditEvent({

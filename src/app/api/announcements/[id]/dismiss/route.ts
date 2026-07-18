@@ -9,6 +9,45 @@ export const POST = withAuth(async (_req: NextRequest, ctx) => {
   }
 
   const userId = ctx.session.userId;
+  const tenantId = ctx.tenantId;
+  const now = new Date();
+
+  // Only allow dismissing announcements that are actually visible to this
+  // tenant (published, not expired, and targeting it) — same visibility rules
+  // as the /api/announcements/active route.
+  const activeSubscription = await prisma.subscription.findFirst({
+    where: { tenantId, status: "active" },
+    select: { planId: true },
+  });
+
+  const targetConditions: Record<string, unknown>[] = [
+    { targetType: "all" },
+    { targetType: "tenant", targetId: tenantId },
+  ];
+  if (activeSubscription?.planId) {
+    targetConditions.push({ targetType: "plan", targetId: activeSubscription.planId });
+  }
+
+  const announcement = await prisma.announcement.findFirst({
+    where: {
+      AND: [
+        { id },
+        { OR: targetConditions },
+        { publishedAt: { lte: now } },
+        {
+          OR: [
+            { expiresAt: null },
+            { expiresAt: { gt: now } },
+          ],
+        },
+      ],
+    },
+    select: { id: true },
+  });
+
+  if (!announcement) {
+    return NextResponse.json({ error: "Announcement not found" }, { status: 404 });
+  }
 
   // Upsert to avoid duplicates
   await prisma.announcementDismissal.upsert({

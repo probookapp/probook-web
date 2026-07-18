@@ -77,7 +77,10 @@ export function DataRequestsPage() {
 
   const handleExecuteDeletion = async () => {
     if (!deleteTarget) return;
-    await executeDataRequest.mutateAsync(String(deleteTarget.id));
+    await executeDataRequest.mutateAsync({
+      id: String(deleteTarget.id),
+      confirmTenantName: confirmName.trim(),
+    });
     setDeleteTarget(null);
     setConfirmName("");
   };
@@ -191,7 +194,7 @@ export function DataRequestsPage() {
                               {t("data_requests.download")}
                             </Button>
                           )}
-                          {dr.request_type === "deletion" && dr.status !== "completed" && (
+                          {dr.request_type === "deletion" && dr.status === "processing" && (
                             <Button
                               variant="danger"
                               size="sm"

@@ -340,7 +340,7 @@ export type DataRequest = {
   status: string;
   requested_by: string;
   completed_at: string | null;
-  file_path: string | null;
+  has_export: boolean;
   notes: string | null;
   created_at: string;
   tenant?: AdminTenant;

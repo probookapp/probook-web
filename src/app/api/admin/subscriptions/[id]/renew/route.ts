@@ -3,6 +3,13 @@ import { prisma } from "@/lib/db";
 import { toSnakeCase } from "@/lib/api-utils";
 import { withSuperAdmin, logAuditEvent, getClientIp } from "@/lib/admin-api-utils";
 
+// Collision-free subscription-invoice numbering (same scheme as the manual
+// create route in /api/admin/subscription-invoices).
+function generateSubInvoiceNumber(): string {
+  const rand = Math.floor(Math.random() * 9000 + 1000);
+  return `SINV-${Date.now().toString(36).toUpperCase()}-${rand}`;
+}
+
 export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
   const id = ctx.params?.id;
   if (!id) {
@@ -26,9 +33,6 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
     periodEnd.setFullYear(periodEnd.getFullYear() + 1);
   }
 
-  // Count existing invoices for sequential numbering
-  const invoiceCount = await prisma.subscriptionInvoice.count();
-
   const updated = await prisma.$transaction(async (tx) => {
     const updatedSubscription = await tx.subscription.update({
       where: { id },
@@ -43,7 +47,7 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
     await tx.subscriptionInvoice.create({
       data: {
         subscriptionId: id,
-        invoiceNumber: `PLAT-INV-${invoiceCount + 1}`,
+        invoiceNumber: generateSubInvoiceNumber(),
         tenantId: subscription.tenantId,
         amount: subscription.priceAtPurchase,
         currency: subscription.currency,

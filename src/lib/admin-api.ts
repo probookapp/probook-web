@@ -143,7 +143,8 @@ export const adminDataRequestsApi = {
     adminApiCall<unknown>("create_admin_data_request", { input }),
   update: (id: string, input: Record<string, unknown>) =>
     adminApiCall<unknown>("update_admin_data_request", { id, input }),
-  execute: (id: string) => adminApiCall<unknown>("execute_admin_data_request", { id }),
+  execute: (id: string, input: Record<string, unknown>) =>
+    adminApiCall<unknown>("execute_admin_data_request", { id, input }),
   download: (id: string) => adminApiCall<unknown>("download_admin_data_request", { id }),
 };
 

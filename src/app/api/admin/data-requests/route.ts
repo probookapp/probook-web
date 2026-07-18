@@ -15,7 +15,14 @@ export const GET = withPlatformAdmin(async (_req: NextRequest, _ctx) => {
     orderBy: { createdAt: "desc" },
   });
 
-  return NextResponse.json(toSnakeCase(dataRequests));
+  // Never expose filePath here: it holds the full tenant export (base64 data
+  // URL). Downloads go through the super-admin-only /download route.
+  const sanitized = dataRequests.map(({ filePath, ...rest }) => ({
+    ...rest,
+    hasExport: Boolean(filePath),
+  }));
+
+  return NextResponse.json(toSnakeCase(sanitized));
 });
 
 export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
@@ -86,5 +93,8 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
     }
   }
 
-  return NextResponse.json(toSnakeCase(dataRequest), { status: 201 });
+  // Strip the export payload from the response — it is only served via the
+  // super-admin-only /download route.
+  const { filePath, ...rest } = dataRequest;
+  return NextResponse.json(toSnakeCase({ ...rest, hasExport: Boolean(filePath) }), { status: 201 });
 });

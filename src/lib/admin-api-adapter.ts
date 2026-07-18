@@ -285,6 +285,7 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   execute_admin_data_request: {
     method: "POST",
     path: (a) => `/api/admin/data-requests/${a.id}/execute`,
+    body: (a) => a.input,
   },
   download_admin_data_request: {
     method: "GET",

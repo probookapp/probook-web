@@ -118,7 +118,9 @@ test.describe("Admin data requests", () => {
     });
     expect(req.status).toBe(201);
 
-    const exec = await adminPost(page, `/api/admin/data-requests/${req.body.id}/execute`);
+    const exec = await adminPost(page, `/api/admin/data-requests/${req.body.id}/execute`, {
+      confirm_tenant_name: company,
+    });
     expect(exec.status).toBe(200);
     expect(exec.body.success).toBe(true);
     expect(exec.body.tenant_id).toBe(tenantId);
