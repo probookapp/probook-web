@@ -49,14 +49,18 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
 
   const handleAddPayment = async (data: PaymentFormData) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
-    await createPayment.mutateAsync({
+    // Minted per submit (not per render) so an offline replay of this exact
+    // request dedupes server-side instead of recording the payment twice.
+    const payload = {
       invoice_id: invoice.id,
       amount: data.amount,
       payment_date: data.payment_date,
       payment_method: data.payment_method,
       reference: data.reference || null,
       notes: data.notes || null,
-    });
+      idempotency_key: crypto.randomUUID(),
+    };
+    await createPayment.mutateAsync(payload);
     setShowAddModal(false);
   };
 

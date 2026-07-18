@@ -22,7 +22,6 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useClients } from "@/features/clients";
 import { useProducts } from "@/features/products";
 import { formatCurrency, formatDateISO, calculateLineTotal } from "@/lib/utils";
-import type { InvoiceStatus } from "@/types";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
@@ -43,7 +42,8 @@ const createInvoiceFormSchema = (t: (key: string) => string) => z.object({
   issue_date: z.string().min(1, t("validation:invoice.issueDateRequired")),
   due_date: z.string().min(1, t("validation:invoice.dueDateRequired")),
   notes: z.string().nullable().optional(),
-  status: z.enum(["DRAFT", "ISSUED", "PAID"]).optional(),
+  // PAID is not creatable/editable here: it only comes from payments/mark-paid.
+  status: z.enum(["DRAFT", "ISSUED"]).optional(),
   shipping_cost: z.coerce.number().min(0).optional(),
   shipping_tax_rate: z.coerce.number().min(0).max(100).optional(),
   down_payment_percent: z.coerce.number().min(0).max(100).optional(),
@@ -92,7 +92,7 @@ export function InvoiceFormPage() {
       issue_date: formatDateISO(new Date()),
       due_date: defaultDueDate,
       notes: "",
-      status: "DRAFT" as InvoiceStatus,
+      status: "DRAFT",
       shipping_cost: 0,
       shipping_tax_rate: defaultTaxRate,
       down_payment_percent: 0,
@@ -166,7 +166,8 @@ export function InvoiceFormPage() {
       issue_date: invoice.issue_date,
       due_date: invoice.due_date,
       notes: invoice.notes ?? "",
-      status: invoice.status,
+      // Only DRAFT invoices are editable (non-drafts redirect above).
+      status: invoice.status === "ISSUED" ? "ISSUED" : "DRAFT",
       shipping_cost: invoice.shipping_cost ?? 0,
       shipping_tax_rate: invoice.shipping_tax_rate ?? 0,
       down_payment_percent: invoice.down_payment_percent ?? 0,
@@ -315,7 +316,10 @@ export function InvoiceFormPage() {
         ...formData,
       });
     } else {
-      await createInvoice.mutateAsync(formData);
+      // Minted per submit (not per render) so an offline replay of this exact
+      // request dedupes server-side instead of creating a second invoice.
+      const payload = { ...formData, idempotency_key: crypto.randomUUID() };
+      await createInvoice.mutateAsync(payload);
     }
     submittedRef.current = true;
     router.push("/invoices");
@@ -342,7 +346,6 @@ export function InvoiceFormPage() {
   const statusOptions = [
     { value: "DRAFT", label: t("invoices:status.DRAFT") },
     { value: "ISSUED", label: t("invoices:status.ISSUED") },
-    { value: "PAID", label: t("invoices:status.PAID") },
   ];
 
   return (

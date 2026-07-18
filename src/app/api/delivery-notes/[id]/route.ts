@@ -32,7 +32,14 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   if (isValidationError(body)) return body;
   const lines = body.lines || [];
 
-  await prisma.deliveryNoteLine.deleteMany({ where: { deliveryNoteId: params?.id } });
+  // Tenant-scoped existence check BEFORE any write: without it the old code's
+  // unscoped line deleteMany let any tenant wipe another tenant's delivery
+  // note lines (audit SEC-3).
+  const existing = await prisma.deliveryNote.findFirst({
+    where: { tenantId, id: params?.id },
+    select: { id: true },
+  });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const note = await prisma.deliveryNote.update({
     where: { tenantId, id: params?.id },
@@ -44,7 +51,10 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
       deliveryAddress: body.delivery_address || null,
       notes: body.notes || null,
       notesHtml: body.notes_html || null,
+      // Nested deleteMany + create in the SAME atomic update: a failure can no
+      // longer leave the note with its lines deleted (audit SALE-3).
       lines: {
+        deleteMany: {},
         create: lines.map((line: DeliveryLineInput, idx: number) => ({
           productId: line.product_id || null,
           description: line.description,

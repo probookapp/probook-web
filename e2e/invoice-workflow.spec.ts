@@ -46,7 +46,8 @@ test.describe("Invoice workflow", () => {
     expect(issued.body.status).toBe("ISSUED");
     expect(issued.body.integrity_hash).toBeTruthy();
     expect(typeof issued.body.integrity_hash).toBe("string");
-    expect((issued.body.integrity_hash as string).length).toBe(64); // SHA-256 hex
+    // Keyed hash format: "v2:" + HMAC-SHA-256 hex (legacy unkeyed hashes were bare 64-hex)
+    expect(issued.body.integrity_hash as string).toMatch(/^v2:[0-9a-f]{64}$/);
   });
 
   test("cannot issue a non-DRAFT invoice", async ({ page }) => {

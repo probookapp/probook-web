@@ -206,10 +206,16 @@ const documentLineSchema = z.object({
 
 // ─── Invoices ───────────────────────────────────────────────────────────────
 
+// Statuses actually used by the app (audit SALE-13). PAID is deliberately NOT
+// accepted on create: it only ever comes from the payment/mark-paid endpoints.
+const invoiceStatusEnum = z.enum(["DRAFT", "ISSUED", "PAID"]);
+const quoteStatusEnum = z.enum(["DRAFT", "SENT", "ACCEPTED", "EXPIRED"]);
+const deliveryNoteStatusEnum = z.enum(["DRAFT", "DELIVERED", "CANCELLED"]);
+
 export const createInvoiceSchema = z.object({
   client_id: requiredString("Client ID"),
   quote_id: optionalString,
-  status: z.string().default("DRAFT"),
+  status: z.enum(["DRAFT", "ISSUED"]).default("DRAFT"),
   issue_date: requiredString("Issue date"),
   due_date: optionalString,
   notes: optionalString,
@@ -222,12 +228,17 @@ export const createInvoiceSchema = z.object({
   is_cash_sale: z.boolean().optional(),
   stamp_duty_exempt: z.boolean().optional(),
   parent_quote_id: optionalString,
+  // Client-minted dedupe key: offline replays / lost-response retries send the
+  // same key and get the already-created invoice back instead of a duplicate.
+  idempotency_key: optionalString,
   lines: z.array(documentLineSchema).min(1, "At least one line is required"),
 });
 
 export const updateInvoiceSchema = z.object({
   client_id: requiredString("Client ID"),
-  status: requiredString("Status"),
+  // Accepted for backwards compatibility but ignored server-side: only DRAFT
+  // invoices are editable and transitions happen via issue/mark-paid.
+  status: invoiceStatusEnum.optional(),
   issue_date: requiredString("Issue date"),
   due_date: requiredString("Due date"),
   notes: optionalString,
@@ -247,7 +258,7 @@ export const updateInvoiceSchema = z.object({
 
 export const createQuoteSchema = z.object({
   client_id: requiredString("Client ID"),
-  status: z.string().default("DRAFT"),
+  status: quoteStatusEnum.default("DRAFT"),
   issue_date: requiredString("Issue date"),
   validity_date: requiredString("Validity date"),
   notes: optionalString,
@@ -260,7 +271,7 @@ export const createQuoteSchema = z.object({
 });
 
 export const updateQuoteSchema = createQuoteSchema.extend({
-  status: requiredString("Status"),
+  status: quoteStatusEnum,
 });
 
 // ─── Payments ───────────────────────────────────────────────────────────────
@@ -272,6 +283,9 @@ export const paymentSchema = z.object({
   payment_method: requiredString("Payment method"),
   reference: optionalString,
   notes: optionalString,
+  // Client-minted dedupe key: replays of the same recorded payment return the
+  // existing row instead of double-crediting the invoice.
+  idempotency_key: optionalString,
 });
 
 // ─── Delivery Notes ─────────────────────────────────────────────────────────
@@ -289,7 +303,7 @@ export const createDeliveryNoteSchema = z.object({
   client_id: requiredString("Client ID"),
   quote_id: optionalString,
   invoice_id: optionalString,
-  status: z.string().default("DRAFT"),
+  status: deliveryNoteStatusEnum.default("DRAFT"),
   issue_date: requiredString("Issue date"),
   delivery_date: optionalString,
   delivery_address: optionalString,
@@ -299,7 +313,7 @@ export const createDeliveryNoteSchema = z.object({
 });
 
 export const updateDeliveryNoteSchema = createDeliveryNoteSchema.extend({
-  status: requiredString("Status"),
+  status: deliveryNoteStatusEnum,
 });
 
 // ─── POS ────────────────────────────────────────────────────────────────────
@@ -331,6 +345,7 @@ export const posTransactionSchema = z.object({
   discount_percent: positiveNumber.default(0),
   discount_amount: positiveNumber.default(0),
   notes: optionalString,
+  idempotency_key: optionalString,
   lines: z.array(posLineSchema).min(1, "At least one line is required"),
   payments: z.array(posPaymentSchema).min(1, "At least one payment is required"),
 });
@@ -577,9 +592,17 @@ export const validateCouponSchema = z.object({
 
 // ─── Invoices: Additional ──────────────────────────────────────────────────
 
-export const invoiceFromDeliveryNotesSchema = z.object({
-  delivery_note_ids: z.array(z.string()).min(1, "At least one delivery note ID is required"),
-});
+// The api-adapter sends a bare array of IDs while older callers send
+// { delivery_note_ids: [...] } — accept both, normalized to the object form.
+export const invoiceFromDeliveryNotesSchema = z.union([
+  z.object({
+    delivery_note_ids: z.array(z.string()).min(1, "At least one delivery note ID is required"),
+  }),
+  z
+    .array(z.string())
+    .min(1, "At least one delivery note ID is required")
+    .transform((ids) => ({ delivery_note_ids: ids })),
+]);
 
 export const invoiceMarkPaidSchema = z.object({
   payment_method: z.string().default("other"),

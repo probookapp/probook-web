@@ -4,7 +4,7 @@ import { prisma } from "@/lib/db";
 import { requirePermission } from "@/lib/permissions-server";
 import { applyStockChange } from "@/lib/stock";
 import { computeStampDuty } from "@/lib/stamp-duty";
-import { createHash } from "crypto";
+import { computeInvoiceIntegrityHash } from "@/lib/invoice-integrity";
 
 export const POST = withAuth(async (req, { session, tenantId, params }) => {
   const denied = await requirePermission(session, "invoices", "edit");
@@ -34,20 +34,32 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
     isDraft: false,
   });
 
-  // Compute integrity hash from key fields
-  const hashInput = [
-    invoice.invoiceNumber,
-    invoice.clientId,
-    invoice.issueDate.toISOString(),
-    invoice.subtotal.toString(),
-    invoice.taxAmount.toString(),
-    invoice.total.toString(),
-    ...invoice.lines.map((l) =>
-      `${l.description}|${l.quantity}|${l.unitPrice}|${l.taxRate}|${l.subtotal}`
-    ),
-  ].join("|");
+  // Keyed (HMAC) integrity hash over the frozen invoice fields, including the
+  // stamp duty snapshot being written in the same update (audit SALE-5).
+  const integrityHash = computeInvoiceIntegrityHash({
+    invoiceNumber: invoice.invoiceNumber,
+    clientId: invoice.clientId,
+    issueDate: invoice.issueDate,
+    dueDate: invoice.dueDate,
+    subtotal: invoice.subtotal,
+    taxAmount: invoice.taxAmount,
+    total: invoice.total,
+    shippingCost: invoice.shippingCost,
+    stampDuty,
+    isCashSale: invoice.isCashSale,
+    stampDutyExempt: invoice.stampDutyExempt,
+    lines: invoice.lines,
+  });
 
-  const integrityHash = createHash("sha256").update(hashInput).digest("hex");
+  // One tenant-scoped batch lookup instead of a per-line findUnique (SALE-24).
+  const productIds = [...new Set(invoice.lines.map((l) => l.productId).filter((id): id is string => !!id))];
+  const products = productIds.length
+    ? await prisma.product.findMany({
+        where: { tenantId, id: { in: productIds } },
+        select: { id: true, purchasePrice: true, isService: true },
+      })
+    : [];
+  const productById = new Map(products.map((p) => [p.id, p]));
 
   // Issue the invoice, freeze the COGS snapshots, and decrement stock atomically:
   // an invoice must never end up ISSUED with only some lines' stock deducted.
@@ -66,7 +78,7 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
     // The snapshot is what makes COGS / profit reports stable when product purchase prices change later.
     for (const line of inv.lines) {
       if (!line.productId) continue;
-      const product = await tx.product.findUnique({ where: { id: line.productId } });
+      const product = productById.get(line.productId);
       if (!product) continue;
 
       // Freeze the COGS basis before touching stock.
