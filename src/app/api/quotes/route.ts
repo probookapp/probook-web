@@ -65,6 +65,16 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   const body = await validateBody(req, createQuoteSchema);
   if (isValidationError(body)) return body;
 
+  // Stale offline caches can submit a deleted/foreign client id; catch it here
+  // instead of letting the FK violation surface as a 500.
+  const client = await prisma.client.findFirst({
+    where: { tenantId, id: body.client_id },
+    select: { id: true },
+  });
+  if (!client) {
+    return NextResponse.json({ error: "Client not found" }, { status: 404 });
+  }
+
   const settings = await prisma.companySettings.findFirst({ where: { tenantId } });
   const prefix = settings?.quotePrefix ?? "QT-";
 

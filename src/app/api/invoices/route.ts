@@ -83,6 +83,16 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
     if (existing) return NextResponse.json(toSnakeCase(existing));
   }
 
+  // A stale offline cache can submit a deleted (or foreign) client id; without
+  // this check it surfaces as an FK-violation 500 (Sentry: invoices_client_id_fkey).
+  const client = await prisma.client.findFirst({
+    where: { tenantId, id: body.client_id },
+    select: { id: true },
+  });
+  if (!client) {
+    return NextResponse.json({ error: "Client not found" }, { status: 404 });
+  }
+
   const settings = await prisma.companySettings.findFirst({ where: { tenantId } });
   const prefix = settings?.invoicePrefix ?? "INV-";
   const paymentTerms = settings?.defaultPaymentTerms ?? 30;
