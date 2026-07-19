@@ -370,7 +370,8 @@ test.describe("Admin: analytics & system", () => {
     expect(overview.status).toBe(200);
     expect(overview.body.total_tenants).toBeGreaterThanOrEqual(1);
     expect(overview.body.total_users).toBeGreaterThanOrEqual(1);
-    expect(typeof overview.body.mrr).toBe("number");
+    // MRR is reported per currency: [{ currency, amount }]
+    expect(Array.isArray(overview.body.mrr)).toBe(true);
     expect(overview.body.subscription_breakdown).toBeDefined();
   });
 

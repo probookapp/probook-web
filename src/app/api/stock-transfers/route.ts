@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { applyStockChange } from "@/lib/stock";
 import { requirePermission } from "@/lib/permissions-server";
+import { requireFeature } from "@/lib/feature-gate";
 
 function generateTransferNumber(): string {
   const rand = Math.floor(Math.random() * 9000 + 1000);
@@ -31,6 +32,8 @@ interface TransferLineInput {
 export const POST = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "products", "edit");
   if (denied) return denied;
+  const featureDenied = await requireFeature(tenantId, "multi_location");
+  if (featureDenied) return featureDenied;
   const body = (await req.json().catch(() => ({}))) as {
     from_location_id?: string;
     to_location_id?: string;

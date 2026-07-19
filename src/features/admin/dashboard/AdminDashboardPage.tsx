@@ -20,13 +20,24 @@ import { OnboardingFunnel } from "./OnboardingFunnel";
 
 type OverviewData = Record<string, unknown>;
 type SignupEntry = { month: string; count: number };
-type RevenueEntry = { month: string; revenue: number };
+// Revenue is reported per currency: { month, revenue: { DZD: 1600000, ... } }
+type RevenueEntry = { month: string; revenue: Record<string, number> };
+type MoneyByCurrency = { currency: string; amount: number }[];
 
 function formatCentimes(amount: number): string {
   return (amount / 100).toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
+}
+
+// "16,000.00 DZD + 290.00 EUR" — money figures are per-currency and must not
+// be collapsed into a single number.
+function formatMoneyByCurrency(entries: MoneyByCurrency): string {
+  if (!entries || entries.length === 0) return "0.00";
+  return entries
+    .map((e) => `${formatCentimes(e.amount)} ${e.currency}`)
+    .join(" + ");
 }
 
 function StatCard({
@@ -157,6 +168,10 @@ export function AdminDashboardPage() {
   const stats = (overview || {}) as OverviewData;
   const signupData = (signups || []) as SignupEntry[];
   const revenueData = (revenue || []) as RevenueEntry[];
+  // One chart per currency present in the range (mixed currencies can't share a scale)
+  const revenueCurrencies = Array.from(
+    new Set(revenueData.flatMap((entry) => Object.keys(entry.revenue || {})))
+  ).sort();
   const breakdown = (stats.subscription_breakdown || {}) as Record<string, number>;
 
   return (
@@ -189,13 +204,13 @@ export function AdminDashboardPage() {
         />
         <StatCard
           title={t("dashboard.mrr")}
-          value={formatCentimes(Number(stats.mrr ?? 0))}
+          value={formatMoneyByCurrency((stats.mrr as MoneyByCurrency) || [])}
           icon={TrendingUp}
           description={t("dashboard.mrr_desc")}
         />
         <StatCard
           title={t("dashboard.total_revenue")}
-          value={formatCentimes(Number(stats.total_revenue ?? 0))}
+          value={formatMoneyByCurrency((stats.total_revenue as MoneyByCurrency) || [])}
           icon={DollarSign}
           description={t("dashboard.total_revenue_desc")}
         />
@@ -277,13 +292,28 @@ export function AdminDashboardPage() {
           <CardHeader>
             <CardTitle>{t("dashboard.revenue_trend")}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <BarChart
-              data={revenueData}
-              valueKey="revenue"
-              label={t("dashboard.revenue_per_month")}
-              formatValue={(v) => formatCentimes(v)}
-            />
+          <CardContent className="space-y-6">
+            {revenueCurrencies.length === 0 ? (
+              <BarChart
+                data={revenueData.map((entry) => ({ month: entry.month, revenue: 0 }))}
+                valueKey="revenue"
+                label={t("dashboard.revenue_per_month")}
+                formatValue={(v) => formatCentimes(v)}
+              />
+            ) : (
+              revenueCurrencies.map((currency) => (
+                <BarChart
+                  key={currency}
+                  data={revenueData.map((entry) => ({
+                    month: entry.month,
+                    revenue: entry.revenue?.[currency] || 0,
+                  }))}
+                  valueKey="revenue"
+                  label={`${t("dashboard.revenue_per_month")} (${currency})`}
+                  formatValue={(v) => formatCentimes(v)}
+                />
+              ))
+            )}
           </CardContent>
         </Card>
       </div>

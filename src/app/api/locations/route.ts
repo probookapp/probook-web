@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { requirePermission } from "@/lib/permissions-server";
+import { requireFeature } from "@/lib/feature-gate";
 
 export const GET = withAuth(async (_req, { tenantId }) => {
   const locations = await prisma.location.findMany({
@@ -14,6 +15,8 @@ export const GET = withAuth(async (_req, { tenantId }) => {
 export const POST = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "products", "create");
   if (denied) return denied;
+  const featureDenied = await requireFeature(tenantId, "multi_location");
+  if (featureDenied) return featureDenied;
   const body = (await req.json().catch(() => ({}))) as {
     name?: string;
     type?: string;

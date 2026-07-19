@@ -29,9 +29,11 @@ export const GET = withPlatformAdmin(async () => {
       select: {
         billingCycle: true,
         priceAtPurchase: true,
+        currency: true,
       },
     }),
-    prisma.subscriptionInvoice.aggregate({
+    prisma.subscriptionInvoice.groupBy({
+      by: ["currency"],
       where: { status: "paid" },
       _sum: { amount: true },
     }),
@@ -41,15 +43,28 @@ export const GET = withPlatformAdmin(async () => {
     }),
   ]);
 
-  // Calculate MRR: monthly subs contribute priceAtPurchase, yearly contribute priceAtPurchase / 12
-  let mrr = 0;
+  // Calculate MRR per currency (mixed-currency amounts must never be summed
+  // into one number): monthly subs contribute priceAtPurchase, yearly
+  // contribute priceAtPurchase / 12.
+  const mrrByCurrency: Record<string, number> = {};
   for (const sub of activeSubscriptions) {
-    if (sub.billingCycle === "monthly") {
-      mrr += sub.priceAtPurchase;
-    } else {
-      mrr += Math.round(sub.priceAtPurchase / 12);
-    }
+    const monthly =
+      sub.billingCycle === "monthly"
+        ? sub.priceAtPurchase
+        : Math.round(sub.priceAtPurchase / 12);
+    mrrByCurrency[sub.currency] = (mrrByCurrency[sub.currency] || 0) + monthly;
   }
+  const mrr = Object.entries(mrrByCurrency)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([currency, amount]) => ({ currency, amount }));
+
+  // Paid revenue per currency (centimes)
+  const totalRevenue = paidInvoices
+    .map((group) => ({
+      currency: group.currency,
+      amount: group._sum.amount || 0,
+    }))
+    .sort((a, b) => a.currency.localeCompare(b.currency));
 
   // Build subscription breakdown
   const breakdown: Record<string, number> = {
@@ -69,8 +84,9 @@ export const GET = withPlatformAdmin(async () => {
     pending_tenants: pendingTenants,
     total_users: totalUsers,
     new_signups_this_month: newSignupsThisMonth,
+    // Per-currency money figures: [{ currency: "DZD", amount: 1600000 }, ...]
     mrr,
-    total_revenue: paidInvoices._sum.amount || 0,
+    total_revenue: totalRevenue,
     subscription_breakdown: breakdown,
   });
 });

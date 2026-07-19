@@ -364,12 +364,16 @@ export type RateLimitLog = {
 };
 
 // Admin Analytics
+// Money figures are reported per currency — mixed-currency amounts are never
+// collapsed into a single number.
+export type AdminMoneyByCurrency = { currency: string; amount: number };
+
 export type AdminAnalyticsOverview = {
   total_tenants: number;
   active_tenants: number;
   total_users: number;
   new_signups_this_month: number;
-  mrr: number;
-  total_revenue: number;
+  mrr: AdminMoneyByCurrency[];
+  total_revenue: AdminMoneyByCurrency[];
   subscription_breakdown: Record<string, number>;
 };
