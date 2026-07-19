@@ -34,8 +34,9 @@ import {
 } from "@/components/ui";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
-import { useInvoices, useDeleteInvoice, useMarkInvoicePaid, useDuplicateInvoice, useBatchDeleteInvoices } from "./hooks/useInvoices";
+import { useInfiniteInvoices, useDeleteInvoice, useMarkInvoicePaid, useDuplicateInvoice, useBatchDeleteInvoices } from "./hooks/useInvoices";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -54,12 +55,24 @@ export function InvoicesPage() {
   const [markPaidId, setMarkPaidId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
-  const { data: invoices, isLoading } = useInvoices();
+  const {
+    data: invoicePages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteInvoices();
+  const invoices = useMemo(
+    () => invoicePages?.pages.flatMap((page) => page.data),
+    [invoicePages]
+  );
   const deleteInvoice = useDeleteInvoice();
   const markPaid = useMarkInvoicePaid();
   const duplicateInvoice = useDuplicateInvoice();
   const batchDeleteInvoices = useBatchDeleteInvoices();
 
+  // Search filters client-side within the loaded pages (the route has no
+  // server-side search filter).
   const filteredInvoices = invoices?.filter(
     (invoice) =>
       invoice.invoice_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -331,6 +344,12 @@ export function InvoicesPage() {
             </TableBody>
           </Table>
           </div>
+          <LoadMoreSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            loadedCount={invoices?.length ?? 0}
+          />
         </CardContent>
       </Card>
 

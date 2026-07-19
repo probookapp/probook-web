@@ -1,4 +1,8 @@
 {
+  "pagination": {
+    "loadMore": "تحميل المزيد",
+    "endOfList": "نهاية القائمة"
+  },
   "buttons": {
     "save": "حفظ",
     "cancel": "إلغاء",

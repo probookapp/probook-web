@@ -1,9 +1,38 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { adminTenantsApi } from "@/lib/admin-api";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
 
 interface TenantsFilters {
   status?: string;
   search?: string;
+}
+
+/**
+ * Cursor-paginated tenants list for the admin tenants page. Status and search
+ * are forwarded to the route's existing server-side filters.
+ */
+export function useAdminTenantsInfinite(filters?: TenantsFilters) {
+  return useInfiniteQuery({
+    // Shares the ["admin-tenants"] prefix so existing invalidations refresh it too.
+    queryKey: ["admin-tenants", "infinite", filters ?? {}],
+    queryFn: ({ pageParam }) =>
+      adminTenantsApi.getPage({
+        limit: LIST_PAGE_SIZE,
+        cursor: pageParam ?? undefined,
+        status: filters?.status,
+        search: filters?.search,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
+    // Keep the previous list on screen while a new filter/search loads.
+    placeholderData: keepPreviousData,
+  });
 }
 
 export function useAdminTenants(filters?: TenantsFilters) {

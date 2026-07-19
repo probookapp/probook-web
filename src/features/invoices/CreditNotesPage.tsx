@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
 import { ArrowLeft, Eye, Trash2, Search, Undo2 } from "lucide-react";
@@ -18,8 +18,9 @@ import {
   Input,
   Badge,
 } from "@/components/ui";
-import { useCreditNotes, useDeleteCreditNote } from "./hooks/useCreditNotes";
+import { useInfiniteCreditNotes, useDeleteCreditNote } from "./hooks/useCreditNotes";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export function CreditNotesPage() {
@@ -29,9 +30,21 @@ export function CreditNotesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  const { data: creditNotes, isLoading } = useCreditNotes();
+  const {
+    data: creditNotePages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteCreditNotes();
+  const creditNotes = useMemo(
+    () => creditNotePages?.pages.flatMap((page) => page.data),
+    [creditNotePages]
+  );
   const deleteCreditNote = useDeleteCreditNote();
 
+  // Search filters client-side within the loaded pages (the route has no
+  // server-side search filter).
   const filtered = creditNotes?.filter(
     (cn) =>
       cn.credit_note_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -153,6 +166,12 @@ export function CreditNotesPage() {
               </TableBody>
             </Table>
           </div>
+          <LoadMoreSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            loadedCount={creditNotes?.length ?? 0}
+          />
         </CardContent>
       </Card>
 

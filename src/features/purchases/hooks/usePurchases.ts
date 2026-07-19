@@ -1,13 +1,16 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { purchaseApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useToastStore } from "@/stores/useToastStore";
 import { useTranslation } from "react-i18next";
 import { DEMO_PURCHASES } from "@/lib/demo-data";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
 import type {
   CreatePurchaseOrderInput,
   UpdatePurchaseOrderInput,
   ConfirmPurchaseOrderInput,
+  CursorPage,
+  PurchaseOrderListItem,
 } from "@/types";
 
 export function usePurchases() {
@@ -15,6 +18,24 @@ export function usePurchases() {
   return useQuery({
     queryKey: ["purchases", { demo: isDemoMode }],
     queryFn: isDemoMode ? () => DEMO_PURCHASES : purchaseApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
+  });
+}
+
+/**
+ * Cursor-paginated purchases list (lean rows, no lines) for the list page.
+ * Edit/confirm flows fetch the full order via usePurchase(id).
+ */
+export function useInfinitePurchases() {
+  const { isDemoMode } = useDemoMode();
+  return useInfiniteQuery({
+    // Shares the ["purchases"] prefix so existing invalidations refresh it too.
+    queryKey: ["purchases", "infinite", { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? (): CursorPage<PurchaseOrderListItem> => ({ data: DEMO_PURCHASES, next_cursor: null })
+      : ({ pageParam }) => purchaseApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
     staleTime: isDemoMode ? Infinity : undefined,
   });
 }

@@ -28,12 +28,14 @@ import { PurchaseForm } from "./components/PurchaseForm";
 import { PurchaseConfirmModal } from "./components/PurchaseConfirmModal";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
-  usePurchases,
+  useInfinitePurchases,
+  usePurchase,
   useCreatePurchase,
   useUpdatePurchase,
   useDeletePurchase,
@@ -43,6 +45,7 @@ import {
 } from "./hooks/usePurchases";
 import type {
   PurchaseOrder,
+  PurchaseOrderListItem,
   PurchaseOrderStatus,
   PurchasePaymentStatus,
   CreatePurchaseOrderInput,
@@ -88,15 +91,35 @@ export function PurchasesPage() {
   const canDelete = useAuthStore((s) => s.hasPermission("purchases", "delete"));
 
   const [showForm, setShowForm] = useState(false);
-  const [editingPurchase, setEditingPurchase] = useState<PurchaseOrder | undefined>();
+  const [editingPurchase, setEditingPurchase] = useState<PurchaseOrderListItem | undefined>();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
-  const [confirmingPurchase, setConfirmingPurchase] = useState<PurchaseOrder | null>(null);
+  const [confirmingPurchase, setConfirmingPurchase] = useState<PurchaseOrderListItem | null>(null);
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
 
-  const { data: purchases, isLoading } = usePurchases();
+  const {
+    data: purchasePages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfinitePurchases();
+  const purchases = useMemo(
+    () => purchasePages?.pages.flatMap((page) => page.data),
+    [purchasePages]
+  );
+  // Lean list rows have no lines: edit/confirm fetch the full order by id.
+  // Demo mode skips the fetch — DEMO_PURCHASES rows already carry their lines.
+  const { data: editingFullData } = usePurchase(!isDemoMode ? editingPurchase?.id ?? "" : "");
+  const editingFull = isDemoMode
+    ? (editingPurchase as PurchaseOrder | undefined)
+    : editingFullData;
+  const { data: confirmingFullData } = usePurchase(!isDemoMode ? confirmingPurchase?.id ?? "" : "");
+  const confirmingFull = isDemoMode
+    ? (confirmingPurchase as PurchaseOrder | null)
+    : confirmingFullData ?? null;
   const createPurchase = useCreatePurchase();
   const updatePurchase = useUpdatePurchase();
   const deletePurchase = useDeletePurchase();
@@ -137,7 +160,7 @@ export function PurchasesPage() {
     selection.clear();
   }, [searchQuery, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleOpenForm = (purchase?: PurchaseOrder) => {
+  const handleOpenForm = (purchase?: PurchaseOrderListItem) => {
     if (isDemoMode) {
       showSubscribePrompt();
       return;
@@ -514,6 +537,12 @@ export function PurchasesPage() {
               </TableBody>
             </Table>
           </div>
+          <LoadMoreSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            loadedCount={purchases?.length ?? 0}
+          />
         </CardContent>
       </Card>
 
@@ -524,12 +553,19 @@ export function PurchasesPage() {
         title={editingPurchase ? t("editPurchase") : t("newPurchase")}
         size="lg"
       >
-        <PurchaseForm
-          purchase={editingPurchase}
-          onSubmit={handleSubmit}
-          onCancel={handleCloseForm}
-          isLoading={createPurchase.isPending || updatePurchase.isPending}
-        />
+        {editingPurchase && !editingFull ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+          </div>
+        ) : (
+          <PurchaseForm
+            key={editingPurchase?.id ?? "new"}
+            purchase={editingPurchase ? editingFull : undefined}
+            onSubmit={handleSubmit}
+            onCancel={handleCloseForm}
+            isLoading={createPurchase.isPending || updatePurchase.isPending}
+          />
+        )}
       </Modal>
 
       {/* Delete confirm modal */}
@@ -586,12 +622,12 @@ export function PurchasesPage() {
         </div>
       </Modal>
 
-      {/* Confirm purchase modal */}
+      {/* Confirm purchase modal (opens once the full order — with lines — is loaded) */}
       <PurchaseConfirmModal
-        key={confirmingPurchase?.id ?? "none"}
-        open={!!confirmingPurchase}
+        key={confirmingFull?.id ?? "none"}
+        open={!!confirmingPurchase && !!confirmingFull}
         onClose={() => setConfirmingPurchase(null)}
-        purchaseOrder={confirmingPurchase}
+        purchaseOrder={confirmingFull}
         onConfirm={handleConfirm}
         isLoading={confirmPurchase.isPending}
       />

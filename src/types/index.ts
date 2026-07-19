@@ -1374,3 +1374,46 @@ export interface CreatePosRefundInput {
   restock: boolean;
   lines: CreateCreditNoteLineInput[];
 }
+
+// ---------------------------------------------------------------------------
+// Cursor-based pagination (list GETs called with a `limit` query param)
+// ---------------------------------------------------------------------------
+
+/**
+ * Envelope returned by list GET endpoints when called with `limit`:
+ * `{ data, next_cursor }` where `next_cursor` is the id of the last item, or
+ * null when there are no more pages. Without `limit` the same endpoints keep
+ * returning the legacy full array.
+ */
+export interface CursorPage<T> {
+  data: T[];
+  next_cursor: string | null;
+}
+
+/** Params accepted by the paginated `getPage` API wrappers. */
+export interface CursorPageParams {
+  limit: number;
+  cursor?: string | null;
+}
+
+/**
+ * Lean invoice row from the paginated invoices list: no `lines`/`payments`
+ * arrays; the client is reduced to `{ id, name }` and a `paid_total`
+ * aggregate replaces the payments array.
+ */
+export type InvoiceListItem = Omit<Invoice, "lines" | "payments" | "client"> & {
+  client?: Pick<Client, "id" | "name"> | null;
+  paid_total: number;
+};
+
+/** Lean quote row from the paginated quotes list (no `lines`). */
+export type QuoteListItem = Omit<Quote, "lines">;
+
+/** Lean delivery note row from the paginated list (no `lines`). */
+export type DeliveryNoteListItem = Omit<DeliveryNote, "lines">;
+
+/** Lean credit note row from the paginated list (no `lines`, no embedded invoice). */
+export type CreditNoteListItem = Omit<CreditNote, "lines" | "invoice">;
+
+/** Lean purchase order row from the paginated list (no `lines`/`payments`). */
+export type PurchaseOrderListItem = Omit<PurchaseOrder, "lines" | "payments">;

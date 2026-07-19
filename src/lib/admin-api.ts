@@ -1,4 +1,8 @@
 import { adminApiCall } from "./admin-api-adapter";
+import type { CursorPage } from "@/types";
+
+/** Generic admin row shape (the admin dashboard is untyped by design). */
+type AdminRow = Record<string, unknown>;
 
 // Admin Auth commands
 export const adminAuthApi = {
@@ -27,6 +31,8 @@ export const adminPlansApi = {
 // Tenants commands
 export const adminTenantsApi = {
   getAll: () => adminApiCall<unknown[]>("get_admin_tenants"),
+  getPage: (p: { limit: number; cursor?: string; status?: string; search?: string }) =>
+    adminApiCall<CursorPage<AdminRow>>("get_admin_tenants", p),
   getById: (id: string) => adminApiCall<unknown>("get_admin_tenant", { id }),
   update: (input: Record<string, unknown>) => adminApiCall<unknown>("update_admin_tenant", { input }),
   delete: (id: string) => adminApiCall<void>("delete_admin_tenant", { id }),
@@ -47,6 +53,8 @@ export const adminPlatformAdminsApi = {
 // Users commands
 export const adminUsersApi = {
   getAll: () => adminApiCall<unknown[]>("get_admin_users"),
+  getPage: (p: { limit: number; cursor?: string; search?: string }) =>
+    adminApiCall<CursorPage<AdminRow>>("get_admin_users", p),
   disable: (id: string) => adminApiCall<unknown>("disable_admin_user", { id }),
   resetPassword: (id: string, input: Record<string, unknown>) =>
     adminApiCall<unknown>("reset_admin_user_password", { id, input }),
@@ -55,6 +63,8 @@ export const adminUsersApi = {
 // Subscriptions commands
 export const adminSubscriptionsApi = {
   getAll: () => adminApiCall<unknown[]>("get_admin_subscriptions"),
+  getPage: (p: { limit: number; cursor?: string; status?: string }) =>
+    adminApiCall<CursorPage<AdminRow>>("get_admin_subscriptions", p),
   getById: (id: string) => adminApiCall<unknown>("get_admin_subscription", { id }),
   update: (id: string, input: Record<string, unknown>) =>
     adminApiCall<unknown>("update_admin_subscription", { id, input }),
@@ -120,6 +130,8 @@ export const adminAnnouncementsApi = {
 export const adminSubscriptionInvoicesApi = {
   getAll: (filters?: { status?: string }) =>
     adminApiCall<unknown[]>("get_admin_subscription_invoices", filters as Record<string, unknown>),
+  getPage: (p: { limit: number; cursor?: string; status?: string }) =>
+    adminApiCall<CursorPage<AdminRow>>("get_admin_subscription_invoices", p),
   getById: (id: string) => adminApiCall<unknown>("get_admin_subscription_invoice", { id }),
   create: (input: Record<string, unknown>) =>
     adminApiCall<unknown>("create_subscription_invoice", { input }),

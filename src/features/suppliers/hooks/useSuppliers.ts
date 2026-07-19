@@ -1,14 +1,36 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supplierApi, productSupplierApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_SUPPLIERS } from "@/lib/demo-data";
-import type { CreateSupplierInput, UpdateSupplierInput, CreateProductSupplierInput } from "@/types";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
+import type {
+  CreateSupplierInput,
+  UpdateSupplierInput,
+  CreateProductSupplierInput,
+  CursorPage,
+  Supplier,
+} from "@/types";
 
 export function useSuppliers() {
   const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["suppliers", { demo: isDemoMode }],
     queryFn: isDemoMode ? () => DEMO_SUPPLIERS : supplierApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
+  });
+}
+
+/** Cursor-paginated suppliers list for the suppliers list page. */
+export function useInfiniteSuppliers() {
+  const { isDemoMode } = useDemoMode();
+  return useInfiniteQuery({
+    // Shares the ["suppliers"] prefix so existing invalidations refresh it too.
+    queryKey: ["suppliers", "infinite", { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? (): CursorPage<Supplier> => ({ data: DEMO_SUPPLIERS, next_cursor: null })
+      : ({ pageParam }) => supplierApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
     staleTime: isDemoMode ? Infinity : undefined,
   });
 }

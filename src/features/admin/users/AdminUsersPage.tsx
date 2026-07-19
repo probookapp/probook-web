@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Power, KeyRound, Download } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-export";
@@ -18,8 +18,9 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import {
-  useAdminUsers,
+  useAdminUsersInfinite,
   useDisableUser,
   useResetUserPassword,
 } from "./hooks/useAdminUsers";
@@ -32,7 +33,25 @@ export function AdminUsersPage() {
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState("");
 
-  const { data: users, isLoading } = useAdminUsers();
+  // Debounce the search box before hitting the server-side `search` filter.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Search is forwarded to the route's server-side `search` filter.
+  const {
+    data: userPages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useAdminUsersInfinite(debouncedSearch || undefined);
+  const users = useMemo(
+    () => userPages?.pages.flatMap((page) => page.data),
+    [userPages]
+  );
   const disableUser = useDisableUser();
   const resetPassword = useResetUserPassword();
 
@@ -64,15 +83,8 @@ export function AdminUsersPage() {
     );
   }
 
-  const allUsers = (users || []) as User[];
-  const filteredUsers = search
-    ? allUsers.filter((u) => {
-        const username = String(u.username || "").toLowerCase();
-        const displayName = String(u.display_name || "").toLowerCase();
-        const q = search.toLowerCase();
-        return username.includes(q) || displayName.includes(q);
-      })
-    : allUsers;
+  // Filtering happens server-side (`search` query param) — render as-is.
+  const filteredUsers = (users || []) as User[];
 
   return (
     <div className="space-y-6">
@@ -253,6 +265,12 @@ export function AdminUsersPage() {
               </TableBody>
             </Table>
           </div>
+          <LoadMoreSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            loadedCount={filteredUsers.length}
+          />
         </CardContent>
       </Card>
 

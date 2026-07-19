@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, RefreshCw, XCircle, Pencil, Download } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-export";
@@ -21,8 +21,9 @@ import {
   Badge,
   Select,
 } from "@/components/ui";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import {
-  useAdminSubscriptions,
+  useAdminSubscriptionsInfinite,
   useRenewSubscription,
   useCancelSubscription,
   useUpdateSubscription,
@@ -57,10 +58,27 @@ export function SubscriptionsPage() {
   const [editSub, setEditSub] = useState<Subscription | null>(null);
   const [editForm, setEditForm] = useState({ plan_id: "", billing_cycle: "yearly", status: "active", current_period_end: "" });
 
-  const { data: subscriptions, isLoading } = useAdminSubscriptions({
-    status: statusFilter || undefined,
-    search: searchQuery || undefined,
-  });
+  // Status is forwarded to the route's server-side filter; the route has no
+  // search filter, so the search box filters client-side over loaded pages.
+  const {
+    data: subscriptionPages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useAdminSubscriptionsInfinite(statusFilter || undefined);
+  const subscriptions = useMemo(() => {
+    const rows = subscriptionPages?.pages.flatMap((page) => page.data);
+    if (!rows || !searchQuery) return rows;
+    const search = searchQuery.toLowerCase();
+    return rows.filter((s) => {
+      const tenantName = String(
+        (s.tenant as Record<string, unknown>)?.name || s.tenant_name || ""
+      ).toLowerCase();
+      return tenantName.includes(search);
+    });
+  }, [subscriptionPages, searchQuery]);
+  const loadedCount = subscriptionPages?.pages.reduce((sum, page) => sum + page.data.length, 0) ?? 0;
   const { data: plansData } = useAdminPlans();
   const plans = (plansData || []) as unknown as PlanOption[];
   const renewSubscription = useRenewSubscription();
@@ -325,6 +343,12 @@ export function SubscriptionsPage() {
               </TableBody>
             </Table>
           </div>
+          <LoadMoreSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            loadedCount={loadedCount}
+          />
         </CardContent>
       </Card>
 

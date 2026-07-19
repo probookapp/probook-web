@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, Search, Package, Upload, CreditCard } from "lucide-react";
 import {
@@ -18,6 +18,7 @@ import {
 } from "@/components/ui";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
 import { SupplierForm } from "./components/SupplierForm";
 import { SupplierProducts } from "./components/SupplierProducts";
@@ -26,7 +27,7 @@ import { ImportDialog } from "@/components/shared/ImportDialog";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { isApiError } from "@/lib/api-adapter";
 import {
-  useSuppliers,
+  useInfiniteSuppliers,
   useCreateSupplier,
   useUpdateSupplier,
   useDeleteSupplier,
@@ -54,12 +55,24 @@ export function SuppliersPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [creditsSupplier, setCreditsSupplier] = useState<Supplier | null>(null);
 
-  const { data: suppliers, isLoading } = useSuppliers();
+  const {
+    data: supplierPages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteSuppliers();
+  const suppliers = useMemo(
+    () => supplierPages?.pages.flatMap((page) => page.data),
+    [supplierPages]
+  );
   const createSupplier = useCreateSupplier();
   const updateSupplier = useUpdateSupplier();
   const deleteSupplier = useDeleteSupplier();
   const batchDeleteSuppliers = useBatchDeleteSuppliers();
 
+  // Search filters client-side within the loaded pages (the route has no
+  // server-side search filter).
   const filteredSuppliers = suppliers?.filter((supplier) => {
     const query = searchQuery.toLowerCase();
     return (
@@ -297,6 +310,12 @@ export function SuppliersPage() {
             </TableBody>
           </Table>
           </div>
+          <LoadMoreSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            loadedCount={suppliers?.length ?? 0}
+          />
         </CardContent>
       </Card>
 

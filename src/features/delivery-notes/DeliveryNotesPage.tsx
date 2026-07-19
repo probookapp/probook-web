@@ -30,7 +30,7 @@ import {
   Badge,
 } from "@/components/ui";
 import {
-  useDeliveryNotes,
+  useInfiniteDeliveryNotes,
   useDeleteDeliveryNote,
   useDuplicateDeliveryNote,
   useBatchDeleteDeliveryNotes,
@@ -39,8 +39,9 @@ import { useCreateInvoiceFromDeliveryNotes } from "@/features/invoices/hooks/use
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
-import type { DeliveryNote, DeliveryNoteStatus } from "@/types";
+import type { DeliveryNoteListItem, DeliveryNoteStatus } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 
@@ -65,12 +66,24 @@ export function DeliveryNotesPage() {
     CANCELLED: { label: t("delivery:status.CANCELLED"), variant: "danger" },
   };
 
-  const { data: deliveryNotes, isLoading } = useDeliveryNotes();
+  const {
+    data: deliveryNotePages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteDeliveryNotes();
+  const deliveryNotes = useMemo(
+    () => deliveryNotePages?.pages.flatMap((page) => page.data),
+    [deliveryNotePages]
+  );
   const deleteDeliveryNote = useDeleteDeliveryNote();
   const duplicateDeliveryNote = useDuplicateDeliveryNote();
   const createInvoiceFromDNs = useCreateInvoiceFromDeliveryNotes();
   const batchDeleteDNs = useBatchDeleteDeliveryNotes();
 
+  // Search filters client-side within the loaded pages (the route has no
+  // server-side search filter).
   const filteredDeliveryNotes = deliveryNotes?.filter(
     (note) =>
       note.delivery_note_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -101,7 +114,7 @@ export function DeliveryNotesPage() {
     }
   };
 
-  const handleDuplicate = async (note: DeliveryNote) => {
+  const handleDuplicate = async (note: DeliveryNoteListItem) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
     const newNote = await duplicateDeliveryNote.mutateAsync(note.id);
     router.push(`/delivery-notes/${newNote.id}/edit`);
@@ -332,6 +345,12 @@ export function DeliveryNotesPage() {
             </TableBody>
           </Table>
           </div>
+          <LoadMoreSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            loadedCount={deliveryNotes?.length ?? 0}
+          />
         </CardContent>
       </Card>
 

@@ -1,9 +1,38 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { adminSubscriptionsApi, adminSubscriptionRequestsApi } from "@/lib/admin-api";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
 
 interface SubscriptionsFilters {
   status?: string;
   search?: string;
+}
+
+/**
+ * Cursor-paginated subscriptions list for the admin subscriptions page.
+ * `status` is forwarded to the route's existing server-side filter; the route
+ * has no search filter, so text search stays client-side over loaded pages.
+ */
+export function useAdminSubscriptionsInfinite(status?: string) {
+  return useInfiniteQuery({
+    // Shares the ["admin-subscriptions"] prefix so existing invalidations refresh it too.
+    queryKey: ["admin-subscriptions", "infinite", { status: status || "" }],
+    queryFn: ({ pageParam }) =>
+      adminSubscriptionsApi.getPage({
+        limit: LIST_PAGE_SIZE,
+        cursor: pageParam ?? undefined,
+        status: status || undefined,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
+    // Keep the previous list on screen while a new status filter loads.
+    placeholderData: keepPreviousData,
+  });
 }
 
 interface RequestsFilters {

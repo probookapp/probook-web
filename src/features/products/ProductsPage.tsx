@@ -21,6 +21,7 @@ import {
 } from "@/components/ui";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
 import { ProductForm } from "./components/ProductForm";
 import { ProductSuppliers } from "./components/ProductSuppliers";
@@ -32,7 +33,8 @@ import { useLowStock } from "./hooks/useStock";
 import { ImportDialog } from "@/components/shared/ImportDialog";
 import { exportToCsv } from "@/lib/csv-export";
 import {
-  useProducts,
+  useInfiniteProducts,
+  useProduct,
   useCreateProduct,
   useUpdateProduct,
   useDeleteProduct,
@@ -71,7 +73,20 @@ export function ProductsPage() {
   const [showLowStock, setShowLowStock] = useState(false);
 
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
-  const { data: products, isLoading } = useProducts();
+  const {
+    data: productPages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteProducts();
+  const products = useMemo(
+    () => productPages?.pages.flatMap((page) => page.data),
+    [productPages]
+  );
+  // The paginated list is lean (no prices/variants), so the edit form fetches
+  // the full product by id. Demo mode never opens the edit modal.
+  const { data: editingProductFull } = useProduct(selectedProduct?.id ?? "");
   const { data: lowStock } = useLowStock();
   const { data: categories } = useProductCategories();
   const createProduct = useCreateProduct();
@@ -546,6 +561,12 @@ export function ProductsPage() {
               </TableBody>
             </Table>
             </div>
+            <LoadMoreSentinel
+              hasNextPage={!!hasNextPage}
+              isFetchingNextPage={isFetchingNextPage}
+              fetchNextPage={fetchNextPage}
+              loadedCount={products?.length ?? 0}
+            />
           </CardContent>
         </Card>
         </>
@@ -564,12 +585,19 @@ export function ProductsPage() {
         title={selectedProduct ? t("editProduct") : t("newProduct")}
         size="lg"
       >
-        <ProductForm
-          product={selectedProduct}
-          onSubmit={handleSubmit}
-          onCancel={handleCloseModal}
-          isLoading={createProduct.isPending || updateProduct.isPending}
-        />
+        {selectedProduct && !editingProductFull ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+          </div>
+        ) : (
+          <ProductForm
+            key={editingProductFull?.id ?? "new"}
+            product={selectedProduct ? editingProductFull : undefined}
+            onSubmit={handleSubmit}
+            onCancel={handleCloseModal}
+            isLoading={createProduct.isPending || updateProduct.isPending}
+          />
+        )}
       </Modal>
 
       <Modal

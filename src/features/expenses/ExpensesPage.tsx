@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import {
   Button,
@@ -20,14 +20,16 @@ import {
 import { ExpenseForm } from "./components/ExpenseForm";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
 import { expenseApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_EXPENSES } from "@/lib/demo-data";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
 import { useToastStore } from "@/stores/useToastStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import type { Expense, CreateExpenseInput, UpdateExpenseInput } from "@/types";
+import type { Expense, CreateExpenseInput, UpdateExpenseInput, CursorPage } from "@/types";
 import type { ExpenseFormData } from "./schemas/expenseSchema";
 
 export function ExpensesPage() {
@@ -45,11 +47,26 @@ export function ExpensesPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
-  const { data: expenses, isLoading } = useQuery({
-    queryKey: ["expenses", { demo: isDemoMode }],
-    queryFn: isDemoMode ? () => DEMO_EXPENSES : expenseApi.getAll,
+  const {
+    data: expensePages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    // Shares the ["expenses"] prefix so existing invalidations refresh it too.
+    queryKey: ["expenses", "infinite", { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? (): CursorPage<Expense> => ({ data: DEMO_EXPENSES, next_cursor: null })
+      : ({ pageParam }) => expenseApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
     staleTime: isDemoMode ? Infinity : undefined,
   });
+  const expenses = useMemo(
+    () => expensePages?.pages.flatMap((page) => page.data),
+    [expensePages]
+  );
 
   const createExpense = useMutation({
     mutationFn: (input: CreateExpenseInput) => expenseApi.create(input),
@@ -99,6 +116,8 @@ export function ExpensesPage() {
     },
   });
 
+  // Search filters client-side within the loaded pages (the route has no
+  // server-side search filter).
   const filteredExpenses = expenses?.filter((expense) =>
     expense.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
@@ -285,6 +304,12 @@ export function ExpensesPage() {
             </TableBody>
           </Table>
           </div>
+          <LoadMoreSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            loadedCount={expenses?.length ?? 0}
+          />
         </CardContent>
       </Card>
 

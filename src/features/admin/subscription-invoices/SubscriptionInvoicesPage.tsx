@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { CheckCircle, Plus, Pencil, RotateCcw } from "lucide-react";
 import {
@@ -18,8 +18,9 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import {
-  useAdminSubscriptionInvoices,
+  useAdminSubscriptionInvoicesInfinite,
   useMarkInvoicePaid,
   useCreateSubscriptionInvoice,
   useUpdateSubscriptionInvoice,
@@ -65,8 +66,21 @@ export function SubscriptionInvoicesPage() {
   const [editForm, setEditForm] = useState({ amount: "", currency: "DZD", status: "unpaid" });
   const [refundTarget, setRefundTarget] = useState<Invoice | null>(null);
 
+  // Status is forwarded to the route's server-side filter.
   const filters = statusFilter ? { status: statusFilter } : undefined;
-  const { data: invoices, isLoading } = useAdminSubscriptionInvoices(filters);
+  const {
+    data: invoicePages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useAdminSubscriptionInvoicesInfinite(filters);
+  const invoices = useMemo(
+    () => invoicePages?.pages.flatMap((page) => page.data),
+    [invoicePages]
+  );
+  // The create-invoice dropdown needs every subscription — keep the legacy
+  // full-list fetch here.
   const { data: subsData } = useAdminSubscriptions();
   const subscriptions = (subsData || []) as Subscription[];
   const markPaid = useMarkInvoicePaid();
@@ -285,6 +299,12 @@ export function SubscriptionInvoicesPage() {
               </TableBody>
             </Table>
           </div>
+          <LoadMoreSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            loadedCount={invoiceList.length}
+          />
         </CardContent>
       </Card>
 

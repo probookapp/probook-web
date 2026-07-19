@@ -1,14 +1,30 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { quoteApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_QUOTES } from "@/lib/demo-data";
-import type { CreateQuoteInput, UpdateQuoteInput } from "@/types";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
+import type { CreateQuoteInput, UpdateQuoteInput, CursorPage, QuoteListItem } from "@/types";
 
 export function useQuotes() {
   const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["quotes", { demo: isDemoMode }],
     queryFn: isDemoMode ? () => DEMO_QUOTES : quoteApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
+  });
+}
+
+/** Cursor-paginated quotes list (lean rows) for the quotes list page. */
+export function useInfiniteQuotes() {
+  const { isDemoMode } = useDemoMode();
+  return useInfiniteQuery({
+    // Shares the ["quotes"] prefix so existing invalidations refresh it too.
+    queryKey: ["quotes", "infinite", { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? (): CursorPage<QuoteListItem> => ({ data: DEMO_QUOTES, next_cursor: null })
+      : ({ pageParam }) => quoteApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
     staleTime: isDemoMode ? Infinity : undefined,
   });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter, useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
 import { Search, Eye, Pause, Play, Trash2, Pencil, LogIn, Download } from "lucide-react";
@@ -22,8 +22,9 @@ import {
   Badge,
   Select,
 } from "@/components/ui";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import {
-  useAdminTenants,
+  useAdminTenantsInfinite,
   useSuspendTenant,
   useActivateTenant,
   useDeleteTenant,
@@ -58,10 +59,28 @@ export function TenantsPage() {
   const [editForm, setEditForm] = useState({ name: "", slug: "" });
   const [impersonateTarget, setImpersonateTarget] = useState<Tenant | null>(null);
 
-  const { data: tenants, isLoading } = useAdminTenants({
+  // Debounce the search box before hitting the server-side `search` filter.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Status + search are forwarded to the route's server-side filters.
+  const {
+    data: tenantPages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useAdminTenantsInfinite({
     status: statusFilter || undefined,
-    search: searchQuery || undefined,
+    search: debouncedSearch || undefined,
   });
+  const tenants = useMemo(
+    () => tenantPages?.pages.flatMap((page) => page.data),
+    [tenantPages]
+  );
   const suspendTenant = useSuspendTenant();
   const activateTenant = useActivateTenant();
   const deleteTenant = useDeleteTenant();
@@ -357,6 +376,12 @@ export function TenantsPage() {
               </TableBody>
             </Table>
           </div>
+          <LoadMoreSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            loadedCount={tenantList.length}
+          />
         </CardContent>
       </Card>
 

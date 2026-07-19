@@ -1,16 +1,44 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { invoiceApi, paymentApi } from "@/lib/api";
 import { toast } from "@/stores/useToastStore";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_INVOICES } from "@/lib/demo-data";
-import type { CreateInvoiceInput, UpdateInvoiceInput, CreatePaymentInput } from "@/types";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
+import type {
+  CreateInvoiceInput,
+  UpdateInvoiceInput,
+  CreatePaymentInput,
+  CursorPage,
+  InvoiceListItem,
+} from "@/types";
 
 export function useInvoices() {
   const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["invoices", { demo: isDemoMode }],
     queryFn: isDemoMode ? () => DEMO_INVOICES : invoiceApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
+  });
+}
+
+/** Cursor-paginated invoices list (lean rows) for the invoices list page. */
+export function useInfiniteInvoices() {
+  const { isDemoMode } = useDemoMode();
+  return useInfiniteQuery({
+    // Shares the ["invoices"] prefix so existing invalidations refresh it too.
+    queryKey: ["invoices", "infinite", { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? (): CursorPage<InvoiceListItem> => ({
+          data: DEMO_INVOICES.map((i) => ({
+            ...i,
+            paid_total: i.payments?.reduce((sum, p) => sum + p.amount, 0) ?? 0,
+          })),
+          next_cursor: null,
+        })
+      : ({ pageParam }) => invoiceApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
     staleTime: isDemoMode ? Infinity : undefined,
   });
 }

@@ -1,4 +1,8 @@
 {
+  "pagination": {
+    "loadMore": "Charger plus",
+    "endOfList": "Fin de la liste"
+  },
   "buttons": {
     "save": "Enregistrer",
     "cancel": "Annuler",

@@ -1,14 +1,30 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { clientApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_CLIENTS } from "@/lib/demo-data";
-import type { CreateClientInput, UpdateClientInput, ClientBalance } from "@/types";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
+import type { CreateClientInput, UpdateClientInput, ClientBalance, CursorPage, Client } from "@/types";
 
 export function useClients() {
   const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["clients", { demo: isDemoMode }],
     queryFn: isDemoMode ? () => DEMO_CLIENTS : clientApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
+  });
+}
+
+/** Cursor-paginated clients list for the clients list page. */
+export function useInfiniteClients() {
+  const { isDemoMode } = useDemoMode();
+  return useInfiniteQuery({
+    // Shares the ["clients"] prefix so existing invalidations refresh it too.
+    queryKey: ["clients", "infinite", { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? (): CursorPage<Client> => ({ data: DEMO_CLIENTS, next_cursor: null })
+      : ({ pageParam }) => clientApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
     staleTime: isDemoMode ? Infinity : undefined,
   });
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
 import { Plus, Eye, Pencil, Trash2, Search, FileText, ArrowRight, Copy, Download } from "lucide-react";
@@ -22,13 +22,14 @@ import {
 } from "@/components/ui";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
-import { useQuotes, useDeleteQuote, useConvertQuoteToInvoice, useDuplicateQuote, useBatchDeleteQuotes } from "./hooks/useQuotes";
+import { useInfiniteQuotes, useDeleteQuote, useConvertQuoteToInvoice, useDuplicateQuote, useBatchDeleteQuotes } from "./hooks/useQuotes";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csv-export";
 import { useAuthStore } from "@/stores/useAuthStore";
-import type { Quote } from "@/types";
+import type { QuoteListItem } from "@/types";
 
 export function QuotesPage() {
   const { t } = useTranslation(["quotes", "common"]);
@@ -40,15 +41,27 @@ export function QuotesPage() {
   const canConvertToInvoice = useAuthStore((s) => s.hasPermission("invoices", "create"));
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  const [convertConfirm, setConvertConfirm] = useState<Quote | null>(null);
+  const [convertConfirm, setConvertConfirm] = useState<QuoteListItem | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
-  const { data: quotes, isLoading } = useQuotes();
+  const {
+    data: quotePages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteQuotes();
+  const quotes = useMemo(
+    () => quotePages?.pages.flatMap((page) => page.data),
+    [quotePages]
+  );
   const deleteQuote = useDeleteQuote();
   const convertToInvoice = useConvertQuoteToInvoice();
   const duplicateQuote = useDuplicateQuote();
   const batchDeleteQuotes = useBatchDeleteQuotes();
 
+  // Search filters client-side within the loaded pages (the route has no
+  // server-side search filter).
   const filteredQuotes = quotes?.filter(
     (quote) =>
       quote.quote_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -81,7 +94,7 @@ export function QuotesPage() {
     setDeleteConfirmId(null);
   };
 
-  const handleConvert = async (quote: Quote) => {
+  const handleConvert = async (quote: QuoteListItem) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
     await convertToInvoice.mutateAsync(quote.id);
     setConvertConfirm(null);
@@ -293,6 +306,12 @@ export function QuotesPage() {
             </TableBody>
           </Table>
           </div>
+          <LoadMoreSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            loadedCount={quotes?.length ?? 0}
+          />
         </CardContent>
       </Card>
 

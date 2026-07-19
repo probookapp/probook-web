@@ -1,4 +1,8 @@
 {
+  "pagination": {
+    "loadMore": "Load more",
+    "endOfList": "End of list"
+  },
   "buttons": {
     "save": "Save",
     "cancel": "Cancel",

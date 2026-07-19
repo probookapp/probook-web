@@ -29,10 +29,27 @@ interface EndpointDef {
   query?: (args: Record<string, unknown>) => Record<string, string>;
 }
 
+/**
+ * Query builder for cursor-paginated list GETs. Forwards optional
+ * `limit`/`cursor` args as query params (on top of any endpoint-specific
+ * params produced by `extra`). Without `limit` the server returns the legacy
+ * full-array response; with `limit` it returns `{ data, next_cursor }`.
+ */
+function listQuery(
+  extra?: (args: Record<string, unknown>) => Record<string, string>
+): (args: Record<string, unknown>) => Record<string, string> {
+  return (a) => {
+    const q: Record<string, string> = extra ? extra(a) : {};
+    if (a.limit !== undefined && a.limit !== null) q.limit = String(a.limit);
+    if (a.cursor) q.cursor = String(a.cursor);
+    return q;
+  };
+}
+
 // Maps command names to REST API endpoints
 const COMMAND_MAP: Record<string, EndpointDef> = {
   // Clients
-  get_clients: { method: "GET", path: "/api/clients" },
+  get_clients: { method: "GET", path: "/api/clients", query: listQuery() },
   get_client: { method: "GET", path: (a) => `/api/clients/${a.id}` },
   create_client: { method: "POST", path: "/api/clients", body: (a) => a.input },
   update_client: {
@@ -62,11 +79,11 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   get_products: {
     method: "GET",
     path: "/api/products",
-    query: (a) => {
+    query: listQuery((a) => {
       const q: Record<string, string> = {};
       if (a.include) q.include = String(a.include);
       return q;
-    },
+    }),
   },
   get_product: { method: "GET", path: (a) => `/api/products/${a.id}` },
   create_product: { method: "POST", path: "/api/products", body: (a) => a.input },
@@ -141,7 +158,7 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   },
 
   // Quotes
-  get_quotes: { method: "GET", path: "/api/quotes" },
+  get_quotes: { method: "GET", path: "/api/quotes", query: listQuery() },
   get_quote: { method: "GET", path: (a) => `/api/quotes/${a.id}` },
   create_quote: { method: "POST", path: "/api/quotes", body: (a) => a.input },
   update_quote: {
@@ -169,7 +186,7 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   },
 
   // Invoices
-  get_invoices: { method: "GET", path: "/api/invoices" },
+  get_invoices: { method: "GET", path: "/api/invoices", query: listQuery() },
   get_invoice: { method: "GET", path: (a) => `/api/invoices/${a.id}` },
   create_invoice: {
     method: "POST",
@@ -214,7 +231,7 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   },
 
   // Credit Notes
-  get_credit_notes: { method: "GET", path: "/api/credit-notes" },
+  get_credit_notes: { method: "GET", path: "/api/credit-notes", query: listQuery() },
   get_credit_note: { method: "GET", path: (a) => `/api/credit-notes/${a.id}` },
   create_credit_note: {
     method: "POST",
@@ -264,7 +281,7 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   export_data: { method: "GET", path: "/api/export" },
 
   // Expenses
-  get_expenses: { method: "GET", path: "/api/expenses" },
+  get_expenses: { method: "GET", path: "/api/expenses", query: listQuery() },
   get_expense: { method: "GET", path: (a) => `/api/expenses/${a.id}` },
   create_expense: {
     method: "POST",
@@ -284,7 +301,7 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   },
 
   // Suppliers
-  get_suppliers: { method: "GET", path: "/api/suppliers" },
+  get_suppliers: { method: "GET", path: "/api/suppliers", query: listQuery() },
   get_supplier: { method: "GET", path: (a) => `/api/suppliers/${a.id}` },
   create_supplier: {
     method: "POST",
@@ -335,7 +352,7 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   },
 
   // Purchase Orders
-  get_purchases: { method: "GET", path: "/api/purchases" },
+  get_purchases: { method: "GET", path: "/api/purchases", query: listQuery() },
   get_purchase: { method: "GET", path: (a) => `/api/purchases/${a.id}` },
   create_purchase: { method: "POST", path: "/api/purchases", body: (a) => a.input },
   update_purchase: {
@@ -375,7 +392,7 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   },
 
   // Delivery Notes
-  get_delivery_notes: { method: "GET", path: "/api/delivery-notes" },
+  get_delivery_notes: { method: "GET", path: "/api/delivery-notes", query: listQuery() },
   get_delivery_note: {
     method: "GET",
     path: (a) => `/api/delivery-notes/${a.id}`,

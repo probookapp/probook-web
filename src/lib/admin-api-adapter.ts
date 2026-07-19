@@ -11,6 +11,23 @@ interface EndpointDef {
   query?: (args: Record<string, unknown>) => Record<string, string>;
 }
 
+/**
+ * Query builder for cursor-paginated list GETs. Forwards optional
+ * `limit`/`cursor` args as query params (on top of any endpoint-specific
+ * params produced by `extra`). Without `limit` the server returns the legacy
+ * full-array response; with `limit` it returns `{ data, next_cursor }`.
+ */
+function listQuery(
+  extra?: (args: Record<string, unknown>) => Record<string, string>
+): (args: Record<string, unknown>) => Record<string, string> {
+  return (a) => {
+    const q: Record<string, string> = extra ? extra(a) : {};
+    if (a.limit !== undefined && a.limit !== null) q.limit = String(a.limit);
+    if (a.cursor) q.cursor = String(a.cursor);
+    return q;
+  };
+}
+
 // Maps command names to REST API endpoints
 const COMMAND_MAP: Record<string, EndpointDef> = {
   // Admin Auth
@@ -41,7 +58,16 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   delete_admin_plan: { method: "DELETE", path: (a) => `/api/admin/plans/${a.id}` },
 
   // Tenants
-  get_admin_tenants: { method: "GET", path: "/api/admin/tenants" },
+  get_admin_tenants: {
+    method: "GET",
+    path: "/api/admin/tenants",
+    query: listQuery((a) => {
+      const q: Record<string, string> = {};
+      if (a.status) q.status = String(a.status);
+      if (a.search) q.search = String(a.search);
+      return q;
+    }),
+  },
   get_admin_tenant: { method: "GET", path: (a) => `/api/admin/tenants/${a.id}` },
   update_admin_tenant: {
     method: "PUT",
@@ -84,7 +110,15 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   },
 
   // Users
-  get_admin_users: { method: "GET", path: "/api/admin/users" },
+  get_admin_users: {
+    method: "GET",
+    path: "/api/admin/users",
+    query: listQuery((a) => {
+      const q: Record<string, string> = {};
+      if (a.search) q.search = String(a.search);
+      return q;
+    }),
+  },
   disable_admin_user: {
     method: "POST",
     path: (a) => `/api/admin/users/${a.id}/disable`,
@@ -96,7 +130,15 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   },
 
   // Subscriptions
-  get_admin_subscriptions: { method: "GET", path: "/api/admin/subscriptions" },
+  get_admin_subscriptions: {
+    method: "GET",
+    path: "/api/admin/subscriptions",
+    query: listQuery((a) => {
+      const q: Record<string, string> = {};
+      if (a.status) q.status = String(a.status);
+      return q;
+    }),
+  },
   get_admin_subscription: {
     method: "GET",
     path: (a) => `/api/admin/subscriptions/${a.id}`,
@@ -237,11 +279,11 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   get_admin_subscription_invoices: {
     method: "GET",
     path: "/api/admin/subscription-invoices",
-    query: (a) => {
+    query: listQuery((a) => {
       const q: Record<string, string> = {};
       if (a.status) q.status = String(a.status);
       return q;
-    },
+    }),
   },
   get_admin_subscription_invoice: {
     method: "GET",

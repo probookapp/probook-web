@@ -1,14 +1,34 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { productApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_PRODUCTS } from "@/lib/demo-data";
-import type { CreateProductInput, UpdateProductInput } from "@/types";
+import { LIST_PAGE_SIZE } from "@/lib/pagination";
+import type { CreateProductInput, UpdateProductInput, CursorPage, Product } from "@/types";
 
 export function useProducts() {
   const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["products", { demo: isDemoMode }],
     queryFn: isDemoMode ? () => DEMO_PRODUCTS : productApi.getAll,
+    staleTime: isDemoMode ? Infinity : undefined,
+  });
+}
+
+/**
+ * Cursor-paginated products list for the products management page.
+ * Lean rows: category + computed quantity, no prices/variants arrays —
+ * the edit form fetches the full product by id.
+ */
+export function useInfiniteProducts() {
+  const { isDemoMode } = useDemoMode();
+  return useInfiniteQuery({
+    // Shares the ["products"] prefix so existing invalidations refresh it too.
+    queryKey: ["products", "infinite", { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? (): CursorPage<Product> => ({ data: DEMO_PRODUCTS, next_cursor: null })
+      : ({ pageParam }) => productApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
     staleTime: isDemoMode ? Infinity : undefined,
   });
 }

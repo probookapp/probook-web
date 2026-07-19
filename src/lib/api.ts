@@ -93,11 +93,26 @@ import type {
   UpdatePrinterConfigInput,
   SessionSummary,
   DailyPosReport,
+  // Cursor pagination
+  CursorPage,
+  CursorPageParams,
+  InvoiceListItem,
+  QuoteListItem,
+  DeliveryNoteListItem,
+  CreditNoteListItem,
+  PurchaseOrderListItem,
 } from "@/types";
+
+/** Normalize cursor-page params for apiCall (drops a null cursor). */
+const pageArgs = (p: CursorPageParams): Record<string, unknown> => ({
+  limit: p.limit,
+  cursor: p.cursor ?? undefined,
+});
 
 // Client commands
 export const clientApi = {
   getAll: () => apiCall<Client[]>("get_clients"),
+  getPage: (p: CursorPageParams) => apiCall<CursorPage<Client>>("get_clients", pageArgs(p)),
   getById: (id: string) => apiCall<Client>("get_client", { id }),
   create: (input: CreateClientInput) => apiCall<Client>("create_client", { input }),
   update: (input: UpdateClientInput) => apiCall<Client>("update_client", { input }),
@@ -115,6 +130,8 @@ export const clientApi = {
 // Product commands
 export const productApi = {
   getAll: () => apiCall<Product[]>("get_products"),
+  /** Lean paginated page: includes category + computed quantity, no prices/variants arrays. */
+  getPage: (p: CursorPageParams) => apiCall<CursorPage<Product>>("get_products", pageArgs(p)),
   getAllWithDetails: () => apiCall<Product[]>("get_products", { include: "prices,variants" }),
   getById: (id: string) => apiCall<Product>("get_product", { id }),
   create: (input: CreateProductInput) => apiCall<Product>("create_product", { input }),
@@ -175,6 +192,7 @@ export const productCategoryApi = {
 // Quote commands
 export const quoteApi = {
   getAll: () => apiCall<Quote[]>("get_quotes"),
+  getPage: (p: CursorPageParams) => apiCall<CursorPage<QuoteListItem>>("get_quotes", pageArgs(p)),
   getById: (id: string) => apiCall<Quote>("get_quote", { id }),
   create: (input: CreateQuoteInput) => apiCall<Quote>("create_quote", { input }),
   update: (input: UpdateQuoteInput) => apiCall<Quote>("update_quote", { input }),
@@ -188,6 +206,8 @@ export const quoteApi = {
 // Invoice commands
 export const invoiceApi = {
   getAll: () => apiCall<Invoice[]>("get_invoices"),
+  getPage: (p: CursorPageParams) =>
+    apiCall<CursorPage<InvoiceListItem>>("get_invoices", pageArgs(p)),
   getById: (id: string) => apiCall<Invoice>("get_invoice", { id }),
   create: (input: CreateInvoiceInput) => apiCall<Invoice>("create_invoice", { input }),
   update: (input: UpdateInvoiceInput) => apiCall<Invoice>("update_invoice", { input }),
@@ -205,6 +225,8 @@ export const invoiceApi = {
 // Credit Note commands
 export const creditNoteApi = {
   getAll: () => apiCall<CreditNote[]>("get_credit_notes"),
+  getPage: (p: CursorPageParams) =>
+    apiCall<CursorPage<CreditNoteListItem>>("get_credit_notes", pageArgs(p)),
   getById: (id: string) => apiCall<CreditNote>("get_credit_note", { id }),
   create: (input: CreateCreditNoteInput) =>
     apiCall<CreditNote>("create_credit_note", { input }),
@@ -248,6 +270,7 @@ export const settingsApi = {
 // Expense commands
 export const expenseApi = {
   getAll: () => apiCall<Expense[]>("get_expenses"),
+  getPage: (p: CursorPageParams) => apiCall<CursorPage<Expense>>("get_expenses", pageArgs(p)),
   getById: (id: string) => apiCall<Expense>("get_expense", { id }),
   create: (input: CreateExpenseInput) => apiCall<Expense>("create_expense", { input }),
   update: (input: UpdateExpenseInput) => apiCall<Expense>("update_expense", { input }),
@@ -258,6 +281,7 @@ export const expenseApi = {
 // Supplier commands
 export const supplierApi = {
   getAll: () => apiCall<Supplier[]>("get_suppliers"),
+  getPage: (p: CursorPageParams) => apiCall<CursorPage<Supplier>>("get_suppliers", pageArgs(p)),
   getById: (id: string) => apiCall<Supplier>("get_supplier", { id }),
   create: (input: CreateSupplierInput) => apiCall<Supplier>("create_supplier", { input }),
   update: (input: UpdateSupplierInput) => apiCall<Supplier>("update_supplier", { input }),
@@ -278,6 +302,8 @@ export const productSupplierApi = {
 // Purchase Order commands
 export const purchaseApi = {
   getAll: () => apiCall<PurchaseOrder[]>("get_purchases"),
+  getPage: (p: CursorPageParams) =>
+    apiCall<CursorPage<PurchaseOrderListItem>>("get_purchases", pageArgs(p)),
   getById: (id: string) => apiCall<PurchaseOrder>("get_purchase", { id }),
   create: (input: CreatePurchaseOrderInput) => apiCall<PurchaseOrder>("create_purchase", { input }),
   update: (input: UpdatePurchaseOrderInput) => apiCall<PurchaseOrder>("update_purchase", { input }),
@@ -338,6 +364,8 @@ export const exportApi = {
 // Delivery Note commands
 export const deliveryNoteApi = {
   getAll: () => apiCall<DeliveryNote[]>("get_delivery_notes"),
+  getPage: (p: CursorPageParams) =>
+    apiCall<CursorPage<DeliveryNoteListItem>>("get_delivery_notes", pageArgs(p)),
   getById: (id: string) => apiCall<DeliveryNote>("get_delivery_note", { id }),
   create: (input: CreateDeliveryNoteInput) =>
     apiCall<DeliveryNote>("create_delivery_note", { input }),

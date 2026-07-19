@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, Search, Eye, Users, Upload, Download, FileText } from "lucide-react";
 import {
@@ -26,12 +26,13 @@ import { isApiError } from "@/lib/api-adapter";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
 import { exportToCsv } from "@/lib/csv-export";
 import { formatCurrency } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import {
-  useClients,
+  useInfiniteClients,
   useClientBalances,
   useCreateClient,
   useUpdateClient,
@@ -57,13 +58,25 @@ export function ClientsPage() {
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
 
-  const { data: clients, isLoading } = useClients();
+  const {
+    data: clientPages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useInfiniteClients();
+  const clients = useMemo(
+    () => clientPages?.pages.flatMap((page) => page.data),
+    [clientPages]
+  );
   const { data: balances } = useClientBalances();
   const createClient = useCreateClient();
   const updateClient = useUpdateClient();
   const deleteClient = useDeleteClient();
   const batchDeleteClients = useBatchDeleteClients();
 
+  // Search filters client-side within the loaded pages (the route has no
+  // server-side search filter).
   const filteredClients = clients?.filter(
     (client) =>
       client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -319,6 +332,12 @@ export function ClientsPage() {
             </TableBody>
           </Table>
           </div>
+          <LoadMoreSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            loadedCount={clients?.length ?? 0}
+          />
         </CardContent>
       </Card>
 
