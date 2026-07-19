@@ -89,11 +89,12 @@ export async function seedSubscription(page: Page) {
   expect(approve.status).toBe(200);
 
   // The app persists its React-Query cache to IndexedDB (idb-keyval:
-  // db "keyval-store", store "keyval", key "probook-query-cache") with a 60s
-  // staleTime. During signUp it cached `current-subscription: null`, so the
-  // layout would keep computing isDemoMode=true from that stale value on the
-  // next navigation. Drop the persisted key so the next page load refetches the
-  // now-active subscription and leaves demo mode.
+  // db "keyval-store", store "keyval", keys "probook-query-cache:<scope>",
+  // one bucket per user) with a 60s staleTime. During signUp it cached
+  // `current-subscription: null`, so the layout would keep computing
+  // isDemoMode=true from that stale value on the next navigation. Drop the
+  // persisted keys so the next page load refetches the now-active
+  // subscription and leaves demo mode.
   await page.evaluate(
     () =>
       new Promise<void>((resolve) => {
@@ -102,7 +103,15 @@ export async function seedSubscription(page: Page) {
           const db = open.result;
           try {
             const tx = db.transaction("keyval", "readwrite");
-            tx.objectStore("keyval").delete("probook-query-cache");
+            const store = tx.objectStore("keyval");
+            const req = store.getAllKeys();
+            req.onsuccess = () => {
+              for (const key of req.result) {
+                if (String(key).startsWith("probook-query-cache")) {
+                  store.delete(key);
+                }
+              }
+            };
             tx.oncomplete = () => {
               db.close();
               resolve();

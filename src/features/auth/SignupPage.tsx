@@ -66,7 +66,7 @@ export function SignupPage() {
       // for the Contact event, not this one.
       trackMetaEvent("CompleteRegistration");
 
-      await clearAllUserData(queryClient);
+      await clearAllUserData(queryClient, data.id);
       setUser(data);
     } catch {
       setError(t("signup.error"));

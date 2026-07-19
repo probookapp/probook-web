@@ -1,7 +1,70 @@
 // Probook Service Worker — offline-first PWA support
-const CACHE_VERSION = "v5";
+const CACHE_VERSION = "v6";
 const STATIC_CACHE = `probook-static-${CACHE_VERSION}`;
-const API_CACHE = `probook-api-${CACHE_VERSION}`;
+// API responses are cached per user ("cache scope") so a shared device can
+// never serve one tenant's cached data to another. The scope is sent by the
+// app on login/logout (SET_CACHE_SCOPE) and persisted in IndexedDB so it
+// survives service worker restarts.
+const API_CACHE_PREFIX = `probook-api-${CACHE_VERSION}-`;
+
+// ---- Cache scope persistence (tiny IndexedDB key-value helper) ----
+const SCOPE_DB = "probook-sw";
+const SCOPE_STORE = "kv";
+const SCOPE_KEY = "cache-scope";
+
+function openScopeDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(SCOPE_DB, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(SCOPE_STORE);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function idbGetScope() {
+  return openScopeDb()
+    .then(
+      (db) =>
+        new Promise((resolve) => {
+          const req = db
+            .transaction(SCOPE_STORE, "readonly")
+            .objectStore(SCOPE_STORE)
+            .get(SCOPE_KEY);
+          req.onsuccess = () => resolve(req.result);
+          req.onerror = () => resolve(undefined);
+        })
+    )
+    .catch(() => undefined);
+}
+
+function idbSetScope(scope) {
+  return openScopeDb()
+    .then(
+      (db) =>
+        new Promise((resolve) => {
+          const tx = db.transaction(SCOPE_STORE, "readwrite");
+          tx.objectStore(SCOPE_STORE).put(scope, SCOPE_KEY);
+          tx.oncomplete = () => resolve(undefined);
+          tx.onerror = () => resolve(undefined);
+        })
+    )
+    .catch(() => undefined);
+}
+
+// Memoized in-memory copy; re-read from IndexedDB after a SW restart.
+let cachedScope = null;
+
+function getCacheScope() {
+  if (cachedScope !== null) return Promise.resolve(cachedScope);
+  return idbGetScope().then((scope) => {
+    cachedScope = scope || "anon";
+    return cachedScope;
+  });
+}
+
+function getApiCacheName() {
+  return getCacheScope().then((scope) => `${API_CACHE_PREFIX}${scope}`);
+}
 
 // App shell files to precache (Next.js serves assets from /_next/)
 const SUPPORTED_LOCALES = ["en", "fr", "ar"];
@@ -29,13 +92,13 @@ self.addEventListener("install", (event) => {
   // Don't call self.skipWaiting() here — we wait for user confirmation via the update banner
 });
 
-// Activate: clean old caches
+// Activate: clean old caches (incl. the pre-v6 un-namespaced API cache)
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((k) => k !== STATIC_CACHE && k !== API_CACHE)
+          .filter((k) => k !== STATIC_CACHE && !k.startsWith(API_CACHE_PREFIX))
           .map((k) => caches.delete(k))
       )
     )
@@ -43,14 +106,41 @@ self.addEventListener("activate", (event) => {
   self.clients.claim();
 });
 
+// Delete every API cache bucket, regardless of scope.
+function deleteAllApiCaches() {
+  return caches.keys().then((keys) =>
+    Promise.all(
+      keys.filter((k) => k.startsWith(API_CACHE_PREFIX)).map((k) => caches.delete(k))
+    )
+  );
+}
+
 // Listen for messages from the client
 self.addEventListener("message", (event) => {
   if (event.data?.type === "SKIP_WAITING") {
     self.skipWaiting();
   }
-  // Clear tenant-specific API cache on logout/login
+  // Clear tenant-specific API caches on logout/login
   if (event.data?.type === "CLEAR_API_CACHE") {
-    caches.delete(API_CACHE);
+    event.waitUntil(deleteAllApiCaches());
+  }
+  // Switch the per-user cache namespace (sent on login/logout); drop buckets
+  // belonging to other scopes so stale tenant data can't linger.
+  if (event.data?.type === "SET_CACHE_SCOPE") {
+    const scope = event.data.scope || "anon";
+    cachedScope = scope;
+    event.waitUntil(
+      Promise.all([
+        idbSetScope(scope),
+        caches.keys().then((keys) =>
+          Promise.all(
+            keys
+              .filter((k) => k.startsWith(API_CACHE_PREFIX) && k !== `${API_CACHE_PREFIX}${scope}`)
+              .map((k) => caches.delete(k))
+          )
+        ),
+      ])
+    );
   }
 });
 
@@ -82,19 +172,25 @@ self.addEventListener("fetch", (event) => {
           .then((response) => {
             if (response.ok) {
               const clone = response.clone();
-              caches.open(API_CACHE).then((cache) => cache.put(request, clone));
+              getApiCacheName()
+                .then((name) => caches.open(name))
+                .then((cache) => cache.put(request, clone));
             }
             return response;
           })
           .catch(() =>
-            caches.match(request).then(
-              (cached) =>
-                cached ||
-                new Response(JSON.stringify({ error: "Offline" }), {
-                  status: 503,
-                  headers: { "Content-Type": "application/json" },
-                })
-            )
+            // Only match the current scope's bucket — never another user's.
+            getApiCacheName()
+              .then((name) => caches.open(name))
+              .then((cache) => cache.match(request))
+              .then(
+                (cached) =>
+                  cached ||
+                  new Response(JSON.stringify({ error: "Offline" }), {
+                    status: 503,
+                    headers: { "Content-Type": "application/json" },
+                  })
+              )
           )
       );
     } else {

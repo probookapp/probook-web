@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { hashPassword } from "@/lib/auth";
+import { hashPassword, hashToken } from "@/lib/auth";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { resetPasswordSchema } from "@/lib/validations";
 
@@ -11,8 +11,9 @@ export async function POST(req: NextRequest) {
     if (isValidationError(body)) return body;
     const { token, password } = body;
 
+    // Tokens are stored hashed (SHA-256) — look up by the hash of the raw token.
     const resetToken = await prisma.adminPasswordResetToken.findUnique({
-      where: { token },
+      where: { token: await hashToken(token) },
     });
 
     if (!resetToken || resetToken.usedAt || resetToken.expiresAt < new Date()) {

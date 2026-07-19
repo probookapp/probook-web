@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendEmail } from "@/lib/email";
+import { hashToken } from "@/lib/auth";
 import crypto from "crypto";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { forgotPasswordSchema } from "@/lib/validations";
@@ -40,8 +41,9 @@ export async function POST(req: NextRequest) {
     const token = crypto.randomUUID();
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
+    // Store only the SHA-256 hash — a DB read must never expose a usable token.
     await prisma.adminPasswordResetToken.create({
-      data: { adminId: admin.id, token, expiresAt },
+      data: { adminId: admin.id, token: await hashToken(token), expiresAt },
     });
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";

@@ -41,7 +41,7 @@ export function LoginPage() {
         setRequires2FA(true);
         setTwoFAChallengeToken(result.challenge_token);
       } else {
-        await clearAllUserData(queryClient);
+        await clearAllUserData(queryClient, (result as UserInfo).id);
         setUser(result as UserInfo);
       }
     } catch (err) {
@@ -58,7 +58,7 @@ export function LoginPage() {
 
     try {
       const user = await authApi.totpVerify(twoFAChallengeToken, twoFACode);
-      await clearAllUserData(queryClient);
+      await clearAllUserData(queryClient, user.id);
       setUser(user);
     } catch (err) {
       setError(typeof err === 'string' ? err : t('login.invalidCredentials'));

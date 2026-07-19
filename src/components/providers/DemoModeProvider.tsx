@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback } from "react";
+import { createContext, useContext, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Eye, Lock, ArrowRight, X } from "lucide-react";
@@ -43,8 +43,15 @@ export function DemoModeProvider({
     setPlansOpen(true);
   }, []);
 
+  // Stable context value — otherwise every provider render re-renders all
+  // useDemoMode consumers.
+  const contextValue = useMemo(
+    () => ({ isDemoMode, showSubscribePrompt, openPlans }),
+    [isDemoMode, showSubscribePrompt, openPlans]
+  );
+
   return (
-    <DemoModeContext.Provider value={{ isDemoMode, showSubscribePrompt, openPlans }}>
+    <DemoModeContext.Provider value={contextValue}>
       {children}
       {isDemoMode && (
         <>

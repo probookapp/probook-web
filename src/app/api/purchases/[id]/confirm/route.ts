@@ -68,23 +68,14 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
       let paymentStatus = order.paymentStatus;
       let paidFromRegister = order.paidFromRegister;
 
-      // Only charge the register once, even across multiple partial receipts.
-      if (body.paid_from_register && !order.paidFromRegister) {
-        await tx.posCashMovement.create({
-          data: {
-            tenantId,
-            sessionId: body.session_id!,
-            userId: session.userId,
-            movementType: "OUT",
-            amount: order.total,
-            reason: `Purchase Order ${order.orderNumber}`,
-          },
-        });
-        paymentStatus = "PAID";
-        paidFromRegister = true;
-      }
-
       let allReceived = true;
+
+      // Value accounting for proportional register debits. Each line's value is
+      // qty × unit price incl. tax; the till is only debited for the share of
+      // the order value actually received in this receipt.
+      let orderedValue = 0;
+      let prevReceivedValue = 0;
+      let newReceivedValue = 0;
 
       // Update stock and prices for each line based on the newly-received delta.
       for (const line of order.lines) {
@@ -100,6 +91,11 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
         target = Math.max(0, Math.min(orderedQty, target));
 
         const delta = target - prevReceived;
+
+        const unitPriceInclTax = line.unitPrice * (1 + (line.taxRate ?? 0) / 100);
+        orderedValue += orderedQty * unitPriceInclTax;
+        prevReceivedValue += prevReceived * unitPriceInclTax;
+        newReceivedValue += target * unitPriceInclTax;
 
         if (delta !== 0) {
           if (!line.variantId && delta > 0) {
@@ -156,6 +152,39 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
       }
 
       const status = allReceived ? "CONFIRMED" : "PARTIALLY_RECEIVED";
+
+      // Debit the register proportionally to the value received in this
+      // receipt, accumulating across partial receipts. Cumulative debits are
+      // derived from order.total × (received value / ordered value), so the
+      // sum of all debits equals exactly order.total once fully received.
+      if (body.paid_from_register) {
+        const round2 = (n: number) => Math.round(n * 100) / 100;
+        const debitedSoFar =
+          orderedValue > 0 ? round2((order.total * prevReceivedValue) / orderedValue) : 0;
+        const debitedAfter =
+          orderedValue > 0 ? round2((order.total * newReceivedValue) / orderedValue) : 0;
+        const amount = round2(debitedAfter - debitedSoFar);
+
+        if (amount > 0) {
+          await tx.posCashMovement.create({
+            data: {
+              tenantId,
+              sessionId: body.session_id!,
+              userId: session.userId,
+              movementType: "OUT",
+              amount,
+              reason: `Purchase Order ${order.orderNumber}`,
+            },
+          });
+        }
+
+        paidFromRegister = true;
+        paymentStatus = allReceived
+          ? "PAID"
+          : newReceivedValue > 0
+            ? "PARTIAL"
+            : paymentStatus;
+      }
 
       return tx.purchaseOrder.update({
         where: { tenantId, id: params?.id },

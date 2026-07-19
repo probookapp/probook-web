@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { invoiceApi, paymentApi } from "@/lib/api";
+import { toast } from "@/stores/useToastStore";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_INVOICES } from "@/lib/demo-data";
 import type { CreateInvoiceInput, UpdateInvoiceInput, CreatePaymentInput } from "@/types";
@@ -136,12 +138,16 @@ export function useDeletePayment() {
 
 export function useDuplicateInvoice() {
   const queryClient = useQueryClient();
+  const { t } = useTranslation("common");
 
   return useMutation({
     mutationFn: (id: string) => invoiceApi.duplicate(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    },
+    onError: (err) => {
+      toast.error(typeof err === "string" ? err : t("messages.error"));
     },
   });
 }

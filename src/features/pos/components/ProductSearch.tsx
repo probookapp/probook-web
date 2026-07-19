@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Search, Package } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -112,7 +112,16 @@ interface ProductSearchProps {
 export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearchProps) {
   const { t } = useTranslation("pos");
   const [searchTerm, setSearchTerm] = useState("");
+  // Debounced copy of the search term: filtering (and therefore mounting
+  // ProductTiles, each of which fetches its photo) only happens once typing
+  // settles, instead of firing ~20 photo requests per keystroke.
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 250);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
   const [priceTierProduct, setPriceTierProduct] = useState<Product | null>(null);
   const [variantProduct, setVariantProduct] = useState<Product | null>(null);
 
@@ -134,8 +143,8 @@ export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearc
       result = result.filter((p) => p.category_id === selectedCategory);
     }
 
-    if (searchTerm) {
-      const term = searchTerm.toLowerCase();
+    if (debouncedSearchTerm) {
+      const term = debouncedSearchTerm.toLowerCase();
       result = result.filter(
         (p) =>
           p.designation.toLowerCase().includes(term) ||
@@ -145,7 +154,7 @@ export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearc
     }
 
     return result.slice(0, 20);
-  }, [products, searchTerm, selectedCategory]);
+  }, [products, debouncedSearchTerm, selectedCategory]);
 
   return (
     <div className="flex flex-col h-full">
