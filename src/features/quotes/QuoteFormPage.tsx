@@ -15,7 +15,7 @@ import {
   Select,
   SearchableSelect,
 } from "@/components/ui";
-import { RichTextEditor } from "@/components/ui/RichTextEditor";
+import { RichTextEditor } from "@/components/ui/RichTextEditorLazy";
 import { useQuote, useCreateQuote, useUpdateQuote } from "./hooks/useQuotes";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useClients } from "@/features/clients";

@@ -15,7 +15,7 @@ import {
   Select,
   SearchableSelect,
 } from "@/components/ui";
-import { RichTextEditor } from "@/components/ui/RichTextEditor";
+import { RichTextEditor } from "@/components/ui/RichTextEditorLazy";
 import { useInvoice, useCreateInvoice, useUpdateInvoice } from "./hooks/useInvoices";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -256,30 +256,39 @@ export function InvoiceFormPage() {
     };
   }, [watchedLines, watchedShippingCost, watchedShippingTaxRate, watchedDownPaymentPercent, watchedDownPaymentAmount]);
 
-  const getStockError = (index: number): string | null => {
-    const line = watchedLines[index];
-    if (!line?.product_id || !products) return null;
-
-    const product = products.find((p) => p.id === line.product_id);
-    if (!product || product.is_service) return null;
-
-    const available = product.quantity ?? 0;
-    const totalUsed = watchedLines.reduce((sum, l) => {
-      if (l?.product_id === line.product_id && !l?.is_subtotal_line) {
-        return sum + Number(l?.quantity || 0);
+  // Precompute total quantity used per product once per lines change, so each
+  // per-line stock check is an O(1) lookup instead of a reduce over all lines.
+  const getStockError = useMemo(() => {
+    const usedByProduct = new Map<string, number>();
+    for (const l of watchedLines) {
+      if (l?.product_id && !l?.is_subtotal_line) {
+        usedByProduct.set(
+          l.product_id,
+          (usedByProduct.get(l.product_id) ?? 0) + Number(l?.quantity || 0)
+        );
       }
-      return sum;
-    }, 0);
-
-    if (totalUsed > available) {
-      return t("common:validation.stockExceeded", { available, total: totalUsed });
     }
-    return null;
-  };
+
+    return (index: number): string | null => {
+      const line = watchedLines[index];
+      if (!line?.product_id || !products) return null;
+
+      const product = products.find((p) => p.id === line.product_id);
+      if (!product || product.is_service) return null;
+
+      const available = product.quantity ?? 0;
+      const totalUsed = usedByProduct.get(line.product_id) ?? 0;
+
+      if (totalUsed > available) {
+        return t("common:validation.stockExceeded", { available, total: totalUsed });
+      }
+      return null;
+    };
+  }, [watchedLines, products, t]);
 
   const hasStockErrors = useMemo(() => {
     return watchedLines.some((_, index) => getStockError(index) !== null);
-  }, [watchedLines, products, getStockError]);
+  }, [watchedLines, getStockError]);
 
   const handleProductSelect = (index: number, productId: string) => {
     const product = products?.find((p) => p.id === productId);

@@ -36,11 +36,12 @@ export function useAdjustStock() {
   });
 }
 
-export function useLowStock(threshold?: number, locationId?: string) {
+export function useLowStock(threshold?: number, locationId?: string, enabled = true) {
   const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["low-stock", { threshold: threshold ?? null, locationId: locationId ?? null }],
     queryFn: isDemoMode ? () => [] : () => reportApi.getLowStock(threshold, locationId),
     staleTime: isDemoMode ? Infinity : undefined,
+    enabled,
   });
 }

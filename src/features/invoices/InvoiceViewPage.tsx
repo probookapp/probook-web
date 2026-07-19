@@ -13,7 +13,7 @@ import {
   getStatusLabel,
 } from "@/components/ui";
 import { EmailDialog } from "@/components/email";
-import { PDFViewer } from "@/features/pdf";
+import { PDFViewer } from "@/features/pdf/PDFViewerLazy";
 import { PaymentsList } from "./components";
 import { CreateCreditNoteModal } from "./components/CreateCreditNoteModal";
 import { useInvoice, useMarkInvoicePaid, useIssueInvoice, useVerifyInvoiceIntegrity, useConvertInvoiceToDeliveryNote } from "./hooks/useInvoices";

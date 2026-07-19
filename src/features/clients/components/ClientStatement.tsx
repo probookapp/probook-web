@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { pdf } from "@react-pdf/renderer";
 import { Download, FileText } from "lucide-react";
 import {
   Button,
@@ -13,7 +12,7 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui";
-import { ReportPDF, type ReportPDFColumn } from "@/features/pdf";
+import { type ReportPDFColumn } from "@/features/pdf";
 import { exportToCsv } from "@/lib/csv-export";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
@@ -104,6 +103,11 @@ export function ClientStatement({ isOpen, onClose, clientId, clientName }: Clien
       { label: t("statement.closingBalance"), value: formatCurrency(statement.totals.closing_balance) },
     ];
     try {
+      // Heavy renderer loads on demand — keep @react-pdf/renderer out of the page bundle
+      const [{ pdf }, { ReportPDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/features/pdf/ReportPDF"),
+      ]);
       const blob = await pdf(
         <ReportPDF title={t("statement.title")} subtitle={rangeSubtitle()} columns={columns} rows={rows} totals={totals} />
       ).toBlob();

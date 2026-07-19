@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { pdf } from "@react-pdf/renderer";
 import { toast } from "@/stores/useToastStore";
 import {
   BarChart3,
@@ -36,7 +35,7 @@ import {
   TableCell,
   Badge,
 } from "@/components/ui";
-import { ReportPDF, type ReportPDFColumn } from "@/features/pdf";
+import type { ReportPDFColumn } from "@/features/pdf/ReportPDF";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { locationsApi } from "@/lib/api";
 import { useLowStock } from "@/features/products/hooks/useStock";
@@ -169,42 +168,49 @@ export function ReportsPage() {
   const multiLocation = (locations?.length ?? 0) >= 2;
   const locationFilter = multiLocation && reportLocation ? reportLocation : undefined;
 
-  const { data: revenueData, isLoading: isLoadingRevenue } = useRevenueByMonth(
+  // Each report query is gated on its tab being visible so switching tabs (or
+  // changing the date range) only fetches the active report, not all of them.
+  const { data: revenueData, isPending: isLoadingRevenue } = useRevenueByMonth(
     startDate,
-    endDate
+    endDate,
+    activeReport === "revenue"
   );
-  const { data: clientData, isLoading: isLoadingClients } = useRevenueByClient(
+  const { data: clientData, isPending: isLoadingClients } = useRevenueByClient(
     startDate,
-    endDate
+    endDate,
+    activeReport === "clients"
   );
-  const { data: productData, isLoading: isLoadingProducts } = useProductSales(
+  const { data: productData, isPending: isLoadingProducts } = useProductSales(
     startDate,
-    endDate
+    endDate,
+    activeReport === "products"
   );
-  const { data: profitData, isLoading: isLoadingProfit } = useProfitMargin(
+  const { data: profitData, isPending: isLoadingProfit } = useProfitMargin(
     startDate,
-    endDate
+    endDate,
+    activeReport === "profitMargin"
   );
-  const { data: supplierSpendData, isLoading: isLoadingSupplierSpend } =
-    useSupplierSpend(startDate, endDate);
-  const { data: outstandingData, isLoading: isLoadingOutstanding } =
-    useOutstandingPayments();
-  const { data: conversionData, isLoading: isLoadingConversion } =
-    useQuoteConversionStats(startDate, endDate);
-  const { data: expensesData, isLoading: isLoadingExpenses } = useExpensesReport(
+  const { data: supplierSpendData, isPending: isLoadingSupplierSpend } =
+    useSupplierSpend(startDate, endDate, activeReport === "supplierSpend");
+  const { data: outstandingData, isPending: isLoadingOutstanding } =
+    useOutstandingPayments(activeReport === "outstanding");
+  const { data: conversionData, isPending: isLoadingConversion } =
+    useQuoteConversionStats(startDate, endDate, activeReport === "conversion");
+  const { data: expensesData, isPending: isLoadingExpenses } = useExpensesReport(
     startDate,
-    endDate
+    endDate,
+    activeReport === "expenses"
   );
-  const { data: posDailyData, isLoading: isLoadingPosDaily } =
-    usePosDailyReport(posDate);
-  const { data: lowStockData, isLoading: isLoadingLowStock } =
-    useLowStock(undefined, locationFilter);
-  const { data: valuationData, isLoading: isLoadingValuation } =
-    useInventoryValuation(locationFilter);
-  const { data: taxSummaryData, isLoading: isLoadingTaxSummary } =
-    useTaxSummary(startDate, endDate);
-  const { data: accountingData, isLoading: isLoadingAccounting } =
-    useAccountingExport(startDate, endDate);
+  const { data: posDailyData, isPending: isLoadingPosDaily } =
+    usePosDailyReport(posDate, undefined, activeReport === "posDaily");
+  const { data: lowStockData, isPending: isLoadingLowStock } =
+    useLowStock(undefined, locationFilter, activeReport === "lowStock");
+  const { data: valuationData, isPending: isLoadingValuation } =
+    useInventoryValuation(locationFilter, activeReport === "inventoryValuation");
+  const { data: taxSummaryData, isPending: isLoadingTaxSummary } =
+    useTaxSummary(startDate, endDate, activeReport === "taxSummary");
+  const { data: accountingData, isPending: isLoadingAccounting } =
+    useAccountingExport(startDate, endDate, activeReport === "accountingExport");
 
   const reports = [
     { id: "revenue" as const, label: t("reports:revenueByPeriod.title"), icon: BarChart3 },
@@ -278,6 +284,12 @@ export function ReportsPage() {
     }
 
     try {
+      // Load @react-pdf/renderer on demand so the heavy PDF engine stays out
+      // of the reports page chunk and is only fetched on the first export.
+      const [{ pdf }, { ReportPDF }] = await Promise.all([
+        import("@react-pdf/renderer"),
+        import("@/features/pdf/ReportPDF"),
+      ]);
       const blob = await pdf(
         <ReportPDF
           title={title}

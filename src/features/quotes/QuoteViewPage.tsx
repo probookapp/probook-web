@@ -14,7 +14,7 @@ import {
   Modal,
 } from "@/components/ui";
 import { EmailDialog } from "@/components/email";
-import { PDFViewer } from "@/features/pdf";
+import { PDFViewer } from "@/features/pdf/PDFViewerLazy";
 import { useQuote, useConvertQuoteToInvoice, useConvertQuoteToDeliveryNote } from "./hooks/useQuotes";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCompanySettings } from "@/features/settings";

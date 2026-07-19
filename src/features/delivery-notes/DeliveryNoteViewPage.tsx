@@ -28,7 +28,7 @@ import {
 } from "./hooks/useDeliveryNotes";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCompanySettings, useLogoBase64 } from "@/features/settings/hooks/useSettings";
-import { PDFViewer } from "../pdf/PDFViewer";
+import { PDFViewer } from "../pdf/PDFViewerLazy";
 import { formatDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { DeliveryNoteStatus } from "@/types";
