@@ -5,9 +5,19 @@ import { sendEmail } from "@/lib/email";
 import { randomUUID } from "crypto";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { signupSchema } from "@/lib/validations";
+import { getClientIp } from "@/lib/client-ip";
+import { rateLimitDurable } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
+    // Durable throttle: 5 signups per hour per IP (Redis-backed in production)
+    const clientIp = getClientIp(req);
+    const rateLimited = await rateLimitDurable("signup", clientIp, {
+      limit: 5,
+      windowMs: 60 * 60 * 1000,
+    });
+    if (rateLimited) return rateLimited;
+
     const body = await validateBody(req, signupSchema);
     if (isValidationError(body)) return body;
     const { company_name, username, display_name, password, email } = body;
@@ -31,8 +41,10 @@ export async function POST(req: NextRequest) {
       where: { username },
     });
     if (existingUser) {
+      // Deliberately vague: a "username already taken" message would let
+      // anyone probe which usernames exist across all tenants.
       return NextResponse.json(
-        { error: "Username already taken" },
+        { error: "Unable to create an account with these details. Please try a different username." },
         { status: 409 }
       );
     }
@@ -133,10 +145,7 @@ export async function POST(req: NextRequest) {
 
     // Create UserSession record
     const tokenHash = await hashToken(token);
-    const ipAddress =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip") ||
-      undefined;
+    const ipAddress = clientIp === "unknown" ? undefined : clientIp;
     const userAgent = req.headers.get("user-agent") || undefined;
     await prisma.userSession.create({
       data: {

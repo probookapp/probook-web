@@ -98,10 +98,10 @@ export async function proxy(req: NextRequest) {
     if (pathname.startsWith("/api/admin/")) {
       // Admin auth routes get the stricter limit
       if (pathname.startsWith("/api/admin/auth/")) {
-        const blocked = rateLimitAuth(req);
+        const blocked = await rateLimitAuth(req);
         if (blocked) return blocked;
       } else {
-        const blocked = rateLimitApi(req);
+        const blocked = await rateLimitApi(req);
         if (blocked) return blocked;
       }
       return NextResponse.next();
@@ -119,7 +119,7 @@ export async function proxy(req: NextRequest) {
       ...(process.env.NODE_ENV !== "production" ? ["/api/test/"] : []),
     ];
 
-    // Auth-related public routes get a stricter rate limit (20/min)
+    // Auth-related public routes get a stricter rate limit (50/min)
     const authApiPaths = [
       "/api/auth/login",
       "/api/auth/signup",
@@ -128,7 +128,7 @@ export async function proxy(req: NextRequest) {
       "/api/auth/totp/verify",
     ];
     if (authApiPaths.some((p) => pathname.startsWith(p))) {
-      const blocked = rateLimitAuth(req);
+      const blocked = await rateLimitAuth(req);
       if (blocked) return blocked;
     }
 
@@ -138,7 +138,7 @@ export async function proxy(req: NextRequest) {
 
     // Protected API routes — standard rate limit (100/min)
     {
-      const blocked = rateLimitApi(req);
+      const blocked = await rateLimitApi(req);
       if (blocked) return blocked;
     }
 

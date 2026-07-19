@@ -4,12 +4,30 @@ import { sendEmail } from "@/lib/email";
 import crypto from "crypto";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { forgotPasswordSchema } from "@/lib/validations";
+import { getClientIp } from "@/lib/client-ip";
+import { rateLimitDurable } from "@/lib/rate-limit";
+
+const RESET_REQUEST_LIMIT = { limit: 5, windowMs: 15 * 60 * 1000 }; // 5 per 15 min
 
 export async function POST(req: NextRequest) {
   try {
+    // Durable throttle: 5 requests per 15 minutes per IP (Redis-backed in production)
+    const ipLimited = await rateLimitDurable("forgot-pw:ip", getClientIp(req), RESET_REQUEST_LIMIT);
+    if (ipLimited) return ipLimited;
+
     const body = await validateBody(req, forgotPasswordSchema);
     if (isValidationError(body)) return body;
     const { email } = body;
+
+    // …and 5 per 15 minutes per target email, so a distributed attacker
+    // can't flood one inbox. Applies whether or not the account exists —
+    // no existence leak.
+    const emailLimited = await rateLimitDurable(
+      "forgot-pw:email",
+      email.toLowerCase(),
+      RESET_REQUEST_LIMIT
+    );
+    if (emailLimited) return emailLimited;
 
     // Always return success to avoid leaking whether the email exists
     const successResponse = NextResponse.json({ success: true });

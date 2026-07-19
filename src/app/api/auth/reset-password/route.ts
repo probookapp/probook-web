@@ -3,9 +3,19 @@ import { prisma } from "@/lib/db";
 import { hashPassword, clearSessionCookie } from "@/lib/auth";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { resetPasswordSchema } from "@/lib/validations";
+import { getClientIp } from "@/lib/client-ip";
+import { rateLimitDurable } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
+    // Durable throttle: 10 attempts per 15 minutes per IP — slows down
+    // brute-forcing of reset tokens (Redis-backed in production)
+    const rateLimited = await rateLimitDurable("reset-pw", getClientIp(req), {
+      limit: 10,
+      windowMs: 15 * 60 * 1000,
+    });
+    if (rateLimited) return rateLimited;
+
     const body = await validateBody(req, resetPasswordSchema);
     if (isValidationError(body)) return body;
     const { token, password } = body;

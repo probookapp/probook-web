@@ -1,59 +1,38 @@
 import { prisma } from "./db";
+import { consumeRateLimit } from "./rate-limit";
 
-const windowCounts = new Map<string, { count: number; windowStart: number }>();
 const WINDOW_MS = 60_000; // 1 minute
 const MAX_REQUESTS = 100;
-const CLEANUP_INTERVAL_MS = 5 * 60_000; // 5 minutes
-const MAX_ENTRIES = 10_000; // safety cap
 
-let lastCleanup = Date.now();
-
-function cleanup(now: number) {
-  for (const [key, entry] of windowCounts) {
-    if (now - entry.windowStart >= WINDOW_MS) {
-      windowCounts.delete(key);
-    }
-  }
-  lastCleanup = now;
-}
-
+/**
+ * Per-tenant, per-endpoint rate limit used by withAuth.
+ *
+ * Counting is delegated to the shared limiter core in rate-limit.ts (Upstash
+ * Redis when configured, per-instance memory otherwise). Breaches are flagged
+ * in the RateLimitLog table for the admin rate-limits dashboard.
+ */
 export async function checkRateLimit(tenantId: string, endpoint: string): Promise<boolean> {
-  const key = `${tenantId}:${endpoint}`;
-  const now = Date.now();
+  const result = await consumeRateLimit("api", `${tenantId}:${endpoint}`, {
+    limit: MAX_REQUESTS,
+    windowMs: WINDOW_MS,
+  });
 
-  // Periodic cleanup of expired entries to prevent memory leaks
-  if (now - lastCleanup >= CLEANUP_INTERVAL_MS || windowCounts.size > MAX_ENTRIES) {
-    cleanup(now);
+  if (result.allowed) return true;
+
+  // Log flagged rate limit to DB
+  try {
+    await prisma.rateLimitLog.create({
+      data: {
+        tenantId,
+        endpoint,
+        count: result.count,
+        windowStart: new Date(result.windowStart),
+        flagged: true,
+      },
+    });
+  } catch (error) {
+    console.error("Failed to log rate limit:", error);
   }
 
-  const entry = windowCounts.get(key);
-
-  if (!entry || now - entry.windowStart >= WINDOW_MS) {
-    // New window
-    windowCounts.set(key, { count: 1, windowStart: now });
-    return true;
-  }
-
-  // Within current window
-  entry.count += 1;
-
-  if (entry.count > MAX_REQUESTS) {
-    // Log flagged rate limit to DB
-    try {
-      await prisma.rateLimitLog.create({
-        data: {
-          tenantId,
-          endpoint,
-          count: entry.count,
-          windowStart: new Date(entry.windowStart),
-          flagged: true,
-        },
-      });
-    } catch (error) {
-      console.error("Failed to log rate limit:", error);
-    }
-    return false;
-  }
-
-  return true;
+  return false;
 }

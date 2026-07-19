@@ -4,6 +4,7 @@ import { verifyPassword, createToken, setSessionCookie, hashToken, createTotpCha
 import { checkAccountLocked, checkAccountLockedByIp, recordLoginAttempt } from "@/lib/brute-force";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { loginSchema } from "@/lib/validations";
+import { getClientIp } from "@/lib/client-ip";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,10 +12,8 @@ export async function POST(req: NextRequest) {
     if (isValidationError(body)) return body;
     const { username, password } = body;
 
-    const ipAddress =
-      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      req.headers.get("x-real-ip") ||
-      undefined;
+    const clientIp = getClientIp(req);
+    const ipAddress = clientIp === "unknown" ? undefined : clientIp;
 
     // Check brute force lockout using IP-based tracking for unknown users
     const lockoutByIp = await checkAccountLockedByIp(ipAddress || "unknown", username);
