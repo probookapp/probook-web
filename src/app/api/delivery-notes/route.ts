@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth, toSnakeCase } from "@/lib/api-utils";
+import { withAuth, toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { validateBody, isValidationError } from "@/lib/validate";
@@ -23,6 +23,29 @@ interface DeliveryLineInput {
 export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "delivery_notes", "view");
   if (denied) return denied;
+
+  // Opt-in cursor pagination (audit SALE-23): lean rows — scalars + client
+  // name, no line arrays.
+  const page = parseListPagination(req);
+  if (page) {
+    const cursorId = page.cursor
+      ? (await prisma.deliveryNote.findFirst({
+          where: { tenantId, id: page.cursor },
+          select: { id: true },
+        }))?.id ?? null
+      : null;
+    const data = await prisma.deliveryNote.findMany({
+      where: { tenantId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: page.limit,
+      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+      include: { client: { select: { id: true, name: true } } },
+    });
+    return NextResponse.json(
+      toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
+    );
+  }
+
   const notes = await prisma.deliveryNote.findMany({
     where: { tenantId },
     orderBy: { createdAt: "desc" },

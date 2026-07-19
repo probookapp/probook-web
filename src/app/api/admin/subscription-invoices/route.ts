@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { toSnakeCase } from "@/lib/api-utils";
+import { toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { withPlatformAdmin, withSuperAdmin, logAuditEvent, getClientIp } from "@/lib/admin-api-utils";
 
 function generateSubInvoiceNumber(): string {
@@ -13,6 +13,35 @@ export const GET = withPlatformAdmin(async (req) => {
   const status = searchParams.get("status");
 
   const where = status ? { status } : {};
+
+  // Opt-in cursor pagination (audit ADM-13): scalars + the nested one-row
+  // subscription→plan/tenant references, same status filter, keyset order.
+  const page = parseListPagination(req);
+  if (page) {
+    const cursorId = page.cursor
+      ? (await prisma.subscriptionInvoice.findUnique({
+          where: { id: page.cursor },
+          select: { id: true },
+        }))?.id ?? null
+      : null;
+    const data = await prisma.subscriptionInvoice.findMany({
+      where,
+      include: {
+        subscription: {
+          include: {
+            plan: { select: { id: true, name: true, slug: true } },
+            tenant: { select: { id: true, name: true, slug: true } },
+          },
+        },
+      },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: page.limit,
+      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+    });
+    return NextResponse.json(
+      toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
+    );
+  }
 
   const invoices = await prisma.subscriptionInvoice.findMany({
     where,

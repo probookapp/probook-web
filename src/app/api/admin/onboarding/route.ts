@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withPlatformAdmin } from "@/lib/admin-api-utils";
 import { prisma } from "@/lib/db";
-import { toSnakeCase } from "@/lib/api-utils";
+import { toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 
 const ALL_STEPS = [
   "company_setup",
@@ -11,24 +11,40 @@ const ALL_STEPS = [
   "first_invoice",
 ];
 
-export const GET = withPlatformAdmin(async (_req: NextRequest, _ctx) => {
-  const tenants = await prisma.tenant.findMany({
+const TENANT_SELECT = {
+  id: true,
+  name: true,
+  slug: true,
+  status: true,
+  createdAt: true,
+  onboardingSteps: {
     select: {
-      id: true,
-      name: true,
-      slug: true,
-      status: true,
-      createdAt: true,
-      onboardingSteps: {
-        select: {
-          stepKey: true,
-          completed: true,
-          completedAt: true,
-        },
-      },
+      stepKey: true,
+      completed: true,
+      completedAt: true,
     },
-    orderBy: { createdAt: "desc" },
-  });
+  },
+} as const;
+
+export const GET = withPlatformAdmin(async (req: NextRequest, _ctx) => {
+  // Opt-in cursor pagination (audit ADM-13): same computed projection
+  // (tenant scalars + step rows + completion %), keyset order.
+  const page = parseListPagination(req);
+
+  const tenants = page
+    ? await prisma.tenant.findMany({
+        select: TENANT_SELECT,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        take: page.limit,
+        ...(page.cursor &&
+        (await prisma.tenant.findUnique({ where: { id: page.cursor }, select: { id: true } }))
+          ? { cursor: { id: page.cursor }, skip: 1 }
+          : {}),
+      })
+    : await prisma.tenant.findMany({
+        select: TENANT_SELECT,
+        orderBy: { createdAt: "desc" },
+      });
 
   const result = tenants.map((tenant) => {
     const completedCount = tenant.onboardingSteps.filter((s) => s.completed).length;
@@ -47,6 +63,12 @@ export const GET = withPlatformAdmin(async (_req: NextRequest, _ctx) => {
       completionPercentage,
     };
   });
+
+  if (page) {
+    return NextResponse.json(
+      toSnakeCase({ data: result, nextCursor: nextCursorOf(result, page.limit) })
+    );
+  }
 
   return NextResponse.json(toSnakeCase(result));
 });

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { toSnakeCase } from "@/lib/api-utils";
+import { toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import {
   withPlatformAdmin,
   withSuperAdmin,
@@ -10,13 +10,36 @@ import {
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createCouponSchema } from "@/lib/validations";
 
-export const GET = withPlatformAdmin(async () => {
-  const coupons = await prisma.coupon.findMany({
-    include: {
-      planRestrictions: {
-        include: { plan: { select: { id: true, name: true, slug: true } } },
-      },
+export const GET = withPlatformAdmin(async (req) => {
+  const include = {
+    planRestrictions: {
+      include: { plan: { select: { id: true, name: true, slug: true } } },
     },
+  } as const;
+
+  // Opt-in cursor pagination (audit ADM-13): same projection (scalars + the
+  // small plan-restriction rows), keyset order.
+  const page = parseListPagination(req);
+  if (page) {
+    const cursorId = page.cursor
+      ? (await prisma.coupon.findUnique({
+          where: { id: page.cursor },
+          select: { id: true },
+        }))?.id ?? null
+      : null;
+    const data = await prisma.coupon.findMany({
+      include,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: page.limit,
+      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+    });
+    return NextResponse.json(
+      toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
+    );
+  }
+
+  const coupons = await prisma.coupon.findMany({
+    include,
     orderBy: { createdAt: "desc" },
   });
   return NextResponse.json(toSnakeCase(coupons));

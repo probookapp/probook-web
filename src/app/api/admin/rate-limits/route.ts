@@ -1,9 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withPlatformAdmin } from "@/lib/admin-api-utils";
 import { prisma } from "@/lib/db";
-import { toSnakeCase } from "@/lib/api-utils";
+import { toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 
-export const GET = withPlatformAdmin(async (_req: NextRequest, _ctx) => {
+export const GET = withPlatformAdmin(async (req: NextRequest, _ctx) => {
+  // Opt-in cursor pagination (audit ADM-13): flat lean log rows (scalars only,
+  // newest first) — the client groups by tenant itself. The legacy path below
+  // keeps the grouped shape unchanged.
+  const page = parseListPagination(req);
+  if (page) {
+    const cursorId = page.cursor
+      ? (await prisma.rateLimitLog.findUnique({
+          where: { id: page.cursor },
+          select: { id: true },
+        }))?.id ?? null
+      : null;
+    const data = await prisma.rateLimitLog.findMany({
+      where: { flagged: true },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: page.limit,
+      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+    });
+    return NextResponse.json(
+      toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
+    );
+  }
+
   const logs = await prisma.rateLimitLog.findMany({
     where: { flagged: true },
     orderBy: { createdAt: "desc" },

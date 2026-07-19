@@ -35,6 +35,37 @@ export function toSnakeCase<T>(obj: T): T {
   return obj;
 }
 
+export interface ListPagination {
+  limit: number;
+  cursor: string | null;
+}
+
+/**
+ * Opt-in cursor pagination for list GETs (audit SALE-23/ADM-13/POS-18).
+ *
+ * Returns null when `limit` is absent or unparsable — the caller must then
+ * serve the legacy full-array response, byte-for-byte unchanged. When present,
+ * `limit` is clamped to 1..200 and `cursor` (an item id) marks the row AFTER
+ * which the page starts (keyset via Prisma `cursor` + `skip: 1`).
+ */
+export function parseListPagination(req: NextRequest): ListPagination | null {
+  const params = new URL(req.url).searchParams;
+  const rawLimit = params.get("limit");
+  if (rawLimit === null) return null;
+  const limit = Number.parseInt(rawLimit, 10);
+  if (Number.isNaN(limit)) return null;
+  const cursor = params.get("cursor");
+  return { limit: Math.min(200, Math.max(1, limit)), cursor: cursor || null };
+}
+
+/**
+ * next_cursor for a keyset page: the last item's id when the page came back
+ * full (there may be more rows), else null (definitely the last page).
+ */
+export function nextCursorOf(items: { id: string }[], limit: number): string | null {
+  return items.length === limit ? items[items.length - 1].id : null;
+}
+
 export interface AuthContext {
   session: SessionPayload;
   tenantId: string;

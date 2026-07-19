@@ -1,11 +1,31 @@
 import { NextResponse } from "next/server";
-import { withAuth, toSnakeCase } from "@/lib/api-utils";
+import { withAuth, toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { supplierSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 
 export const GET = withAuth(async (req, { tenantId }) => {
+  // Opt-in cursor pagination (audit SALE-23): scalar rows only.
+  const page = parseListPagination(req);
+  if (page) {
+    const cursorId = page.cursor
+      ? (await prisma.supplier.findFirst({
+          where: { tenantId, id: page.cursor },
+          select: { id: true },
+        }))?.id ?? null
+      : null;
+    const data = await prisma.supplier.findMany({
+      where: { tenantId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: page.limit,
+      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+    });
+    return NextResponse.json(
+      toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
+    );
+  }
+
   const suppliers = await prisma.supplier.findMany({
     where: { tenantId },
     orderBy: { createdAt: "desc" },

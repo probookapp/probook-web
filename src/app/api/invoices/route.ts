@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth, toSnakeCase, markOnboardingStep } from "@/lib/api-utils";
+import { withAuth, toSnakeCase, markOnboardingStep, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/permissions-server";
@@ -52,6 +52,36 @@ function isUniqueViolation(err: unknown): boolean {
 export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "invoices", "view");
   if (denied) return denied;
+
+  // Opt-in cursor pagination (audit SALE-23): lean rows for the list UI —
+  // scalars + client name + payments aggregate, no line arrays.
+  const page = parseListPagination(req);
+  if (page) {
+    const cursorId = page.cursor
+      ? (await prisma.invoice.findFirst({
+          where: { tenantId, id: page.cursor },
+          select: { id: true },
+        }))?.id ?? null
+      : null;
+    const rows = await prisma.invoice.findMany({
+      where: { tenantId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: page.limit,
+      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+      include: {
+        client: { select: { id: true, name: true } },
+        payments: { select: { amount: true } },
+      },
+    });
+    const data = rows.map(({ payments, ...rest }) => ({
+      ...rest,
+      paidTotal: payments.reduce((sum, p) => sum + p.amount, 0),
+    }));
+    return NextResponse.json(
+      toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
+    );
+  }
+
   const invoices = await prisma.invoice.findMany({
     where: { tenantId },
     orderBy: { createdAt: "desc" },

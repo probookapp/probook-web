@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth, toSnakeCase, markOnboardingStep } from "@/lib/api-utils";
+import { withAuth, toSnakeCase, markOnboardingStep, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { validateBody, isValidationError } from "@/lib/validate";
@@ -9,6 +9,28 @@ import { requirePermission } from "@/lib/permissions-server";
 export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "clients", "view");
   if (denied) return denied;
+
+  // Opt-in cursor pagination (audit SALE-23): scalar rows only (the clients
+  // list UI renders no relations or counts).
+  const page = parseListPagination(req);
+  if (page) {
+    const cursorId = page.cursor
+      ? (await prisma.client.findFirst({
+          where: { tenantId, id: page.cursor },
+          select: { id: true },
+        }))?.id ?? null
+      : null;
+    const data = await prisma.client.findMany({
+      where: { tenantId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: page.limit,
+      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+    });
+    return NextResponse.json(
+      toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
+    );
+  }
+
   const clients = await prisma.client.findMany({
     where: { tenantId },
     orderBy: { createdAt: "desc" },

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth, toSnakeCase } from "@/lib/api-utils";
+import { withAuth, toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { applyStockChange } from "@/lib/stock";
 import { requirePermission } from "@/lib/permissions-server";
@@ -10,7 +10,37 @@ function generateTransferNumber(): string {
   return `TR-${Date.now().toString(36).toUpperCase()}-${rand}`;
 }
 
-export const GET = withAuth(async (_req, { tenantId }) => {
+export const GET = withAuth(async (req, { tenantId }) => {
+  // Opt-in cursor pagination (audit SALE-23): lean rows — scalars + location
+  // names + lines count (the list UI shows a count, not the lines).
+  const page = parseListPagination(req);
+  if (page) {
+    const cursorId = page.cursor
+      ? (await prisma.stockTransfer.findFirst({
+          where: { tenantId, id: page.cursor },
+          select: { id: true },
+        }))?.id ?? null
+      : null;
+    const rows = await prisma.stockTransfer.findMany({
+      where: { tenantId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: page.limit,
+      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+      include: {
+        fromLocation: { select: { id: true, name: true } },
+        toLocation: { select: { id: true, name: true } },
+        _count: { select: { lines: true } },
+      },
+    });
+    const data = rows.map(({ _count, ...rest }) => ({
+      ...rest,
+      linesCount: _count.lines,
+    }));
+    return NextResponse.json(
+      toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
+    );
+  }
+
   const transfers = await prisma.stockTransfer.findMany({
     where: { tenantId },
     include: {

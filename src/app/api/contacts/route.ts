@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth, toSnakeCase } from "@/lib/api-utils";
+import { withAuth, toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { contactSchema } from "@/lib/validations";
@@ -11,6 +11,29 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     (await userCan(session, "clients", "view")) ||
     (await userCan(session, "phonebook", "view"));
   if (!canView) return forbidden();
+
+  // Opt-in cursor pagination (audit SALE-23): lean rows — scalars + client
+  // name instead of the full client row.
+  const page = parseListPagination(req);
+  if (page) {
+    const cursorId = page.cursor
+      ? (await prisma.clientContact.findFirst({
+          where: { tenantId, id: page.cursor },
+          select: { id: true },
+        }))?.id ?? null
+      : null;
+    const data = await prisma.clientContact.findMany({
+      where: { tenantId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: page.limit,
+      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+      include: { client: { select: { id: true, name: true } } },
+    });
+    return NextResponse.json(
+      toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
+    );
+  }
+
   const contacts = await prisma.clientContact.findMany({
     where: { tenantId },
     orderBy: { createdAt: "desc" },

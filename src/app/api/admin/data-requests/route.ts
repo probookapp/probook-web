@@ -1,28 +1,55 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withPlatformAdmin, withSuperAdmin, logAuditEvent, getClientIp } from "@/lib/admin-api-utils";
 import { prisma } from "@/lib/db";
-import { toSnakeCase } from "@/lib/api-utils";
+import { toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createDataRequestSchema } from "@/lib/validations";
 
-export const GET = withPlatformAdmin(async (_req: NextRequest, _ctx) => {
-  const dataRequests = await prisma.dataRequest.findMany({
-    include: {
-      tenant: {
-        select: { id: true, name: true, slug: true },
-      },
+export const GET = withPlatformAdmin(async (req: NextRequest, _ctx) => {
+  const include = {
+    tenant: {
+      select: { id: true, name: true, slug: true },
     },
-    orderBy: { createdAt: "desc" },
-  });
+  } as const;
 
   // Never expose filePath here: it holds the full tenant export (base64 data
   // URL). Downloads go through the super-admin-only /download route.
-  const sanitized = dataRequests.map(({ filePath, ...rest }) => ({
-    ...rest,
-    hasExport: Boolean(filePath),
-  }));
+  const sanitize = <T extends { filePath: string | null }>(dataRequests: T[]) =>
+    dataRequests.map(({ filePath, ...rest }) => ({
+      ...rest,
+      hasExport: Boolean(filePath),
+    }));
 
-  return NextResponse.json(toSnakeCase(sanitized));
+  // Opt-in cursor pagination (audit ADM-13): same sanitized projection
+  // (scalars + tenant reference, filePath stripped), keyset order.
+  const page = parseListPagination(req);
+  if (page) {
+    const cursorId = page.cursor
+      ? (await prisma.dataRequest.findUnique({
+          where: { id: page.cursor },
+          select: { id: true },
+        }))?.id ?? null
+      : null;
+    const dataRequests = await prisma.dataRequest.findMany({
+      include,
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: page.limit,
+      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+    });
+    return NextResponse.json(
+      toSnakeCase({
+        data: sanitize(dataRequests),
+        nextCursor: nextCursorOf(dataRequests, page.limit),
+      })
+    );
+  }
+
+  const dataRequests = await prisma.dataRequest.findMany({
+    include,
+    orderBy: { createdAt: "desc" },
+  });
+
+  return NextResponse.json(toSnakeCase(sanitize(dataRequests)));
 });
 
 export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {

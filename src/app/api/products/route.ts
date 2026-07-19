@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth, toSnakeCase, markOnboardingStep } from "@/lib/api-utils";
+import { withAuth, toSnakeCase, markOnboardingStep, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { getProductQuantities, recordInitialStock } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
@@ -9,6 +9,48 @@ import { requirePermission } from "@/lib/permissions-server";
 export const GET = withAuth(async (req, { tenantId }) => {
   const url = new URL(req.url);
   const fields = url.searchParams.get("include")?.split(",") ?? [];
+
+  // Opt-in cursor pagination (audit SALE-23): lean rows — scalars + category +
+  // computed quantity. prices/variants still honor the `include` param, but
+  // are only loaded for the page (the POS full-catalog fetch stays on the
+  // legacy path below). Quantities are scoped to the page's product ids —
+  // no full-catalog groupBy.
+  const page = parseListPagination(req);
+  if (page) {
+    const cursorId = page.cursor
+      ? (await prisma.product.findFirst({
+          where: { tenantId, id: page.cursor },
+          select: { id: true },
+        }))?.id ?? null
+      : null;
+    const rows = await prisma.product.findMany({
+      where: { tenantId },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: page.limit,
+      ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+      include: {
+        category: true,
+        prices: fields.includes("prices"),
+        variants: fields.includes("variants"),
+      },
+    });
+    const { byProduct, byVariant } = await getProductQuantities(prisma, tenantId, {
+      productIds: rows.map((p) => p.id),
+    });
+    const data = rows.map((p) => {
+      const variants = (p as { variants?: { id: string }[] }).variants;
+      return {
+        ...p,
+        quantity: byProduct.get(p.id) ?? 0,
+        ...(variants
+          ? { variants: variants.map((v) => ({ ...v, quantity: byVariant.get(v.id) ?? 0 })) }
+          : {}),
+      };
+    });
+    return NextResponse.json(
+      toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
+    );
+  }
 
   const products = await prisma.product.findMany({
     where: { tenantId },
