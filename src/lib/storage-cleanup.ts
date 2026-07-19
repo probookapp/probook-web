@@ -1,10 +1,16 @@
-import { getAllMutations, discardMutation, getPendingMutationCount } from "./offline-mutations";
+import {
+  getAllMutations,
+  discardMutation,
+  getPendingMutationCount,
+  MAX_RETRIES,
+} from "./offline-mutations";
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
- * Remove successfully synced mutations older than 30 days from IndexedDB.
- * Only removes mutations that are no longer pending/failed (i.e., stale entries).
+ * Remove stale queue entries from IndexedDB: failed mutations older than 30
+ * days that exhausted their retries. Pending and conflict items are kept —
+ * pending still syncs, conflicts wait for the user.
  */
 export async function cleanupOldMutations(): Promise<number> {
   const all = await getAllMutations();
@@ -12,18 +18,14 @@ export async function cleanupOldMutations(): Promise<number> {
   let cleaned = 0;
 
   for (const mutation of all) {
-    const ts = new Date(mutation.timestamp).getTime();
-    if (ts < cutoff) {
-      // Remove old failed mutations that have exhausted retries
-      if (mutation.status === "failed" && mutation.retryCount >= 10) {
-        await discardMutation(mutation.id);
-        cleaned++;
-      }
-      // Remove mutations stuck in "syncing" status (crash recovery)
-      if (mutation.status === "syncing") {
-        await discardMutation(mutation.id);
-        cleaned++;
-      }
+    const ts = new Date(mutation.queuedAt).getTime();
+    if (
+      ts < cutoff &&
+      mutation.status === "failed" &&
+      mutation.retryCount >= MAX_RETRIES
+    ) {
+      await discardMutation(mutation.id);
+      cleaned++;
     }
   }
 

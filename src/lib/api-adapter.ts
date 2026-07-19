@@ -1,7 +1,6 @@
 import { API_BASE_URL } from "./config";
-import { queueMutationRaw } from "./offline-mutations";
-import { toast } from "@/stores/useToastStore";
-import i18n from "@/i18n";
+import { queueCommand } from "./offline-mutations";
+import { OfflineQueuedError } from "./offline-errors";
 
 export class ApiError extends Error {
   status: number;
@@ -743,13 +742,37 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
 };
 
 /**
- * Unified API call.
- * Maps command names to REST endpoints and uses fetch.
+ * Write commands that are safe to save to the unified offline queue and replay
+ * later. Everything else fails immediately when the network is down.
  */
-export async function apiCall<T>(
+export const QUEUEABLE_COMMANDS: ReadonlySet<string> = new Set([
+  "create_client",
+  "update_client",
+  "create_product",
+  "update_product",
+  "create_quote",
+  "update_quote",
+  "create_invoice",
+  "update_invoice",
+  "create_payment",
+  "create_pos_transaction",
+]);
+
+export interface BuiltCommandRequest {
+  url: string;
+  method: HttpMethod;
+  /** JSON-serialized request body, if any. */
+  body?: string;
+}
+
+/**
+ * Resolve a command + args into the concrete HTTP request. Used by apiCall
+ * and by the offline sync manager when replaying queued commands.
+ */
+export function buildCommandRequest(
   command: string,
   args?: Record<string, unknown>
-): Promise<T> {
+): BuiltCommandRequest {
   const endpoint = COMMAND_MAP[command];
   if (!endpoint) {
     throw new Error(`Unknown command: ${command}. No REST mapping found.`);
@@ -770,23 +793,44 @@ export async function apiCall<T>(
     if (qs) url += `?${qs}`;
   }
 
-  const fetchOpts: RequestInit = {
-    method: endpoint.method,
-    headers: { "Content-Type": "application/json" },
-    credentials: "include", // send httpOnly JWT cookie
-  };
-
+  let body: string | undefined;
   if (
     (endpoint.method === "POST" || endpoint.method === "PUT" || endpoint.method === "DELETE") &&
     args
   ) {
     const bodyData = endpoint.body ? endpoint.body(args) : args;
     if (bodyData !== undefined) {
-      fetchOpts.body = JSON.stringify(bodyData);
+      body = JSON.stringify(bodyData);
     }
   }
 
-  const isWrite = endpoint.method !== "GET";
+  return { url, method: endpoint.method, body };
+}
+
+/**
+ * Unified API call.
+ * Maps command names to REST endpoints and uses fetch.
+ *
+ * When a QUEUEABLE write fails with a network error (fetch rejection — not an
+ * HTTP error response), the mutation is saved to the unified offline queue and
+ * an OfflineQueuedError is thrown so the caller can run its offline UX.
+ */
+export async function apiCall<T>(
+  command: string,
+  args?: Record<string, unknown>
+): Promise<T> {
+  const { url, method, body } = buildCommandRequest(command, args);
+
+  const fetchOpts: RequestInit = {
+    method,
+    headers: { "Content-Type": "application/json" },
+    credentials: "include", // send httpOnly JWT cookie
+  };
+  if (body !== undefined) {
+    fetchOpts.body = body;
+  }
+
+  const isWrite = method !== "GET";
 
   try {
     const res = await fetch(url, fetchOpts);
@@ -808,23 +852,17 @@ export async function apiCall<T>(
 
     return res.json() as Promise<T>;
   } catch (err) {
-    // If offline and this is a write operation, queue for later sync
+    // HTTP error responses (ApiError) always propagate as-is.
     const isNetworkError =
-      !navigator.onLine ||
-      (err instanceof TypeError && (err.message.includes("fetch") || err.message === "Load failed"));
+      !(err instanceof ApiError) &&
+      (!navigator.onLine ||
+        (err instanceof TypeError &&
+          (err.message.includes("fetch") || err.message === "Load failed")));
 
-    if (isWrite && isNetworkError) {
-      await queueMutationRaw({
-        url,
-        method: endpoint.method,
-        headers: { "Content-Type": "application/json" },
-        body: fetchOpts.body as string | null ?? null,
-        label: command.replace(/_/g, " "),
-      });
-      // Notify user that the operation was saved for later
-      toast.info(i18n.t("common:offline.queued"));
-      // Return a placeholder so the caller doesn't crash
-      return { _offline: true, _queued: command } as T;
+    if (isWrite && isNetworkError && QUEUEABLE_COMMANDS.has(command)) {
+      const queuedId = await queueCommand(command, args ?? {});
+      // Typed failure: the caller decides how to surface "saved offline".
+      throw new OfflineQueuedError(queuedId, command);
     }
 
     throw err;

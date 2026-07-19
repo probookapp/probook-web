@@ -23,6 +23,7 @@ import { ImportDialog } from "@/components/shared/ImportDialog";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { toast } from "@/stores/useToastStore";
 import { isApiError } from "@/lib/api-adapter";
+import { isOfflineQueuedError } from "@/lib/offline-errors";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { useSelection } from "@/hooks/useSelection";
@@ -111,10 +112,16 @@ export function ClientsPage() {
 
   const handleSubmit = async (data: ClientFormData) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
-    if (selectedClient) {
-      await updateClient.mutateAsync({ ...data, id: selectedClient.id });
-    } else {
-      await createClient.mutateAsync(data);
+    try {
+      if (selectedClient) {
+        await updateClient.mutateAsync({ ...data, id: selectedClient.id });
+      } else {
+        await createClient.mutateAsync(data);
+      }
+    } catch (err) {
+      // Saved to the offline queue: treat as success, it syncs later.
+      if (!isOfflineQueuedError(err)) throw err;
+      toast.info(tCommon("offline.saved_offline"));
     }
     handleCloseModal();
   };

@@ -2,7 +2,8 @@
 
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { initSyncManager } from "@/lib/offline-sync-manager";
 import { ThemeProvider } from "@/components/providers/ThemeContext";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { ServiceWorkerRegistration } from "./ServiceWorkerRegistration";
@@ -51,6 +52,12 @@ export function Providers({ children, locale, theme }: ProvidersProps) {
         },
       })
   );
+
+  // Start the singleton offline sync manager (queue migration, online
+  // listener, 30s interval). Idempotent across re-mounts.
+  useEffect(() => {
+    initSyncManager(queryClient);
+  }, [queryClient]);
 
   return (
     <PersistQueryClientProvider

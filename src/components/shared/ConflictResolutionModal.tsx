@@ -1,70 +1,46 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle } from "lucide-react";
-import { discardMutation, type QueuedMutation } from "@/lib/offline-mutations";
+import { discardMutation } from "@/lib/offline-mutations";
+import { forceReplayMutation } from "@/lib/offline-sync-manager";
+import { useConflictStore } from "@/stores/useConflictStore";
+import { toast } from "@/stores/useToastStore";
 
-interface ConflictDetail {
-  mutation: QueuedMutation;
-  serverData: Record<string, unknown>;
-}
-
+/**
+ * Resolves offline-queue conflicts one at a time, keyed by queue item id.
+ * The conflict list lives in useConflictStore (fed by the sync manager), so
+ * unmounting this modal never blocks the sync loop — conflicts simply wait.
+ */
 export function ConflictResolutionModal() {
   const { t } = useTranslation("common");
-  const [conflict, setConflict] = useState<ConflictDetail | null>(null);
+  const conflicts = useConflictStore((s) => s.conflicts);
+  const removeConflict = useConflictStore((s) => s.removeConflict);
   const [isApplying, setIsApplying] = useState(false);
 
-  const handleConflict = useCallback((event: Event) => {
-    const detail = (event as CustomEvent<ConflictDetail>).detail;
-    setConflict(detail);
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener("probook:conflict", handleConflict);
-    return () => {
-      window.removeEventListener("probook:conflict", handleConflict);
-    };
-  }, [handleConflict]);
-
-  const resolve = useCallback(() => {
-    setConflict(null);
-    window.dispatchEvent(new CustomEvent("probook:conflict-resolved"));
-  }, []);
+  const conflict = conflicts[0] ?? null;
+  if (!conflict) return null;
 
   const handleApplyMine = async () => {
-    if (!conflict) return;
     setIsApplying(true);
-
     try {
-      const { mutation } = conflict;
-      const headers = { ...mutation.headers, "X-Force-Update": "true" };
-
-      const res = await fetch(mutation.url, {
-        method: mutation.method,
-        headers,
-        body: mutation.method !== "GET" ? mutation.body : undefined,
-        credentials: "include",
-      });
-
-      if (res.ok) {
-        await discardMutation(mutation.id);
+      // Force-replays this item with X-Force-Update; on success it is removed
+      // from both the queue and the conflict list.
+      const ok = await forceReplayMutation(conflict.id);
+      if (!ok) {
+        // Item stays queued as a conflict; the user can retry later.
+        toast.error(t("errors.somethingWentWrong"));
       }
-    } catch {
-      // If force update fails, mutation stays in queue
     } finally {
       setIsApplying(false);
-      resolve();
     }
   };
 
   const handleKeepNewer = async () => {
-    if (!conflict) return;
-    await discardMutation(conflict.mutation.id);
-    resolve();
+    await discardMutation(conflict.id);
+    removeConflict(conflict.id);
   };
-
-  if (!conflict) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
@@ -73,16 +49,23 @@ export function ConflictResolutionModal() {
           <div className="flex items-center justify-center w-10 h-10 rounded-full bg-yellow-100 dark:bg-yellow-900/30">
             <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
           </div>
-          <h3 className="text-lg font-semibold">{t("conflict.title")}</h3>
+          <h3 className="text-lg font-semibold">
+            {t("conflict.title")}
+            {conflicts.length > 1 && (
+              <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+                (1/{conflicts.length})
+              </span>
+            )}
+          </h3>
         </div>
 
         <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
           {t("conflict.description")}
         </p>
 
-        {conflict.mutation.label && (
+        {conflict.label && (
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-            {t("conflict.details", { label: conflict.mutation.label })}
+            {t("conflict.details", { label: conflict.label })}
           </p>
         )}
 

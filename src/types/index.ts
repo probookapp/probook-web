@@ -1215,6 +1215,11 @@ export interface CreatePosTransactionInput {
   register_id: string;
   session_id: string;
   client_id?: string | null;
+  /**
+   * Minted once per finalize attempt (crypto.randomUUID()). The server dedupes
+   * on it, so replaying a lost-response POST can never double-record the sale.
+   */
+  idempotency_key?: string;
   lines: CreateTransactionLineInput[];
   payments: CreatePosPaymentInput[];
   discount_percent?: number;

@@ -14,6 +14,8 @@ import { PaymentForm, type PaymentFormData } from "./PaymentForm";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCreatePayment, useDeletePayment } from "../hooks/useInvoices";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { toast } from "@/stores/useToastStore";
+import { isOfflineQueuedError } from "@/lib/offline-errors";
 import type { Invoice } from "@/types";
 
 interface PaymentsListProps {
@@ -60,7 +62,13 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
       notes: data.notes || null,
       idempotency_key: crypto.randomUUID(),
     };
-    await createPayment.mutateAsync(payload);
+    try {
+      await createPayment.mutateAsync(payload);
+    } catch (err) {
+      // Saved to the offline queue: treat as success, it syncs later.
+      if (!isOfflineQueuedError(err)) throw err;
+      toast.info(t("offline.saved_offline"));
+    }
     setShowAddModal(false);
   };
 

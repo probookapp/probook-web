@@ -42,6 +42,7 @@ import { useProductCategories } from "./hooks/useProductCategories";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { isApiError } from "@/lib/api-adapter";
+import { isOfflineQueuedError } from "@/lib/offline-errors";
 import { productSupplierApi, locationsApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { Product } from "@/types";
@@ -161,10 +162,16 @@ export function ProductsPage() {
       category_id: data.category_id || null,
     };
 
-    if (selectedProduct) {
-      await updateProduct.mutateAsync({ ...input, id: selectedProduct.id });
-    } else {
-      await createProduct.mutateAsync(input);
+    try {
+      if (selectedProduct) {
+        await updateProduct.mutateAsync({ ...input, id: selectedProduct.id });
+      } else {
+        await createProduct.mutateAsync(input);
+      }
+    } catch (err) {
+      // Saved to the offline queue: treat as success, it syncs later.
+      if (!isOfflineQueuedError(err)) throw err;
+      toast.info(tCommon("offline.saved_offline"));
     }
     handleCloseModal();
   };

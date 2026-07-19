@@ -274,6 +274,7 @@
     "pending_changes": "changes pending",
     "sync_now": "Sync now",
     "queued": "You're offline. Changes saved and will sync when you're back online.",
+    "saved_offline": "Saved offline — will sync when back online",
     "failedMutations": "Failed Changes",
     "discard": "Discard",
     "retryAll": "Retry All",

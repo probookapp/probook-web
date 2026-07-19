@@ -1,18 +1,25 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { getPendingMutationCount } from "@/lib/offline-mutations";
 import {
-  getPendingMutationCount,
-  replayMutations,
-} from "@/lib/offline-mutations";
+  syncNow,
+  getIsSyncing,
+  SYNC_STATE_EVENT,
+} from "@/lib/offline-sync-manager";
 import { cleanupOldMutations } from "@/lib/storage-cleanup";
 
+/**
+ * Connectivity + unified-queue status for the UI. Sync scheduling itself
+ * (online event + 30s interval) is owned by the offline sync manager
+ * singleton; this hook only reflects its state and exposes a manual trigger.
+ */
 export function useOnlineStatus() {
   const [isOnline, setIsOnline] = useState(
     typeof navigator !== "undefined" ? navigator.onLine : true
   );
   const [pendingCount, setPendingCount] = useState(0);
-  const [isSyncing, setIsSyncing] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(getIsSyncing);
 
   // Track online/offline state
   useEffect(() => {
@@ -52,41 +59,26 @@ export function useOnlineStatus() {
     };
   }, []);
 
-  // Auto-sync when coming back online
-  const sync = useCallback(async () => {
-    if (!navigator.onLine || isSyncing) return;
-    // Only start sync if there are actually pending mutations
-    const pending = await getPendingMutationCount();
-    setPendingCount(pending);
-    if (pending === 0) return;
-    setIsSyncing(true);
-    try {
-      await replayMutations();
-      const count = await getPendingMutationCount();
-      setPendingCount(count);
-    } finally {
-      setIsSyncing(false);
-    }
-  }, [isSyncing]);
-
+  // Mirror the sync manager's mutex state (and refresh the count after runs)
   useEffect(() => {
-    if (isOnline && pendingCount > 0) {
-      sync();
-    }
-  }, [isOnline]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Also auto-sync periodically when online
-  useEffect(() => {
-    if (!isOnline) return;
-
-    const id = setInterval(() => {
-      if (navigator.onLine) {
-        sync();
+    const handleSyncState = (event: Event) => {
+      const detail = (event as CustomEvent<{ isSyncing: boolean }>).detail;
+      setIsSyncing(detail.isSyncing);
+      if (!detail.isSyncing) {
+        getPendingMutationCount().then(setPendingCount).catch(() => {});
       }
-    }, 30_000);
+    };
+    window.addEventListener(SYNC_STATE_EVENT, handleSyncState);
+    return () => window.removeEventListener(SYNC_STATE_EVENT, handleSyncState);
+  }, []);
 
-    return () => clearInterval(id);
-  }, [isOnline, sync]);
+  // Manual "Sync now": delegate to the singleton (mutex-guarded there)
+  const sync = useCallback(async () => {
+    if (!navigator.onLine) return;
+    await syncNow();
+    const count = await getPendingMutationCount();
+    setPendingCount(count);
+  }, []);
 
   return { isOnline, pendingCount, isSyncing, sync };
 }

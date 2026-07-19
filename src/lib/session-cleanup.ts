@@ -5,7 +5,7 @@
  */
 import { clearPersistedQueryCache, setCacheScope } from "@/lib/query-persister";
 import { clearAllMutations } from "@/lib/offline-mutations";
-import { clearAll as clearOfflinePosQueue } from "@/lib/offline-queue";
+import { useConflictStore } from "@/stores/useConflictStore";
 import type { QueryClient } from "@tanstack/react-query";
 
 /**
@@ -19,17 +19,16 @@ export async function clearAllUserData(queryClient: QueryClient, nextScope?: str
   // 2. Persisted React Query cache (IndexedDB) — clears the outgoing scope's bucket
   await clearPersistedQueryCache();
 
-  // 3. Offline mutation queue (IndexedDB)
+  // 3. Unified offline mutation queue (IndexedDB, incl. queued POS sales and
+  //    the legacy pre-unification POS store) + in-memory conflict list
   await clearAllMutations();
+  useConflictStore.getState().clearConflicts();
 
-  // 4. Offline POS transaction queue (IndexedDB)
-  await clearOfflinePosQueue();
-
-  // 5. Switch the cache namespace to the incoming user (or back to "anon")
+  // 4. Switch the cache namespace to the incoming user (or back to "anon")
   const scope = nextScope || "anon";
   setCacheScope(scope);
 
-  // 6. Invalidate service worker API caches and tell it the new cache scope
+  // 5. Invalidate service worker API caches and tell it the new cache scope
   if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
     navigator.serviceWorker.controller.postMessage({ type: "CLEAR_API_CACHE" });
     navigator.serviceWorker.controller.postMessage({ type: "SET_CACHE_SCOPE", scope });

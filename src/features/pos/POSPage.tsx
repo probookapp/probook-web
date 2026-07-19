@@ -26,8 +26,10 @@ import { SessionControls } from "./components/SessionControls";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 import { toast } from "@/stores/useToastStore";
 import { printReceiptWindow, type ReceiptData } from "@/lib/receipt-printer";
-import { queueTransaction, getPendingCount, type OfflineTransactionInput } from "@/lib/offline-queue";
-import { syncOfflineTransactions, isOnline, startAutoSync, OFFLINE_SYNC_COMPLETE_EVENT } from "@/lib/offline-sync";
+import { getPendingMutationCount } from "@/lib/offline-mutations";
+import { syncNow, isOnline, OFFLINE_SYNC_COMPLETE_EVENT } from "@/lib/offline-sync-manager";
+import { isOfflineQueuedError } from "@/lib/offline-errors";
+import type { CreatePosTransactionInput } from "@/types";
 import { posKeys } from "./hooks/usePosSession";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { lookupBarcodeOffline } from "@/lib/offline-barcode";
@@ -129,20 +131,25 @@ export function POSPage() {
     },
   });
 
-  // Offline sync: start auto-sync and track pending count
+  // Track the unified offline queue count (sync itself is owned by the
+  // app-wide sync manager singleton — no separate POS loop).
   useEffect(() => {
-    const stop = startAutoSync(30_000);
-    const updateCount = () => getPendingCount().then(setOfflinePending).catch(() => {});
+    const updateCount = () =>
+      getPendingMutationCount().then(setOfflinePending).catch(() => {});
     updateCount();
     const interval = setInterval(updateCount, 10_000);
-    return () => { stop(); clearInterval(interval); };
+    window.addEventListener("probook:mutation-queued", updateCount);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("probook:mutation-queued", updateCount);
+    };
   }, []);
 
   // Replayed offline sales change server-side stock and session totals, so
   // refresh the POS caches whenever a sync pass lands transactions.
   useEffect(() => {
     const onSynced = () => {
-      getPendingCount().then(setOfflinePending).catch(() => {});
+      getPendingMutationCount().then(setOfflinePending).catch(() => {});
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["pos-products"] });
       queryClient.invalidateQueries({ queryKey: posKeys.transactions() });
@@ -249,7 +256,7 @@ export function POSPage() {
 
     const { discountPercent, discountAmount, clientId } = usePosStore.getState();
 
-    const txInput: OfflineTransactionInput = {
+    const txInput: CreatePosTransactionInput = {
       register_id: currentRegister.id,
       session_id: currentSession.id,
       client_id: clientId,
@@ -280,43 +287,31 @@ export function POSPage() {
     const receiptData = buildReceiptData(payments);
 
     try {
-      if (isOnline()) {
-        await createTransaction.mutateAsync(txInput);
-        toast.success(t("transactionComplete"));
-      } else {
-        // Queue offline
-        await queueTransaction(txInput);
-        const count = await getPendingCount();
-        setOfflinePending(count);
-        toast.success(t("transactionQueued"));
-      }
-
-      // Print receipt
-      printReceiptWindow(receiptData);
-
-      clearCart();
-      setShowPaymentModal(false);
-    } catch {
-      // If online request fails, try offline queue
-      try {
-        await queueTransaction(txInput);
-        const count = await getPendingCount();
-        setOfflinePending(count);
-        printReceiptWindow(receiptData);
-        clearCart();
-        setShowPaymentModal(false);
-        toast.success(t("transactionQueued"));
-      } catch {
+      // Online or offline, this is the single write path: when the network is
+      // down, apiCall saves the sale to the unified offline queue and throws
+      // OfflineQueuedError, which we treat as a completed (queued) sale.
+      await createTransaction.mutateAsync(txInput);
+      toast.success(t("transactionComplete"));
+    } catch (err) {
+      if (!isOfflineQueuedError(err)) {
         toast.error(t("errors.transactionFailed"));
+        return;
       }
+      getPendingMutationCount().then(setOfflinePending).catch(() => {});
+      toast.success(t("transactionQueued"));
     }
+
+    // Same completion flow for live and queued sales.
+    printReceiptWindow(receiptData);
+    clearCart();
+    setShowPaymentModal(false);
   };
 
   const handleSyncNow = async () => {
     setIsSyncing(true);
     try {
-      const result = await syncOfflineTransactions();
-      const count = await getPendingCount();
+      const result = await syncNow();
+      const count = await getPendingMutationCount();
       setOfflinePending(count);
       toast.success(t("syncComplete", { synced: result.synced, failed: result.failed }));
     } catch {

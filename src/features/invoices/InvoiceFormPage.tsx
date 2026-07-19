@@ -25,6 +25,8 @@ import { formatCurrency, formatDateISO, calculateLineTotal } from "@/lib/utils";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
+import { toast } from "@/stores/useToastStore";
+import { isOfflineQueuedError } from "@/lib/offline-errors";
 
 const createLineSchema = (t: (key: string) => string) => z.object({
   product_id: z.string().nullable().optional(),
@@ -319,16 +321,23 @@ export function InvoiceFormPage() {
       ...data,
       notes_html: notesHtml || null,
     };
-    if (isEditing && id) {
-      await updateInvoice.mutateAsync({
-        id,
-        ...formData,
-      });
-    } else {
-      // Minted per submit (not per render) so an offline replay of this exact
-      // request dedupes server-side instead of creating a second invoice.
-      const payload = { ...formData, idempotency_key: crypto.randomUUID() };
-      await createInvoice.mutateAsync(payload);
+    try {
+      if (isEditing && id) {
+        await updateInvoice.mutateAsync({
+          id,
+          ...formData,
+        });
+      } else {
+        // Minted per submit (not per render) so an offline replay of this exact
+        // request dedupes server-side instead of creating a second invoice.
+        const payload = { ...formData, idempotency_key: crypto.randomUUID() };
+        await createInvoice.mutateAsync(payload);
+      }
+    } catch (err) {
+      // Saved to the offline queue: continue back to the list (never to a
+      // detail page — the invoice has no server id yet).
+      if (!isOfflineQueuedError(err)) throw err;
+      toast.info(t("common:offline.saved_offline"));
     }
     submittedRef.current = true;
     router.push("/invoices");

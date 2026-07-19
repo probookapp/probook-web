@@ -274,6 +274,7 @@
     "pending_changes": "modifications en attente",
     "sync_now": "Synchroniser",
     "queued": "Vous êtes hors ligne. Les modifications sont enregistrées et seront synchronisées lorsque vous serez de retour en ligne.",
+    "saved_offline": "Enregistré hors ligne — synchronisation à la reconnexion",
     "failedMutations": "Modifications échouées",
     "discard": "Supprimer",
     "retryAll": "Tout réessayer",

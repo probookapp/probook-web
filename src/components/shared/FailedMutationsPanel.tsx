@@ -5,12 +5,10 @@ import { useTranslation } from "react-i18next";
 import { AlertTriangle, RefreshCw, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import {
   getPendingMutations,
-  replaySingleMutation,
   discardMutation,
-  replayMutations,
-  clearAllMutations,
   type QueuedMutation,
 } from "@/lib/offline-mutations";
+import { replaySingleMutation } from "@/lib/offline-sync-manager";
 
 export function FailedMutationsPanel() {
   const { t } = useTranslation("common");
@@ -46,12 +44,20 @@ export function FailedMutationsPanel() {
   };
 
   const handleRetryAll = async () => {
-    await replayMutations();
+    // Failed items are out of the automatic rotation (retry cap reached),
+    // so replay each one explicitly.
+    for (const mutation of mutations) {
+      await replaySingleMutation(mutation.id);
+    }
     await refresh();
   };
 
   const handleDiscardAll = async () => {
-    await clearAllMutations();
+    // Only discard the failed items shown here — the unified queue also holds
+    // pending writes (e.g. offline POS sales) that must not be dropped.
+    for (const mutation of mutations) {
+      await discardMutation(mutation.id);
+    }
     await refresh();
   };
 
@@ -100,10 +106,10 @@ export function FailedMutationsPanel() {
             >
               <div className="min-w-0 flex-1">
                 <p className="font-medium truncate">
-                  {mutation.label || mutation.url}
+                  {mutation.label || mutation.command.replace(/_/g, " ")}
                 </p>
                 <p className="text-gray-500 dark:text-gray-400">
-                  {new Date(mutation.timestamp).toLocaleString()} &middot;{" "}
+                  {new Date(mutation.queuedAt).toLocaleString()} &middot;{" "}
                   {t("offline.retries", { count: mutation.retryCount })}
                 </p>
                 {mutation.error && (

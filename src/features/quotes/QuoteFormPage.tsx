@@ -25,6 +25,8 @@ import type { QuoteStatus } from "@/types";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
+import { toast } from "@/stores/useToastStore";
+import { isOfflineQueuedError } from "@/lib/offline-errors";
 
 const createLineSchema = (t: (key: string) => string) => z.object({
   product_id: z.string().nullable().optional(),
@@ -283,14 +285,21 @@ export function QuoteFormPage() {
       ...data,
       notes_html: notesHtml || null,
     };
-    if (isEditing && id) {
-      await updateQuote.mutateAsync({
-        id,
-        ...formData,
-        status: data.status || "DRAFT",
-      });
-    } else {
-      await createQuote.mutateAsync(formData);
+    try {
+      if (isEditing && id) {
+        await updateQuote.mutateAsync({
+          id,
+          ...formData,
+          status: data.status || "DRAFT",
+        });
+      } else {
+        await createQuote.mutateAsync(formData);
+      }
+    } catch (err) {
+      // Saved to the offline queue: continue back to the list (never to a
+      // detail page — the quote has no server id yet).
+      if (!isOfflineQueuedError(err)) throw err;
+      toast.info(t("common:offline.saved_offline"));
     }
     submittedRef.current = true;
     router.push("/quotes");
