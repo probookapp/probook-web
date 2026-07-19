@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createHash } from "crypto";
 import { withAdmin, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { getProductQuantities } from "@/lib/stock";
 
 /**
  * Tenant backup export (v3.1).
@@ -189,16 +190,29 @@ export const GET = withAdmin(async (req, { tenantId }) => {
     return toAsset(value);
   }
 
+  // On-hand no longer lives on products/variants — it is computed from
+  // stock_levels. The backup still carries a `quantity` key on both tables for
+  // BACKWARD COMPATIBILITY: current restores rebuild from `stock_levels`
+  // (also in this file), but a legacy-path restore (no stock_levels) seeds
+  // default-location levels from these values, so the file format stays
+  // consumable exactly as before.
+  const { byProduct, byVariant } = await getProductQuantities(prisma, tenantId);
+
   // `photo_path` is opt-in: product photos dwarf every other column, and most
   // restores only care about the catalogue's data. Without the flag the key is
   // omitted entirely, exactly as v3.0 did.
-  const productsClean = includePhotos
-    ? rows(products).map((row, i) => ({
-        ...row,
-        photo_path: mediaField(products[i].photoPath),
-      }))
-    : // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      rows(products.map(({ photoPath, ...rest }) => rest));
+  const productsClean = (
+    includePhotos
+      ? rows(products).map((row, i) => ({
+          ...row,
+          photo_path: mediaField(products[i].photoPath),
+        }))
+      : // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        rows(products.map(({ photoPath, ...rest }) => rest))
+  ).map((row, i) => ({
+    ...row,
+    quantity: byProduct.get(products[i].id) ?? 0,
+  }));
 
   // `logo_snapshot` is the per-document base64 copy of the company logo frozen
   // at issue time. It is ALWAYS exported (via `assets`, so the shared logo costs
@@ -215,10 +229,12 @@ export const GET = withAdmin(async (req, { tenantId }) => {
   }));
 
   // `attributes` is a Json column: re-attach it raw so toSnakeCase does not
-  // rewrite user-defined keys inside the blob.
+  // rewrite user-defined keys inside the blob. `quantity` is the computed
+  // on-hand sum (backward compatibility — see the note above).
   const variantsClean = rows(productVariants).map((row, i) => ({
     ...row,
     attributes: productVariants[i].attributes,
+    quantity: byVariant.get(productVariants[i].id) ?? 0,
   }));
 
   // Asset-ify the settings logo; keep the dashboard_layout Json blob raw.

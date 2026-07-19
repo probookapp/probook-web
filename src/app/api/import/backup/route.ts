@@ -425,7 +425,10 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
             barcode: str(p, "barcode"),
             isService: bool(p, "is_service"),
             categoryId: str(p, "category_id"),
-            quantity: int(p, "quantity", 0),
+            // NOTE: the file's `quantity` is deliberately NOT written — the
+            // aggregate column no longer exists. Stock is restored from the
+            // payload's stock_levels (step 18), or, for legacy files without
+            // them, seeded from these quantities at the default location.
             purchasePrice: num(p, "purchase_price", 0),
             hasVariants: bool(p, "has_variants"),
             // Photos only ship with ?include_photos=1.
@@ -457,7 +460,7 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
             sku: str(v, "sku"),
             barcode: str(v, "barcode"),
             attributes: (raw(v, "attributes") ?? {}) as Prisma.InputJsonValue,
-            quantity: int(v, "quantity", 0),
+            // `quantity` intentionally not written — see the products note.
             priceOverride: numOrNull(v, "price_override"),
             isActive: bool(v, "is_active", true),
             createdAt: reqDate(v, "created_at"),
@@ -1083,13 +1086,15 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
           })),
         });
         imported.stock_levels = stockLevels.length;
-      } else if (products.length) {
-        // v2.0 back-compat: those backups carry no locations/stock_levels, so
-        // rebuild default-location levels from each product's aggregate
-        // quantity, keeping the restored tenant consistent with the
-        // multi-location stock engine (aggregate == sum of per-location levels).
-        // Only runs when the backup has NO stock_levels — doing it for a v3 file
-        // would double-write and collapse the real split onto one location.
+      } else if (products.length || variants.length) {
+        // Legacy back-compat: those backups carry no stock_levels, so rebuild
+        // default-location levels from each product's/variant's `quantity`
+        // field — the only place a legacy file stores on-hand. Without this,
+        // restoring an old backup would silently zero the tenant's stock (the
+        // aggregate columns the values used to land in no longer exist).
+        // Only runs when the backup has NO stock_levels — doing it for a
+        // current file would double-write and collapse the real split onto one
+        // location.
         const locationId = await getDefaultLocationId(tx, tenantId);
         for (const p of products) {
           const quantity = int(p, "quantity", 0);
@@ -1097,6 +1102,19 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
           await recordInitialStock(tx, {
             tenantId,
             productId: reqStr(p, "id"),
+            locationId,
+            quantity,
+            referenceType: "backup_restore",
+          });
+        }
+        for (const v of variants) {
+          const quantity = int(v, "quantity", 0);
+          const variantId = str(v, "id");
+          if (!variantId || quantity <= 0) continue;
+          await recordInitialStock(tx, {
+            tenantId,
+            productId: reqStr(v, "product_id"),
+            variantId,
             locationId,
             quantity,
             referenceType: "backup_restore",

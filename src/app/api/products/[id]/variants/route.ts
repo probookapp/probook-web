@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
-import { recordInitialStock } from "@/lib/stock";
+import { getProductQuantities, recordInitialStock } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { productVariantSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
@@ -19,7 +19,13 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
     where: { tenantId, productId },
     orderBy: { createdAt: "asc" },
   });
-  return NextResponse.json(toSnakeCase(variants));
+  // On-hand is computed from stock_levels; response shape is unchanged.
+  const { byVariant } = await getProductQuantities(prisma, tenantId, {
+    variantIds: variants.map((v) => v.id),
+  });
+  return NextResponse.json(
+    toSnakeCase(variants.map((v) => ({ ...v, quantity: byVariant.get(v.id) ?? 0 })))
+  );
 });
 
 export const POST = withAuth(async (req, { tenantId, params, session }) => {
@@ -53,9 +59,10 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
   }
 
   // Create the variant, seed its initial stock and flag the parent atomically:
-  // the variant's aggregate quantity, its stock level and the ledger row must
-  // never diverge (stock.ts accounting keeps variant stock on the variant only;
-  // the parent product's aggregate is not part of variant stock).
+  // the variant's stock level and its ledger row must never diverge (stock.ts
+  // accounting keeps variant stock on the variant only; the parent product's
+  // own levels are not part of variant stock).
+  const initialQuantity = body.quantity ?? 0;
   const variant = await prisma.$transaction(async (tx) => {
     const created = await tx.productVariant.create({
       data: {
@@ -65,19 +72,19 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
         sku: body.sku || null,
         barcode: body.barcode || null,
         attributes: (body.attributes || {}) as Record<string, string>,
-        quantity: body.quantity ?? 0,
         priceOverride: body.price_override ?? null,
         isActive: body.is_active ?? true,
       },
     });
 
-    // Seed an "initial" ledger entry when the variant starts with stock on hand.
-    if ((created.quantity ?? 0) > 0) {
+    // Seed an "initial" stock level + ledger entry when the variant starts with
+    // stock on hand — the stock_levels row IS the stock now.
+    if (initialQuantity > 0) {
       await recordInitialStock(tx, {
         tenantId,
         productId,
         variantId: created.id,
-        quantity: created.quantity ?? 0,
+        quantity: initialQuantity,
         reason: "initial stock",
         referenceType: "manual",
         userId: session.userId,
@@ -95,5 +102,6 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
     return created;
   });
 
-  return NextResponse.json(toSnakeCase(variant));
+  // Echo the initial quantity so the response shape matches the pre-computed era.
+  return NextResponse.json(toSnakeCase({ ...variant, quantity: initialQuantity }));
 });

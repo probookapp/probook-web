@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
-import { applyStockChange } from "@/lib/stock";
+import { applyStockChange, getProductQuantities } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { requirePermission } from "@/lib/permissions-server";
 
@@ -44,7 +44,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
 
   // Baseline for "set" mode. When a specific location is targeted, use that
   // location's on-hand so the computed delta only moves that location. Without a
-  // location we use the aggregate cache (single-location tenants match exactly).
+  // location we use the computed total across locations (sum of stock_levels).
   let current: number;
   if (body.location_id) {
     const level = await prisma.stockLevel.findFirst({
@@ -53,13 +53,15 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
     });
     current = level?.quantity ?? 0;
   } else if (body.variant_id) {
-    const variant = await prisma.productVariant.findFirst({
-      where: { tenantId, id: body.variant_id, productId },
-      select: { quantity: true },
+    const { byVariant } = await getProductQuantities(prisma, tenantId, {
+      variantIds: [body.variant_id],
     });
-    current = variant?.quantity ?? 0;
+    current = byVariant.get(body.variant_id) ?? 0;
   } else {
-    current = product.quantity ?? 0;
+    const { byProduct } = await getProductQuantities(prisma, tenantId, {
+      productIds: [productId],
+    });
+    current = byProduct.get(productId) ?? 0;
   }
 
   const quantityChange =

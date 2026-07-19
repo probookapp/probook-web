@@ -2,12 +2,12 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "./db";
 
 /**
- * Shared inventory-ledger helper — now location-aware.
+ * Shared inventory-ledger helper — location-aware.
  *
- * Stock is tracked per-location in `stock_levels`. The aggregate
- * `Product.quantity` / `ProductVariant.quantity` is kept in sync as the SUM
- * across all locations, so existing code that reads `.quantity` still sees the
- * total on-hand. Every stock change should go through {@link applyStockChange}.
+ * Stock is tracked per-location in `stock_levels`, the SINGLE SOURCE OF TRUTH
+ * for on-hand inventory. Total on-hand for a product/variant is always the SUM
+ * of its levels — use {@link getProductQuantities} to read it. Every stock
+ * change should go through {@link applyStockChange}.
  */
 
 export type StockMovementType =
@@ -38,6 +38,59 @@ export async function getDefaultLocationId(db: Db, tenantId: string): Promise<st
     select: { id: true },
   });
   return created.id;
+}
+
+/**
+ * Computed on-hand totals from stock_levels (the single source of truth).
+ *
+ * - `byProduct` sums the PRODUCT-level rows only (variantId IS NULL) — the same
+ *   semantics the old aggregate `Product.quantity` column had: variant stock is
+ *   tracked on the variant, not mirrored onto the parent product.
+ * - `byVariant` sums per-variant rows.
+ *
+ * One groupBy per map, so attaching quantities to a whole product list costs
+ * two queries regardless of list size. Missing keys mean zero on-hand.
+ */
+export async function getProductQuantities(
+  db: Db,
+  tenantId: string,
+  opts?: { productIds?: string[]; variantIds?: string[] }
+): Promise<{ byProduct: Map<string, number>; byVariant: Map<string, number> }> {
+  const productWhere: Prisma.StockLevelWhereInput = {
+    tenantId,
+    variantId: null,
+    ...(opts?.productIds ? { productId: { in: opts.productIds } } : {}),
+  };
+  const variantWhere: Prisma.StockLevelWhereInput = {
+    tenantId,
+    variantId: opts?.variantIds ? { in: opts.variantIds } : { not: null },
+    ...(opts?.productIds && !opts?.variantIds
+      ? { productId: { in: opts.productIds } }
+      : {}),
+  };
+
+  const [productSums, variantSums] = await Promise.all([
+    db.stockLevel.groupBy({
+      by: ["productId"],
+      where: productWhere,
+      _sum: { quantity: true },
+    }),
+    db.stockLevel.groupBy({
+      by: ["variantId"],
+      where: variantWhere,
+      _sum: { quantity: true },
+    }),
+  ]);
+
+  const byProduct = new Map<string, number>();
+  for (const row of productSums) {
+    byProduct.set(row.productId, row._sum.quantity ?? 0);
+  }
+  const byVariant = new Map<string, number>();
+  for (const row of variantSums) {
+    if (row.variantId) byVariant.set(row.variantId, row._sum.quantity ?? 0);
+  }
+  return { byProduct, byVariant };
 }
 
 export interface StockChangeInput {
@@ -81,16 +134,14 @@ async function setLevelQuantity(
 
 /**
  * Apply a signed stock delta at a location AND append a ledger row, returning
- * the new location balance. On-hand is clamped at zero; the same applied delta
- * is mirrored to the aggregate Product/Variant quantity so the total stays the
- * sum across locations.
+ * the new location balance. On-hand is clamped at zero.
  *
  * Concurrency: the per-location level row is locked with `SELECT ... FOR UPDATE`
  * so concurrent writers on the same product/location serialize (no lost updates
- * / oversell), and the aggregate is mirrored with an atomic `increment`. This
- * REQUIRES a transaction: when called with the base client we open our own so
- * the read-modify-write and the ledger append commit atomically; when called
- * with a transaction client we join the caller's transaction.
+ * / oversell). This REQUIRES a transaction: when called with the base client we
+ * open our own so the read-modify-write and the ledger append commit
+ * atomically; when called with a transaction client we join the caller's
+ * transaction.
  */
 export async function applyStockChange(
   db: Db,
@@ -144,22 +195,6 @@ async function applyStockChangeTx(
     await tx.stockLevel.update({ where: { id: level.id }, data: { quantity: newAtLocation } });
   }
 
-  // Mirror the applied delta onto the aggregate cache atomically. Tenant-scoped
-  // so a forged id can never touch another tenant's aggregate.
-  if (appliedDelta !== 0) {
-    if (variantId) {
-      await tx.productVariant.update({
-        where: { tenantId, id: variantId },
-        data: { quantity: { increment: appliedDelta } },
-      });
-    } else {
-      await tx.product.update({
-        where: { tenantId, id: productId },
-        data: { quantity: { increment: appliedDelta } },
-      });
-    }
-  }
-
   await tx.stockMovement.create({
     data: {
       tenantId,
@@ -181,9 +216,8 @@ async function applyStockChangeTx(
 
 /**
  * Record an "initial" stock entry for a newly-created product/variant at a
- * location (defaults to the tenant's default location). Also seeds the
- * per-location level. Assumes the aggregate quantity was already set by the
- * create call, so it does not touch it.
+ * location (defaults to the tenant's default location). Seeds the per-location
+ * level and appends the ledger row.
  */
 export async function recordInitialStock(
   db: Db,

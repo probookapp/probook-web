@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase, markOnboardingStep } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
-import { recordInitialStock } from "@/lib/stock";
+import { getProductQuantities, recordInitialStock } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { productSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
@@ -19,7 +19,22 @@ export const GET = withAuth(async (req, { tenantId }) => {
       variants: fields.includes("variants"),
     },
   });
-  return NextResponse.json(toSnakeCase(products));
+
+  // On-hand is computed from stock_levels (single source of truth) — one
+  // groupBy pair for the whole list, then attached so the response shape is
+  // unchanged (`quantity` on products and, when included, on variants).
+  const { byProduct, byVariant } = await getProductQuantities(prisma, tenantId);
+  const withQuantities = products.map((p) => {
+    const variants = (p as { variants?: { id: string }[] }).variants;
+    return {
+      ...p,
+      quantity: byProduct.get(p.id) ?? 0,
+      ...(variants
+        ? { variants: variants.map((v) => ({ ...v, quantity: byVariant.get(v.id) ?? 0 })) }
+        : {}),
+    };
+  });
+  return NextResponse.json(toSnakeCase(withQuantities));
 });
 
 export const POST = withAuth(async (req, { tenantId, session }) => {
@@ -44,7 +59,6 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
         barcode: body.barcode || null,
         isService: body.is_service || false,
         categoryId: body.category_id || null,
-        quantity: body.quantity ?? 0,
         purchasePrice: body.purchase_price ?? 0,
         hasVariants: body.has_variants || false,
         prices: prices.length > 0 ? {
@@ -58,12 +72,14 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       include: { prices: true, variants: true },
     });
 
-    // Seed an "initial" ledger entry for a stock-tracked product created with a starting quantity.
-    if (!created.isService && (created.quantity ?? 0) > 0) {
+    // Seed an "initial" ledger entry for a stock-tracked product created with a
+    // starting quantity — this writes the stock_levels row that IS the stock.
+    const initialQuantity = body.quantity ?? 0;
+    if (!created.isService && initialQuantity > 0) {
       await recordInitialStock(tx, {
         tenantId,
         productId: created.id,
-        quantity: created.quantity ?? 0,
+        quantity: initialQuantity,
         reason: "initial stock",
         referenceType: "manual",
       });
@@ -73,5 +89,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   });
 
   markOnboardingStep(tenantId, "first_product");
-  return NextResponse.json(toSnakeCase(product));
+  // Echo the initial quantity so the response shape matches the pre-computed
+  // era (the created product has no variants yet).
+  return NextResponse.json(toSnakeCase({ ...product, quantity: body.quantity ?? 0 }));
 });

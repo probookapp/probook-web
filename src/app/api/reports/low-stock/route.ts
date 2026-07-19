@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
+import { getProductQuantities } from "@/lib/stock";
 
 // Low-stock report: stock-tracked products (and variants) at or below a
 // threshold. Threshold comes from the `threshold` query param, falling back to
@@ -31,8 +32,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   });
 
   // When a location is specified, on-hand comes from that location's
-  // stock_levels instead of the aggregate product/variant quantity. Missing
-  // rows mean zero on-hand at that location.
+  // stock_levels. Otherwise it is the computed total across locations (grouped
+  // stock_levels sums — the single source of truth). Missing rows mean zero.
   let stockAt: Map<string, number> | null = null;
   if (locationId) {
     const levels = await prisma.stockLevel.findMany({
@@ -44,8 +45,15 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       stockAt.set(`${l.productId}:${l.variantId ?? ""}`, l.quantity);
     }
   }
-  const qtyOf = (productId: string, variantId: string | null, aggregate: number) =>
-    stockAt ? stockAt.get(`${productId}:${variantId ?? ""}`) ?? 0 : aggregate;
+  const { byProduct, byVariant } = stockAt
+    ? { byProduct: new Map<string, number>(), byVariant: new Map<string, number>() }
+    : await getProductQuantities(prisma, tenantId);
+  const qtyOf = (productId: string, variantId: string | null) =>
+    stockAt
+      ? stockAt.get(`${productId}:${variantId ?? ""}`) ?? 0
+      : variantId
+        ? byVariant.get(variantId) ?? 0
+        : byProduct.get(productId) ?? 0;
 
   const rows: {
     productId: string;
@@ -60,7 +68,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   for (const p of products) {
     if (p.hasVariants && p.variants.length > 0) {
       for (const v of p.variants) {
-        const qty = qtyOf(p.id, v.id, v.quantity ?? 0);
+        const qty = qtyOf(p.id, v.id);
         if (qty <= threshold) {
           rows.push({
             productId: p.id,
@@ -74,7 +82,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
         }
       }
     } else {
-      const qty = qtyOf(p.id, null, p.quantity ?? 0);
+      const qty = qtyOf(p.id, null);
       if (qty <= threshold) {
         rows.push({
           productId: p.id,

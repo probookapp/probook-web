@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
-import { applyStockChange } from "@/lib/stock";
+import { applyStockChange, getProductQuantities } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { requirePermission } from "@/lib/permissions-server";
 
@@ -101,10 +101,14 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
           if (!line.variantId && delta > 0) {
             // Product line: recompute purchase price (weighted average or last price)
             // using only the newly-received quantity, then apply the stock delta.
+            // The pre-receipt on-hand comes from the computed stock_levels sum.
             const product = await tx.product.findUniqueOrThrow({
               where: { id: line.productId },
             });
-            const oldQty = product.quantity ?? 0;
+            const { byProduct } = await getProductQuantities(tx, tenantId, {
+              productIds: [line.productId],
+            });
+            const oldQty = byProduct.get(line.productId) ?? 0;
             const oldPrice = product.purchasePrice ?? 0;
             const newQty = oldQty + delta;
 

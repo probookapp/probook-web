@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
-import { applyStockChange } from "@/lib/stock";
+import { applyStockChange, getProductQuantities } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { productVariantSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
@@ -11,7 +11,13 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
     where: { tenantId, id: params?.variantId, productId: params?.id },
   });
   if (!variant) return NextResponse.json({ error: "Variant not found" }, { status: 404 });
-  return NextResponse.json(toSnakeCase(variant));
+  // On-hand is computed from stock_levels; response shape is unchanged.
+  const { byVariant } = await getProductQuantities(prisma, tenantId, {
+    variantIds: [variant.id],
+  });
+  return NextResponse.json(
+    toSnakeCase({ ...variant, quantity: byVariant.get(variant.id) ?? 0 })
+  );
 });
 
 export const PUT = withAuth(async (req, { tenantId, params, session }) => {
@@ -42,11 +48,14 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   }
 
   // A direct quantity edit is recorded as a manual adjustment through the stock
-  // ledger, which sets the aggregate itself — so `quantity` is omitted from the
-  // update below (writing it too would clobber the per-location sum in a
-  // multi-location tenant). Both run in one transaction.
-  const newQuantity = body.quantity ?? existing.quantity;
-  const quantityDelta = newQuantity - existing.quantity;
+  // ledger, diffed against the computed on-hand sum from stock_levels (the
+  // single source of truth). Both run in one transaction.
+  const { byVariant: baseline } = await getProductQuantities(prisma, tenantId, {
+    variantIds: [existing.id],
+  });
+  const currentQuantity = baseline.get(existing.id) ?? 0;
+  const newQuantity = body.quantity ?? currentQuantity;
+  const quantityDelta = newQuantity - currentQuantity;
 
   const variant = await prisma.$transaction(async (tx) => {
     if (quantityDelta !== 0) {
@@ -69,13 +78,19 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
         sku: body.sku || null,
         barcode: body.barcode || null,
         attributes: (body.attributes || {}) as Record<string, string>,
-        ...(quantityDelta === 0 ? { quantity: newQuantity } : {}),
         priceOverride: body.price_override ?? null,
         isActive: body.is_active ?? true,
       },
     });
   });
-  return NextResponse.json(toSnakeCase(variant));
+  // Attach the post-update computed on-hand (re-read so location-level clamping
+  // is reflected exactly as the aggregate column used to).
+  const { byVariant } = await getProductQuantities(prisma, tenantId, {
+    variantIds: [existing.id],
+  });
+  return NextResponse.json(
+    toSnakeCase({ ...variant, quantity: byVariant.get(existing.id) ?? 0 })
+  );
 });
 
 export const DELETE = withAuth(async (req, { tenantId, params, session }) => {

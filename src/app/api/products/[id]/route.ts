@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
-import { applyStockChange } from "@/lib/stock";
+import { applyStockChange, getProductQuantities } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { productSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
@@ -12,7 +12,17 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
     include: { category: true, prices: true, variants: true },
   });
   if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(toSnakeCase(product));
+  // On-hand is computed from stock_levels; response shape is unchanged.
+  const { byProduct, byVariant } = await getProductQuantities(prisma, tenantId, {
+    productIds: [product.id],
+  });
+  return NextResponse.json(
+    toSnakeCase({
+      ...product,
+      quantity: byProduct.get(product.id) ?? 0,
+      variants: product.variants.map((v) => ({ ...v, quantity: byVariant.get(v.id) ?? 0 })),
+    })
+  );
 });
 
 export const PUT = withAuth(async (req, { tenantId, params, session }) => {
@@ -34,12 +44,16 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
 
   const existing = await prisma.product.findFirst({
     where: { tenantId, id: productId },
-    select: { quantity: true },
+    select: { id: true },
   });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Only treat quantity as a stock adjustment when it was actually sent.
-  const quantityDelta = hasQuantity ? body.quantity - (existing.quantity ?? 0) : 0;
+  // Only treat quantity as a stock adjustment when it was actually sent. The
+  // baseline it diffs against is the computed on-hand sum from stock_levels.
+  const { byProduct: baseline } = await getProductQuantities(prisma, tenantId, {
+    productIds: [productId],
+  });
+  const quantityDelta = hasQuantity ? body.quantity - (baseline.get(productId) ?? 0) : 0;
 
   const product = await prisma.$transaction(async (tx) => {
     // Delete existing prices and recreate atomically
@@ -72,7 +86,6 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
         barcode: body.barcode || null,
         isService: body.is_service || false,
         categoryId: body.category_id || null,
-        ...(hasQuantity && quantityDelta === 0 ? { quantity: body.quantity } : {}),
         purchasePrice: body.purchase_price ?? 0,
         hasVariants: body.has_variants || false,
         prices: prices.length > 0 ? {
@@ -87,7 +100,18 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
     });
   });
 
-  return NextResponse.json(toSnakeCase(product));
+  // Attach the post-update computed on-hand so the response shape (and value)
+  // matches what the aggregate column used to report.
+  const { byProduct, byVariant } = await getProductQuantities(prisma, tenantId, {
+    productIds: [productId],
+  });
+  return NextResponse.json(
+    toSnakeCase({
+      ...product,
+      quantity: byProduct.get(productId) ?? 0,
+      variants: product.variants.map((v) => ({ ...v, quantity: byVariant.get(v.id) ?? 0 })),
+    })
+  );
 });
 
 export const DELETE = withAuth(async (req, { tenantId, params, session }) => {

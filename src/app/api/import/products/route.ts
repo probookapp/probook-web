@@ -116,7 +116,6 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
                 reference: r.reference,
                 barcode: r.barcode,
                 isService: r.isService,
-                quantity: r.quantity,
                 purchasePrice: r.purchasePrice,
               },
             });

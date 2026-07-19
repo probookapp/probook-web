@@ -251,7 +251,6 @@ model Product {
   isService       Boolean  @default(false) @map("is_service")
   categoryId      String?  @map("category_id")
   photoPath       String?  @map("photo_path")
-  quantity        Int?     @default(0)
   purchasePrice   Float?   @default(0) @map("purchase_price")
   hasVariants     Boolean  @default(false) @map("has_variants")
   createdAt       DateTime @default(now()) @map("created_at")
@@ -299,7 +298,6 @@ model ProductVariant {
   sku           String?
   barcode       String?
   attributes    Json     @default("{}") // { "size": "XL", "color": "Rouge" }
-  quantity      Int      @default(0)
   priceOverride Float?   @map("price_override")
   isActive      Boolean  @default(true) @map("is_active")
   createdAt     DateTime @default(now()) @map("created_at")
@@ -1461,8 +1459,9 @@ model Location {
   @@map("locations")
 }
 
-// Per-location on-hand quantity for a product (or variant). The aggregate
-// Product.quantity / ProductVariant.quantity is kept as the sum across levels.
+// Per-location on-hand quantity for a product (or variant). This is the SINGLE
+// SOURCE OF TRUTH for inventory: total on-hand is always computed as the sum of
+// levels (see getProductQuantities in src/lib/stock.ts).
 model StockLevel {
   id         String   @id @default(uuid())
   tenantId   String   @map("tenant_id")
