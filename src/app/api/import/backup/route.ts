@@ -5,8 +5,9 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { hashPassword } from "@/lib/auth";
 import { validateBody, isValidationError } from "@/lib/validate";
-import { importBackupSchema } from "@/lib/validations";
+import { backupFileSchema } from "./schema";
 import { getDefaultLocationId, recordInitialStock } from "@/lib/stock";
+import { computeInvoiceIntegrityHash } from "@/lib/invoice-integrity";
 
 /**
  * Tenant backup restore.
@@ -30,6 +31,22 @@ import { getDefaultLocationId, recordInitialStock } from "@/lib/stock";
  * Users are UPSERTED, never deleted: live sessions, POS history and permissions
  * all hang off them, and a backup is not evidence that a user should cease to
  * exist.
+ *
+ * SAFETY MODEL (audit SALE-22) — restore is wipe-and-replace, so three layers
+ * keep a bad file from destroying the tenant:
+ *
+ *  1. VALIDATE FIRST. The whole payload is structurally validated (./schema.ts)
+ *     before anything is touched; a corrupted or truncated file gets a 400 and
+ *     the tenant's data is never approached.
+ *  2. ONE TRANSACTION. The wipe and the rebuild run inside a single
+ *     prisma.$transaction — any failure the validation could not foresee rolls
+ *     the tenant back to its exact pre-restore state.
+ *  3. RECOMPUTE, DON'T TRUST. Invoice integrity hashes are NEVER copied from
+ *     the file: they are recomputed server-side (keyed HMAC) from the restored
+ *     fields, for the statuses that carry one (anything issued, i.e. non-DRAFT).
+ *     Restoring a faithful backup therefore yields byte-identical hashes, while
+ *     a file with doctored figures yields hashes that match the doctored data —
+ *     the hash can no longer be used to make tampered numbers look verified.
  */
 
 type Row = Record<string, unknown>;
@@ -129,7 +146,9 @@ function media(row: Row, key: string, assets: Row): string | null {
 export const POST = withAdmin(async (req: NextRequest, ctx) => {
   const { tenantId } = ctx;
 
-  const body = await validateBody(req, importBackupSchema);
+  // Validate the ENTIRE file BEFORE the destructive wipe below: a structurally
+  // broken backup must 400 here, with the tenant's data untouched.
+  const body = await validateBody(req, backupFileSchema);
   if (isValidationError(body)) return body;
 
   const imported: Record<string, number> = {};
@@ -625,30 +644,88 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
       // ─── 12. Invoices (+lines) ───
       for (const inv of invoices) {
         const lines = list(inv, "lines");
+
+        // Every scalar that feeds the integrity hash is resolved ONCE, so the
+        // hash is provably computed over exactly what gets written.
+        const invoiceNumber = reqStr(inv, "invoice_number");
+        const clientId = reqStr(inv, "client_id");
+        const status = str(inv, "status") ?? "DRAFT";
+        const issueDate = reqDate(inv, "issue_date");
+        const dueDate = reqDate(inv, "due_date");
+        const subtotal = num(inv, "subtotal", 0);
+        const taxAmount = num(inv, "tax_amount", 0);
+        const total = num(inv, "total", 0);
+        const shippingCost = num(inv, "shipping_cost", 0);
+        const stampDuty = num(inv, "stamp_duty", 0);
+        const isCashSale = bool(inv, "is_cash_sale");
+        const stampDutyExempt = bool(inv, "stamp_duty_exempt");
+
+        // ⚠️ NEVER write the file's integrity_hash (audit SALE-22): recompute
+        // it from the restored fields instead, exactly as the issue route does
+        // (same field set, same position ordering, same keyed HMAC). Only a
+        // DRAFT has no hash — issuing is the sole transition out of DRAFT and
+        // it always stamps one. A faithful backup round-trips byte-identically;
+        // a doctored one gets a hash that matches its doctored figures, so the
+        // hash cannot be forged to whitewash tampered data.
+        const integrityHash =
+          status === "DRAFT"
+            ? null
+            : computeInvoiceIntegrityHash({
+                invoiceNumber,
+                clientId,
+                issueDate,
+                dueDate,
+                subtotal,
+                taxAmount,
+                total,
+                shippingCost,
+                stampDuty,
+                isCashSale,
+                stampDutyExempt,
+                lines: [...lines]
+                  .sort((a, b) => int(a, "position", 0) - int(b, "position", 0))
+                  .map((l) => ({
+                    description: reqStr(l, "description"),
+                    quantity: num(l, "quantity", 0),
+                    unitPrice: num(l, "unit_price", 0),
+                    taxRate: num(l, "tax_rate", 0),
+                    subtotal: num(l, "subtotal", 0),
+                    total: num(l, "total", 0),
+                  })),
+              });
+
         await tx.invoice.create({
           data: {
             id: idOf(inv),
             tenantId,
-            invoiceNumber: reqStr(inv, "invoice_number"),
-            clientId: reqStr(inv, "client_id"),
+            invoiceNumber,
+            clientId,
             quoteId: str(inv, "quote_id"),
-            status: str(inv, "status") ?? "DRAFT",
-            issueDate: reqDate(inv, "issue_date"),
-            dueDate: reqDate(inv, "due_date"),
-            subtotal: num(inv, "subtotal", 0),
-            taxAmount: num(inv, "tax_amount", 0),
-            total: num(inv, "total", 0),
+            status,
+            issueDate,
+            dueDate,
+            subtotal,
+            taxAmount,
+            total,
             notes: str(inv, "notes"),
             notesHtml: str(inv, "notes_html"),
-            integrityHash: str(inv, "integrity_hash"),
-            shippingCost: num(inv, "shipping_cost", 0),
+            integrityHash,
+            // Timbre inputs frozen on the invoice — they feed the hash above,
+            // so dropping them (as pre-SALE-22 restores did) would both lose
+            // data and break verification for cash-sale invoices.
+            isCashSale,
+            stampDutyExempt,
+            // Offline-replay dedupe key: restored verbatim so a queued retry
+            // from before the backup still cannot double-create the document.
+            idempotencyKey: str(inv, "idempotency_key"),
+            shippingCost,
             shippingTaxRate: num(inv, "shipping_tax_rate", 20),
             downPaymentPercent: num(inv, "down_payment_percent", 0),
             downPaymentAmount: num(inv, "down_payment_amount", 0),
             isDownPaymentInvoice: bool(inv, "is_down_payment_invoice"),
             parentQuoteId: str(inv, "parent_quote_id"),
             // Droit de timbre snapshotted at issue time — must survive a restore.
-            stampDuty: num(inv, "stamp_duty", 0),
+            stampDuty,
             // The logo frozen at issue time — see the quote note above.
             logoSnapshot: media(inv, "logo_snapshot", assets),
             createdAt: reqDate(inv, "created_at"),
@@ -1156,6 +1233,9 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
             | Prisma.InputJsonValue,
           stampDutyEnabled: bool(s, "stamp_duty_enabled"),
           stampDutyRate: num(s, "stamp_duty_rate", 1.0),
+          // Was silently dropped before SALE-22: a restore reset the timbre
+          // threshold to 0, turning the duty on for every cash sale.
+          stampDutyThreshold: num(s, "stamp_duty_threshold", 0),
         };
         await tx.companySettings.upsert({
           where: { tenantId },
