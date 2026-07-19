@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { getAdminSession, PlatformSessionPayload } from "./auth";
 import { prisma } from "./db";
+import { getClientIp } from "./client-ip";
+
+// Re-exported so existing call sites importing from this module keep working.
+export { getClientIp };
 
 export interface AdminContext {
   session: PlatformSessionPayload;
@@ -43,7 +48,12 @@ export function withPlatformAdmin(
       if (message.includes("Forbidden")) {
         return NextResponse.json({ error: message }, { status: 403 });
       }
-      return NextResponse.json({ error: message }, { status: 500 });
+      // Report every unexpected 500 once, from this single choke point
+      Sentry.captureException(error, {
+        tags: { route: new URL(req.url).pathname },
+      });
+      // Don't leak internal error details to clients (mirrors withAuth)
+      return NextResponse.json({ error: "Internal server error" }, { status: 500 });
     }
   };
 }
@@ -89,14 +99,6 @@ export async function logAuditEvent(params: {
     // Never let audit logging failures break the main flow
     console.error("Failed to log audit event:", error);
   }
-}
-
-export function getClientIp(req: NextRequest): string | undefined {
-  return (
-    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-    req.headers.get("x-real-ip") ||
-    undefined
-  );
 }
 
 // ========== Durable Admin Login Brute-Force Protection ==========

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import * as Sentry from "@sentry/nextjs";
 import { getSession, getAdminSession, getImpersonationData, getSessionToken, hashToken, SessionPayload } from "./auth";
 import { prisma } from "./db";
 import { checkRateLimit } from "./rate-limiter";
@@ -44,6 +45,8 @@ export function withAuth(
   handler: (req: NextRequest, ctx: AuthContext) => Promise<NextResponse>
 ) {
   return async (req: NextRequest, context?: { params?: Promise<Record<string, string>> }) => {
+    // Hoisted so the catch block can tag Sentry events with the tenant.
+    let resolvedTenantId: string | undefined;
     try {
       // Check for impersonation: the signed cookie is honored only for a live
       // super_admin session whose userId matches the cookie's adminId claim.
@@ -104,6 +107,8 @@ export function withAuth(
         }
       }
 
+      resolvedTenantId = tenantId;
+
       // Rate limiting
       const endpoint = new URL(req.url).pathname;
       const allowed = await checkRateLimit(tenantId, endpoint);
@@ -133,6 +138,13 @@ export function withAuth(
       if (message.includes("Forbidden")) {
         return NextResponse.json({ error: message }, { status: 403 });
       }
+      // Report every unexpected 500 once, from this single choke point
+      Sentry.captureException(error, {
+        tags: {
+          ...(resolvedTenantId ? { tenantId: resolvedTenantId } : {}),
+          route: new URL(req.url).pathname,
+        },
+      });
       // Don't leak internal error details to clients
       return NextResponse.json(
         { error: "Internal server error" },
