@@ -52,6 +52,45 @@ function getPreferredLocale(req: NextRequest): string {
   return DEFAULT_LOCALE;
 }
 
+// --- Content-Security-Policy (SEC-8) ---
+// Per-request nonce, edge-safe (Web Crypto only).
+function generateNonce(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let binary = "";
+  for (const b of bytes) binary += String.fromCharCode(b);
+  return btoa(binary);
+}
+
+// Single source of truth for the CSP (removed from next.config.ts headers).
+// Production script-src: nonce + 'strict-dynamic' — no 'unsafe-inline' /
+// 'unsafe-eval'. 'strict-dynamic' lets nonced scripts (Next's framework
+// scripts, the Meta Pixel bootstrap) load their own child scripts; the
+// connect.facebook.net host entry is the fallback for CSP2 browsers, which
+// ignore 'strict-dynamic'.
+// Development keeps a permissive policy: React Refresh and `next dev` need
+// 'unsafe-eval'/'unsafe-inline' (the nonce is deliberately omitted there,
+// since any nonce in the policy would make browsers ignore 'unsafe-inline').
+function buildCsp(nonce: string): string {
+  const scriptSrc =
+    process.env.NODE_ENV === "production"
+      ? `'self' 'nonce-${nonce}' 'strict-dynamic' https://connect.facebook.net`
+      : "'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net";
+  return [
+    "default-src 'self'",
+    `script-src ${scriptSrc}`,
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://*.supabase.co https://*.sentry.io https://*.ingest.de.sentry.io https://connect.facebook.net https://www.facebook.com",
+    "worker-src 'self' blob:",
+    "frame-src 'self' https://www.facebook.com",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self' https://www.facebook.com",
+  ].join("; ");
+}
+
 function getLocaleFromPath(pathname: string): string | null {
   const segments = pathname.split("/");
   const maybeLocale = segments[1];
@@ -164,8 +203,19 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Document request: generate the CSP nonce and set the policy on BOTH the
+  // forwarded request headers (Next.js App Router reads the request CSP to
+  // nonce its own framework <script> tags; x-nonce is read by layouts via
+  // headers()) and the response (what the browser enforces).
+  const nonce = generateNonce();
+  const csp = buildCsp(nonce);
+  const requestHeaders = new Headers(req.headers);
+  requestHeaders.set("x-nonce", nonce);
+  requestHeaders.set("content-security-policy", csp);
+
   // Persist the locale to a cookie so we remember it for next visit
-  const response = NextResponse.next();
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  response.headers.set("Content-Security-Policy", csp);
   response.cookies.set("NEXT_LOCALE", pathLocale, {
     path: "/",
     maxAge: 60 * 60 * 24 * 365,

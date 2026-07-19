@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { SentryProvider } from "@/components/providers/SentryProvider";
 import "./globals.css";
 
@@ -36,6 +36,9 @@ export default async function RootLayout({
   const themeCookie = cookieStore.get("NEXT_THEME")?.value;
   const serverTheme = themeCookie === "dark" ? "dark" : "light";
   const locale = cookieStore.get("NEXT_LOCALE")?.value || "en";
+  // CSP nonce generated per-request in src/proxy.ts; required for the inline
+  // theme-bootstrap script below under the strict production policy.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   return (
     <html
@@ -46,6 +49,7 @@ export default async function RootLayout({
       <head>
         <meta name="facebook-domain-verification" content="4arj80yrn0r1yulikcr92ihluf0g90" />
         <script
+          nonce={nonce}
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var d=document.documentElement;var t=localStorage.getItem('probook_theme');if(t==='dark')d.classList.add('dark');else if(t==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches)d.classList.add('dark')}catch(e){}})()`,
           }}

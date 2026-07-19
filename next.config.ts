@@ -19,22 +19,8 @@ const nextConfig: NextConfig = {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
           },
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net",
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: blob: https:",
-              "font-src 'self' data:",
-              "connect-src 'self' https://*.supabase.co https://*.sentry.io https://*.ingest.de.sentry.io https://connect.facebook.net https://www.facebook.com",
-              "worker-src 'self' blob:",
-              "frame-src 'self' https://www.facebook.com",
-              "frame-ancestors 'none'",
-              "base-uri 'self'",
-              "form-action 'self' https://www.facebook.com",
-            ].join("; "),
-          },
+          // Content-Security-Policy is set per-request in src/proxy.ts (nonce-based,
+          // SEC-8) — do not add a static CSP here or the two policies intersect.
         ],
       },
     ];

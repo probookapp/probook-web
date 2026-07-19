@@ -62,6 +62,14 @@ export function MetaPixel() {
       const script = document.createElement("script");
       script.async = true;
       script.src = "https://connect.facebook.net/en_US/fbevents.js";
+      // CSP: under the production nonce policy this non-parser-inserted script
+      // is already trusted via 'strict-dynamic' (CSP3), and CSP2 browsers fall
+      // back to the connect.facebook.net host entry. Propagating the nonce is
+      // belt-and-suspenders. Browsers hide the nonce content attribute after
+      // parsing, so read it from the IDL property of an existing nonced script
+      // (e.g. the theme bootstrap in the root layout).
+      const nonced = document.querySelector<HTMLScriptElement>("script[nonce]");
+      if (nonced?.nonce) script.nonce = nonced.nonce;
       document.head.appendChild(script);
     }
 
