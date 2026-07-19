@@ -48,6 +48,8 @@ jobs:
           cache: npm
       - run: npm ci
       # playwright.config.ts loads .env.test (gitignored) — reconstruct it for CI.
+      # Supabase/Resend values are dummies: the e2e suite never reaches those
+      # services, but the production boot-time env check requires them to exist.
       - name: Create .env.test
         run: |
           cat > .env.test <<'EOF'
@@ -57,9 +59,24 @@ jobs:
           NEXT_PUBLIC_APP_URL="http://localhost:3001"
           NEXT_PUBLIC_SITE_URL="http://localhost:3001"
           NEXT_PUBLIC_APP_NAME="Probook"
+          NEXT_PUBLIC_SUPABASE_URL="https://ci-dummy.supabase.co"
+          SUPABASE_SERVICE_ROLE_KEY="ci-dummy-service-role-key"
+          RESEND_API_KEY="re_ci_dummy_key"
+          EMAIL_FROM="Probook CI <ci@example.invalid>"
           EOF
       - name: Apply migrations to test DB
         run: npx dotenv -e .env.test -- npx prisma migrate deploy
+      # CI runs against a production build (playwright.config disables its
+      # webServer when CI is set) — this also exercises the strict CSP.
+      - name: Build app
+        run: npx dotenv -e .env.test -- npm run build
+      - name: Start app
+        run: |
+          npx dotenv -e .env.test -- npx next start -p 3001 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:3001 > /dev/null && break
+            sleep 2
+          done
       - run: npx playwright install --with-deps chromium
       - name: Run e2e suite
         run: npx dotenv -e .env.test -- npx playwright test
