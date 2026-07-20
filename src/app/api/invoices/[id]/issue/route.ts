@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/permissions-server";
 import { applyStockChange } from "@/lib/stock";
 import { computeStampDuty } from "@/lib/stamp-duty";
 import { computeInvoiceIntegrityHash } from "@/lib/invoice-integrity";
+import { num } from "@/lib/money";
 
 export const POST = withAuth(async (req, { session, tenantId, params }) => {
   const denied = await requirePermission(session, "invoices", "edit");
@@ -27,10 +28,10 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
   const stampDuty = computeStampDuty({
     enabled: settings?.stampDutyEnabled,
     rate: settings?.stampDutyRate,
-    threshold: settings?.stampDutyThreshold,
+    threshold: num(settings?.stampDutyThreshold),
     isCashSale: invoice.isCashSale,
     exempt: invoice.stampDutyExempt,
-    total: invoice.total,
+    total: num(invoice.total),
     isDraft: false,
   });
 
@@ -41,14 +42,23 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
     clientId: invoice.clientId,
     issueDate: invoice.issueDate,
     dueDate: invoice.dueDate,
-    subtotal: invoice.subtotal,
-    taxAmount: invoice.taxAmount,
-    total: invoice.total,
-    shippingCost: invoice.shippingCost,
+    subtotal: num(invoice.subtotal),
+    taxAmount: num(invoice.taxAmount),
+    total: num(invoice.total),
+    shippingCost: num(invoice.shippingCost),
     stampDuty,
     isCashSale: invoice.isCashSale,
     stampDutyExempt: invoice.stampDutyExempt,
-    lines: invoice.lines,
+    // The hash serializes each money field via Number.toString(); map Decimals
+    // to numbers here so v2 hashes keep their pre-migration representation.
+    lines: invoice.lines.map((l) => ({
+      description: l.description,
+      quantity: l.quantity,
+      unitPrice: num(l.unitPrice),
+      taxRate: l.taxRate,
+      subtotal: num(l.subtotal),
+      total: num(l.total),
+    })),
   });
 
   // One tenant-scoped batch lookup instead of a per-line findUnique (SALE-24).

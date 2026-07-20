@@ -5,6 +5,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { updatePaymentSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { num } from "@/lib/money";
 
 const EPSILON = 0.01;
 
@@ -31,8 +32,8 @@ async function syncInvoiceStatus(
   });
   if (!invoice) return;
 
-  const amountOwed = invoice.total + (invoice.stampDuty ?? 0);
-  const totalPaid = invoice.payments.reduce((sum, p) => sum + p.amount, 0);
+  const amountOwed = num(invoice.total) + num(invoice.stampDuty);
+  const totalPaid = invoice.payments.reduce((sum, p) => sum + num(p.amount), 0);
 
   if (totalPaid >= amountOwed - EPSILON) {
     if (invoice.status !== "PAID") {
@@ -75,10 +76,10 @@ export const PUT = withAuth(async (req, { tenantId, session, params }) => {
         include: { payments: true },
       });
       if (invoice) {
-        const amountOwed = invoice.total + (invoice.stampDuty ?? 0);
+        const amountOwed = num(invoice.total) + num(invoice.stampDuty);
         const paidByOthers = invoice.payments
           .filter((p) => p.id !== existing.id)
-          .reduce((sum, p) => sum + p.amount, 0);
+          .reduce((sum, p) => sum + num(p.amount), 0);
         if (paidByOthers + body.amount > amountOwed + EPSILON) {
           throw new PaymentError("Payment exceeds the remaining amount owed on this invoice", 400);
         }

@@ -5,6 +5,7 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { posRefundSchema } from "@/lib/validations";
 import { createCreditNote, CreditNoteError } from "@/lib/credit-notes";
 import { requirePermission } from "@/lib/permissions-server";
+import { num } from "@/lib/money";
 
 // POS sales are often made to walk-in customers with no client record, but a
 // credit note requires a client. We resolve/create a single per-tenant
@@ -74,7 +75,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   // Transaction-level discount ratio: the customer paid finalAmount for a sale
   // whose lines summed to `total`, so each line's refundable value is scaled by
   // finalAmount/total (covers both percentage and flat discounts).
-  const ratio = transaction.total > 0 ? transaction.finalAmount / transaction.total : 1;
+  const ratio = num(transaction.total) > 0 ? num(transaction.finalAmount) / num(transaction.total) : 1;
 
   // Rebuild the refund lines from the ORIGINAL sale (never trust client prices),
   // and cap each at what's still refundable.
@@ -105,7 +106,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       );
     }
     const effectiveUnit =
-      (sold.line.quantity > 0 ? sold.line.subtotal / sold.line.quantity : sold.line.unitPrice) * ratio;
+      (sold.line.quantity > 0 ? num(sold.line.subtotal) / sold.line.quantity : num(sold.line.unitPrice)) * ratio;
     refundLines.push({
       product_id: sold.line.productId,
       variant_id: sold.line.variantId,
@@ -135,7 +136,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   // ever debit the till by its cash portion, never the full refund total.
   const cashTendered = transaction.payments
     .filter((p) => p.paymentMethod === "CASH")
-    .reduce((sum, p) => sum + Math.max(0, p.amount - (p.changeGiven ?? 0)), 0);
+    .reduce((sum, p) => sum + Math.max(0, num(p.amount) - num(p.changeGiven)), 0);
   const paidInCash = cashTendered > 0;
 
   // Resolve the till a cash refund is paid from: the cashier's CURRENTLY open
@@ -185,7 +186,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       // correct: it debits whichever drawer is open now, not the sale's original.
       // Capped at the cash actually tendered on the sale so the card portion of a
       // mixed payment is never paid back out of the drawer.
-      const cashOut = Math.round(Math.min(cn.total, cashTendered) * 100) / 100;
+      const cashOut = Math.round(Math.min(num(cn.total), cashTendered) * 100) / 100;
       if (paidInCash && drawerSessionId && cashOut > 0) {
         await tx.posCashMovement.create({
           data: {
@@ -209,7 +210,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
     throw err;
   }
 
-  const nonCashAmount = Math.round((creditNote.total - cashRefundAmount) * 100) / 100;
+  const nonCashAmount = Math.round((num(creditNote.total) - cashRefundAmount) * 100) / 100;
   return NextResponse.json({
     ...toSnakeCase(creditNote),
     cash_refund_amount: cashRefundAmount,

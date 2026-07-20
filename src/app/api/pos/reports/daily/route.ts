@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId }) => {
   const { searchParams } = new URL(req.url);
@@ -49,12 +50,12 @@ export const GET = withAuth(async (req, { tenantId }) => {
   let cardSales = 0;
 
   for (const tx of transactions) {
-    totalSales += tx.finalAmount;
-    subtotal += tx.subtotal;
-    taxAmount += tx.taxAmount;
+    totalSales += num(tx.finalAmount);
+    subtotal += num(tx.subtotal);
+    taxAmount += num(tx.taxAmount);
     for (const p of tx.payments) {
-      if (p.paymentMethod === "CASH") cashSales += p.amount;
-      else if (p.paymentMethod === "CARD") cardSales += p.amount;
+      if (p.paymentMethod === "CASH") cashSales += num(p.amount);
+      else if (p.paymentMethod === "CARD") cardSales += num(p.amount);
     }
   }
 
@@ -63,7 +64,7 @@ export const GET = withAuth(async (req, { tenantId }) => {
     where: { ...baseWhere, status: "CANCELLED" },
   });
   const cancelledCount = cancelledTxs.length;
-  const cancelledTotal = cancelledTxs.reduce((sum, tx) => sum + tx.finalAmount, 0);
+  const cancelledTotal = cancelledTxs.reduce((sum, tx) => sum + num(tx.finalAmount), 0);
 
   // The day's cash OUT movements (refunds, drops, cancellations, purchases paid
   // from the till) reduce the drawer, so net them off the cash figure to make
@@ -77,7 +78,7 @@ export const GET = withAuth(async (req, { tenantId }) => {
     },
     _sum: { amount: true },
   });
-  const cashOutTotal = outMovements._sum.amount ?? 0;
+  const cashOutTotal = num(outMovements._sum.amount);
 
   return NextResponse.json(
     toSnakeCase({

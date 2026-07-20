@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId }) => {
   const links = await prisma.productSupplier.findMany({
@@ -22,12 +23,13 @@ export const GET = withAuth(async (req, { tenantId }) => {
         lowestPrice: Infinity,
       };
     }
+    const purchasePrice = num(link.purchasePrice);
     byProduct[link.productId].suppliers.push({
       supplier: link.supplier,
-      purchasePrice: link.purchasePrice,
+      purchasePrice,
     });
-    if (link.purchasePrice < byProduct[link.productId].lowestPrice) {
-      byProduct[link.productId].lowestPrice = link.purchasePrice;
+    if (purchasePrice < byProduct[link.productId].lowestPrice) {
+      byProduct[link.productId].lowestPrice = purchasePrice;
     }
   }
 

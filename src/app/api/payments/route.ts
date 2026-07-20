@@ -5,6 +5,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { paymentSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { num } from "@/lib/money";
 
 const EPSILON = 0.01;
 
@@ -84,8 +85,8 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       if (!invoice) throw new PaymentError("Invoice not found", 404);
 
       // Amount owed includes the stamp duty (droit de timbre) snapshot.
-      const amountOwed = invoice.total + (invoice.stampDuty ?? 0);
-      const paidSoFar = invoice.payments.reduce((sum, p) => sum + p.amount, 0);
+      const amountOwed = num(invoice.total) + num(invoice.stampDuty);
+      const paidSoFar = invoice.payments.reduce((sum, p) => sum + num(p.amount), 0);
       if (paidSoFar + body.amount > amountOwed + EPSILON) {
         throw new PaymentError("Payment exceeds the remaining amount owed on this invoice", 400);
       }

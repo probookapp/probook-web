@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 /**
  * Accountant-friendly dataset for a period: sales, purchases, payments and
@@ -71,20 +72,22 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       date: toDay(inv.issueDate),
       number: inv.invoiceNumber,
       party: inv.client?.name ?? "",
-      ht: inv.subtotal,
-      vat: inv.taxAmount,
-      ttc: inv.total,
+      ht: num(inv.subtotal),
+      vat: num(inv.taxAmount),
+      ttc: num(inv.total),
     })),
     // POS retail sales (scaled by the transaction-level discount ratio).
     ...posTransactions.map((tx) => {
-      const ratio = tx.total > 0 ? tx.finalAmount / tx.total : 1;
+      const txTotal = num(tx.total);
+      const txFinalAmount = num(tx.finalAmount);
+      const ratio = txTotal > 0 ? txFinalAmount / txTotal : 1;
       return {
         date: toDay(tx.transactionDate),
         number: tx.ticketNumber,
         party: tx.client?.name ?? "POS",
-        ht: round2(tx.subtotal * ratio),
-        vat: round2(tx.taxAmount * ratio),
-        ttc: round2(tx.finalAmount),
+        ht: round2(num(tx.subtotal) * ratio),
+        vat: round2(num(tx.taxAmount) * ratio),
+        ttc: round2(txFinalAmount),
       };
     }),
   ].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
@@ -94,31 +97,31 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     date: toDay(cn.issueDate),
     number: cn.creditNoteNumber,
     party: cn.client?.name ?? "",
-    ht: -cn.subtotal,
-    vat: -cn.taxAmount,
-    ttc: -cn.total,
+    ht: -num(cn.subtotal),
+    vat: -num(cn.taxAmount),
+    ttc: -num(cn.total),
   }));
 
   const purchases = orders.map((o) => ({
     date: toDay(o.orderDate),
     number: o.orderNumber,
     party: o.supplier?.name ?? "",
-    ht: o.subtotal,
-    vat: o.taxAmount,
-    ttc: o.total,
+    ht: num(o.subtotal),
+    vat: num(o.taxAmount),
+    ttc: num(o.total),
   }));
 
   const paymentRows = payments.map((p) => ({
     date: toDay(p.paymentDate),
     number: p.invoice?.invoiceNumber ?? "",
-    amount: p.amount,
+    amount: num(p.amount),
     method: p.paymentMethod,
   }));
 
   const expenseRows = expenses.map((e) => ({
     date: toDay(e.date),
     name: e.name,
-    amount: e.amount,
+    amount: num(e.amount),
   }));
 
   // Combined journal (columns: date, type, document, party, ht, vat, ttc).

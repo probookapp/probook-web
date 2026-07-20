@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const supplier = await prisma.supplier.findFirst({
@@ -18,14 +19,14 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
     include: { lines: { include: { product: true, variant: true } } },
   });
 
-  const totalOwed = allConfirmedOrders.reduce((sum, o) => sum + o.total, 0);
+  const totalOwed = allConfirmedOrders.reduce((sum, o) => sum + num(o.total), 0);
 
   // All payments ever made to this supplier
   const payments = await prisma.supplierPayment.aggregate({
     where: { tenantId, supplierId: params?.id },
     _sum: { amount: true },
   });
-  const totalPaid = payments._sum.amount || 0;
+  const totalPaid = num(payments._sum.amount);
 
   const balance = totalOwed - totalPaid;
 

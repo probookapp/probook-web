@@ -3,6 +3,7 @@ import { withAuth } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { requirePermission } from "@/lib/permissions-server";
 import { verifyInvoiceIntegrityHash } from "@/lib/invoice-integrity";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId, session, params }) => {
   const denied = await requirePermission(session, "invoices", "view");
@@ -25,14 +26,23 @@ export const GET = withAuth(async (req, { tenantId, session, params }) => {
     clientId: invoice.clientId,
     issueDate: invoice.issueDate,
     dueDate: invoice.dueDate,
-    subtotal: invoice.subtotal,
-    taxAmount: invoice.taxAmount,
-    total: invoice.total,
-    shippingCost: invoice.shippingCost,
-    stampDuty: invoice.stampDuty,
+    subtotal: num(invoice.subtotal),
+    taxAmount: num(invoice.taxAmount),
+    total: num(invoice.total),
+    shippingCost: num(invoice.shippingCost),
+    stampDuty: num(invoice.stampDuty),
     isCashSale: invoice.isCashSale,
     stampDutyExempt: invoice.stampDutyExempt,
-    lines: invoice.lines,
+    // The hash serializes each money field via Number.toString(); map Decimals
+    // to numbers here so stored v2 hashes still verify post-migration.
+    lines: invoice.lines.map((l) => ({
+      description: l.description,
+      quantity: l.quantity,
+      unitPrice: num(l.unitPrice),
+      taxRate: l.taxRate,
+      subtotal: num(l.subtotal),
+      total: num(l.total),
+    })),
   });
 
   return NextResponse.json({

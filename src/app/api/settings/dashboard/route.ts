@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId }) => {
   const now = new Date();
@@ -42,7 +43,7 @@ export const GET = withAuth(async (req, { tenantId }) => {
       issueDate: { gte: startOfMonth },
     },
   });
-  const revenueMonth = paidInvoicesMonth.reduce((sum, inv) => sum + inv.total, 0);
+  const revenueMonth = paidInvoicesMonth.reduce((sum, inv) => sum + num(inv.total), 0);
 
   const paidInvoicesYear = await prisma.invoice.findMany({
     where: {
@@ -52,24 +53,24 @@ export const GET = withAuth(async (req, { tenantId }) => {
     },
     include: { lines: true },
   });
-  const revenueYear = paidInvoicesYear.reduce((sum, inv) => sum + inv.total, 0);
+  const revenueYear = paidInvoicesYear.reduce((sum, inv) => sum + num(inv.total), 0);
 
   // COGS (cost of goods sold): sum of (quantity * frozen cost) across all lines of
   // PAID/ISSUED invoices issued this year. costPriceSnapshot is captured at issue time.
   const cogsYear = paidInvoicesYear.reduce((sum, inv) => {
     return (
       sum +
-      inv.lines.reduce((lineSum, line) => lineSum + line.quantity * line.costPriceSnapshot, 0)
+      inv.lines.reduce((lineSum, line) => lineSum + line.quantity * num(line.costPriceSnapshot), 0)
     );
   }, 0);
 
-  const totalExpenses = expenses._sum?.amount || 0;
-  const totalExpensesYear = yearlyExpenses._sum?.amount || 0;
+  const totalExpenses = num(expenses._sum?.amount);
+  const totalExpensesYear = num(yearlyExpenses._sum?.amount);
 
   // Pending payments: total owed on ISSUED invoices minus payments received
   const pendingPayments = issuedInvoices.reduce((sum, inv) => {
-    const paid = inv.payments.reduce((s, p) => s + p.amount, 0);
-    return sum + (inv.total - paid);
+    const paid = inv.payments.reduce((s, p) => s + num(p.amount), 0);
+    return sum + (num(inv.total) - paid);
   }, 0);
 
   // Net profit: revenue − cost of goods sold − operating expenses (all scoped to current year)

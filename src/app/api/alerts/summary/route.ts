@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId, session }) => {
   // The alerts panel is a dashboard feature.
@@ -112,7 +113,11 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     severity: "danger" as const,
   }));
 
-  const totalOverdueAmount = overdueInvoices.reduce((sum, inv) => sum + inv.total, 0);
+  // Owed = total + stamp duty, matching mark-paid/outstanding-payments (SALE-12)
+  const totalOverdueAmount = overdueInvoices.reduce(
+    (sum, inv) => sum + num(inv.total) + num(inv.stampDuty),
+    0
+  );
   const totalCount = overdueAlerts.length + dueSoonAlerts.length + expiringAlerts.length + expiredAlerts.length;
 
   return NextResponse.json(toSnakeCase({

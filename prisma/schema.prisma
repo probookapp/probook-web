@@ -243,7 +243,7 @@ model Product {
   designation     String
   description     String?
   descriptionHtml String?  @map("description_html")
-  unitPrice       Float    @map("unit_price")
+  unitPrice       Decimal  @map("unit_price") @db.Decimal(16, 3)
   taxRate         Float    @default(20.0) @map("tax_rate")
   unit            String   @default("unit")
   reference       String?
@@ -251,7 +251,7 @@ model Product {
   isService       Boolean  @default(false) @map("is_service")
   categoryId      String?  @map("category_id")
   photoPath       String?  @map("photo_path")
-  purchasePrice   Float?   @default(0) @map("purchase_price")
+  purchasePrice   Decimal? @default(0) @map("purchase_price") @db.Decimal(16, 3)
   hasVariants     Boolean  @default(false) @map("has_variants")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
@@ -279,7 +279,7 @@ model ProductPrice {
   tenantId  String   @map("tenant_id")
   productId String   @map("product_id")
   label     String // "retail", "wholesale", "semi_wholesale", "super_wholesale", or custom
-  price     Float
+  price     Decimal  @db.Decimal(16, 3)
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -298,7 +298,7 @@ model ProductVariant {
   sku           String?
   barcode       String?
   attributes    Json     @default("{}") // { "size": "XL", "color": "Rouge" }
-  priceOverride Float?   @map("price_override")
+  priceOverride Decimal? @map("price_override") @db.Decimal(16, 3)
   isActive      Boolean  @default(true) @map("is_active")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
@@ -344,16 +344,16 @@ model Quote {
   status             String   @default("DRAFT")
   issueDate          DateTime @map("issue_date") @db.Date
   validityDate       DateTime @map("validity_date") @db.Date
-  subtotal           Float    @default(0) @map("subtotal")
-  taxAmount          Float    @default(0) @map("tax_amount")
-  total              Float    @default(0) @map("total")
+  subtotal           Decimal  @default(0) @map("subtotal") @db.Decimal(16, 3)
+  taxAmount          Decimal  @default(0) @map("tax_amount") @db.Decimal(16, 3)
+  total              Decimal  @default(0) @map("total") @db.Decimal(16, 3)
   notes              String?
   notesHtml          String?  @map("notes_html")
   logoSnapshot       String?  @map("logo_snapshot")
-  shippingCost       Float    @default(0) @map("shipping_cost")
+  shippingCost       Decimal  @default(0) @map("shipping_cost") @db.Decimal(16, 3)
   shippingTaxRate    Float    @default(20) @map("shipping_tax_rate")
   downPaymentPercent Float    @default(0) @map("down_payment_percent")
-  downPaymentAmount  Float    @default(0) @map("down_payment_amount")
+  downPaymentAmount  Decimal  @default(0) @map("down_payment_amount") @db.Decimal(16, 3)
   createdAt          DateTime @default(now()) @map("created_at")
   updatedAt          DateTime @updatedAt @map("updated_at")
 
@@ -376,11 +376,11 @@ model QuoteLine {
   description     String
   descriptionHtml String?  @map("description_html")
   quantity        Float
-  unitPrice       Float    @map("unit_price")
+  unitPrice       Decimal  @map("unit_price") @db.Decimal(16, 3)
   taxRate         Float    @map("tax_rate")
-  subtotal        Float    @map("subtotal")
-  taxAmount       Float    @map("tax_amount")
-  total           Float    @map("total")
+  subtotal        Decimal  @map("subtotal") @db.Decimal(16, 3)
+  taxAmount       Decimal  @map("tax_amount") @db.Decimal(16, 3)
+  total           Decimal  @map("total") @db.Decimal(16, 3)
   position        Int      @default(0)
   groupName       String?  @map("group_name")
   isSubtotalLine  Boolean? @default(false) @map("is_subtotal_line")
@@ -403,22 +403,22 @@ model Invoice {
   status               String   @default("DRAFT")
   issueDate            DateTime @map("issue_date") @db.Date
   dueDate              DateTime @map("due_date") @db.Date
-  subtotal             Float    @default(0) @map("subtotal")
-  taxAmount            Float    @default(0) @map("tax_amount")
-  total                Float    @default(0) @map("total")
+  subtotal             Decimal  @default(0) @map("subtotal") @db.Decimal(16, 3)
+  taxAmount            Decimal  @default(0) @map("tax_amount") @db.Decimal(16, 3)
+  total                Decimal  @default(0) @map("total") @db.Decimal(16, 3)
   notes                String?
   notesHtml            String?  @map("notes_html")
   integrityHash        String?  @map("integrity_hash")
   logoSnapshot         String?  @map("logo_snapshot")
-  shippingCost         Float    @default(0) @map("shipping_cost")
+  shippingCost         Decimal  @default(0) @map("shipping_cost") @db.Decimal(16, 3)
   shippingTaxRate      Float    @default(20) @map("shipping_tax_rate")
   downPaymentPercent   Float    @default(0) @map("down_payment_percent")
-  downPaymentAmount    Float    @default(0) @map("down_payment_amount")
+  downPaymentAmount    Decimal  @default(0) @map("down_payment_amount") @db.Decimal(16, 3)
   isDownPaymentInvoice Boolean  @default(false) @map("is_down_payment_invoice")
   parentQuoteId        String?  @map("parent_quote_id")
   isCashSale           Boolean  @default(false) @map("is_cash_sale") // droit de timbre only applies to cash settlements
   stampDutyExempt      Boolean  @default(false) @map("stamp_duty_exempt") // legal exemption: no timbre even when cash
-  stampDuty            Float    @default(0) @map("stamp_duty") // droit de timbre snapshot (cash invoices, above threshold)
+  stampDuty            Decimal  @default(0) @map("stamp_duty") @db.Decimal(16, 3) // droit de timbre snapshot (cash invoices, above threshold)
   // Client-minted dedupe key so offline replays / lost-response retries cannot create the document twice.
   idempotencyKey       String?  @map("idempotency_key")
   createdAt            DateTime @default(now()) @map("created_at")
@@ -448,17 +448,17 @@ model InvoiceLine {
   description       String
   descriptionHtml   String?  @map("description_html")
   quantity          Float
-  unitPrice         Float    @map("unit_price")
+  unitPrice         Decimal  @map("unit_price") @db.Decimal(16, 3)
   taxRate           Float    @map("tax_rate")
-  subtotal          Float    @map("subtotal")
-  taxAmount         Float    @map("tax_amount")
-  total             Float    @map("total")
+  subtotal          Decimal  @map("subtotal") @db.Decimal(16, 3)
+  taxAmount         Decimal  @map("tax_amount") @db.Decimal(16, 3)
+  total             Decimal  @map("total") @db.Decimal(16, 3)
   position          Int      @default(0)
   groupName         String?  @map("group_name")
   isSubtotalLine    Boolean? @default(false) @map("is_subtotal_line")
   // Snapshot of product.purchasePrice captured at sale time (invoice issue).
   // Frozen so later edits to the product's purchase price never rewrite history.
-  costPriceSnapshot Float    @default(0) @map("cost_price_snapshot")
+  costPriceSnapshot Decimal  @default(0) @map("cost_price_snapshot") @db.Decimal(16, 3)
 
   invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   product Product? @relation(fields: [productId], references: [id])
@@ -470,17 +470,17 @@ model InvoiceLine {
 // ========== Payments ==========
 
 model Payment {
-  id            String   @id @default(uuid())
-  tenantId      String   @map("tenant_id")
-  invoiceId     String   @map("invoice_id")
-  amount        Float
-  paymentDate   DateTime @map("payment_date") @db.Date
-  paymentMethod String   @map("payment_method")
-  reference     String?
-  notes         String?
+  id             String   @id @default(uuid())
+  tenantId       String   @map("tenant_id")
+  invoiceId      String   @map("invoice_id")
+  amount         Decimal  @db.Decimal(16, 3)
+  paymentDate    DateTime @map("payment_date") @db.Date
+  paymentMethod  String   @map("payment_method")
+  reference      String?
+  notes          String?
   // Client-minted dedupe key so offline replays / double-submits cannot record the payment twice.
-  idempotencyKey String? @map("idempotency_key")
-  createdAt     DateTime @default(now()) @map("created_at")
+  idempotencyKey String?  @map("idempotency_key")
+  createdAt      DateTime @default(now()) @map("created_at")
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -578,7 +578,7 @@ model CompanySettings {
   dashboardLayout        Json?    @map("dashboard_layout") // owner's dashboard card order/visibility
   stampDutyEnabled       Boolean? @default(false) @map("stamp_duty_enabled") // droit de timbre on cash payments
   stampDutyRate          Float?   @default(1.0) @map("stamp_duty_rate") // percentage
-  stampDutyThreshold     Float?   @default(0) @map("stamp_duty_threshold") // min TTC for timbre to apply
+  stampDutyThreshold     Decimal? @default(0) @map("stamp_duty_threshold") @db.Decimal(16, 3) // min TTC for timbre to apply
   updatedAt              DateTime @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -592,7 +592,7 @@ model Expense {
   id        String   @id @default(uuid())
   tenantId  String   @map("tenant_id")
   name      String
-  amount    Float    @default(0)
+  amount    Decimal  @default(0) @db.Decimal(16, 3)
   date      DateTime @db.Date
   notes     String?
   createdAt DateTime @default(now()) @map("created_at")
@@ -631,7 +631,7 @@ model ProductSupplier {
   tenantId      String   @map("tenant_id")
   productId     String   @map("product_id")
   supplierId    String   @map("supplier_id")
-  purchasePrice Float    @default(0) @map("purchase_price")
+  purchasePrice Decimal  @default(0) @map("purchase_price") @db.Decimal(16, 3)
   createdAt     DateTime @default(now()) @map("created_at")
 
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -658,9 +658,9 @@ model PurchaseOrder {
   registerId       String?   @map("register_id")
   sessionId        String?   @map("session_id")
   paymentStatus    String    @default("UNPAID") // UNPAID | PARTIAL | PAID
-  subtotal         Float     @default(0)
-  taxAmount        Float     @default(0) @map("tax_amount")
-  total            Float     @default(0)
+  subtotal         Decimal   @default(0) @db.Decimal(16, 3)
+  taxAmount        Decimal   @default(0) @map("tax_amount") @db.Decimal(16, 3)
+  total            Decimal   @default(0) @db.Decimal(16, 3)
   notes            String?
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
@@ -682,19 +682,19 @@ model PurchaseOrder {
 }
 
 model PurchaseOrderLine {
-  id               String  @id @default(uuid())
-  orderId          String  @map("order_id")
-  productId        String  @map("product_id")
-  variantId        String? @map("variant_id")
+  id               String   @id @default(uuid())
+  orderId          String   @map("order_id")
+  productId        String   @map("product_id")
+  variantId        String?  @map("variant_id")
   quantity         Float
-  receivedQuantity Float   @default(0) @map("received_quantity")
-  unitPrice        Float   @map("unit_price")
-  previousPrice    Float?  @map("previous_price")
-  useAveragePrice  Boolean @default(false) @map("use_average_price")
-  subtotal         Float   @default(0)
-  taxRate          Float   @default(0) @map("tax_rate")
-  taxAmount        Float   @default(0) @map("tax_amount")
-  total            Float   @default(0)
+  receivedQuantity Float    @default(0) @map("received_quantity")
+  unitPrice        Decimal  @map("unit_price") @db.Decimal(16, 3)
+  previousPrice    Decimal? @map("previous_price") @db.Decimal(16, 3)
+  useAveragePrice  Boolean  @default(false) @map("use_average_price")
+  subtotal         Decimal  @default(0) @db.Decimal(16, 3)
+  taxRate          Float    @default(0) @map("tax_rate")
+  taxAmount        Decimal  @default(0) @map("tax_amount") @db.Decimal(16, 3)
+  total            Decimal  @default(0) @db.Decimal(16, 3)
 
   order   PurchaseOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product         @relation(fields: [productId], references: [id])
@@ -709,7 +709,7 @@ model SupplierPayment {
   tenantId        String   @map("tenant_id")
   supplierId      String   @map("supplier_id")
   purchaseOrderId String?  @map("purchase_order_id")
-  amount          Float
+  amount          Decimal  @db.Decimal(16, 3)
   paymentDate     DateTime @map("payment_date") @db.Date
   paymentMethod   String   @default("CASH") @map("payment_method")
   reference       String?
@@ -798,10 +798,10 @@ model PosSession {
   userId         String    @map("user_id")
   openedAt       DateTime  @default(now()) @map("opened_at")
   closedAt       DateTime? @map("closed_at")
-  openingFloat   Float     @default(0) @map("opening_float")
-  expectedCash   Float?    @map("expected_cash")
-  actualCash     Float?    @map("actual_cash")
-  cashDifference Float?    @map("cash_difference")
+  openingFloat   Decimal   @default(0) @map("opening_float") @db.Decimal(16, 3)
+  expectedCash   Decimal?  @map("expected_cash") @db.Decimal(16, 3)
+  actualCash     Decimal?  @map("actual_cash") @db.Decimal(16, 3)
+  cashDifference Decimal?  @map("cash_difference") @db.Decimal(16, 3)
   status         String    @default("OPEN")
   notes          String?
   createdAt      DateTime  @default(now()) @map("created_at")
@@ -829,12 +829,12 @@ model PosTransaction {
   userId          String   @map("user_id")
   invoiceId       String?  @map("invoice_id")
   transactionDate DateTime @default(now()) @map("transaction_date")
-  subtotal        Float    @default(0) @map("subtotal")
-  taxAmount       Float    @default(0) @map("tax_amount")
-  total           Float    @default(0) @map("total")
+  subtotal        Decimal  @default(0) @map("subtotal") @db.Decimal(16, 3)
+  taxAmount       Decimal  @default(0) @map("tax_amount") @db.Decimal(16, 3)
+  total           Decimal  @default(0) @map("total") @db.Decimal(16, 3)
   discountPercent Float    @default(0) @map("discount_percent")
-  discountAmount  Float    @default(0) @map("discount_amount")
-  finalAmount     Float    @default(0) @map("final_amount")
+  discountAmount  Decimal  @default(0) @map("discount_amount") @db.Decimal(16, 3)
+  finalAmount     Decimal  @default(0) @map("final_amount") @db.Decimal(16, 3)
   status          String   @default("COMPLETED")
   notes           String?
   // Client-minted dedupe key so offline replays / lost-response retries cannot book the sale twice.
@@ -842,11 +842,11 @@ model PosTransaction {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
-  tenant   Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  register PosRegister          @relation(fields: [registerId], references: [id])
-  session  PosSession           @relation(fields: [sessionId], references: [id])
-  client   Client?              @relation(fields: [clientId], references: [id])
-  user     User                 @relation(fields: [userId], references: [id])
+  tenant      Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  register    PosRegister          @relation(fields: [registerId], references: [id])
+  session     PosSession           @relation(fields: [sessionId], references: [id])
+  client      Client?              @relation(fields: [clientId], references: [id])
+  user        User                 @relation(fields: [userId], references: [id])
   invoice     Invoice?             @relation(fields: [invoiceId], references: [id])
   lines       PosTransactionLine[]
   payments    PosPayment[]
@@ -870,15 +870,15 @@ model PosTransactionLine {
   barcode           String?
   designation       String
   quantity          Float
-  unitPrice         Float    @map("unit_price")
+  unitPrice         Decimal  @map("unit_price") @db.Decimal(16, 3)
   taxRate           Float    @map("tax_rate")
-  subtotal          Float    @map("subtotal")
-  taxAmount         Float    @map("tax_amount")
-  total             Float    @map("total")
+  subtotal          Decimal  @map("subtotal") @db.Decimal(16, 3)
+  taxAmount         Decimal  @map("tax_amount") @db.Decimal(16, 3)
+  total             Decimal  @map("total") @db.Decimal(16, 3)
   discountPercent   Float    @default(0) @map("discount_percent")
   position          Int      @default(0)
   // Snapshot of product/variant purchase price captured at sale time (transaction creation).
-  costPriceSnapshot Float    @default(0) @map("cost_price_snapshot")
+  costPriceSnapshot Decimal  @default(0) @map("cost_price_snapshot") @db.Decimal(16, 3)
   createdAt         DateTime @default(now()) @map("created_at")
 
   transaction PosTransaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
@@ -894,9 +894,9 @@ model PosPayment {
   id            String   @id @default(uuid())
   transactionId String   @map("transaction_id")
   paymentMethod String   @map("payment_method")
-  amount        Float
-  cashGiven     Float?   @map("cash_given")
-  changeGiven   Float?   @map("change_given")
+  amount        Decimal  @db.Decimal(16, 3)
+  cashGiven     Decimal? @map("cash_given") @db.Decimal(16, 3)
+  changeGiven   Decimal? @map("change_given") @db.Decimal(16, 3)
   cardReference String?  @map("card_reference")
   createdAt     DateTime @default(now()) @map("created_at")
 
@@ -912,7 +912,7 @@ model PosCashMovement {
   sessionId    String   @map("session_id")
   userId       String   @map("user_id")
   movementType String   @map("movement_type")
-  amount       Float
+  amount       Decimal  @db.Decimal(16, 3)
   reason       String
   reference    String?
   createdAt    DateTime @default(now()) @map("created_at")
@@ -1379,18 +1379,18 @@ model CreditNote {
   status           String   @default("ISSUED") // "DRAFT" | "ISSUED"
   issueDate        DateTime @map("issue_date") @db.Date
   reason           String?
-  subtotal         Float    @default(0)
-  taxAmount        Float    @default(0) @map("tax_amount")
-  total            Float    @default(0)
+  subtotal         Decimal  @default(0) @db.Decimal(16, 3)
+  taxAmount        Decimal  @default(0) @map("tax_amount") @db.Decimal(16, 3)
+  total            Decimal  @default(0) @db.Decimal(16, 3)
   restocked        Boolean  @default(false)
   notes            String?
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
-  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  client         Client          @relation(fields: [clientId], references: [id])
-  invoice        Invoice?        @relation(fields: [invoiceId], references: [id])
-  posTransaction PosTransaction? @relation(fields: [posTransactionId], references: [id], onDelete: SetNull)
+  tenant         Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  client         Client           @relation(fields: [clientId], references: [id])
+  invoice        Invoice?         @relation(fields: [invoiceId], references: [id])
+  posTransaction PosTransaction?  @relation(fields: [posTransactionId], references: [id], onDelete: SetNull)
   lines          CreditNoteLine[]
 
   @@unique([tenantId, creditNoteNumber])
@@ -1408,11 +1408,11 @@ model CreditNoteLine {
   variantId    String? @map("variant_id")
   description  String
   quantity     Float
-  unitPrice    Float   @map("unit_price")
+  unitPrice    Decimal @map("unit_price") @db.Decimal(16, 3)
   taxRate      Float   @default(0) @map("tax_rate")
-  subtotal     Float   @default(0)
-  taxAmount    Float   @default(0) @map("tax_amount")
-  total        Float   @default(0)
+  subtotal     Decimal @default(0) @db.Decimal(16, 3)
+  taxAmount    Decimal @default(0) @map("tax_amount") @db.Decimal(16, 3)
+  total        Decimal @default(0) @db.Decimal(16, 3)
 
   creditNote CreditNote @relation(fields: [creditNoteId], references: [id], onDelete: Cascade)
 

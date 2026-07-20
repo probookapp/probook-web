@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { requirePermission } from "@/lib/permissions-server";
 import { invoiceMarkPaidSchema } from "@/lib/validations";
+import { num } from "@/lib/money";
 
 const EPSILON = 0.01;
 
@@ -34,8 +35,8 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
     if (!invoice) return null;
 
     // The amount owed includes the stamp duty snapshot (droit de timbre).
-    const amountOwed = invoice.total + (invoice.stampDuty ?? 0);
-    const paidSoFar = invoice.payments.reduce((sum, p) => sum + p.amount, 0);
+    const amountOwed = num(invoice.total) + num(invoice.stampDuty);
+    const paidSoFar = invoice.payments.reduce((sum, p) => sum + num(p.amount), 0);
     const remaining = Math.round((amountOwed - paidSoFar) * 100) / 100;
 
     // Already settled → idempotent no-op (just make sure the status agrees).

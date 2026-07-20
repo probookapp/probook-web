@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "reports", "view");
@@ -30,8 +31,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       ? Math.round((convertedQuotes / totalQuotes) * 10000) / 100
       : 0;
 
-  const totalQuotedAmount = quotes.reduce((sum, q) => sum + q.total, 0);
-  const convertedAmount = acceptedQuotes.reduce((sum, q) => sum + q.total, 0);
+  const totalQuotedAmount = quotes.reduce((sum, q) => sum + num(q.total), 0);
+  const convertedAmount = acceptedQuotes.reduce((sum, q) => sum + num(q.total), 0);
 
   return NextResponse.json(
     toSnakeCase({

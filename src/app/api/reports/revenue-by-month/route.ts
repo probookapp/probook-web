@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "reports", "view");
@@ -41,8 +42,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     if (!months[key]) {
       months[key] = { revenueBeforeTax: 0, revenueTotal: 0, invoiceCount: 0 };
     }
-    months[key].revenueBeforeTax += inv.subtotal;
-    months[key].revenueTotal += inv.total;
+    months[key].revenueBeforeTax += num(inv.subtotal);
+    months[key].revenueTotal += num(inv.total);
     months[key].invoiceCount += 1;
   }
 

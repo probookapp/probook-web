@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const sessionId = params?.sessionId;
@@ -30,20 +31,20 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   let totalCash = 0;
   let totalCard = 0;
   for (const tx of completed) {
-    totalSales += tx.finalAmount;
-    subtotal += tx.subtotal;
-    taxAmount += tx.taxAmount;
+    totalSales += num(tx.finalAmount);
+    subtotal += num(tx.subtotal);
+    taxAmount += num(tx.taxAmount);
     for (const p of tx.payments) {
-      if (p.paymentMethod === "CASH") totalCash += p.amount;
-      else if (p.paymentMethod === "CARD") totalCard += p.amount;
+      if (p.paymentMethod === "CASH") totalCash += num(p.amount);
+      else if (p.paymentMethod === "CARD") totalCard += num(p.amount);
     }
   }
 
   let cashIn = 0;
   let cashOut = 0;
   for (const mv of cashMovements) {
-    if (mv.movementType === "IN") cashIn += mv.amount;
-    else cashOut += mv.amount;
+    if (mv.movementType === "IN") cashIn += num(mv.amount);
+    else cashOut += num(mv.amount);
   }
 
   const netCashMovement = cashIn - cashOut;
@@ -60,10 +61,10 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
       cardSales: totalCard,
       subtotal,
       taxAmount,
-      cancelledTotal: cancelled.reduce((sum, tx) => sum + tx.finalAmount, 0),
+      cancelledTotal: cancelled.reduce((sum, tx) => sum + num(tx.finalAmount), 0),
       cashMovements: cashMovements,
       netCashMovement,
-      expectedCash: posSession.openingFloat + totalCash + netCashMovement,
+      expectedCash: num(posSession.openingFloat) + totalCash + netCashMovement,
     })
   );
 });

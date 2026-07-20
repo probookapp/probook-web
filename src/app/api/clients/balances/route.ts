@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 // GET /api/clients/balances
 //
@@ -35,15 +36,15 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
 
   for (const r of invoiceSums) {
     // Outstanding = TTC total + stamp duty (droit de timbre) snapshot.
-    balances.set(r.clientId, (balances.get(r.clientId) ?? 0) + (r._sum.total ?? 0) + (r._sum.stampDuty ?? 0));
+    balances.set(r.clientId, (balances.get(r.clientId) ?? 0) + num(r._sum.total) + num(r._sum.stampDuty));
   }
   for (const r of creditSums) {
-    balances.set(r.clientId, (balances.get(r.clientId) ?? 0) - (r._sum.total ?? 0));
+    balances.set(r.clientId, (balances.get(r.clientId) ?? 0) - num(r._sum.total));
   }
   for (const r of paymentSums) {
     const clientId = invoiceToClient.get(r.invoiceId);
     if (clientId) {
-      balances.set(clientId, (balances.get(clientId) ?? 0) - (r._sum.amount ?? 0));
+      balances.set(clientId, (balances.get(clientId) ?? 0) - num(r._sum.amount));
     }
   }
 

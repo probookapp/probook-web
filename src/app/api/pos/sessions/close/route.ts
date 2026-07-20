@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { posSessionCloseSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { num } from "@/lib/money";
 
 export const POST = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "pos", "create");
@@ -27,17 +28,17 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
     where: { tenantId, sessionId: body.session_id },
   });
 
-  let expectedCash = posSession.openingFloat;
+  let expectedCash = num(posSession.openingFloat);
   for (const tx of transactions) {
     for (const payment of tx.payments) {
       if (payment.paymentMethod === "CASH") {
-        expectedCash += payment.amount;
+        expectedCash += num(payment.amount);
       }
     }
   }
   for (const mv of cashMovements) {
-    if (mv.movementType === "IN") expectedCash += mv.amount;
-    else expectedCash -= mv.amount;
+    if (mv.movementType === "IN") expectedCash += num(mv.amount);
+    else expectedCash -= num(mv.amount);
   }
 
   const actualCash = body.actual_cash ?? expectedCash;

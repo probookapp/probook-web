@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
 import { getProductQuantities } from "@/lib/stock";
+import { num } from "@/lib/money";
 
 // Inventory valuation report: on-hand value = quantity * purchase_price.
 // Variants inherit the parent product's purchase price (matches POS costing).
@@ -37,7 +38,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     : await getProductQuantities(prisma, tenantId);
 
   const rows = products.map((p) => {
-    const purchasePrice = p.purchasePrice ?? 0;
+    const purchasePrice = num(p.purchasePrice);
     const quantity = stockByProduct
       ? stockByProduct.get(p.id) ?? 0
       : p.hasVariants && p.variants.length > 0

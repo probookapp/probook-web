@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/permissions-server";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
+import { num } from "@/lib/money";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -75,7 +76,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
 
   for (const line of note.lines) {
     const product = line.productId ? productById.get(line.productId) : undefined;
-    const unitPrice = product?.unitPrice ?? 0;
+    const unitPrice = num(product?.unitPrice);
     const taxRate = product?.taxRate ?? defaultTaxRate;
     const lineHt = round2(line.quantity * unitPrice);
     const lineVat = round2(lineHt * (taxRate / 100));

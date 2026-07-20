@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { applyStockChange, getProductQuantities } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { requirePermission } from "@/lib/permissions-server";
+import { num } from "@/lib/money";
 
 // Confirm / receive a purchase order. Supports partial goods receipt: pass a
 // `lines` array with the cumulative received quantity per line. When `lines` is
@@ -92,7 +93,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
 
         const delta = target - prevReceived;
 
-        const unitPriceInclTax = line.unitPrice * (1 + (line.taxRate ?? 0) / 100);
+        const unitPriceInclTax = num(line.unitPrice) * (1 + (line.taxRate ?? 0) / 100);
         orderedValue += orderedQty * unitPriceInclTax;
         prevReceivedValue += prevReceived * unitPriceInclTax;
         newReceivedValue += target * unitPriceInclTax;
@@ -109,12 +110,12 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
               productIds: [line.productId],
             });
             const oldQty = byProduct.get(line.productId) ?? 0;
-            const oldPrice = product.purchasePrice ?? 0;
+            const oldPrice = num(product.purchasePrice);
             const newQty = oldQty + delta;
 
-            let newPurchasePrice = line.unitPrice;
+            let newPurchasePrice = num(line.unitPrice);
             if (line.useAveragePrice && newQty > 0) {
-              newPurchasePrice = ((oldQty * oldPrice) + (delta * line.unitPrice)) / newQty;
+              newPurchasePrice = ((oldQty * oldPrice) + (delta * num(line.unitPrice))) / newQty;
             }
 
             await applyStockChange(tx, {
@@ -164,9 +165,9 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
       if (body.paid_from_register) {
         const round2 = (n: number) => Math.round(n * 100) / 100;
         const debitedSoFar =
-          orderedValue > 0 ? round2((order.total * prevReceivedValue) / orderedValue) : 0;
+          orderedValue > 0 ? round2((num(order.total) * prevReceivedValue) / orderedValue) : 0;
         const debitedAfter =
-          orderedValue > 0 ? round2((order.total * newReceivedValue) / orderedValue) : 0;
+          orderedValue > 0 ? round2((num(order.total) * newReceivedValue) / orderedValue) : 0;
         const amount = round2(debitedAfter - debitedSoFar);
 
         if (amount > 0) {

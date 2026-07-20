@@ -5,6 +5,7 @@ import { applyStockChange } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { posTransactionSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { num } from "@/lib/money";
 import { Prisma } from "@/generated/prisma/client";
 
 interface PosLineInput {
@@ -135,7 +136,7 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
       { status: 400 }
     );
   }
-  const productCost = new Map(products.map((p) => [p.id, p.purchasePrice ?? 0]));
+  const productCost = new Map(products.map((p) => [p.id, num(p.purchasePrice)]));
   const resolveCost = (l: PosLineInput): number => {
     const productId = l.variant_id ? variantToProduct.get(l.variant_id) ?? l.product_id : l.product_id;
     if (productId && productCost.has(productId)) return productCost.get(productId) ?? 0;

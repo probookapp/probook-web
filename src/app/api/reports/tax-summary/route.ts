@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 /** A payment method counts toward stamp duty (droit de timbre) when it is cash. */
 function isCashMethod(method: string | null | undefined): boolean {
@@ -65,19 +66,21 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   const salesByRate = new Map<number, RateBucket>();
 
   for (const inv of invoices) {
-    salesHt += inv.subtotal;
-    salesVat += inv.taxAmount;
-    salesTtc += inv.total;
+    salesHt += num(inv.subtotal);
+    salesVat += num(inv.taxAmount);
+    salesTtc += num(inv.total);
     for (const line of inv.lines) {
       if (line.isSubtotalLine) continue;
-      addToRate(salesByRate, line.taxRate, line.subtotal, line.taxAmount, line.total);
+      addToRate(salesByRate, num(line.taxRate), num(line.subtotal), num(line.taxAmount), num(line.total));
     }
     // Invoice.subtotal/taxAmount already include shipping, but the line loop
     // above doesn't — add shipping to the per-rate breakdown so it reconciles
     // with the headline totals.
-    if (inv.shippingCost > 0) {
-      const shipVat = inv.shippingCost * (inv.shippingTaxRate / 100);
-      addToRate(salesByRate, inv.shippingTaxRate, inv.shippingCost, shipVat, inv.shippingCost + shipVat);
+    const shippingCost = num(inv.shippingCost);
+    const shippingTaxRate = num(inv.shippingTaxRate);
+    if (shippingCost > 0) {
+      const shipVat = shippingCost * (shippingTaxRate / 100);
+      addToRate(salesByRate, shippingTaxRate, shippingCost, shipVat, shippingCost + shipVat);
     }
   }
 
@@ -90,17 +93,19 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     include: { lines: true },
   });
   for (const tx of posTransactions) {
-    const ratio = tx.total > 0 ? tx.finalAmount / tx.total : 1;
-    salesHt += tx.subtotal * ratio;
-    salesVat += tx.taxAmount * ratio;
-    salesTtc += tx.finalAmount;
+    const txTotal = num(tx.total);
+    const txFinalAmount = num(tx.finalAmount);
+    const ratio = txTotal > 0 ? txFinalAmount / txTotal : 1;
+    salesHt += num(tx.subtotal) * ratio;
+    salesVat += num(tx.taxAmount) * ratio;
+    salesTtc += txFinalAmount;
     for (const line of tx.lines) {
       addToRate(
         salesByRate,
-        line.taxRate,
-        line.subtotal * ratio,
-        line.taxAmount * ratio,
-        (line.subtotal + line.taxAmount) * ratio
+        num(line.taxRate),
+        num(line.subtotal) * ratio,
+        num(line.taxAmount) * ratio,
+        (num(line.subtotal) + num(line.taxAmount)) * ratio
       );
     }
   }
@@ -111,11 +116,11 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     include: { lines: true },
   });
   for (const cn of creditNotes) {
-    salesHt -= cn.subtotal;
-    salesVat -= cn.taxAmount;
-    salesTtc -= cn.total;
+    salesHt -= num(cn.subtotal);
+    salesVat -= num(cn.taxAmount);
+    salesTtc -= num(cn.total);
     for (const line of cn.lines) {
-      addToRate(salesByRate, line.taxRate, -line.subtotal, -line.taxAmount, -line.total);
+      addToRate(salesByRate, num(line.taxRate), -num(line.subtotal), -num(line.taxAmount), -num(line.total));
     }
   }
 
@@ -135,11 +140,11 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   const purchasesByRate = new Map<number, RateBucket>();
 
   for (const order of orders) {
-    purchasesHt += order.subtotal;
-    purchasesVat += order.taxAmount;
-    purchasesTtc += order.total;
+    purchasesHt += num(order.subtotal);
+    purchasesVat += num(order.taxAmount);
+    purchasesTtc += num(order.total);
     for (const line of order.lines) {
-      addToRate(purchasesByRate, line.taxRate, line.subtotal, line.taxAmount, line.total);
+      addToRate(purchasesByRate, num(line.taxRate), num(line.subtotal), num(line.taxAmount), num(line.total));
     }
   }
 
@@ -149,7 +154,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   // ── Stamp duty (droit de timbre) on cash payments ────────────────────────
   const settings = await prisma.companySettings.findFirst({ where: { tenantId } });
   const stampDutyEnabled = settings?.stampDutyEnabled ?? false;
-  const stampDutyRate = settings?.stampDutyRate ?? 0;
+  const stampDutyRate = num(settings?.stampDutyRate);
 
   let cashPaymentsTotal = 0;
   if (stampDutyEnabled) {
@@ -157,7 +162,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       where: { tenantId, paymentDate: range },
     });
     for (const p of payments) {
-      if (isCashMethod(p.paymentMethod)) cashPaymentsTotal += p.amount;
+      if (isCashMethod(p.paymentMethod)) cashPaymentsTotal += num(p.amount);
     }
   }
   const stampDutyAmount = stampDutyEnabled

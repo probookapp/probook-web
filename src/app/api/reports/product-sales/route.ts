@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "reports", "view");
@@ -45,8 +46,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       };
     }
     byProduct[key].quantitySold += line.quantity;
-    byProduct[key].revenueBeforeTax += line.subtotal;
-    byProduct[key].revenueTotal += line.total;
+    byProduct[key].revenueBeforeTax += num(line.subtotal);
+    byProduct[key].revenueTotal += num(line.total);
   }
 
   const result = Object.values(byProduct).sort((a, b) => b.revenueBeforeTax - a.revenueBeforeTax);

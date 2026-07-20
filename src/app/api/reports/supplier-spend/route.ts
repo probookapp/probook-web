@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "reports", "view");
@@ -55,7 +56,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       };
     }
     bySupplier[key].orderCount += 1;
-    bySupplier[key].totalSpend += order.total;
+    bySupplier[key].totalSpend += num(order.total);
   }
 
   const result = Object.values(bySupplier).sort((a, b) => b.totalSpend - a.totalSpend);

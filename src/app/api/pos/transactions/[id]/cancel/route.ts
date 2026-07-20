@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { applyStockChange } from "@/lib/stock";
 import { requirePermission } from "@/lib/permissions-server";
+import { num } from "@/lib/money";
 
 // Sentinel thrown inside the transaction when another request cancelled first;
 // rolls everything back so a double-cancel can never double-restock.
@@ -50,7 +51,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
   // cancelling means handing it back, so the till needs a compensating OUT.
   const cashPaid = transaction.payments
     .filter((p) => p.paymentMethod === "CASH")
-    .reduce((sum, p) => sum + Math.max(0, p.amount - (p.changeGiven ?? 0)), 0);
+    .reduce((sum, p) => sum + Math.max(0, num(p.amount) - num(p.changeGiven)), 0);
 
   // Flip the status, restore stock and reverse cash atomically. The guarded
   // updateMany is the authoritative double-cancel check: only the request that

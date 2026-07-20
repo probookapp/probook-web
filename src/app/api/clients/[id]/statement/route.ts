@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 // GET /api/clients/[id]/statement?startDate&endDate
 //
@@ -71,7 +72,7 @@ export const GET = withAuth(async (req, { tenantId, session, params }) => {
       type: "invoice",
       reference: inv.invoiceNumber,
       // The client owes the TTC total plus the stamp duty (droit de timbre) snapshot.
-      debit: inv.total + (inv.stampDuty ?? 0),
+      debit: num(inv.total) + num(inv.stampDuty),
       credit: 0,
     });
   }
@@ -82,7 +83,7 @@ export const GET = withAuth(async (req, { tenantId, session, params }) => {
       type: "payment",
       reference: pay.reference || pay.invoice.invoiceNumber,
       debit: 0,
-      credit: pay.amount,
+      credit: num(pay.amount),
     });
   }
   for (const cn of creditNotes) {
@@ -92,7 +93,7 @@ export const GET = withAuth(async (req, { tenantId, session, params }) => {
       type: "credit_note",
       reference: cn.creditNoteNumber,
       debit: 0,
-      credit: cn.total,
+      credit: num(cn.total),
     });
   }
 

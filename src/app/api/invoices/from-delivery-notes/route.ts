@@ -6,6 +6,7 @@ import { requirePermission } from "@/lib/permissions-server";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { invoiceFromDeliveryNotesSchema } from "@/lib/validations";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
+import { num } from "@/lib/money";
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -97,7 +98,7 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
   for (const dn of deliveryNotes) {
     for (const line of dn.lines) {
       const product = line.productId ? productById.get(line.productId) : undefined;
-      const unitPrice = product?.unitPrice ?? 0;
+      const unitPrice = num(product?.unitPrice);
       const taxRate = product?.taxRate ?? defaultTaxRate;
       const subtotal = round2(line.quantity * unitPrice);
       const taxAmount = round2(subtotal * (taxRate / 100));

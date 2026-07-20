@@ -7,6 +7,7 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { createInvoiceSchema } from "@/lib/validations";
 import { computeStampDuty } from "@/lib/stamp-duty";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
+import { num } from "@/lib/money";
 
 interface LineInput {
   product_id?: string | null;
@@ -75,7 +76,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     });
     const data = rows.map(({ payments, ...rest }) => ({
       ...rest,
-      paidTotal: payments.reduce((sum, p) => sum + p.amount, 0),
+      paidTotal: payments.reduce((sum, p) => sum + num(p.amount), 0),
     }));
     return NextResponse.json(
       toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
@@ -138,7 +139,7 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
   const stampDuty = computeStampDuty({
     enabled: settings?.stampDutyEnabled,
     rate: settings?.stampDutyRate,
-    threshold: settings?.stampDutyThreshold,
+    threshold: num(settings?.stampDutyThreshold),
     isCashSale,
     exempt: stampDutyExempt,
     total: totals.total,

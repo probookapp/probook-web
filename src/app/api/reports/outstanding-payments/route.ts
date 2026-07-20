@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "reports", "view");
@@ -16,8 +17,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
 
   const result = invoices
     .map((inv) => {
-      const totalPaid = inv.payments.reduce((sum, p) => sum + p.amount, 0);
-      const remaining = inv.total - totalPaid;
+      const totalPaid = inv.payments.reduce((sum, p) => sum + num(p.amount), 0);
+      const remaining = num(inv.total) - totalPaid;
       const dueDate = new Date(inv.dueDate);
       const daysOverdue = Math.max(
         0,

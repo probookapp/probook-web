@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
+import { Prisma } from "@/generated/prisma/client";
 import { getSession, getAdminSession, getImpersonationData, getSessionToken, hashToken, SessionPayload } from "./auth";
 import { prisma } from "./db";
 import { checkRateLimit } from "./rate-limiter";
@@ -23,6 +24,9 @@ export async function markOnboardingStep(tenantId: string, stepKey: string) {
 export function toSnakeCase<T>(obj: T): T {
   if (obj === null || obj === undefined) return obj;
   if (obj instanceof Date) return obj.toISOString() as T;
+  // Money columns are NUMERIC in the DB and Decimal objects in Prisma results;
+  // the API contract (and the whole client) speaks plain JSON numbers.
+  if (Prisma.Decimal.isDecimal(obj)) return (obj as Prisma.Decimal).toNumber() as T;
   if (Array.isArray(obj)) return obj.map(toSnakeCase) as T;
   if (typeof obj === "object") {
     return Object.fromEntries(

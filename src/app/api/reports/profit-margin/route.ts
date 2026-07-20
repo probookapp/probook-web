@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "reports", "view");
@@ -80,8 +81,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
         key,
         line.product?.designation || line.description,
         line.quantity,
-        line.subtotal,
-        line.quantity * line.costPriceSnapshot
+        num(line.subtotal),
+        line.quantity * num(line.costPriceSnapshot)
       );
     }
   }
@@ -93,8 +94,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
         key,
         line.product?.designation || line.designation,
         line.quantity,
-        line.subtotal,
-        line.quantity * line.costPriceSnapshot
+        num(line.subtotal),
+        line.quantity * num(line.costPriceSnapshot)
       );
     }
   }

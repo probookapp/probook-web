@@ -2,6 +2,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { prisma } from "./db";
 import { applyStockChange } from "./stock";
 import { allocateDocumentNumber } from "./document-numbering";
+import { num } from "./money";
 
 /**
  * Shared credit-note creation logic used by both the credit-notes API and the
@@ -92,8 +93,8 @@ export async function createCreditNote(db: Db, input: CreateCreditNoteInput) {
       where: { tenantId: input.tenantId, invoiceId: invoice.id },
       _sum: { total: true },
     });
-    const alreadyCredited = prior._sum.total ?? 0;
-    const creditable = invoice.total + (invoice.stampDuty ?? 0) - alreadyCredited;
+    const alreadyCredited = num(prior._sum.total);
+    const creditable = num(invoice.total) + num(invoice.stampDuty) - alreadyCredited;
     if (totals.total > creditable + 1e-6) {
       throw new CreditNoteError(
         "Credit note exceeds the remaining creditable amount for this invoice",
