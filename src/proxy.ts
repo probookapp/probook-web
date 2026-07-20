@@ -155,7 +155,11 @@ export async function proxy(req: NextRequest) {
       "/api/auth/verify-email",
       "/api/auth/totp/verify",
       "/api/subscription/plans",
-      ...(process.env.NODE_ENV !== "production" ? ["/api/test/"] : []),
+      // Test bootstrap endpoints: also public for CI's production-build e2e
+      // runs (E2E_TEST_MODE is set only by the CI workflow, never on Vercel).
+      ...(process.env.NODE_ENV !== "production" || process.env.E2E_TEST_MODE === "1"
+        ? ["/api/test/"]
+        : []),
     ];
 
     // Auth-related public routes get a stricter rate limit (50/min)
