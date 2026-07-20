@@ -19,6 +19,12 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # The Prisma client is generated into src/generated (gitignored) — without
+      # this step, tsc fails on every file that imports it.
+      - name: Generate Prisma client
+        run: npx prisma generate
+        env:
+          DATABASE_URL: "postgresql://placeholder:placeholder@localhost:5432/placeholder"
       - run: npx eslint src --quiet
       - run: npx tsc --noEmit
       - run: npx vitest run --coverage
