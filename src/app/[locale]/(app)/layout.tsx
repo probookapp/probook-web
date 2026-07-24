@@ -7,7 +7,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AnnouncementBanner } from "@/components/shared/AnnouncementBanner";
-import { DemoModeProvider, DemoModeBanner } from "@/components/providers/DemoModeProvider";
+import { DemoModeProvider, DemoModeBanner, TrialBanner } from "@/components/providers/DemoModeProvider";
 import { ImpersonationBar } from "@/components/shared/ImpersonationBar";
 import { PwaInstallBanner } from "@/components/shared/PwaInstallBanner";
 import { ConflictResolutionModal } from "@/components/shared/ConflictResolutionModal";
@@ -60,11 +60,20 @@ export default function AuthenticatedLayout({
   // Demo mode: no valid subscription (banner shows on all pages including settings)
   const isDemoMode = !subLoading && !hasValidSubscription;
 
-  // Check if subscription expires within 30 days
+  // Days remaining in the free trial (drives the trial countdown banner).
+  let trialDaysLeft: number | null = null;
+  const trialEndsAt = subscription?.trial_ends_at as string | undefined;
+  if (isInTrial && trialEndsAt) {
+    const diff = Math.ceil((new Date(trialEndsAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+    trialDaysLeft = Math.max(0, diff);
+  }
+
+  // Check if a paid subscription expires within 30 days (not shown during a
+  // trial — the trial has its own banner).
   const periodEnd = subscription?.period_end as string | undefined;
   let showExpiryWarning = false;
   let daysUntilExpiry = 0;
-  if (hasValidSubscription && periodEnd) {
+  if (hasValidSubscription && !isInTrial && periodEnd) {
     const endDate = new Date(periodEnd);
     const now = new Date();
     daysUntilExpiry = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
@@ -73,10 +82,10 @@ export default function AuthenticatedLayout({
 
   return (
     <ErrorBoundary>
-      <DemoModeProvider isDemoMode={isDemoMode}>
+      <DemoModeProvider isDemoMode={isDemoMode} isInTrial={isInTrial} trialDaysLeft={trialDaysLeft}>
         <TenantSettingsProvider />
         <ImpersonationBar />
-        <Layout topBanner={<DemoModeBanner />}>
+        <Layout topBanner={<><DemoModeBanner /><TrialBanner /></>}>
           {showExpiryWarning && (
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 px-4 py-2">
               <div className="flex items-center gap-2 text-sm text-yellow-800 dark:text-yellow-200">

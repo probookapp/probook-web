@@ -68,6 +68,10 @@ async function seedSubscription(page: import("@playwright/test").Page) {
   expect(plan.status).toBe(201);
   const planId = plan.body.id as string;
 
+  // Subscription requests require a verified email — clear that gate first.
+  const verified = await apiPost(page, "/api/test/verify-email");
+  expect(verified.status).toBe(200);
+
   // 4. Tenant submits a "new" subscription request (uses the tenant session).
   const reqRes = await apiPost(page, "/api/subscription/request", {
     plan_id: planId,

@@ -70,6 +70,13 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState<CouponResult | null>(null);
   const [couponError, setCouponError] = useState("");
+  // Email-verification gate: shown when a subscription request is refused
+  // because the account's email isn't verified yet.
+  const [needsEmailVerify, setNeedsEmailVerify] = useState(false);
+  const [verifyEmail, setVerifyEmail] = useState("");
+  const [verifyEmailError, setVerifyEmailError] = useState("");
+  const [verifyEmailSent, setVerifyEmailSent] = useState(false);
+  const [verifyEmailSending, setVerifyEmailSending] = useState(false);
 
   const { data: plansData, isLoading: plansLoading } = useQuery({
     queryKey: ["subscription-plans"],
@@ -116,6 +123,12 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
           icon: <AlertTriangle className="h-6 w-6" />,
           variant: "danger",
         };
+      case "trial_expired":
+        return {
+          message: t("subscriptionWall.trialExpiredMessage"),
+          icon: <Clock className="h-6 w-6" />,
+          variant: "warning",
+        };
       case "suspended":
         return {
           message: t("subscriptionWall.suspendedMessage"),
@@ -160,7 +173,38 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
     if (appliedCoupon?.valid) {
       input.coupon_code = appliedCoupon.code;
     }
-    await subscribeRequest.mutateAsync(input);
+    try {
+      await subscribeRequest.mutateAsync(input);
+    } catch (err) {
+      // The request route refuses with EMAIL_NOT_VERIFIED until ownership is
+      // confirmed — surface the inline "verify your email" step instead.
+      if (err instanceof Error && err.message.includes("EMAIL_NOT_VERIFIED")) {
+        setNeedsEmailVerify(true);
+      }
+    }
+  };
+
+  const handleSendVerification = async () => {
+    if (!verifyEmail.trim()) return;
+    setVerifyEmailError("");
+    setVerifyEmailSending(true);
+    try {
+      const res = await fetch("/api/auth/email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: verifyEmail.trim() }),
+      });
+      if (!res.ok) {
+        setVerifyEmailError(t("subscriptionWall.verifyEmailError"));
+        return;
+      }
+      setVerifyEmailSent(true);
+    } catch {
+      setVerifyEmailError(t("subscriptionWall.verifyEmailError"));
+    } finally {
+      setVerifyEmailSending(false);
+    }
   };
 
   const calculateDiscountedPrice = (price: number): number | null => {
@@ -201,12 +245,14 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
               <Badge
                 variant={
                   currentStatus === "active" ? "success" :
-                  currentStatus === "pending" ? "warning" :
+                  currentStatus === "pending" || currentStatus === "trial_expired" ? "warning" :
                   currentStatus === "expired" || currentStatus === "suspended" ? "danger" :
                   "default"
                 }
               >
-                {currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}
+                {currentStatus === "trial_expired"
+                  ? t("subscriptionWall.statusTrialExpired")
+                  : currentStatus.charAt(0).toUpperCase() + currentStatus.slice(1)}
               </Badge>
             </div>
           )}
@@ -242,6 +288,62 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                   {t("subscriptionWall.successDescription")}
                 </p>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Email verification gate */}
+        {needsEmailVerify && (
+          <Card className="mb-8 border-amber-300 dark:border-amber-700">
+            <CardContent className="py-4">
+              {verifyEmailSent ? (
+                <div className="flex items-center gap-3">
+                  <Check className="h-5 w-5 text-green-600 dark:text-green-400 shrink-0" />
+                  <div>
+                    <p className="font-medium text-green-800 dark:text-green-200">
+                      {t("subscriptionWall.verifyEmailSentTitle")}
+                    </p>
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      {t("subscriptionWall.verifyEmailSentDescription")}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <p className="font-medium text-amber-800 dark:text-amber-200">
+                      {t("subscriptionWall.verifyEmailTitle")}
+                    </p>
+                  </div>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">
+                    {t("subscriptionWall.verifyEmailDescription")}
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      name="verify-email"
+                      type="email"
+                      placeholder={t("subscriptionWall.verifyEmailPlaceholder")}
+                      value={verifyEmail}
+                      onChange={(e) => {
+                        setVerifyEmail(e.target.value);
+                        setVerifyEmailError("");
+                      }}
+                      className="flex-1"
+                    />
+                    <Button
+                      onClick={handleSendVerification}
+                      isLoading={verifyEmailSending}
+                      disabled={!verifyEmail.trim()}
+                    >
+                      {t("subscriptionWall.verifyEmailSend")}
+                    </Button>
+                  </div>
+                  {verifyEmailError && (
+                    <p className="mt-2 text-sm text-red-600 dark:text-red-400">{verifyEmailError}</p>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
         )}
@@ -420,7 +522,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
               >
                 {t("subscriptionWall.subscribeNow")}
               </Button>
-              {subscribeRequest.isError && (
+              {subscribeRequest.isError && !needsEmailVerify && (
                 <p className="mt-3 text-sm text-red-600 dark:text-red-400">
                   {t("subscriptionWall.submitError")}
                 </p>

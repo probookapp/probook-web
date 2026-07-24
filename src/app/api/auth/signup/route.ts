@@ -8,6 +8,10 @@ import { signupSchema } from "@/lib/validations";
 import { getClientIp } from "@/lib/client-ip";
 import { rateLimitDurable } from "@/lib/rate-limit";
 
+// New signups get a free trial with full (non-demo) access, after which they
+// must subscribe (or contact us). Kept in sync with the admin default.
+const SIGNUP_TRIAL_DAYS = 10;
+
 export async function POST(req: NextRequest) {
   try {
     // Durable throttle: 5 signups per hour per IP (Redis-backed in production)
@@ -49,6 +53,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const trialStartedAt = new Date();
+    const trialEndsAt = new Date(
+      trialStartedAt.getTime() + SIGNUP_TRIAL_DAYS * 24 * 60 * 60 * 1000
+    );
+
     // Create tenant + admin user + permissions in a transaction
     const result = await prisma.$transaction(async (tx) => {
       const tenant = await tx.tenant.create({
@@ -56,6 +65,8 @@ export async function POST(req: NextRequest) {
           name: company_name,
           slug,
           status: "pending",
+          trialStartedAt,
+          trialEndsAt,
         },
       });
 

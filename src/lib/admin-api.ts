@@ -38,6 +38,8 @@ export const adminTenantsApi = {
   delete: (id: string) => adminApiCall<void>("delete_admin_tenant", { id }),
   suspend: (id: string) => adminApiCall<unknown>("suspend_admin_tenant", { id }),
   activate: (id: string) => adminApiCall<unknown>("activate_admin_tenant", { id }),
+  grantTrial: (id: string, days: number) =>
+    adminApiCall<unknown>("grant_tenant_trial", { id, input: { days } }),
   impersonate: (id: string) => adminApiCall<unknown>("impersonate_tenant", { id }),
   stopImpersonation: () => adminApiCall<void>("stop_impersonation"),
 };

@@ -55,15 +55,16 @@ describe("signupSchema", () => {
     username: "john",
     display_name: "John Doe",
     password: "securepass",
+    email: "a@b.com",
   };
 
   it("accepts valid signup data", () => expectValid(signupSchema, valid));
-  it("accepts signup with optional email", () => expectValid(signupSchema, { ...valid, email: "a@b.com" }));
   it("rejects empty company name", () => expectInvalid(signupSchema, { ...valid, company_name: "" }));
   it("rejects short username (< 3 chars)", () => expectInvalid(signupSchema, { ...valid, username: "ab" }));
   it("rejects short password (< 8 chars)", () => expectInvalid(signupSchema, { ...valid, password: "short" }));
   it("rejects invalid email format", () => expectInvalid(signupSchema, { ...valid, email: "not-email" }));
-  it("accepts null email", () => expectValid(signupSchema, { ...valid, email: null }));
+  it("rejects missing email (now required)", () => expectInvalid(signupSchema, { ...valid, email: undefined }));
+  it("rejects null email (now required)", () => expectInvalid(signupSchema, { ...valid, email: null }));
 });
 
 describe("loginSchema", () => {

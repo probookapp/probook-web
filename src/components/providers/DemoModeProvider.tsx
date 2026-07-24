@@ -3,19 +3,23 @@
 import { createContext, useContext, useState, useCallback, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Eye, Lock, ArrowRight, X } from "lucide-react";
+import { Eye, Lock, ArrowRight, X, Clock } from "lucide-react";
 import { Button, Modal } from "@/components/ui";
 import { SubscriptionWall } from "@/components/shared/SubscriptionWall";
 import { tenantSubscriptionApi } from "@/lib/admin-api";
 
 interface DemoModeContextValue {
   isDemoMode: boolean;
+  isInTrial: boolean;
+  trialDaysLeft: number | null;
   showSubscribePrompt: () => void;
   openPlans: () => void;
 }
 
 const DemoModeContext = createContext<DemoModeContextValue>({
   isDemoMode: false,
+  isInTrial: false,
+  trialDaysLeft: null,
   showSubscribePrompt: () => {},
   openPlans: () => {},
 });
@@ -26,9 +30,13 @@ export function useDemoMode() {
 
 export function DemoModeProvider({
   isDemoMode,
+  isInTrial = false,
+  trialDaysLeft = null,
   children,
 }: {
   isDemoMode: boolean;
+  isInTrial?: boolean;
+  trialDaysLeft?: number | null;
   children: React.ReactNode;
 }) {
   const [promptOpen, setPromptOpen] = useState(false);
@@ -46,24 +54,25 @@ export function DemoModeProvider({
   // Stable context value — otherwise every provider render re-renders all
   // useDemoMode consumers.
   const contextValue = useMemo(
-    () => ({ isDemoMode, showSubscribePrompt, openPlans }),
-    [isDemoMode, showSubscribePrompt, openPlans]
+    () => ({ isDemoMode, isInTrial, trialDaysLeft, showSubscribePrompt, openPlans }),
+    [isDemoMode, isInTrial, trialDaysLeft, showSubscribePrompt, openPlans]
   );
+
+  // Trial users have real access but can subscribe early via the same overlay.
+  const canOpenPlans = isDemoMode || isInTrial;
 
   return (
     <DemoModeContext.Provider value={contextValue}>
       {children}
       {isDemoMode && (
-        <>
-          <SubscribePrompt
-            isOpen={promptOpen}
-            onClose={() => setPromptOpen(false)}
-            onViewPlans={openPlans}
-          />
-          {plansOpen && (
-            <PlansOverlay onClose={() => setPlansOpen(false)} />
-          )}
-        </>
+        <SubscribePrompt
+          isOpen={promptOpen}
+          onClose={() => setPromptOpen(false)}
+          onViewPlans={openPlans}
+        />
+      )}
+      {canOpenPlans && plansOpen && (
+        <PlansOverlay onClose={() => setPlansOpen(false)} />
       )}
     </DemoModeContext.Provider>
   );
@@ -94,6 +103,37 @@ export function DemoModeBanner() {
         >
           <span className="hidden sm:inline">{t("demo.viewPlans")}</span>
           <span className="sm:hidden">{t("demo.subscribe")}</span>
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Countdown banner shown while a tenant is inside its free-trial window. */
+export function TrialBanner() {
+  const { t } = useTranslation("common");
+  const { isInTrial, trialDaysLeft, openPlans } = useDemoMode();
+
+  if (!isInTrial) return null;
+
+  const days = trialDaysLeft ?? 0;
+
+  return (
+    <div className="bg-amber-500 dark:bg-amber-600 text-white">
+      <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Clock className="h-4 w-4 shrink-0 opacity-90" />
+          <p className="text-sm font-medium truncate">
+            {days <= 0
+              ? t("subscription.trialLastDay")
+              : t("subscription.trialBanner", { days })}
+          </p>
+        </div>
+        <button
+          onClick={openPlans}
+          className="shrink-0 text-xs font-medium bg-white/20 hover:bg-white/30 rounded-md px-3 py-1.5 transition-colors"
+        >
+          {t("subscription.trialSubscribe")}
         </button>
       </div>
     </div>

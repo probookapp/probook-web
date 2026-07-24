@@ -36,12 +36,13 @@ export async function stubServiceWorker(page: Page) {
  */
 export async function signUp(
   page: Page,
-  opts?: { company?: string; username?: string; password?: string }
+  opts?: { company?: string; username?: string; password?: string; email?: string }
 ) {
   const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const company = opts?.company ?? `E2E Co ${id}`;
   const username = opts?.username ?? `e2euser_${id}`;
   const password = opts?.password ?? "Test1234!";
+  const email = opts?.email ?? `e2e_${id}@example.com`;
 
   await stubServiceWorker(page);
   await page.goto(`/${LOCALE}/signup`);
@@ -49,6 +50,7 @@ export async function signUp(
   await page.locator('input[autocomplete="organization"]').fill(company);
   await page.locator('input[autocomplete="name"]').fill(`Test User ${id}`);
   await page.locator('input[autocomplete="username"]').fill(username);
+  await page.locator('input[autocomplete="email"]').fill(email);
   await page.locator('input[autocomplete="new-password"]').first().fill(password);
   // Confirm password field
   await page.locator('input[autocomplete="new-password"]').last().fill(password);
@@ -60,7 +62,7 @@ export async function signUp(
     timeout: 15_000,
   });
 
-  return { company, username, password };
+  return { company, username, password, email };
 }
 
 /**

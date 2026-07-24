@@ -400,7 +400,10 @@
     }
   },
   "subscription": {
-    "expiryWarning": "Votre abonnement expire dans {{days}} jour(s). Veuillez renouveler pour éviter une interruption de service."
+    "expiryWarning": "Votre abonnement expire dans {{days}} jour(s). Veuillez renouveler pour éviter une interruption de service.",
+    "trialBanner": "Essai gratuit — il vous reste {{days}} jour(s). Abonnez-vous pour continuer sans interruption.",
+    "trialLastDay": "Dernier jour de votre essai gratuit. Abonnez-vous pour continuer sans interruption.",
+    "trialSubscribe": "S'abonner"
   },
   "demo": {
     "banner": "Vous explorez une démo — Abonnez-vous pour gérer votre activité",

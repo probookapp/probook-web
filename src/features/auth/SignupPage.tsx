@@ -17,6 +17,7 @@ export function SignupPage() {
   const locale = useLocale();
   const queryClient = useQueryClient();
   const [companyName, setCompanyName] = useState("");
+  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
@@ -48,6 +49,7 @@ export function SignupPage() {
         credentials: "include",
         body: JSON.stringify({
           company_name: companyName,
+          email,
           username,
           display_name: displayName,
           password,
@@ -109,6 +111,15 @@ export function SignupPage() {
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
               autoComplete="name"
+              required
+            />
+
+            <Input
+              label={t("signup.email")}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="email"
               required
             />
 

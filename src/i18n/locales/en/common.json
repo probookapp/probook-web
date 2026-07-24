@@ -400,7 +400,10 @@
     }
   },
   "subscription": {
-    "expiryWarning": "Your subscription expires in {{days}} day(s). Please renew to avoid service interruption."
+    "expiryWarning": "Your subscription expires in {{days}} day(s). Please renew to avoid service interruption.",
+    "trialBanner": "Free trial — {{days}} day(s) left. Subscribe to keep access without interruption.",
+    "trialLastDay": "Last day of your free trial. Subscribe to keep access without interruption.",
+    "trialSubscribe": "Subscribe"
   },
   "demo": {
     "banner": "You're exploring a demo — Subscribe to start managing your business",

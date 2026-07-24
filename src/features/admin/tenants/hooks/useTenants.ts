@@ -85,6 +85,18 @@ export function useActivateTenant() {
   });
 }
 
+export function useGrantTrial() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, days }: { id: string; days: number }) =>
+      adminTenantsApi.grantTrial(id, days),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
+    },
+  });
+}
+
 export function useDeleteTenant() {
   const queryClient = useQueryClient();
 

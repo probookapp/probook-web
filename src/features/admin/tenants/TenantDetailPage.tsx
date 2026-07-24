@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Pause, Play, Trash2 } from "lucide-react";
+import { ArrowLeft, Pause, Play, Trash2, Gift } from "lucide-react";
 import {
   Button,
   Card,
@@ -12,12 +12,14 @@ import {
   CardTitle,
   Modal,
   Badge,
+  Input,
 } from "@/components/ui";
 import {
   useAdminTenant,
   useSuspendTenant,
   useActivateTenant,
   useDeleteTenant,
+  useGrantTrial,
 } from "./hooks/useTenants";
 import { TenantFeaturesTab } from "./components/TenantFeaturesTab";
 
@@ -51,13 +53,26 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"info" | "subscription" | "users" | "onboarding" | "features">("info");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [trialModalOpen, setTrialModalOpen] = useState(false);
+  const [trialDays, setTrialDays] = useState("10");
 
   const { data, isLoading } = useAdminTenant(tenantId);
   const suspendTenant = useSuspendTenant();
   const activateTenant = useActivateTenant();
   const deleteTenant = useDeleteTenant();
+  const grantTrial = useGrantTrial();
 
   const tenant = data as TenantDetail | undefined;
+
+  const handleGrantTrial = async () => {
+    const days = parseInt(trialDays, 10);
+    if (!Number.isFinite(days) || days < 1) return;
+    await grantTrial.mutateAsync({ id: tenantId, days });
+    setTrialModalOpen(false);
+  };
+
+  const trialEndsAt = tenant?.trial_ends_at ? new Date(String(tenant.trial_ends_at)) : null;
+  const trialActive = !!trialEndsAt && trialEndsAt.getTime() > new Date().getTime();
 
   const handleToggleStatus = async () => {
     if (!tenant) return;
@@ -130,6 +145,14 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
           <Button
             variant="secondary"
             size="sm"
+            onClick={() => setTrialModalOpen(true)}
+          >
+            <Gift className="h-4 w-4 mr-2" />
+            {trialActive ? t("tenants.trial.extend") : t("tenants.trial.grant")}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={handleToggleStatus}
             isLoading={suspendTenant.isPending || activateTenant.isPending}
           >
@@ -185,6 +208,18 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                 value={tenant.last_active_at ? new Date(String(tenant.last_active_at)).toLocaleString() : "-"}
               />
               <InfoField label={t("tenants.detail.userCount")} value={String(tenant.user_count ?? tenant.users_count ?? "-")} />
+              <div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">{t("tenants.trial.label")}</p>
+                {trialEndsAt ? (
+                  <p className="font-medium text-gray-900 dark:text-gray-100">
+                    <Badge variant={trialActive ? "success" : "default"}>
+                      {trialActive ? t("tenants.trial.activeUntil", { date: trialEndsAt.toLocaleDateString() }) : t("tenants.trial.ended", { date: trialEndsAt.toLocaleDateString() })}
+                    </Badge>
+                  </p>
+                ) : (
+                  <p className="font-medium text-gray-900 dark:text-gray-100">{t("tenants.trial.none")}</p>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -305,6 +340,41 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
       )}
 
       {activeTab === "features" && <TenantFeaturesTab tenantId={tenantId} />}
+
+      {/* Grant / Extend Trial Modal */}
+      <Modal
+        isOpen={trialModalOpen}
+        onClose={() => setTrialModalOpen(false)}
+        title={trialActive ? t("tenants.trial.extend") : t("tenants.trial.grant")}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {t("tenants.trial.description")}
+          </p>
+          {(tenant.subscriptions as Record<string, unknown>[] | undefined)?.some((s) => s.status === "active") && (
+            <p className="text-sm text-amber-600 dark:text-amber-400">
+              {t("tenants.trial.activeSubWarning")}
+            </p>
+          )}
+          <Input
+            type="number"
+            min={1}
+            max={365}
+            label={t("tenants.trial.daysLabel")}
+            value={trialDays}
+            onChange={(e) => setTrialDays(e.target.value)}
+          />
+        </div>
+        <div className="flex justify-end gap-3 mt-6">
+          <Button variant="secondary" onClick={() => setTrialModalOpen(false)}>
+            {t("tenants.cancel")}
+          </Button>
+          <Button onClick={handleGrantTrial} isLoading={grantTrial.isPending}>
+            {t("tenants.trial.confirm")}
+          </Button>
+        </div>
+      </Modal>
 
       {/* Delete Confirmation Modal */}
       <Modal

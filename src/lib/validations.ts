@@ -16,12 +16,30 @@ const positiveNumber = z.coerce.number().min(0, "Must be non-negative");
 
 // ─── Auth ───────────────────────────────────────────────────────────────────
 
+const requiredEmail = z
+  .string()
+  .min(1, "Email is required")
+  .refine((val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val), {
+    message: "Invalid email format",
+  });
+
 export const signupSchema = z.object({
   company_name: requiredString("Company name"),
   username: z.string().min(3, "Username must be at least 3 characters"),
   display_name: requiredString("Display name"),
   password: z.string().min(8, "Password must be at least 8 characters"),
-  email: optionalEmail,
+  email: requiredEmail,
+});
+
+// Self-service: a logged-in user sets/updates their own email (triggers a fresh
+// verification email). Used by accounts created before email was collected.
+export const setEmailSchema = z.object({
+  email: requiredEmail,
+});
+
+// Admin grants or extends a free trial for a tenant, choosing the duration.
+export const grantTrialSchema = z.object({
+  days: z.coerce.number().int().min(1, "At least 1 day").max(365, "At most 365 days"),
 });
 
 export const loginSchema = z.object({

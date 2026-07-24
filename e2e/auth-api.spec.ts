@@ -51,6 +51,7 @@ test.describe("Auth API flows", () => {
       username: creds.username,
       display_name: "Another User",
       password: "Password123!",
+      email: "another@example.com",
     });
     expect(res.status).toBe(409);
   });

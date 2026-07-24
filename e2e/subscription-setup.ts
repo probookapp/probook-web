@@ -71,6 +71,11 @@ export async function seedSubscription(page: Page) {
   expect(plan.status).toBe(201);
   const planId = plan.body.id as string;
 
+  // Submitting a subscription request now requires a verified email — mark the
+  // tenant's email verified via the test-only endpoint so the real flow passes.
+  const verified = await apiPost(page, "/api/test/verify-email");
+  expect(verified.status).toBe(200);
+
   // Tenant submits a "new" subscription request (uses the tenant session).
   const reqRes = await apiPost(page, "/api/subscription/request", {
     plan_id: planId,

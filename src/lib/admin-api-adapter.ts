@@ -83,6 +83,11 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     method: "POST",
     path: (a) => `/api/admin/tenants/${a.id}/activate`,
   },
+  grant_tenant_trial: {
+    method: "POST",
+    path: (a) => `/api/admin/tenants/${a.id}/trial`,
+    body: (a) => a.input,
+  },
   impersonate_tenant: {
     method: "POST",
     path: (a) => `/api/admin/tenants/${a.id}/impersonate`,

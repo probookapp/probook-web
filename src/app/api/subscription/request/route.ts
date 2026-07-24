@@ -13,6 +13,22 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
     );
   }
 
+  // Require a verified email before a subscription can be requested. This is
+  // where account ownership is confirmed (the trial itself starts unverified).
+  const requester = await prisma.user.findUnique({
+    where: { id: ctx.session.userId },
+    select: { emailVerified: true },
+  });
+  if (!requester?.emailVerified) {
+    return NextResponse.json(
+      {
+        error: "Please verify your email address before subscribing.",
+        code: "EMAIL_NOT_VERIFIED",
+      },
+      { status: 403 }
+    );
+  }
+
   const body = await validateBody(req, subscriptionRequestSchema);
   if (isValidationError(body)) return body;
   const { plan_id, billing_cycle, coupon_code, request_type, currency } = body;
