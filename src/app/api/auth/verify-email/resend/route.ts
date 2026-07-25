@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendEmail, verificationEmailHtml } from "@/lib/email";
-import { randomUUID } from "crypto";
+import { issueEmailVerificationToken } from "@/lib/verification";
 
 /**
  * Unauthenticated resend of a verification email, keyed by an existing (possibly
@@ -38,15 +38,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const newToken = randomUUID();
-  await prisma.emailVerificationToken.create({
-    data: {
-      userId: user.id,
-      token: newToken,
-      email: user.email,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    },
-  });
+  const newToken = await issueEmailVerificationToken(user.id, user.email);
 
   try {
     await sendEmail({

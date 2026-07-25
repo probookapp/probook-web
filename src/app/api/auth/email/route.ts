@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withAuth, AuthContext } from "@/lib/api-utils";
 import { sendEmail, verificationEmailHtml } from "@/lib/email";
-import { randomUUID } from "crypto";
+import { issueEmailVerificationToken, isEmailTakenByVerifiedUser } from "@/lib/verification";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { setEmailSchema } from "@/lib/validations";
 
@@ -26,6 +26,15 @@ export const POST = withAuth(async (req: NextRequest, ctx: AuthContext) => {
     return NextResponse.json({ verified: true });
   }
 
+  // Refuse an address another account already verified — it could never be
+  // verified here and would undermine email as an ownership signal.
+  if (await isEmailTakenByVerifiedUser(email, user.id)) {
+    return NextResponse.json(
+      { error: "This email is already in use by another account.", code: "EMAIL_TAKEN" },
+      { status: 409 }
+    );
+  }
+
   // 2-minute throttle per user (matches resend-verification) — this route sends
   // to a caller-supplied address, so it must not be usable to email-bomb.
   const lastToken = await prisma.emailVerificationToken.findFirst({
@@ -45,16 +54,7 @@ export const POST = withAuth(async (req: NextRequest, ctx: AuthContext) => {
     data: { email, emailVerified: false },
   });
 
-  const token = randomUUID();
-  await prisma.emailVerificationToken.create({
-    data: {
-      userId: user.id,
-      token,
-      email,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-    },
-  });
-
+  const token = await issueEmailVerificationToken(user.id, email);
   const verifyUrl = `${process.env.NEXT_PUBLIC_APP_URL}/verify-email?token=${token}`;
   try {
     await sendEmail({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { verifyEmailSchema } from "@/lib/validations";
+import { isEmailTakenByVerifiedUser } from "@/lib/verification";
 
 export async function POST(req: NextRequest) {
   try {
@@ -31,6 +32,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Token expired" },
         { status: 400 }
+      );
+    }
+
+    // Refuse if another account already verified this address (races the DB has
+    // no partial-unique constraint for — enforced here at the point of verify).
+    if (await isEmailTakenByVerifiedUser(verificationToken.email, verificationToken.userId)) {
+      return NextResponse.json(
+        { error: "This email is already verified on another account." },
+        { status: 409 }
       );
     }
 

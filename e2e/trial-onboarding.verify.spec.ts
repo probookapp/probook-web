@@ -303,6 +303,60 @@ test("11: the expiry cron flips a past-period active subscription to expired", a
   expect(row.body.status).toBe("expired");
 });
 
+test("12: a verified email cannot be reused by another signup", async ({ page }) => {
+  const creds = await signUp(page);
+  await apiPost(page, "/api/test/verify-email"); // verify this account's email
+
+  const dup = await apiPost(page, "/api/auth/signup", {
+    company_name: "Dup Co",
+    username: `dupuser_${Date.now().toString(36)}`,
+    display_name: "Dup User",
+    password: "Password123!",
+    email: creds.email,
+  });
+  console.log("[verify] duplicate-email signup:", dup.status, JSON.stringify(dup.body));
+  expect(dup.status).toBe(409);
+  expect(dup.body.code).toBe("EMAIL_TAKEN");
+});
+
+test("13: issuing a new verification token invalidates the prior unused one", async ({ page }) => {
+  const creds = await signUp(page);
+  const u = await pool.query(
+    `SELECT u.id FROM users u JOIN tenants t ON t.id = u.tenant_id
+     WHERE t.slug LIKE $1 ORDER BY u.created_at DESC LIMIT 1`,
+    [slugOf(creds.company) + "%"]
+  );
+  const userId = u.rows[0].id as string;
+  const old = await pool.query(
+    `SELECT token FROM email_verification_tokens WHERE user_id = $1 LIMIT 1`,
+    [userId]
+  );
+  const oldToken = old.rows[0].token as string;
+  // Age the signup token well past the 2-minute resend throttle (fixed far-past
+  // date avoids tz-naive NOW() skew between raw SQL and Prisma reads).
+  await pool.query(
+    `UPDATE email_verification_tokens SET created_at = TIMESTAMP '2000-01-01 00:00:00' WHERE user_id = $1`,
+    [userId]
+  );
+
+  // Resend issues a new token (email send may 502 in this env — irrelevant; the
+  // token is issued before the send, and old unused tokens are deleted).
+  const rr = await apiPost(page, "/api/auth/resend-verification");
+  console.log("[verify] resend status:", rr.status, JSON.stringify(rr.body));
+  const all = await pool.query(
+    `SELECT token, used_at, created_at FROM email_verification_tokens WHERE user_id = $1 ORDER BY created_at`,
+    [userId]
+  );
+  console.log("[verify] tokens for user now:", all.rows.length, all.rows.map((r) => ({ t: String(r.token).slice(0, 8), used: !!r.used_at })));
+
+  const gone = await pool.query(
+    `SELECT count(*)::int AS n FROM email_verification_tokens WHERE token = $1`,
+    [oldToken]
+  );
+  console.log("[verify] old token rows after reissue:", gone.rows[0].n);
+  expect(gone.rows[0].n).toBe(0);
+});
+
 test("5: an expired trial reverts to demo mode + a 'trial ended' wall", async ({ page }) => {
   const creds = await signUp(page);
 
