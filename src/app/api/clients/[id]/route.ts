@@ -41,13 +41,17 @@ export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
   if (denied) return denied;
   const clientId = params?.id as string;
 
+  // Credit notes reference the client with ON DELETE RESTRICT, so a client that
+  // only has a credit note (e.g. a POS walk-in refund) must be counted here too,
+  // otherwise prisma.client.delete throws a raw P2003 surfaced as a 500.
   const refCount = await prisma.quote.count({ where: { tenantId, clientId } })
     + await prisma.invoice.count({ where: { tenantId, clientId } })
-    + await prisma.deliveryNote.count({ where: { tenantId, clientId } });
+    + await prisma.deliveryNote.count({ where: { tenantId, clientId } })
+    + await prisma.creditNote.count({ where: { tenantId, clientId } });
 
   if (refCount > 0) {
     return NextResponse.json(
-      { error: "Cannot delete client with existing quotes, invoices, or delivery notes" },
+      { error: "Cannot delete client with existing quotes, invoices, delivery notes, or credit notes" },
       { status: 409 }
     );
   }

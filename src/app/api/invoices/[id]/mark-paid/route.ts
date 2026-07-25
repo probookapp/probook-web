@@ -39,36 +39,31 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
     const paidSoFar = invoice.payments.reduce((sum, p) => sum + num(p.amount), 0);
     const remaining = Math.round((amountOwed - paidSoFar) * 100) / 100;
 
-    // Already settled → idempotent no-op (just make sure the status agrees).
-    if (remaining <= EPSILON) {
-      if (invoice.status === "PAID") {
-        return tx.invoice.findFirst({
-          where: { tenantId, id: invoice.id },
-          include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
-        });
-      }
-      return tx.invoice.update({
-        where: { tenantId, id: invoice.id },
-        data: { status: "PAID" },
-        include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
+    // Atomically claim the PAID transition. Two concurrent calls (double-click,
+    // offline replay) both computed `remaining` from the same unlocked read;
+    // only the one that actually flips the status (count === 1) may top up, so
+    // the balance can never be recorded twice.
+    const flipped = await tx.invoice.updateMany({
+      where: { tenantId, id: invoice.id, status: { not: "PAID" } },
+      data: { status: "PAID" },
+    });
+
+    if (flipped.count === 1 && remaining > EPSILON) {
+      await tx.payment.create({
+        data: {
+          tenantId,
+          invoiceId: invoice.id,
+          amount: remaining,
+          paymentDate: new Date(),
+          paymentMethod: body?.payment_method || "other",
+          reference: body?.reference || null,
+          notes: body?.notes || null,
+        },
       });
     }
 
-    await tx.payment.create({
-      data: {
-        tenantId,
-        invoiceId: invoice.id,
-        amount: remaining,
-        paymentDate: new Date(),
-        paymentMethod: body?.payment_method || "other",
-        reference: body?.reference || null,
-        notes: body?.notes || null,
-      },
-    });
-
-    return tx.invoice.update({
+    return tx.invoice.findFirst({
       where: { tenantId, id: invoice.id },
-      data: { status: "PAID" },
       include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
     });
   });

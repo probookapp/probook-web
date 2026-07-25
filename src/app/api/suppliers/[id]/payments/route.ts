@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { supplierPaymentSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { num } from "@/lib/money";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const payments = await prisma.supplierPayment.findMany({
@@ -57,8 +58,10 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
         where: { tenantId, purchaseOrderId: body.purchase_order_id },
         _sum: { amount: true },
       });
-      const paidAmount = totalPayments._sum.amount || 0;
-      const newStatus = paidAmount >= order.total ? "PAID" : "PARTIAL";
+      // Compare as numbers — two Prisma Decimals compared with >= degrade to a
+      // lexicographic string comparison ("50" >= "100" === true).
+      const paidAmount = num(totalPayments._sum.amount ?? 0);
+      const newStatus = paidAmount >= num(order.total) ? "PAID" : "PARTIAL";
       await prisma.purchaseOrder.update({
         where: { tenantId, id: body.purchase_order_id },
         data: { paymentStatus: newStatus },

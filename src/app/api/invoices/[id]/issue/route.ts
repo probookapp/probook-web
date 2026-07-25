@@ -73,16 +73,24 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
 
   // Issue the invoice, freeze the COGS snapshots, and decrement stock atomically:
   // an invoice must never end up ISSUED with only some lines' stock deducted.
-  const updated = await prisma.$transaction(async (tx) => {
-    const inv = await tx.invoice.update({
+  let updated;
+  try {
+    updated = await prisma.$transaction(async (tx) => {
+    // Atomically claim the DRAFT→ISSUED transition. A concurrent double-click or
+    // offline replay that loses this race gets count 0 and must NOT run the
+    // stock decrement again (audit CON-1).
+    const claimed = await tx.invoice.updateMany({
+      where: { tenantId, id: params?.id, status: "DRAFT" },
+      data: { status: "ISSUED", integrityHash, stampDuty },
+    });
+    if (claimed.count !== 1) {
+      throw new Error("ALREADY_ISSUED");
+    }
+    const inv = await tx.invoice.findFirst({
       where: { tenantId, id: params?.id },
-      data: {
-        status: "ISSUED",
-        integrityHash,
-        stampDuty,
-      },
       include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
     });
+    if (!inv) throw new Error("ALREADY_ISSUED");
 
     // Decrement stock and freeze the cost price snapshot on each product line.
     // The snapshot is what makes COGS / profit reports stable when product purchase prices change later.
@@ -117,7 +125,13 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
     }
 
     return inv;
-  });
+    });
+  } catch (e) {
+    if (e instanceof Error && e.message === "ALREADY_ISSUED") {
+      return NextResponse.json({ error: "Only DRAFT invoices can be issued" }, { status: 400 });
+    }
+    throw e;
+  }
 
   return NextResponse.json(toSnakeCase(updated));
 });
