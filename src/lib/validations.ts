@@ -12,7 +12,12 @@ const optionalEmail = z
     { message: "Invalid email format" }
   );
 const requiredString = (field: string) => z.string().min(1, `${field} is required`);
-const positiveNumber = z.coerce.number().min(0, "Must be non-negative");
+// Operational money is Decimal(16,3) (13 integer digits). Cap inputs well below
+// that ceiling so an absurd amount returns a clean 400 instead of a Postgres
+// numeric-overflow 500 (audit CFG-V1).
+const MONEY_MAX = 9_999_999_999;
+const positiveNumber = z.coerce.number().min(0, "Must be non-negative").max(MONEY_MAX, "Value is too large");
+const percent = z.coerce.number().min(0).max(100, "Must be between 0 and 100");
 
 // ─── Auth ───────────────────────────────────────────────────────────────────
 
@@ -240,7 +245,7 @@ export const createInvoiceSchema = z.object({
   notes_html: optionalString,
   shipping_cost: positiveNumber.default(0),
   shipping_tax_rate: z.coerce.number().min(0).max(100).default(20),
-  down_payment_percent: positiveNumber.default(0),
+  down_payment_percent: percent.default(0),
   down_payment_amount: positiveNumber.default(0),
   is_down_payment_invoice: z.boolean().default(false),
   is_cash_sale: z.boolean().optional(),
@@ -263,7 +268,7 @@ export const updateInvoiceSchema = z.object({
   notes_html: optionalString,
   shipping_cost: positiveNumber.default(0),
   shipping_tax_rate: z.coerce.number().min(0).max(100).default(20),
-  down_payment_percent: positiveNumber.default(0),
+  down_payment_percent: percent.default(0),
   down_payment_amount: positiveNumber.default(0),
   is_down_payment_invoice: z.boolean().default(false),
   is_cash_sale: z.boolean().optional(),
@@ -283,7 +288,7 @@ export const createQuoteSchema = z.object({
   notes_html: optionalString,
   shipping_cost: positiveNumber.default(0),
   shipping_tax_rate: z.coerce.number().min(0).max(100).default(20),
-  down_payment_percent: positiveNumber.default(0),
+  down_payment_percent: percent.default(0),
   down_payment_amount: positiveNumber.default(0),
   lines: z.array(documentLineSchema).min(1, "At least one line is required"),
 });
@@ -360,7 +365,7 @@ export const posTransactionSchema = z.object({
   register_id: requiredString("Register ID"),
   session_id: requiredString("Session ID"),
   client_id: optionalString,
-  discount_percent: positiveNumber.default(0),
+  discount_percent: percent.default(0),
   discount_amount: positiveNumber.default(0),
   notes: optionalString,
   idempotency_key: optionalString,
@@ -451,7 +456,7 @@ export const updatePlanSchema = createPlanSchema.partial();
 
 // ─── Admin: Coupons ─────────────────────────────────────────────────────────
 
-export const createCouponSchema = z.object({
+const couponFields = z.object({
   code: requiredString("Code"),
   discount_type: z.enum(["percentage", "fixed"], { message: "Must be 'percentage' or 'fixed'" }),
   discount_value: z.coerce.number().int().min(1, "Discount value must be positive"),
@@ -462,7 +467,16 @@ export const createCouponSchema = z.object({
   plan_ids: z.array(z.string()).optional(),
 });
 
-export const updateCouponSchema = createCouponSchema.partial();
+// A percentage coupon's value is a percent, so it can't exceed 100 (audit CFG-V3).
+const couponPercentWithinBounds = (v: { discount_type?: string; discount_value?: number }) =>
+  v.discount_type !== "percentage" || v.discount_value === undefined || v.discount_value <= 100;
+const couponPercentMsg = {
+  message: "A percentage discount cannot exceed 100",
+  path: ["discount_value"] as string[],
+};
+
+export const createCouponSchema = couponFields.refine(couponPercentWithinBounds, couponPercentMsg);
+export const updateCouponSchema = couponFields.partial().refine(couponPercentWithinBounds, couponPercentMsg);
 
 // ─── Admin: Feature Flags ───────────────────────────────────────────────────
 
