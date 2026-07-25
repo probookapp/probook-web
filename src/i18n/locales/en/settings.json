@@ -55,7 +55,8 @@
     "description": "Configure the stamp duty (droit de timbre) applied to cash payments for tax reporting.",
     "stampDutyEnabled": "Apply stamp duty on cash payments",
     "stampDutyRate": "Stamp duty rate (%)",
-    "stampDutyThreshold": "Stamp duty threshold (min. amount)"
+    "stampDutyThreshold": "Stamp duty threshold (min. amount)",
+    "stampDutyScaleNote": "Stamp duty follows the legal progressive scale (1% / 1.5% / 2% by amount, 5 DA minimum), applied automatically to cash-settled sales."
   },
   "printers": {
     "title": "Receipt Printers",

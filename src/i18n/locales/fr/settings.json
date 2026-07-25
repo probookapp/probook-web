@@ -55,7 +55,8 @@
     "description": "Configurez le droit de timbre appliqué aux paiements en espèces pour vos déclarations fiscales.",
     "stampDutyEnabled": "Appliquer le droit de timbre sur les paiements en espèces",
     "stampDutyRate": "Taux du droit de timbre (%)",
-    "stampDutyThreshold": "Seuil du droit de timbre (montant min.)"
+    "stampDutyThreshold": "Seuil du droit de timbre (montant min.)",
+    "stampDutyScaleNote": "Le droit de timbre suit le barème légal progressif (1 % / 1,5 % / 2 % selon le montant, minimum 5 DA), appliqué automatiquement aux ventes réglées en espèces."
   },
   "printers": {
     "title": "Imprimantes de tickets",

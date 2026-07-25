@@ -619,15 +619,7 @@ export function SettingsPage() {
                   {t("taxes.stampDutyEnabled")}
                 </span>
               </label>
-              <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Input
-                  label={t("taxes.stampDutyRate")}
-                  type="number"
-                  step="0.01"
-                  min={0}
-                  {...register("stamp_duty_rate")}
-                  error={errors.stamp_duty_rate?.message}
-                />
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Input
                   label={t("taxes.stampDutyThreshold")}
                   type="number"
@@ -637,6 +629,9 @@ export function SettingsPage() {
                   error={errors.stamp_duty_threshold?.message}
                 />
               </div>
+              <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                {t("taxes.stampDutyScaleNote")}
+              </p>
             </div>
           </CardContent>
         </Card>
