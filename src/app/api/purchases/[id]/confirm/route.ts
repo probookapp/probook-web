@@ -56,10 +56,21 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
   let updated;
   try {
     updated = await prisma.$transaction(async (tx) => {
-      // Lock the order row and verify status atomically. A PARTIALLY_RECEIVED
-      // order can still receive its remaining quantities.
+      // Lock the order row FIRST (real SELECT … FOR UPDATE — `findFirst` does not
+      // lock) so concurrent receipts serialize. The delta each receipt applies is
+      // then computed from the post-lock receivedQuantity, never a stale unlocked
+      // read that would let two "receive all" calls both add the full quantity
+      // (audit CON-2).
+      const locked = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "purchase_orders"
+        WHERE "id" = ${params?.id} AND "tenant_id" = ${tenantId}
+          AND "status" IN ('PENDING', 'PARTIALLY_RECEIVED')
+        FOR UPDATE`;
+      if (locked.length === 0) {
+        throw new Error("NOT_FOUND_OR_NOT_PENDING");
+      }
       const order = await tx.purchaseOrder.findFirst({
-        where: { tenantId, id: params?.id, status: { in: ["PENDING", "PARTIALLY_RECEIVED"] } },
+        where: { tenantId, id: params?.id },
         include: { lines: true },
       });
       if (!order) {

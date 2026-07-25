@@ -78,6 +78,17 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
     // ONE transaction (audit SALE-6/7/9): a payment can no longer attach to
     // another tenant's invoice, overpay it, or leave the status stale.
     const payment = await prisma.$transaction(async (tx) => {
+      // Lock the invoice row FIRST (real SELECT … FOR UPDATE) so concurrent
+      // payments serialize; the paid-so-far sum below is then read under that
+      // lock. Otherwise two partial payments both read the same unlocked total
+      // and both pass the overpay guard, together exceeding the amount owed
+      // (audit CON-5).
+      const locked = await tx.$queryRaw<Array<{ id: string }>>`
+        SELECT "id" FROM "invoices"
+        WHERE "id" = ${body.invoice_id} AND "tenant_id" = ${tenantId}
+        FOR UPDATE`;
+      if (locked.length === 0) throw new PaymentError("Invoice not found", 404);
+
       const invoice = await tx.invoice.findFirst({
         where: { tenantId, id: body.invoice_id },
         include: { payments: true },
