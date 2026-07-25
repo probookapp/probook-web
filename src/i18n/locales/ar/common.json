@@ -309,9 +309,6 @@
     "openCalendar": "فتح التقويم",
     "close": "إغلاق"
   },
-  "footer": {
-    "poweredBy": "Probook Web"
-  },
   "update": {
     "available": "تحديث متاح",
     "availableDescription": "الإصدار {{version}} جاهز للتنزيل.",

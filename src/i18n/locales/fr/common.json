@@ -309,9 +309,6 @@
     "openCalendar": "Ouvrir le calendrier",
     "close": "Fermer"
   },
-  "footer": {
-    "poweredBy": "Probook Web"
-  },
   "update": {
     "available": "Mise à jour disponible",
     "availableDescription": "La version {{version}} est prête à être téléchargée.",

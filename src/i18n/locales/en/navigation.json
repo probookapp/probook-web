@@ -17,5 +17,8 @@
   "admin": "Admin",
   "employee": "Employee",
   "posMode": "POS Mode",
-  "officeMode": "Office Mode"
+  "officeMode": "Office Mode",
+  "footer": {
+    "poweredBy": "Probook Web"
+  }
 }

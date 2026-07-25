@@ -17,5 +17,8 @@
   "admin": "مسؤول",
   "employee": "موظف",
   "posMode": "وضع الصندوق",
-  "officeMode": "وضع المكتب"
+  "officeMode": "وضع المكتب",
+  "footer": {
+    "poweredBy": "Probook Web"
+  }
 }
