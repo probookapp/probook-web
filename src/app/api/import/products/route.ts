@@ -30,6 +30,10 @@ function parseNumeric(raw: string | undefined, fallback: number): number | null 
   return Number.isFinite(n) ? n : null;
 }
 
+// Same ceiling as the product API (Decimal(16,3) headroom); imports must not
+// accept data the normal create path rejects, nor 500 on overflow (audit CFG-B3).
+const IMPORT_MONEY_MAX = 9_999_999_999;
+
 export const POST = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "products", "create");
   if (denied) return denied;
@@ -78,6 +82,21 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       skipped++;
       return;
     }
+    if (unitPrice < 0 || purchasePrice < 0 || quantity < 0) {
+      errors.push(`Row ${i + 2}: negative values are not allowed`);
+      skipped++;
+      return;
+    }
+    if (unitPrice > IMPORT_MONEY_MAX || purchasePrice > IMPORT_MONEY_MAX || quantity > IMPORT_MONEY_MAX) {
+      errors.push(`Row ${i + 2}: value is too large`);
+      skipped++;
+      return;
+    }
+    if (taxRate < 0 || taxRate > 100) {
+      errors.push(`Row ${i + 2}: tax rate must be between 0 and 100`);
+      skipped++;
+      return;
+    }
 
     valid.push({
       designation,
@@ -88,7 +107,9 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       reference: row.reference || null,
       barcode: row.barcode || row.code_barre || null,
       isService: row.is_service === "true" || row.service === "true",
-      quantity,
+      // Stock columns are Int today — round to avoid a Prisma overflow on a
+      // fractional cell. (FIN-3 will move stock to Decimal and drop this.)
+      quantity: Math.round(quantity),
       purchasePrice,
     });
   });
