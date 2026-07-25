@@ -57,6 +57,14 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
       },
     });
 
+    // Reactivate the tenant (a cancel→renew path would otherwise leave it
+    // suspended with an active subscription it can't log into) and drop any
+    // stale signup trial so it can't hijack later wall messaging.
+    await tx.tenant.update({
+      where: { id: subscription.tenantId },
+      data: { status: "active", trialEndsAt: null },
+    });
+
     return updatedSubscription;
   });
 

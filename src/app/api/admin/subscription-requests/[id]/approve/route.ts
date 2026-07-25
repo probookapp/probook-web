@@ -124,6 +124,12 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
       let subscription;
 
       if (request.requestType === "new") {
+        // Supersede any prior active subscription so we never leave two active
+        // rows for one tenant (current() would then pick one arbitrarily).
+        await tx.subscription.updateMany({
+          where: { tenantId: request.tenantId, status: "active" },
+          data: { status: "cancelled", cancelledAt: now },
+        });
         subscription = await tx.subscription.create({
           data: {
             tenantId: request.tenantId,
@@ -226,10 +232,12 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
         throw new Error(`Unknown request type: ${request.requestType}`);
       }
 
-      // Update tenant status to active
+      // Activate the tenant and clear any stale signup trial — otherwise a
+      // lapsed trialEndsAt would later hijack the wall messaging after this
+      // subscription ends (showing "trial ended" instead of "expired").
       await tx.tenant.update({
         where: { id: request.tenantId },
-        data: { status: "active" },
+        data: { status: "active", trialEndsAt: null },
       });
 
       // Create subscription invoice

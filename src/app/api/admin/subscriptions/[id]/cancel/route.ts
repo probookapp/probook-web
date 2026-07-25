@@ -29,9 +29,12 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
       include: { plan: true, tenant: true },
     });
 
+    // A cancelled subscription drops the tenant to demo mode (read-only preview)
+    // so they can still log in and resubscribe — NOT a hard lockout. "suspended"
+    // is reserved for the dedicated tenant-suspend (abuse) action.
     await tx.tenant.update({
       where: { id: subscription.tenantId },
-      data: { status: "suspended" },
+      data: { status: "active" },
     });
 
     return updatedSubscription;

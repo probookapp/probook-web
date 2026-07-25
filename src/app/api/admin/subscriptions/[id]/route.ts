@@ -78,17 +78,19 @@ export const PUT = withSuperAdmin(async (req: NextRequest, ctx) => {
       include: { plan: true, tenant: true },
     });
 
-    // Keep the tenant status in sync with the subscription status, mirroring
-    // the dedicated cancel (suspend tenant) and activate routes.
+    // Keep the tenant reachable in every non-abuse state: cancelled/expired drop
+    // it to demo mode (not suspended), active restores full access and clears
+    // any stale signup trial. "suspended" stays exclusive to the tenant-suspend
+    // (abuse) action.
     if (body.status === "cancelled" || body.status === "expired") {
       await tx.tenant.update({
         where: { id: existing.tenantId },
-        data: { status: "suspended" },
+        data: { status: "active" },
       });
     } else if (body.status === "active") {
       await tx.tenant.update({
         where: { id: existing.tenantId },
-        data: { status: "active" },
+        data: { status: "active", trialEndsAt: null },
       });
     }
 

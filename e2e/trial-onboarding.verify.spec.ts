@@ -243,6 +243,66 @@ test("8: unverified users see a verify-email banner; /me exposes verification st
   expect(me2.body.email_verified).toBe(true);
 });
 
+// Helper: fresh tenant + active subscription, returns ids.
+async function seedActive(page: Page, tag: string) {
+  await signUp(page);
+  await setupPlatformAdmin(page);
+  const plan = await adminPost(page, "/api/admin/plans", {
+    slug: `${tag}-plan-${Date.now()}`, name: `${tag} Plan`,
+    monthly_price: 100000, yearly_price: 1000000, currency: "DZD",
+  });
+  const planId = plan.body.id as string;
+  await apiPost(page, "/api/test/verify-email");
+  const req = await apiPost(page, "/api/subscription/request", {
+    plan_id: planId, billing_cycle: "monthly", request_type: "new", currency: "DZD",
+  });
+  const approve = await adminPost(page, `/api/admin/subscription-requests/${req.body.id}/approve`);
+  const sub = approve.body.subscription as Record<string, unknown>;
+  return { subId: String(sub.id), tenantId: String(sub.tenant_id) };
+}
+
+test("9: cancelling a subscription drops the tenant to demo, not a lockout", async ({ page }) => {
+  const { subId } = await seedActive(page, "c9");
+  const cancel = await adminPost(page, `/api/admin/subscriptions/${subId}/cancel`);
+  expect(cancel.status).toBe(200);
+
+  // A withAuth route still works (403 would mean the tenant was suspended).
+  const clients = await apiGet(page, "/api/clients");
+  console.log("[verify] GET /api/clients after cancel:", clients.status);
+  expect(clients.status).toBe(200);
+
+  const cur = await apiGet(page, "/api/subscription/current");
+  console.log("[verify] current after cancel:", cur.body.status);
+  expect(cur.body.status).toBe("cancelled");
+});
+
+test("10: renewing a cancelled subscription restores active access", async ({ page }) => {
+  const { subId } = await seedActive(page, "c10");
+  await adminPost(page, `/api/admin/subscriptions/${subId}/cancel`);
+  const renew = await adminPost(page, `/api/admin/subscriptions/${subId}/renew`);
+  expect(renew.status).toBe(200);
+  const cur = await apiGet(page, "/api/subscription/current");
+  console.log("[verify] current after renew:", cur.body.status);
+  expect(cur.body.status).toBe("active");
+});
+
+test("11: the expiry cron flips a past-period active subscription to expired", async ({ page }) => {
+  const { subId } = await seedActive(page, "c11");
+  await pool.query(
+    `UPDATE subscriptions SET current_period_end = NOW() - INTERVAL '1 day' WHERE id = $1`,
+    [subId]
+  );
+  // The client treats it as expired immediately, without waiting for the cron.
+  const before = await apiGet(page, "/api/subscription/current");
+  expect(before.body.status).toBe("expired");
+  // The cron makes the DB row consistent.
+  const cron = await apiGet(page, "/api/cron/subscriptions");
+  console.log("[verify] cron result:", JSON.stringify(cron.body));
+  expect(cron.status).toBe(200);
+  const row = await adminGet(page, `/api/admin/subscriptions/${subId}`);
+  expect(row.body.status).toBe("expired");
+});
+
 test("5: an expired trial reverts to demo mode + a 'trial ended' wall", async ({ page }) => {
   const creds = await signUp(page);
 
