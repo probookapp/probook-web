@@ -224,6 +224,25 @@ test("7: a rejected request is surfaced with its reason after the trial lapses",
   expect(cur.body.rejection_reason).toBe("Need more info");
 });
 
+test("8: unverified users see a verify-email banner; /me exposes verification state", async ({ page }) => {
+  await signUp(page);
+
+  // Signup response and /me both expose verification state now.
+  const me1 = await apiGet(page, "/api/auth/me");
+  console.log("[verify] /me email/email_verified:", me1.body.email, me1.body.email_verified);
+  expect(me1.body.email).toBeTruthy();
+  expect(me1.body.email_verified).toBe(false);
+
+  // The dashboard shows the in-app "verify your email" nudge.
+  await page.goto("/en/dashboard");
+  await expect(page.getByText(/verify your email/i).first()).toBeVisible({ timeout: 20000 });
+
+  // After verification /me flips to true.
+  await apiPost(page, "/api/test/verify-email");
+  const me2 = await apiGet(page, "/api/auth/me");
+  expect(me2.body.email_verified).toBe(true);
+});
+
 test("5: an expired trial reverts to demo mode + a 'trial ended' wall", async ({ page }) => {
   const creds = await signUp(page);
 

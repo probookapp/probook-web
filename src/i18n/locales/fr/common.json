@@ -402,6 +402,13 @@
     "trialLastDay": "Dernier jour de votre essai gratuit. Abonnez-vous pour continuer sans interruption.",
     "trialSubscribe": "S'abonner"
   },
+  "emailVerify": {
+    "banner": "Vérifiez votre adresse email pour sécuriser votre compte.",
+    "resend": "Renvoyer le lien",
+    "sent": "Email de vérification envoyé — vérifiez votre boîte de réception.",
+    "error": "Impossible d'envoyer l'email. Réessayez dans un instant.",
+    "dismiss": "Fermer"
+  },
   "demo": {
     "banner": "Vous explorez une démo — Abonnez-vous pour gérer votre activité",
     "bannerShort": "Mode démo",

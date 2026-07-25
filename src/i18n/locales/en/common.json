@@ -402,6 +402,13 @@
     "trialLastDay": "Last day of your free trial. Subscribe to keep access without interruption.",
     "trialSubscribe": "Subscribe"
   },
+  "emailVerify": {
+    "banner": "Verify your email address to secure your account.",
+    "resend": "Resend link",
+    "sent": "Verification email sent — check your inbox.",
+    "error": "Couldn't send the email. Try again in a moment.",
+    "dismiss": "Dismiss"
+  },
   "demo": {
     "banner": "You're exploring a demo — Subscribe to start managing your business",
     "bannerShort": "Demo mode",

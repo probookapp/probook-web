@@ -1051,6 +1051,8 @@ export interface UserInfo {
   id: string;
   username: string;
   display_name: string;
+  email?: string | null;
+  email_verified?: boolean;
   role: UserRole;
   is_active: boolean;
   // Legacy: list of module keys the user can view (can_view === true).

@@ -8,6 +8,7 @@ import { Layout } from "@/components/layout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AnnouncementBanner } from "@/components/shared/AnnouncementBanner";
 import { DemoModeProvider, DemoModeBanner, TrialBanner } from "@/components/providers/DemoModeProvider";
+import { EmailVerifyBanner } from "@/components/shared/EmailVerifyBanner";
 import { ImpersonationBar } from "@/components/shared/ImpersonationBar";
 import { PwaInstallBanner } from "@/components/shared/PwaInstallBanner";
 import { ConflictResolutionModal } from "@/components/shared/ConflictResolutionModal";
@@ -85,7 +86,7 @@ export default function AuthenticatedLayout({
       <DemoModeProvider isDemoMode={isDemoMode} isInTrial={isInTrial} trialDaysLeft={trialDaysLeft}>
         <TenantSettingsProvider />
         <ImpersonationBar />
-        <Layout topBanner={<><DemoModeBanner /><TrialBanner /></>}>
+        <Layout topBanner={<><EmailVerifyBanner /><DemoModeBanner /><TrialBanner /></>}>
           {showExpiryWarning && (
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 px-4 py-2">
               <div className="flex items-center gap-2 text-sm text-yellow-800 dark:text-yellow-200">

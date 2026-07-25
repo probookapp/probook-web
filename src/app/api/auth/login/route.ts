@@ -116,6 +116,8 @@ export async function POST(req: NextRequest) {
       id: user.id,
       username: user.username,
       display_name: user.displayName,
+      email: user.email,
+      email_verified: user.emailVerified,
       role: user.role,
       is_active: user.isActive,
       permissions: permissions.filter((p) => p.canView).map((p) => p.permissionKey),

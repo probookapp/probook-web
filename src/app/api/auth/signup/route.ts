@@ -110,6 +110,7 @@ export async function POST(req: NextRequest) {
     });
 
     // Send verification email if email was provided
+    let verificationEmailSent = false;
     if (email) {
       try {
         const verificationToken = randomUUID();
@@ -140,8 +141,10 @@ export async function POST(req: NextRequest) {
             </div>
           `,
         });
+        verificationEmailSent = true;
       } catch (emailError) {
-        // Don't block signup on email sending failure
+        // Don't block signup on email sending failure — but report it so the
+        // client can tell the user to resend rather than wait for a lost email.
         console.error("Failed to send verification email:", emailError);
       }
     }
@@ -172,6 +175,9 @@ export async function POST(req: NextRequest) {
       id: result.user.id,
       username: result.user.username,
       display_name: result.user.displayName,
+      email: result.user.email,
+      email_verified: result.user.emailVerified,
+      verification_email_sent: verificationEmailSent,
       role: result.user.role,
       is_active: result.user.isActive,
       permissions: result.permissions.map((p) => p.permissionKey),

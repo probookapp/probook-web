@@ -42,7 +42,18 @@ export function VerifyEmailPage() {
   const handleResend = async () => {
     setResendStatus("loading");
     try {
-      await authApi.resendVerification();
+      if (token) {
+        // Token-based resend works without a session — verification links are
+        // usually opened logged out, where the authenticated route would 401.
+        const res = await fetch("/api/auth/verify-email/resend", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        if (!res.ok) throw new Error("resend failed");
+      } else {
+        await authApi.resendVerification();
+      }
       setResendStatus("success");
     } catch {
       setResendStatus("error");
