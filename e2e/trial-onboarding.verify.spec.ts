@@ -166,6 +166,64 @@ test("4: admin grant-trial converts an active subscription into a trial", async 
   expect(subRow.body.status).toBe("cancelled");
 });
 
+test("6: a pending request is surfaced during trial; resubmit returns PENDING_REQUEST_EXISTS", async ({ page }) => {
+  await signUp(page);
+  await setupPlatformAdmin(page);
+  const plan = await adminPost(page, "/api/admin/plans", {
+    slug: `p6-plan-${Date.now()}`, name: "P6 Plan",
+    monthly_price: 100000, yearly_price: 1000000, currency: "DZD",
+  });
+  const planId = plan.body.id as string;
+  await apiPost(page, "/api/test/verify-email");
+  const req = await apiPost(page, "/api/subscription/request", {
+    plan_id: planId, billing_cycle: "monthly", request_type: "new", currency: "DZD",
+  });
+  expect(req.status).toBe(201);
+
+  // Still inside the trial, but the pending request is now surfaced.
+  const cur = await apiGet(page, "/api/subscription/current");
+  console.log("[verify] current during trial w/ pending:", JSON.stringify(cur.body).slice(0, 160));
+  expect(cur.body.status).toBe("trial");
+  expect(cur.body.pending_request).toBe(true);
+
+  // Resubmitting returns a machine-readable 409 the client can recognise.
+  const dup = await apiPost(page, "/api/subscription/request", {
+    plan_id: planId, billing_cycle: "monthly", request_type: "new", currency: "DZD",
+  });
+  console.log("[verify] duplicate request:", dup.status, JSON.stringify(dup.body));
+  expect(dup.status).toBe(409);
+  expect(dup.body.code).toBe("PENDING_REQUEST_EXISTS");
+});
+
+test("7: a rejected request is surfaced with its reason after the trial lapses", async ({ page }) => {
+  const creds = await signUp(page);
+  await setupPlatformAdmin(page);
+  const plan = await adminPost(page, "/api/admin/plans", {
+    slug: `p7-plan-${Date.now()}`, name: "P7 Plan",
+    monthly_price: 100000, yearly_price: 1000000, currency: "DZD",
+  });
+  const planId = plan.body.id as string;
+  await apiPost(page, "/api/test/verify-email");
+  const req = await apiPost(page, "/api/subscription/request", {
+    plan_id: planId, billing_cycle: "monthly", request_type: "new", currency: "DZD",
+  });
+  const reqId = req.body.id as string;
+  const rej = await adminPost(page, `/api/admin/subscription-requests/${reqId}/reject`, {
+    admin_notes: "Need more info",
+  });
+  expect(rej.status).toBe(200);
+
+  await pool.query(
+    `UPDATE tenants SET trial_ends_at = NOW() - INTERVAL '1 day' WHERE slug LIKE $1`,
+    [slugOf(creds.company) + "%"]
+  );
+  const cur = await apiGet(page, "/api/subscription/current");
+  console.log("[verify] current after reject+expiry:", JSON.stringify(cur.body).slice(0, 200));
+  expect(cur.body.status).toBe("trial_expired");
+  expect(cur.body.rejected_request).toBe(true);
+  expect(cur.body.rejection_reason).toBe("Need more info");
+});
+
 test("5: an expired trial reverts to demo mode + a 'trial ended' wall", async ({ page }) => {
   const creds = await signUp(page);
 

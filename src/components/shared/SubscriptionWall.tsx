@@ -52,6 +52,8 @@ interface CouponResult {
 interface SubscriptionStatus {
   status: string | null;
   pending_request?: boolean;
+  rejected_request?: boolean;
+  rejection_reason?: string | null;
 }
 
 function formatPrice(amount: number, currency: string): string {
@@ -77,6 +79,9 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
   const [verifyEmailError, setVerifyEmailError] = useState("");
   const [verifyEmailSent, setVerifyEmailSent] = useState(false);
   const [verifyEmailSending, setVerifyEmailSending] = useState(false);
+  // Set when a submit is refused because a request is already pending, so we can
+  // switch to the "in review" notice instead of a generic failure toast.
+  const [localPending, setLocalPending] = useState(false);
 
   const { data: plansData, isLoading: plansLoading } = useQuery({
     queryKey: ["subscription-plans"],
@@ -107,10 +112,18 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
   }, [plans, selectedPlanId]);
 
   const currentStatus = subscriptionStatus?.status || null;
-  const hasPendingRequest = subscriptionStatus?.pending_request || currentStatus === "pending";
+  const hasPendingRequest = subscriptionStatus?.pending_request || currentStatus === "pending" || localPending;
+  const isTrial = currentStatus === "trial";
+  const wallTitle = isTrial ? t("subscriptionWall.trialTitle") : t("subscriptionWall.title");
 
   const getStatusMessage = (status: string | null): { message: string; icon: React.ReactNode; variant: "warning" | "danger" | "default" } => {
     switch (status) {
+      case "trial":
+        return {
+          message: t("subscriptionWall.trialMessage"),
+          icon: <Clock className="h-6 w-6" />,
+          variant: "default",
+        };
       case "pending":
         return {
           message: t("subscriptionWall.pendingMessage"),
@@ -176,10 +189,15 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
     try {
       await subscribeRequest.mutateAsync(input);
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "";
       // The request route refuses with EMAIL_NOT_VERIFIED until ownership is
       // confirmed — surface the inline "verify your email" step instead.
-      if (err instanceof Error && err.message.includes("EMAIL_NOT_VERIFIED")) {
+      if (msg.includes("EMAIL_NOT_VERIFIED")) {
         setNeedsEmailVerify(true);
+      } else if (msg.includes("PENDING_REQUEST_EXISTS")) {
+        // A request already exists — show the "in review" notice, not a failure.
+        setLocalPending(true);
+        queryClient.invalidateQueries({ queryKey: ["current-subscription"] });
       }
     }
   };
@@ -235,7 +253,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
             {statusInfo.icon}
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-            {t("subscriptionWall.title")}
+            {wallTitle}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 max-w-lg mx-auto">
             {statusInfo.message}
@@ -269,6 +287,23 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                 </p>
                 <p className="text-sm text-yellow-700 dark:text-yellow-300">
                   {t("subscriptionWall.pendingDescription")}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Rejected Request Notice */}
+        {!hasPendingRequest && !subscribeRequest.isSuccess && subscriptionStatus?.rejected_request && (
+          <Card className="mb-8 border-red-300 dark:border-red-700">
+            <CardContent className="flex items-center gap-3 py-4">
+              <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />
+              <div>
+                <p className="font-medium text-red-800 dark:text-red-200">
+                  {t("subscriptionWall.rejectedTitle")}
+                </p>
+                <p className="text-sm text-red-700 dark:text-red-300">
+                  {subscriptionStatus.rejection_reason || t("subscriptionWall.rejectedDescription")}
                 </p>
               </div>
             </CardContent>
@@ -522,7 +557,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
               >
                 {t("subscriptionWall.subscribeNow")}
               </Button>
-              {subscribeRequest.isError && !needsEmailVerify && (
+              {subscribeRequest.isError && !needsEmailVerify && !localPending && (
                 <p className="mt-3 text-sm text-red-600 dark:text-red-400">
                   {t("subscriptionWall.submitError")}
                 </p>

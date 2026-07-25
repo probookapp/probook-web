@@ -43,7 +43,10 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
 
   if (existingPending) {
     return NextResponse.json(
-      { error: "A pending subscription request already exists for this tenant" },
+      {
+        error: "A pending subscription request already exists for this tenant",
+        code: "PENDING_REQUEST_EXISTS",
+      },
       { status: 409 }
     );
   }

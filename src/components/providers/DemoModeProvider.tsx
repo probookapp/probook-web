@@ -208,10 +208,9 @@ function PlansOverlay({ onClose }: { onClose: () => void }) {
           <X className="h-5 w-5" />
         </button>
       </div>
-      <SubscriptionWall
-        subscriptionStatus={subscriptionStatus}
-        onRequestSuccess={onClose}
-      />
+      {/* Do NOT auto-close on success — the wall shows a confirmation card and
+          the pending state, which the user dismisses via the X. */}
+      <SubscriptionWall subscriptionStatus={subscriptionStatus} />
     </div>
   );
 }
