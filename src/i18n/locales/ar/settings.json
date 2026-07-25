@@ -127,6 +127,7 @@
   "messages": {
     "saveSuccess": "تم حفظ الإعدادات بنجاح!",
     "saveFailed": "فشل في حفظ الإعدادات",
+    "logoUploadFailed": "فشل رفع الشعار",
     "deleteLogoConfirm": "هل أنت متأكد أنك تريد حذف الشعار؟"
   },
   "backup": {

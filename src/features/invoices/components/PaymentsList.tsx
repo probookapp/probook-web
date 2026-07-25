@@ -16,6 +16,7 @@ import { useCreatePayment, useDeletePayment } from "../hooks/useInvoices";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
+import { getApiErrorMessage } from "@/lib/api-adapter";
 import type { Invoice } from "@/types";
 
 interface PaymentsListProps {
@@ -66,7 +67,10 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
       await createPayment.mutateAsync(payload);
     } catch (err) {
       // Saved to the offline queue: treat as success, it syncs later.
-      if (!isOfflineQueuedError(err)) throw err;
+      if (!isOfflineQueuedError(err)) {
+        toast.error(getApiErrorMessage(err, t("common:messages.error")));
+        return;
+      }
       toast.info(t("offline.saved_offline"));
     }
     setShowAddModal(false);

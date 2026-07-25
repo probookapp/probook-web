@@ -24,6 +24,7 @@ import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { toast } from "@/stores/useToastStore";
 import { isApiError } from "@/lib/api-adapter";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
+import { getApiErrorMessage } from "@/lib/api-adapter";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
@@ -133,7 +134,10 @@ export function ClientsPage() {
       }
     } catch (err) {
       // Saved to the offline queue: treat as success, it syncs later.
-      if (!isOfflineQueuedError(err)) throw err;
+      if (!isOfflineQueuedError(err)) {
+        toast.error(getApiErrorMessage(err, tCommon("messages.error")));
+        return;
+      }
       toast.info(tCommon("offline.saved_offline"));
     }
     handleCloseModal();

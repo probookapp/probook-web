@@ -27,6 +27,7 @@ import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { toast } from "@/stores/useToastStore";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
+import { getApiErrorMessage } from "@/lib/api-adapter";
 
 const createLineSchema = (t: (key: string) => string) => z.object({
   product_id: z.string().nullable().optional(),
@@ -298,7 +299,10 @@ export function QuoteFormPage() {
     } catch (err) {
       // Saved to the offline queue: continue back to the list (never to a
       // detail page — the quote has no server id yet).
-      if (!isOfflineQueuedError(err)) throw err;
+      if (!isOfflineQueuedError(err)) {
+        toast.error(getApiErrorMessage(err, t("common:messages.error")));
+        return;
+      }
       toast.info(t("common:offline.saved_offline"));
     }
     submittedRef.current = true;

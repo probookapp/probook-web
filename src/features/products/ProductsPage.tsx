@@ -45,6 +45,7 @@ import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { isApiError } from "@/lib/api-adapter";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
+import { getApiErrorMessage } from "@/lib/api-adapter";
 import { productSupplierApi, locationsApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { Product } from "@/types";
@@ -185,7 +186,10 @@ export function ProductsPage() {
       }
     } catch (err) {
       // Saved to the offline queue: treat as success, it syncs later.
-      if (!isOfflineQueuedError(err)) throw err;
+      if (!isOfflineQueuedError(err)) {
+        toast.error(getApiErrorMessage(err, tCommon("messages.error")));
+        return;
+      }
       toast.info(tCommon("offline.saved_offline"));
     }
     handleCloseModal();

@@ -127,6 +127,7 @@
   "messages": {
     "saveSuccess": "Paramètres enregistrés avec succès !",
     "saveFailed": "Erreur lors de l'enregistrement",
+    "logoUploadFailed": "Échec du téléversement du logo",
     "deleteLogoConfirm": "Êtes-vous sûr de vouloir supprimer le logo ?"
   },
   "backup": {

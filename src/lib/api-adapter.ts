@@ -18,6 +18,23 @@ export function isApiError(err: unknown, status?: number): err is ApiError {
   return err instanceof ApiError && (status === undefined || err.status === status);
 }
 
+/**
+ * Human-readable message for a failed API call. Server errors are JSON like
+ * `{ "error": "..." }`; surface that string, else the raw body, else `fallback`.
+ */
+export function getApiErrorMessage(err: unknown, fallback: string): string {
+  if (isApiError(err)) {
+    try {
+      const parsed = JSON.parse(err.body) as { error?: unknown };
+      if (parsed && typeof parsed.error === "string") return parsed.error;
+    } catch {
+      /* body isn't JSON */
+    }
+    if (err.body) return err.body;
+  }
+  return fallback;
+}
+
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 interface EndpointDef {

@@ -127,6 +127,7 @@
   "messages": {
     "saveSuccess": "Settings saved successfully!",
     "saveFailed": "Failed to save settings",
+    "logoUploadFailed": "Logo upload failed",
     "deleteLogoConfirm": "Are you sure you want to delete the logo?"
   },
   "backup": {
