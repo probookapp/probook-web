@@ -1,0 +1,11 @@
+-- CON-3: one invoice per quote. The quote→invoice convert route checks
+-- "already converted" then creates, but under concurrency (double-click) two
+-- transactions both pass the check and create two invoices for the same quote.
+-- A unique index on the nullable quote_id enforces at-most-one invoice per quote
+-- (Postgres allows unlimited NULLs, so direct/non-converted invoices are
+-- unaffected); the route's existing P2002 retry then resolves the race to a 409.
+--
+-- Not mirrored in schema.prisma: expressing @unique on Invoice.quoteId would turn
+-- the Quote→Invoice relation 1-1 and conflict with the existing one-to-many
+-- relation field. This DB-level constraint is intentionally migration-only.
+CREATE UNIQUE INDEX IF NOT EXISTS "invoices_quote_id_key" ON "invoices" ("quote_id");
