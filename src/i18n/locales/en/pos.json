@@ -1,5 +1,7 @@
 {
   "title": "Point of Sale",
+  "products": "Products",
+  "cart": "Cart",
   "selectRegister": "Select a Register",
   "openSession": "Open Session",
   "closeSession": "Close Session",

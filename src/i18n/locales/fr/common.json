@@ -88,7 +88,11 @@
     "error": "Une erreur est survenue",
     "noResults": "Aucun résultat trouvé",
     "loading": "Chargement en cours...",
-    "unsavedChanges": "Vous avez des modifications non enregistrées"
+    "unsavedChanges": "Vous avez des modifications non enregistrées",
+    "created": "Créé avec succès",
+    "updated": "Mis à jour avec succès",
+    "deleted": "Supprimé avec succès",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cet élément ?"
   },
   "units": {
     "piece": "pièce",

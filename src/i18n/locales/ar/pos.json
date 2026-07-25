@@ -1,5 +1,7 @@
 {
   "title": "نقطة البيع",
+  "products": "المنتجات",
+  "cart": "السلة",
   "selectRegister": "اختر صندوقا",
   "openSession": "فتح الصندوق",
   "closeSession": "اغلاق الصندوق",

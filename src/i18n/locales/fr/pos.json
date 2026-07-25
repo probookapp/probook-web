@@ -1,5 +1,7 @@
 {
   "title": "Caisse",
+  "products": "Produits",
+  "cart": "Panier",
   "selectRegister": "Selectionner une caisse",
   "openSession": "Ouvrir la caisse",
   "closeSession": "Fermer la caisse",

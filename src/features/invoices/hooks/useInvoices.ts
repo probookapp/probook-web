@@ -113,6 +113,10 @@ export function useIssueInvoice() {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       queryClient.invalidateQueries({ queryKey: ["invoices", id] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      // Issuing decrements stock — refresh anything that shows on-hand.
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["pos-products"] });
+      queryClient.invalidateQueries({ queryKey: ["low-stock"] });
     },
   });
 }

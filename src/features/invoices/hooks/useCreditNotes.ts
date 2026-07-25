@@ -55,6 +55,11 @@ export function useDeleteCreditNote() {
     mutationFn: (id: string) => creditNoteApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["credit-notes"] });
+      // Deleting a credit note reverses its restock — mirror the create hook.
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      queryClient.invalidateQueries({ queryKey: ["pos-products"] });
+      queryClient.invalidateQueries({ queryKey: ["low-stock"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
     },
   });
 }
