@@ -6,7 +6,9 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { createUserSchema } from "@/lib/validations";
 import { buildPermissionRows, serializeUser } from "./permissions";
 
-export const GET = withAuth(async (req, { tenantId }) => {
+// Admin-only: the roster and every user's permission set are management data,
+// consistent with the admin-gated POST/PUT/DELETE on this resource (audit TEN-2).
+export const GET = withAdmin(async (req, { tenantId }) => {
   const users = await prisma.user.findMany({
     where: { tenantId },
     orderBy: { createdAt: "asc" },

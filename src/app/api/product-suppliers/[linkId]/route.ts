@@ -19,6 +19,16 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   if (denied) return denied;
   const body = await validateBody(req, updateProductSupplierSchema);
   if (isValidationError(body)) return body;
+
+  // Validate both FKs belong to this tenant before writing (audit TEN-1).
+  const [product, supplier] = await Promise.all([
+    prisma.product.findFirst({ where: { tenantId, id: body.product_id }, select: { id: true } }),
+    prisma.supplier.findFirst({ where: { tenantId, id: body.supplier_id }, select: { id: true } }),
+  ]);
+  if (!product || !supplier) {
+    return NextResponse.json({ error: "Product or supplier not found" }, { status: 400 });
+  }
+
   const link = await prisma.productSupplier.update({
     where: { tenantId, id: params?.linkId },
     data: {

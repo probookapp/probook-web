@@ -5,7 +5,9 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { supplierSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 
-export const GET = withAuth(async (req, { tenantId, params }) => {
+export const GET = withAuth(async (req, { tenantId, params, session }) => {
+  const denied = await requirePermission(session, "suppliers", "view");
+  if (denied) return denied;
   const supplier = await prisma.supplier.findFirst({ where: { tenantId, id: params?.id } });
   if (!supplier) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(toSnakeCase(supplier));

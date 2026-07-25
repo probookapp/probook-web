@@ -21,6 +21,16 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   if (denied) return denied;
   const body = await validateBody(req, contactSchema);
   if (isValidationError(body)) return body;
+
+  // Validate the client belongs to this tenant before re-linking (audit TEN-1).
+  const client = await prisma.client.findFirst({
+    where: { tenantId, id: body.client_id },
+    select: { id: true },
+  });
+  if (!client) {
+    return NextResponse.json({ error: "Client not found" }, { status: 400 });
+  }
+
   const contact = await prisma.clientContact.update({
     where: { tenantId, id: params?.id },
     data: {

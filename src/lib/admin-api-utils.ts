@@ -36,7 +36,9 @@ export function withPlatformAdmin(
       return await handler(req, {
         session,
         adminId: session.userId,
-        role: session.role,
+        // Use the freshly-loaded role, not the (up to 7-day-old) JWT role, so a
+        // demoted admin loses super-admin routes immediately (audit SEC-1).
+        role: admin.role,
         params,
       });
     } catch (error: unknown) {

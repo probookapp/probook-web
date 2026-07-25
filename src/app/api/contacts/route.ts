@@ -47,6 +47,18 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   if (denied) return denied;
   const body = await validateBody(req, contactSchema);
   if (isValidationError(body)) return body;
+
+  // Validate the client belongs to this tenant before linking — a forged
+  // client_id would otherwise surface the foreign client via the list include
+  // (audit TEN-1).
+  const client = await prisma.client.findFirst({
+    where: { tenantId, id: body.client_id },
+    select: { id: true },
+  });
+  if (!client) {
+    return NextResponse.json({ error: "Client not found" }, { status: 400 });
+  }
+
   const contact = await prisma.clientContact.create({
     data: {
       tenantId,

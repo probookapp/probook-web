@@ -140,6 +140,12 @@ export function withAuth(
         if (user.tenant.status === "suspended") {
           return NextResponse.json({ error: "Account suspended" }, { status: 403 });
         }
+
+        // Trust the freshly-loaded role over the (up to 7-day-old) JWT role, so
+        // an employee stripped of "admin" loses admin routes immediately without
+        // waiting for their session to expire (audit SEC-1). The impersonation
+        // branch above keeps its synthetic "admin" role intentionally.
+        session.role = user.role;
       }
 
       resolvedTenantId = tenantId;
