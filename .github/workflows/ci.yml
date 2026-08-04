@@ -70,6 +70,7 @@ jobs:
           RESEND_API_KEY="re_ci_dummy_key"
           EMAIL_FROM="Probook CI <ci@example.invalid>"
           E2E_TEST_MODE="1"
+          CRON_SECRET="ci-only-cron-secret"
           EOF
       - name: Apply migrations to test DB
         run: npx dotenv -e .env.test -- npx prisma migrate deploy

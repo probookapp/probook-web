@@ -25,6 +25,25 @@ function slugOf(company: string) {
   return company.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
+/**
+ * GET a cron route with the scheduler's bearer token. Cron routes skip auth
+ * outside production, but CI drives a production build, where they require it.
+ */
+function cronGet(page: Page, path: string) {
+  const secret = process.env.CRON_SECRET;
+  return page.evaluate(
+    async ([p, s]) => {
+      const r = await fetch(p, {
+        credentials: "include",
+        headers: s ? { authorization: `Bearer ${s}` } : {},
+      });
+      const json = await r.json().catch(() => ({}));
+      return { status: r.status, body: json };
+    },
+    [path, secret ?? null] as [string, string | null]
+  );
+}
+
 /** Drop the persisted React-Query cache so the next load refetches subscription. */
 async function clearQueryCache(page: Page) {
   await page.evaluate(
@@ -295,8 +314,9 @@ test("11: the expiry cron flips a past-period active subscription to expired", a
   // The client treats it as expired immediately, without waiting for the cron.
   const before = await apiGet(page, "/api/subscription/current");
   expect(before.body.status).toBe("expired");
-  // The cron makes the DB row consistent.
-  const cron = await apiGet(page, "/api/cron/subscriptions");
+  // The cron makes the DB row consistent. Against a production build (CI) the
+  // route demands the Vercel cron bearer, so send it when configured.
+  const cron = await cronGet(page, "/api/cron/subscriptions");
   console.log("[verify] cron result:", JSON.stringify(cron.body));
   expect(cron.status).toBe(200);
   const row = await adminGet(page, `/api/admin/subscriptions/${subId}`);
