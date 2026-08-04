@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withAuth, AuthContext } from "@/lib/api-utils";
 import { sendEmail, verificationEmailHtml } from "@/lib/email";
-import { issueEmailVerificationToken } from "@/lib/verification";
+import {
+  issueEmailVerificationToken,
+  throttledResponse,
+  verificationResendWait,
+} from "@/lib/verification";
 
 export const POST = withAuth(async (_req: NextRequest, ctx: AuthContext) => {
   const user = await prisma.user.findUnique({
@@ -11,26 +15,17 @@ export const POST = withAuth(async (_req: NextRequest, ctx: AuthContext) => {
 
   if (!user || !user.email) {
     return NextResponse.json(
-      { error: "No email address on account" },
+      { error: "No email address on account", code: "NO_EMAIL" },
       { status: 400 }
     );
   }
 
-  // Rate limit: only allow if last token was >2 minutes ago
-  const lastToken = await prisma.emailVerificationToken.findFirst({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
-
-  if (lastToken) {
-    const twoMinutesAgo = new Date(Date.now() - 2 * 60 * 1000);
-    if (lastToken.createdAt > twoMinutesAgo) {
-      return NextResponse.json(
-        { error: "Please wait before requesting another verification email" },
-        { status: 429 }
-      );
-    }
+  if (user.emailVerified) {
+    return NextResponse.json({ success: true, already_verified: true });
   }
+
+  const wait = await verificationResendWait(user.id);
+  if (wait > 0) return throttledResponse(wait);
 
   // Create new verification token (invalidates prior unused ones).
   const token = await issueEmailVerificationToken(user.id, user.email);
@@ -43,7 +38,7 @@ export const POST = withAuth(async (_req: NextRequest, ctx: AuthContext) => {
   } catch (emailError) {
     console.error("Failed to send verification email:", emailError);
     return NextResponse.json(
-      { error: "Could not send the verification email. Please try again." },
+      { error: "Could not send the verification email. Please try again.", code: "SEND_FAILED" },
       { status: 502 }
     );
   }

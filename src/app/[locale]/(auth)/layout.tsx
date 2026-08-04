@@ -1,8 +1,14 @@
 "use client";
 
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useRouter } from "@/lib/navigation";
+import { useRouter, usePathname, useLocale } from "@/lib/navigation";
 import { useEffect } from "react";
+
+// Pages in this group that a signed-in user must still be able to open. A
+// verification link is normally clicked in the same browser the account was
+// created in; bouncing to the dashboard there means the page never mounts, the
+// token is never submitted, and the link silently does nothing.
+const ALLOWED_WHILE_AUTHENTICATED = ["/verify-email"];
 
 export default function AuthLayout({
   children,
@@ -11,12 +17,18 @@ export default function AuthLayout({
 }) {
   const { isLoading, isAuthenticated } = useAuthStore();
   const router = useRouter();
+  const pathname = usePathname();
+  const locale = useLocale();
+  // usePathname keeps the [locale] prefix (/en/verify-email).
+  const pathWithoutLocale = pathname.replace(`/${locale}`, "") || "/";
+  const bounce =
+    isAuthenticated && !ALLOWED_WHILE_AUTHENTICATED.includes(pathWithoutLocale);
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
+    if (!isLoading && bounce) {
       router.replace("/dashboard");
     }
-  }, [isLoading, isAuthenticated, router]);
+  }, [isLoading, bounce, router]);
 
   if (isLoading) {
     return (
@@ -26,7 +38,7 @@ export default function AuthLayout({
     );
   }
 
-  if (isAuthenticated) {
+  if (bounce) {
     return null;
   }
 

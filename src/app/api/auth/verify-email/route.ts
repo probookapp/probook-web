@@ -16,21 +16,35 @@ export async function POST(req: NextRequest) {
 
     if (!verificationToken) {
       return NextResponse.json(
-        { error: "Invalid verification token" },
+        { error: "Invalid verification token", code: "TOKEN_INVALID" },
         { status: 400 }
       );
     }
 
     if (verificationToken.usedAt) {
+      // Idempotent replay: one click can reach this route twice (in-app webview
+      // then real browser, a remount, a mail scanner). The second call must not
+      // report failure when the first one already verified the address —
+      // possession of the token was proven either way.
+      const user = await prisma.user.findUnique({
+        where: { id: verificationToken.userId },
+        select: { email: true, emailVerified: true },
+      });
+      if (
+        user?.emailVerified &&
+        user.email?.toLowerCase() === verificationToken.email.toLowerCase()
+      ) {
+        return NextResponse.json({ success: true, already_verified: true });
+      }
       return NextResponse.json(
-        { error: "Token already used" },
+        { error: "Token already used", code: "TOKEN_USED" },
         { status: 400 }
       );
     }
 
     if (verificationToken.expiresAt < new Date()) {
       return NextResponse.json(
-        { error: "Token expired" },
+        { error: "Token expired", code: "TOKEN_EXPIRED" },
         { status: 400 }
       );
     }
@@ -39,7 +53,7 @@ export async function POST(req: NextRequest) {
     // no partial-unique constraint for — enforced here at the point of verify).
     if (await isEmailTakenByVerifiedUser(verificationToken.email, verificationToken.userId)) {
       return NextResponse.json(
-        { error: "This email is already verified on another account." },
+        { error: "This email is already verified on another account.", code: "EMAIL_TAKEN" },
         { status: 409 }
       );
     }

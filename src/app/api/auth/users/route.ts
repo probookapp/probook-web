@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { withAuth, withAdmin } from "@/lib/api-utils";
+import { withAdmin } from "@/lib/api-utils";
 import { hashPassword } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";

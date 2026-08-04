@@ -410,6 +410,7 @@
     "banner": "Vérifiez votre adresse email pour sécuriser votre compte.",
     "resend": "Renvoyer le lien",
     "sent": "Email de vérification envoyé — vérifiez votre boîte de réception.",
+    "throttled": "Un lien vient d'être envoyé — consultez votre boîte de réception avant d'en demander un autre.",
     "error": "Impossible d'envoyer l'email. Réessayez dans un instant.",
     "dismiss": "Fermer"
   },

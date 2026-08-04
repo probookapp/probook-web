@@ -357,6 +357,82 @@ test("13: issuing a new verification token invalidates the prior unused one", as
   expect(gone.rows[0].n).toBe(0);
 });
 
+test("14: opening the same verification link twice succeeds both times", async ({ page }) => {
+  const creds = await signUp(page);
+  const u = await pool.query(
+    `SELECT u.id FROM users u JOIN tenants t ON t.id = u.tenant_id
+     WHERE t.slug LIKE $1 ORDER BY u.created_at DESC LIMIT 1`,
+    [slugOf(creds.company) + "%"]
+  );
+  const userId = u.rows[0].id as string;
+  const tok = await pool.query(
+    `SELECT token FROM email_verification_tokens WHERE user_id = $1 LIMIT 1`,
+    [userId]
+  );
+  const token = tok.rows[0].token as string;
+
+  // A single click can reach the route twice (in-app webview then the real
+  // browser, a remount). The replay must report success, not "already used" —
+  // that regression made a working verification look broken.
+  const first = await apiPost(page, "/api/auth/verify-email", { token });
+  const second = await apiPost(page, "/api/auth/verify-email", { token });
+  console.log("[verify] verify twice:", first.status, JSON.stringify(first.body), "|", second.status, JSON.stringify(second.body));
+  expect(first.status).toBe(200);
+  expect(second.status).toBe(200);
+  expect(second.body.already_verified).toBe(true);
+
+  const after = await pool.query(`SELECT email_verified FROM users WHERE id = $1`, [userId]);
+  expect(after.rows[0].email_verified).toBe(true);
+});
+
+test("15: resending right after signup reports the wait, not a send failure", async ({ page }) => {
+  await signUp(page);
+
+  // The signup email counts against the 2-minute throttle, so the resend button
+  // is always throttled for a brand-new account. It must say how long instead of
+  // claiming the email could not be sent.
+  const rr = await apiPost(page, "/api/auth/resend-verification");
+  console.log("[verify] resend right after signup:", rr.status, JSON.stringify(rr.body));
+  expect(rr.status).toBe(429);
+  expect(rr.body.code).toBe("THROTTLED");
+  expect(rr.body.retry_after).toBeGreaterThan(0);
+  expect(rr.body.retry_after).toBeLessThanOrEqual(120);
+});
+
+test("16: a signed-in user clicking the link reaches the verify page and succeeds", async ({ page }) => {
+  const creds = await signUp(page); // leaves the session cookie set, as after a real signup
+  const u = await pool.query(
+    `SELECT u.id FROM users u JOIN tenants t ON t.id = u.tenant_id
+     WHERE t.slug LIKE $1 ORDER BY u.created_at DESC LIMIT 1`,
+    [slugOf(creds.company) + "%"]
+  );
+  const tok = await pool.query(
+    `SELECT token FROM email_verification_tokens WHERE user_id = $1 LIMIT 1`,
+    [u.rows[0].id]
+  );
+  const token = tok.rows[0].token as string;
+
+  // The (auth) layout bounces authenticated users to /dashboard; /verify-email
+  // must be exempt or the page never mounts and the link silently does nothing.
+  await page.goto(`/en/verify-email?token=${token}`);
+  await expect(page.getByText(/verified successfully/i)).toBeVisible({ timeout: 20000 });
+
+  // Re-opening the same link keeps saying success (idempotent replay).
+  await page.goto(`/en/verify-email?token=${token}`);
+  await expect(page.getByText(/verified successfully/i)).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText(/invalid or expired/i)).toHaveCount(0);
+  await page.screenshot({ path: "test-results/verify-link-second-open.png" });
+});
+
+test("17: a throttled resend states the wait instead of claiming a send failure", async ({ page }) => {
+  await signUp(page); // the signup email counts against the 2-minute throttle
+  await page.goto("/en/verify-email");
+  await page.getByRole("button", { name: /resend/i }).click();
+  await expect(page.getByText(/request another in \d+s/i)).toBeVisible({ timeout: 20000 });
+  await expect(page.getByText(/could not send/i)).toHaveCount(0);
+  await page.screenshot({ path: "test-results/verify-resend-throttled.png" });
+});
+
 test("5: an expired trial reverts to demo mode + a 'trial ended' wall", async ({ page }) => {
   const creds = await signUp(page);
 

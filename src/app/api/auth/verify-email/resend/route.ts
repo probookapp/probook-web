@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendEmail, verificationEmailHtml } from "@/lib/email";
-import { issueEmailVerificationToken } from "@/lib/verification";
+import {
+  issueEmailVerificationToken,
+  throttledResponse,
+  verificationResendWait,
+} from "@/lib/verification";
 
 /**
  * Unauthenticated resend of a verification email, keyed by an existing (possibly
@@ -13,7 +17,7 @@ import { issueEmailVerificationToken } from "@/lib/verification";
 export async function POST(req: NextRequest) {
   const { token } = (await req.json().catch(() => ({}))) as { token?: string };
   if (!token || typeof token !== "string") {
-    return NextResponse.json({ error: "Missing token" }, { status: 400 });
+    return NextResponse.json({ error: "Missing token", code: "TOKEN_INVALID" }, { status: 400 });
   }
 
   const existing = await prisma.emailVerificationToken.findUnique({ where: { token } });
@@ -26,17 +30,10 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true });
   }
 
-  // 2-minute throttle per user, matching the authenticated resend route.
-  const last = await prisma.emailVerificationToken.findFirst({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-  });
-  if (last && last.createdAt > new Date(Date.now() - 2 * 60 * 1000)) {
-    return NextResponse.json(
-      { error: "Please wait before requesting another verification email" },
-      { status: 429 }
-    );
-  }
+  // Same throttle as the authenticated resend route — the signup email counts,
+  // so this fires for anyone who clicks "resend" in the first two minutes.
+  const wait = await verificationResendWait(user.id);
+  if (wait > 0) return throttledResponse(wait);
 
   const newToken = await issueEmailVerificationToken(user.id, user.email);
 
@@ -49,7 +46,7 @@ export async function POST(req: NextRequest) {
   } catch (emailError) {
     console.error("Failed to send verification email:", emailError);
     return NextResponse.json(
-      { error: "Could not send the verification email. Please try again." },
+      { error: "Could not send the verification email. Please try again.", code: "SEND_FAILED" },
       { status: 502 }
     );
   }

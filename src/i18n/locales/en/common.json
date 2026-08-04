@@ -410,6 +410,7 @@
     "banner": "Verify your email address to secure your account.",
     "resend": "Resend link",
     "sent": "Verification email sent — check your inbox.",
+    "throttled": "A link was just sent — check your inbox before requesting another.",
     "error": "Couldn't send the email. Try again in a moment.",
     "dismiss": "Dismiss"
   },

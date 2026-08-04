@@ -1,13 +1,32 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useSearchParams } from "next/navigation";
 import { Mail, CheckCircle, XCircle, Loader2 } from "lucide-react";
 import { authApi } from "@/lib/api";
+import { isApiError } from "@/lib/api-adapter";
 import { useLocale } from "@/lib/navigation";
 import { Button } from "@/components/ui";
 import Link from "next/link";
+
+/**
+ * Machine-readable reason from the API, so the UI never guesses. Handles both
+ * an ApiError (JSON body string) and the plain object thrown by the raw fetch
+ * used for the logged-out resend.
+ */
+function errorDetail(err: unknown): { code?: string; retryAfter?: number } {
+  if (isApiError(err)) {
+    try {
+      const parsed = JSON.parse(err.body) as { code?: string; retry_after?: number };
+      return { code: parsed.code, retryAfter: parsed.retry_after };
+    } catch {
+      return {};
+    }
+  }
+  const plain = err as { code?: string; retryAfter?: number };
+  return { code: plain?.code, retryAfter: plain?.retryAfter };
+}
 
 export function VerifyEmailPage() {
   const { t } = useTranslation("auth");
@@ -18,7 +37,15 @@ export function VerifyEmailPage() {
   const [status, setStatus] = useState<"idle" | "verifying" | "success" | "error">(
     token ? "verifying" : "idle"
   );
-  const [resendStatus, setResendStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string>("");
+  const [resendStatus, setResendStatus] = useState<
+    "idle" | "loading" | "success" | "throttled" | "error"
+  >("idle");
+  const [resendMessage, setResendMessage] = useState<string>("");
+  // One submission per token: a link can be opened twice (in-app webview then
+  // the real browser, a remount), and the second POST used to overwrite the
+  // first one's success with "already used".
+  const submittedToken = useRef<string | null>(null);
 
   const verifyToken = useCallback(async () => {
     if (!token) return;
@@ -26,21 +53,30 @@ export function VerifyEmailPage() {
     try {
       await authApi.verifyEmail(token);
       setStatus("success");
-    } catch {
+    } catch (err) {
+      const { code } = errorDetail(err);
+      setErrorMessage(
+        code === "TOKEN_EXPIRED"
+          ? t("verifyEmail.expiredToken")
+          : code === "EMAIL_TAKEN"
+            ? t("verifyEmail.emailTaken")
+            : t("verifyEmail.invalidToken")
+      );
       setStatus("error");
     }
-  }, [token]);
+  }, [token, t]);
 
   useEffect(() => {
-    if (token) {
+    if (token && submittedToken.current !== token) {
+      submittedToken.current = token;
       // Intentional: kick off email verification on mount.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       verifyToken();
     }
   }, [token, verifyToken]);
 
   const handleResend = async () => {
     setResendStatus("loading");
+    setResendMessage("");
     try {
       if (token) {
         // Token-based resend works without a session — verification links are
@@ -50,12 +86,33 @@ export function VerifyEmailPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ token }),
         });
-        if (!res.ok) throw new Error("resend failed");
+        if (!res.ok) {
+          const body = (await res.json().catch(() => ({}))) as {
+            code?: string;
+            retry_after?: number;
+          };
+          throw Object.assign(new Error("resend failed"), {
+            code: body.code,
+            retryAfter: body.retry_after,
+          });
+        }
       } else {
         await authApi.resendVerification();
       }
       setResendStatus("success");
-    } catch {
+      setResendMessage(t("verifyEmail.resendSuccess"));
+    } catch (err) {
+      const { code, retryAfter } = errorDetail(err);
+      if (code === "THROTTLED" && retryAfter) {
+        // Not a failure: a link is already in their inbox. Saying "couldn't
+        // send" here sends people hunting for a fault that doesn't exist.
+        setResendMessage(t("verifyEmail.resendThrottled", { seconds: retryAfter }));
+        setResendStatus("throttled");
+        return;
+      }
+      setResendMessage(
+        code === "NO_EMAIL" ? t("verifyEmail.noEmail") : t("verifyEmail.resendError")
+      );
       setResendStatus("error");
     }
   };
@@ -102,8 +159,8 @@ export function VerifyEmailPage() {
             {status === "error" && (
               <>
                 <XCircle className="h-12 w-12 text-red-500" />
-                <p className="text-red-600 dark:text-red-400 font-medium">
-                  {t("verifyEmail.invalidToken")}
+                <p className="text-red-600 dark:text-red-400 font-medium text-center">
+                  {errorMessage || t("verifyEmail.invalidToken")}
                 </p>
               </>
             )}
@@ -131,13 +188,19 @@ export function VerifyEmailPage() {
 
                 {resendStatus === "success" && (
                   <p className="text-sm text-green-600 dark:text-green-400 text-center">
-                    {t("verifyEmail.resendSuccess")}
+                    {resendMessage || t("verifyEmail.resendSuccess")}
+                  </p>
+                )}
+
+                {resendStatus === "throttled" && (
+                  <p className="text-sm text-amber-600 dark:text-amber-400 text-center">
+                    {resendMessage}
                   </p>
                 )}
 
                 {resendStatus === "error" && (
                   <p className="text-sm text-red-600 dark:text-red-400 text-center">
-                    {t("verifyEmail.resendError")}
+                    {resendMessage || t("verifyEmail.resendError")}
                   </p>
                 )}
               </div>

@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { MailWarning, X } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { authApi } from "@/lib/api";
+import { isApiError } from "@/lib/api-adapter";
 
 /**
  * In-app nudge for users whose email isn't verified yet. Without this, a user
@@ -16,7 +17,7 @@ export function EmailVerifyBanner() {
   const { t } = useTranslation("common");
   const { currentUser } = useAuthStore();
   const [dismissed, setDismissed] = useState(false);
-  const [state, setState] = useState<"idle" | "ok" | "err">("idle");
+  const [state, setState] = useState<"idle" | "ok" | "throttled" | "err">("idle");
   const [sending, setSending] = useState(false);
 
   if (dismissed) return null;
@@ -28,15 +29,23 @@ export function EmailVerifyBanner() {
     try {
       await authApi.resendVerification();
       setState("ok");
-    } catch {
-      setState("err");
+    } catch (err) {
+      // A 429 means we already sent one (the signup email counts) — saying
+      // "couldn't send" would be a lie that sends users hunting for a fault.
+      setState(isApiError(err, 429) ? "throttled" : "err");
     } finally {
       setSending(false);
     }
   };
 
   const message =
-    state === "ok" ? t("emailVerify.sent") : state === "err" ? t("emailVerify.error") : t("emailVerify.banner");
+    state === "ok"
+      ? t("emailVerify.sent")
+      : state === "throttled"
+        ? t("emailVerify.throttled")
+        : state === "err"
+          ? t("emailVerify.error")
+          : t("emailVerify.banner");
 
   return (
     <div className="bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800">
