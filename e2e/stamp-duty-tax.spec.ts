@@ -17,7 +17,9 @@ test.describe("Stamp duty & tax reporting", () => {
   test("enabling stamp duty in Settings applies droit de timbre to an issued invoice", async ({
     page,
   }) => {
-    // ── Enable stamp duty via the Settings UI (toggle + 1% rate) ──────────────
+    // ── Enable stamp duty via the Settings UI (toggle only) ───────────────────
+    // There is no rate input: the rate is fixed by the legal progressive scale
+    // (see src/lib/stamp-duty.ts), so Settings only exposes the on/off switch.
     await page.goto("/en/settings");
     await page.waitForLoadState("networkidle");
 
@@ -28,14 +30,12 @@ test.describe("Stamp duty & tax reporting", () => {
     await page.getByLabel("Email", { exact: true }).fill("owner@example.com");
 
     await page.getByText("Apply stamp duty on cash payments").click();
-    await page.getByLabel("Stamp duty rate (%)").fill("1");
     await page.getByRole("button", { name: "Save" }).click();
     await expect(page.getByText("Settings saved successfully!")).toBeVisible({ timeout: 15_000 });
 
     // Confirm the setting persisted.
     const settings = await apiGet(page, "/api/settings");
     expect(settings.body.stamp_duty_enabled).toBe(true);
-    expect(settings.body.stamp_duty_rate).toBe(1);
 
     // ── Issue a CASH invoice (total 1000, 0% VAT) => stamp duty snapshot = 10 ──
     // Droit de timbre only applies to cash-settled invoices, so the sale must be
@@ -52,7 +52,7 @@ test.describe("Stamp duty & tax reporting", () => {
     const issued = await apiPost(page, `/api/invoices/${inv.body.id}/issue`);
     expect(issued.status).toBe(200);
 
-    // API: stamp_duty is 1% of the 1000 total.
+    // API: 1000 DA falls in the 301–30 000 bracket → 1 DA per started 100 DA = 10.
     const fetched = await apiGet(page, `/api/invoices/${inv.body.id}`);
     expect(fetched.body.stamp_duty).toBe(10);
 
@@ -79,10 +79,7 @@ test.describe("Stamp duty & tax reporting", () => {
 
   test("tax summary report renders sales VAT and stamp-duty-due figures", async ({ page }) => {
     // Enable stamp duty (via API — the UI toggle is covered above).
-    const upd = await apiPut(page, "/api/settings", {
-      stamp_duty_enabled: true,
-      stamp_duty_rate: 1,
-    });
+    const upd = await apiPut(page, "/api/settings", { stamp_duty_enabled: true });
     expect(upd.status).toBe(200);
 
     // Seed a sale (total 1200 incl. 200 VAT) fully paid in cash.
