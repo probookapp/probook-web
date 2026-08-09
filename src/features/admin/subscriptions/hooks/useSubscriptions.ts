@@ -66,6 +66,19 @@ export function useAdminSubscription(id: string) {
   });
 }
 
+export function useCreateSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: Record<string, unknown>) => adminSubscriptionsApi.create(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-subscriptions"] });
+      // The tenant is activated and its trial cleared by the same call.
+      queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
+    },
+  });
+}
+
 export function useRenewSubscription() {
   const queryClient = useQueryClient();
 

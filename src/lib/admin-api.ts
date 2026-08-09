@@ -40,6 +40,7 @@ export const adminTenantsApi = {
   activate: (id: string) => adminApiCall<unknown>("activate_admin_tenant", { id }),
   grantTrial: (id: string, days: number) =>
     adminApiCall<unknown>("grant_tenant_trial", { id, input: { days } }),
+  endTrial: (id: string) => adminApiCall<unknown>("end_tenant_trial", { id }),
   impersonate: (id: string) => adminApiCall<unknown>("impersonate_tenant", { id }),
   stopImpersonation: () => adminApiCall<void>("stop_impersonation"),
 };
@@ -68,6 +69,8 @@ export const adminSubscriptionsApi = {
   getPage: (p: { limit: number; cursor?: string; status?: string }) =>
     adminApiCall<CursorPage<AdminRow>>("get_admin_subscriptions", p),
   getById: (id: string) => adminApiCall<unknown>("get_admin_subscription", { id }),
+  create: (input: Record<string, unknown>) =>
+    adminApiCall<unknown>("create_admin_subscription", { input }),
   update: (id: string, input: Record<string, unknown>) =>
     adminApiCall<unknown>("update_admin_subscription", { id, input }),
   renew: (id: string, input: Record<string, unknown>) =>

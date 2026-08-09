@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Pause, Play, Trash2, Gift } from "lucide-react";
+import { ArrowLeft, Pause, Play, Trash2, Gift, CalendarX } from "lucide-react";
 import {
   Button,
   Card,
@@ -20,6 +20,7 @@ import {
   useActivateTenant,
   useDeleteTenant,
   useGrantTrial,
+  useEndTrial,
 } from "./hooks/useTenants";
 import { TenantFeaturesTab } from "./components/TenantFeaturesTab";
 
@@ -54,6 +55,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const [activeTab, setActiveTab] = useState<"info" | "subscription" | "users" | "onboarding" | "features">("info");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [trialModalOpen, setTrialModalOpen] = useState(false);
+  const [endTrialConfirmOpen, setEndTrialConfirmOpen] = useState(false);
   const [trialDays, setTrialDays] = useState("10");
 
   const { data, isLoading } = useAdminTenant(tenantId);
@@ -61,6 +63,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const activateTenant = useActivateTenant();
   const deleteTenant = useDeleteTenant();
   const grantTrial = useGrantTrial();
+  const endTrial = useEndTrial();
 
   const tenant = data as TenantDetail | undefined;
 
@@ -69,6 +72,11 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
     if (!Number.isFinite(days) || days < 1) return;
     await grantTrial.mutateAsync({ id: tenantId, days });
     setTrialModalOpen(false);
+  };
+
+  const handleEndTrial = async () => {
+    await endTrial.mutateAsync(tenantId);
+    setEndTrialConfirmOpen(false);
   };
 
   const trialEndsAt = tenant?.trial_ends_at ? new Date(String(tenant.trial_ends_at)) : null;
@@ -112,7 +120,10 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
     { key: "features" as const, label: t("tenants.detail.features") },
   ];
 
-  const subscription = tenant.subscription as Record<string, unknown> | undefined;
+  // The route returns `subscriptions` (newest first), not a `subscription`
+  // singular — reading the singular made this tab always say "no subscription".
+  const subscriptions = (tenant.subscriptions || []) as Record<string, unknown>[];
+  const subscription = subscriptions[0];
   const users = (tenant.users || []) as Record<string, unknown>[];
   const onboarding = tenant.onboarding as Record<string, unknown> | undefined;
   const onboardingSteps = (onboarding?.steps || []) as Record<string, unknown>[];
@@ -150,6 +161,16 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             <Gift className="h-4 w-4 mr-2" />
             {trialActive ? t("tenants.trial.extend") : t("tenants.trial.grant")}
           </Button>
+          {trialActive && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setEndTrialConfirmOpen(true)}
+            >
+              <CalendarX className="h-4 w-4 mr-2" />
+              {t("tenants.trial.endNow")}
+            </Button>
+          )}
           <Button
             variant="secondary"
             size="sm"
@@ -233,7 +254,14 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
           <CardContent>
             {subscription ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InfoField label={t("tenants.detail.plan")} value={String(subscription.plan_name || subscription.plan || "-")} />
+                <InfoField
+                  label={t("tenants.detail.plan")}
+                  value={String(
+                    (subscription.plan as Record<string, unknown> | undefined)?.name ||
+                      subscription.plan_name ||
+                      "-"
+                  )}
+                />
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t("tenants.detail.status")}</p>
                   <Badge variant={getStatusVariant(String(subscription.status || ""))}>
@@ -244,18 +272,28 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                 <InfoField
                   label={t("tenants.detail.price")}
                   value={
-                    subscription.price != null
-                      ? (Number(subscription.price) / 100).toLocaleString() + " " + String(subscription.currency || "")
+                    subscription.price_at_purchase != null
+                      ? (Number(subscription.price_at_purchase) / 100).toLocaleString() +
+                        " " +
+                        String(subscription.currency || "")
                       : "-"
                   }
                 />
                 <InfoField
                   label={t("tenants.detail.periodStart")}
-                  value={subscription.period_start ? new Date(String(subscription.period_start)).toLocaleDateString() : "-"}
+                  value={
+                    subscription.current_period_start
+                      ? new Date(String(subscription.current_period_start)).toLocaleDateString()
+                      : "-"
+                  }
                 />
                 <InfoField
                   label={t("tenants.detail.periodEnd")}
-                  value={subscription.period_end ? new Date(String(subscription.period_end)).toLocaleDateString() : "-"}
+                  value={
+                    subscription.current_period_end
+                      ? new Date(String(subscription.current_period_end)).toLocaleDateString()
+                      : "-"
+                  }
                 />
                 <InfoField
                   label={t("tenants.detail.created")}
@@ -352,7 +390,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
           <p className="text-sm text-gray-600 dark:text-gray-400">
             {t("tenants.trial.description")}
           </p>
-          {(tenant.subscriptions as Record<string, unknown>[] | undefined)?.some((s) => s.status === "active") && (
+          {subscriptions.some((s) => s.status === "active") && (
             <p className="text-sm text-amber-600 dark:text-amber-400">
               {t("tenants.trial.activeSubWarning")}
             </p>
@@ -372,6 +410,26 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
           </Button>
           <Button onClick={handleGrantTrial} isLoading={grantTrial.isPending}>
             {t("tenants.trial.confirm")}
+          </Button>
+        </div>
+      </Modal>
+
+      {/* End Trial Confirmation */}
+      <Modal
+        isOpen={endTrialConfirmOpen}
+        onClose={() => setEndTrialConfirmOpen(false)}
+        title={t("tenants.trial.endTitle")}
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          {t("tenants.trial.endMessage")}
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setEndTrialConfirmOpen(false)}>
+            {t("tenants.cancel")}
+          </Button>
+          <Button variant="danger" onClick={handleEndTrial} isLoading={endTrial.isPending}>
+            {t("tenants.trial.endNow")}
           </Button>
         </div>
       </Modal>

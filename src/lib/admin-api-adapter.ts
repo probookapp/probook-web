@@ -88,6 +88,10 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     path: (a) => `/api/admin/tenants/${a.id}/trial`,
     body: (a) => a.input,
   },
+  end_tenant_trial: {
+    method: "DELETE",
+    path: (a) => `/api/admin/tenants/${a.id}/trial`,
+  },
   impersonate_tenant: {
     method: "POST",
     path: (a) => `/api/admin/tenants/${a.id}/impersonate`,
@@ -147,6 +151,11 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   get_admin_subscription: {
     method: "GET",
     path: (a) => `/api/admin/subscriptions/${a.id}`,
+  },
+  create_admin_subscription: {
+    method: "POST",
+    path: "/api/admin/subscriptions",
+    body: (a) => a.input,
   },
   update_admin_subscription: {
     method: "PUT",

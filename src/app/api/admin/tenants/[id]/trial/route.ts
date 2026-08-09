@@ -75,3 +75,43 @@ export const POST = withSuperAdmin(async (req, ctx) => {
 
   return NextResponse.json(toSnakeCase(tenant));
 });
+
+// End a running trial immediately. trialEndsAt is back-dated to now rather than
+// cleared: /subscription/current then reports "trial_expired" (demo mode with
+// the right wall messaging) instead of "never had a trial", and trialStartedAt
+// keeps the history intact. The tenant stays reachable — suspension remains the
+// separate, abuse-only action.
+export const DELETE = withSuperAdmin(async (req, ctx) => {
+  const id = ctx.params?.id;
+
+  const existing = await prisma.tenant.findUnique({ where: { id } });
+  if (!existing) {
+    return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
+  }
+
+  const now = new Date();
+  if (!existing.trialEndsAt || existing.trialEndsAt <= now) {
+    return NextResponse.json({ error: "No running trial to end" }, { status: 400 });
+  }
+
+  const tenant = await prisma.tenant.update({
+    where: { id },
+    data: { trialEndsAt: now },
+  });
+
+  await logAuditEvent({
+    actorType: "platform_admin",
+    actorId: ctx.adminId,
+    action: "tenant.end_trial",
+    targetType: "tenant",
+    targetId: id,
+    tenantId: id,
+    metadata: {
+      previousTrialEndsAt: existing.trialEndsAt.toISOString(),
+      endedAt: now.toISOString(),
+    },
+    ipAddress: getClientIp(req),
+  });
+
+  return NextResponse.json(toSnakeCase(tenant));
+});

@@ -47,6 +47,21 @@ export const grantTrialSchema = z.object({
   days: z.coerce.number().int().min(1, "At least 1 day").max(365, "At most 365 days"),
 });
 
+// Admin creates a subscription outright for a tenant that never submitted a
+// request (manual/offline sale). Prices are centimes, like everywhere else in
+// the billing tables.
+export const createSubscriptionSchema = z.object({
+  tenant_id: requiredString("Tenant"),
+  plan_id: requiredString("Plan"),
+  billing_cycle: z.enum(["monthly", "yearly"]).default("yearly"),
+  currency: optionalString,
+  // Optional override of the plan's list price (0 = comped).
+  price: z.coerce.number().int().min(0).max(MONEY_MAX).optional(),
+  current_period_end: optionalString,
+  // Offline sales sometimes need no invoice row (already paid elsewhere).
+  create_invoice: z.boolean().optional().default(true),
+});
+
 export const loginSchema = z.object({
   username: requiredString("Username"),
   password: requiredString("Password"),

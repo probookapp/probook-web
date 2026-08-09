@@ -35,9 +35,15 @@ export function useAdminTenantsInfinite(filters?: TenantsFilters) {
   });
 }
 
-export function useAdminTenants(filters?: TenantsFilters) {
+// `options.enabled` lets callers that only need the full list behind a modal
+// (e.g. the subscription-create tenant picker) skip the fetch until it opens.
+export function useAdminTenants(
+  filters?: TenantsFilters,
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: ["admin-tenants", filters],
+    enabled: options?.enabled ?? true,
     queryFn: async () => {
       const tenants = await adminTenantsApi.getAll();
       if (!filters) return tenants;
@@ -91,6 +97,17 @@ export function useGrantTrial() {
   return useMutation({
     mutationFn: ({ id, days }: { id: string; days: number }) =>
       adminTenantsApi.grantTrial(id, days),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
+    },
+  });
+}
+
+export function useEndTrial() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => adminTenantsApi.endTrial(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-tenants"] });
     },

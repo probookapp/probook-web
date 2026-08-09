@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, RefreshCw, XCircle, Pencil, Download } from "lucide-react";
+import { Search, RefreshCw, XCircle, Pencil, Download, Plus } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-export";
 import {
   Button,
@@ -20,6 +20,7 @@ import {
   Input,
   Badge,
   Select,
+  SearchableSelect,
 } from "@/components/ui";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import {
@@ -27,11 +28,50 @@ import {
   useRenewSubscription,
   useCancelSubscription,
   useUpdateSubscription,
+  useCreateSubscription,
 } from "./hooks/useSubscriptions";
 import { useAdminPlans } from "@/features/admin/plans/hooks/usePlans";
+import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 
 type Subscription = Record<string, unknown>;
-type PlanOption = { id: string; name?: string; slug?: string };
+type PlanPrice = { currency: string; monthly_price: number; yearly_price: number };
+type PlanOption = {
+  id: string;
+  name?: string;
+  slug?: string;
+  currency?: string;
+  monthly_price?: number;
+  yearly_price?: number;
+  prices?: PlanPrice[];
+};
+type TenantOption = { id: string; name?: string; slug?: string };
+
+const EMPTY_CREATE_FORM = {
+  tenant_id: "",
+  plan_id: "",
+  billing_cycle: "yearly",
+  currency: "",
+  price: "",
+  current_period_end: "",
+  create_invoice: true,
+};
+
+// The list route returns Prisma rows (snake-cased): the plan is a nested object
+// and the period/price columns live under current_period_* / price_at_purchase.
+// Reading `plan`/`period_*`/`price` directly printed "[object Object]" and "-".
+function planNameOf(sub: Subscription): string {
+  const plan = sub.plan as Record<string, unknown> | undefined;
+  return String(plan?.name || sub.plan_name || "-");
+}
+function periodStartOf(sub: Subscription) {
+  return sub.current_period_start ?? sub.period_start;
+}
+function periodEndOf(sub: Subscription) {
+  return sub.current_period_end ?? sub.period_end;
+}
+function priceOf(sub: Subscription) {
+  return sub.price_at_purchase ?? sub.price;
+}
 
 function getStatusVariant(status: string): "success" | "warning" | "danger" | "default" {
   switch (status) {
@@ -57,6 +97,8 @@ export function SubscriptionsPage() {
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
   const [editSub, setEditSub] = useState<Subscription | null>(null);
   const [editForm, setEditForm] = useState({ plan_id: "", billing_cycle: "yearly", status: "active", current_period_end: "" });
+  const [createOpen, setCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState(EMPTY_CREATE_FORM);
 
   // Status is forwarded to the route's server-side filter; the route has no
   // search filter, so the search box filters client-side over loaded pages.
@@ -81,9 +123,37 @@ export function SubscriptionsPage() {
   const loadedCount = subscriptionPages?.pages.reduce((sum, page) => sum + page.data.length, 0) ?? 0;
   const { data: plansData } = useAdminPlans();
   const plans = (plansData || []) as unknown as PlanOption[];
+  // Only fetched once the create modal opens — the picker is its only consumer.
+  const { data: tenantsData } = useAdminTenants(undefined, { enabled: createOpen });
+  const tenants = (tenantsData || []) as unknown as TenantOption[];
   const renewSubscription = useRenewSubscription();
   const cancelSubscription = useCancelSubscription();
   const updateSubscription = useUpdateSubscription();
+  const createSubscription = useCreateSubscription();
+
+  const createPlan = plans.find((p) => p.id === createForm.plan_id);
+  // Currencies the selected plan can be sold in: its own plus any per-currency
+  // price rows.
+  const createCurrencies: string[] = createPlan
+    ? [
+        ...new Set(
+          [
+            createPlan.currency,
+            ...(createPlan.prices || []).map((p) => p.currency),
+          ].filter(Boolean) as string[]
+        ),
+      ]
+    : [];
+  // List price for the current plan/cycle/currency, shown as the placeholder so
+  // leaving the override empty is visibly "charge the list price".
+  const createPriceRow = (createPlan?.prices || []).find(
+    (p) => p.currency === createForm.currency
+  );
+  const createListCentimes =
+    createForm.billing_cycle === "monthly"
+      ? createPriceRow?.monthly_price ?? createPlan?.monthly_price
+      : createPriceRow?.yearly_price ?? createPlan?.yearly_price;
+  const createListPrice = createListCentimes == null ? null : createListCentimes / 100;
 
   const handleRenew = async (id: string) => {
     await renewSubscription.mutateAsync({ id, input: {} });
@@ -101,8 +171,8 @@ export function SubscriptionsPage() {
       plan_id: String(sub.plan_id || ""),
       billing_cycle: String(sub.billing_cycle || "yearly"),
       status: String(sub.status || "active"),
-      current_period_end: sub.period_end
-        ? new Date(String(sub.period_end)).toISOString().slice(0, 10)
+      current_period_end: periodEndOf(sub)
+        ? new Date(String(periodEndOf(sub))).toISOString().slice(0, 10)
         : "",
     });
   };
@@ -119,6 +189,43 @@ export function SubscriptionsPage() {
       },
     });
     setEditSub(null);
+  };
+
+  const handleOpenCreate = () => {
+    setCreateForm(EMPTY_CREATE_FORM);
+    createSubscription.reset();
+    setCreateOpen(true);
+  };
+
+  const handleSelectCreatePlan = (planId: string) => {
+    const plan = plans.find((p) => p.id === planId);
+    setCreateForm((prev) => ({
+      ...prev,
+      plan_id: planId,
+      // Reset the currency to the plan's own whenever the plan changes, so the
+      // price we resolve server-side always has a matching price row.
+      currency: plan?.currency || "",
+    }));
+  };
+
+  const handleCreate = async () => {
+    if (!createForm.tenant_id || !createForm.plan_id) return;
+    const priceOverride = createForm.price.trim();
+    try {
+      await createSubscription.mutateAsync({
+        tenant_id: createForm.tenant_id,
+        plan_id: createForm.plan_id,
+        billing_cycle: createForm.billing_cycle,
+        currency: createForm.currency || undefined,
+        // Entered in currency units, stored in centimes like every other price.
+        price: priceOverride ? Math.round(Number(priceOverride) * 100) : undefined,
+        current_period_end: createForm.current_period_end || undefined,
+        create_invoice: createForm.create_invoice,
+      });
+      setCreateOpen(false);
+    } catch {
+      // Message is rendered from the mutation's error state; keep the form open.
+    }
   };
 
   if (isLoading) {
@@ -138,27 +245,33 @@ export function SubscriptionsPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("subscriptions.title")}</h1>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subscriptions.subtitle")}</p>
         </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={subList.length === 0}
-          onClick={() =>
-            exportToCsv(
-              subList,
-              [
-                { header: t("subscriptions.tenant"), accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? r.tenant_name ?? "") },
-                { header: t("subscriptions.plan"), accessor: (r) => String(r.plan_name ?? r.plan ?? "") },
-                { header: t("subscriptions.status"), accessor: (r) => String(r.status ?? "") },
-                { header: t("subscriptions.billingCycle"), accessor: (r) => String(r.billing_cycle ?? "") },
-                { header: t("subscriptions.price"), accessor: (r) => (r.price != null ? Number(r.price) / 100 : "") },
-              ],
-              "subscriptions"
-            )
-          }
-        >
-          <Download className="h-4 w-4 mr-2" />
-          {t("subscriptions.exportCsv")}
-        </Button>
+        <div className="flex gap-2 self-start sm:self-auto">
+          <Button size="sm" onClick={handleOpenCreate}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t("subscriptions.create")}
+          </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={subList.length === 0}
+            onClick={() =>
+              exportToCsv(
+                subList,
+                [
+                  { header: t("subscriptions.tenant"), accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? r.tenant_name ?? "") },
+                  { header: t("subscriptions.plan"), accessor: (r) => planNameOf(r) },
+                  { header: t("subscriptions.status"), accessor: (r) => String(r.status ?? "") },
+                  { header: t("subscriptions.billingCycle"), accessor: (r) => String(r.billing_cycle ?? "") },
+                  { header: t("subscriptions.price"), accessor: (r) => (priceOf(r) != null ? Number(priceOf(r)) / 100 : "") },
+                ],
+                "subscriptions"
+              )
+            }
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t("subscriptions.exportCsv")}
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -237,7 +350,7 @@ export function SubscriptionsPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-gray-600 dark:text-gray-400">
-                      {String(sub.plan_name || sub.plan || "-")}
+                      {planNameOf(sub)}
                     </span>
                     <Badge variant={getStatusVariant(String(sub.status || ""))}>
                       {String(sub.status || "-")}
@@ -246,14 +359,14 @@ export function SubscriptionsPage() {
                   <div className="flex items-center justify-between text-sm text-gray-500">
                     <span>{String(sub.billing_cycle || "-")}</span>
                     <span>
-                      {sub.price != null
-                        ? (Number(sub.price) / 100).toLocaleString() + " " + String(sub.currency || "")
+                      {priceOf(sub) != null
+                        ? (Number(priceOf(sub)) / 100).toLocaleString() + " " + String(sub.currency || "")
                         : "-"}
                     </span>
                   </div>
                   <div className="text-sm text-gray-500">
-                    {sub.period_start && sub.period_end
-                      ? `${new Date(String(sub.period_start)).toLocaleDateString()} - ${new Date(String(sub.period_end)).toLocaleDateString()}`
+                    {periodStartOf(sub) && periodEndOf(sub)
+                      ? `${new Date(String(periodStartOf(sub))).toLocaleDateString()} - ${new Date(String(periodEndOf(sub))).toLocaleDateString()}`
                       : "-"}
                   </div>
                 </div>
@@ -291,7 +404,7 @@ export function SubscriptionsPage() {
                         )}
                       </TableCell>
                       <TableCell className="text-gray-600 dark:text-gray-400">
-                        {String(sub.plan_name || sub.plan || "-")}
+                        {planNameOf(sub)}
                       </TableCell>
                       <TableCell>
                         <Badge variant={getStatusVariant(String(sub.status || ""))}>
@@ -302,13 +415,13 @@ export function SubscriptionsPage() {
                         {String(sub.billing_cycle || "-")}
                       </TableCell>
                       <TableCell className="text-gray-600 dark:text-gray-400">
-                        {sub.period_start && sub.period_end
-                          ? `${new Date(String(sub.period_start)).toLocaleDateString()} - ${new Date(String(sub.period_end)).toLocaleDateString()}`
+                        {periodStartOf(sub) && periodEndOf(sub)
+                          ? `${new Date(String(periodStartOf(sub))).toLocaleDateString()} - ${new Date(String(periodEndOf(sub))).toLocaleDateString()}`
                           : "-"}
                       </TableCell>
                       <TableCell className="text-gray-600 dark:text-gray-400">
-                        {sub.price != null
-                          ? (Number(sub.price) / 100).toLocaleString() + " " + String(sub.currency || "")
+                        {priceOf(sub) != null
+                          ? (Number(priceOf(sub)) / 100).toLocaleString() + " " + String(sub.currency || "")
                           : "-"}
                       </TableCell>
                       <TableCell>
@@ -351,6 +464,107 @@ export function SubscriptionsPage() {
           />
         </CardContent>
       </Card>
+
+      {/* Create Subscription (no tenant request needed) */}
+      <Modal
+        isOpen={createOpen}
+        onClose={() => setCreateOpen(false)}
+        title={t("subscriptions.createTitle")}
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {t("subscriptions.createDescription")}
+          </p>
+          <SearchableSelect
+            label={t("subscriptions.tenant")}
+            placeholder={t("subscriptions.selectTenant")}
+            value={createForm.tenant_id}
+            onChange={(value) => setCreateForm((p) => ({ ...p, tenant_id: value }))}
+            options={tenants.map((tn) => ({
+              value: tn.id,
+              label: String(tn.name || tn.slug || tn.id),
+            }))}
+          />
+          <Select
+            name="create-plan"
+            label={t("subscriptions.plan")}
+            value={createForm.plan_id}
+            onChange={(e) => handleSelectCreatePlan(e.target.value)}
+            options={[
+              { value: "", label: t("subscriptions.selectPlan") },
+              ...plans.map((pl) => ({ value: pl.id, label: String(pl.name || pl.slug || pl.id) })),
+            ]}
+          />
+          <Select
+            name="create-cycle"
+            label={t("subscriptions.billingCycle")}
+            value={createForm.billing_cycle}
+            onChange={(e) => setCreateForm((p) => ({ ...p, billing_cycle: e.target.value }))}
+            options={[
+              { value: "monthly", label: t("subscriptions.monthly") },
+              { value: "yearly", label: t("subscriptions.yearly") },
+            ]}
+          />
+          {createCurrencies.length > 1 && (
+            <Select
+              name="create-currency"
+              label={t("subscriptions.currency")}
+              value={createForm.currency}
+              onChange={(e) => setCreateForm((p) => ({ ...p, currency: e.target.value }))}
+              options={createCurrencies.map((c) => ({ value: c, label: c }))}
+            />
+          )}
+          <Input
+            name="create-price"
+            type="number"
+            min={0}
+            step="0.01"
+            label={t("subscriptions.priceOverride")}
+            placeholder={
+              createListPrice != null
+                ? `${createListPrice.toLocaleString()} ${createForm.currency || ""}`.trim()
+                : undefined
+            }
+            value={createForm.price}
+            onChange={(e) => setCreateForm((p) => ({ ...p, price: e.target.value }))}
+          />
+          <Input
+            name="create-period-end"
+            type="date"
+            label={t("subscriptions.periodEndOptional")}
+            value={createForm.current_period_end}
+            onChange={(e) => setCreateForm((p) => ({ ...p, current_period_end: e.target.value }))}
+          />
+          <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
+            <input
+              type="checkbox"
+              name="create-invoice"
+              className="h-4 w-4 rounded border-gray-300 text-primary-600"
+              checked={createForm.create_invoice}
+              onChange={(e) => setCreateForm((p) => ({ ...p, create_invoice: e.target.checked }))}
+            />
+            {t("subscriptions.createInvoice")}
+          </label>
+          {createSubscription.isError && (
+            <p className="text-sm text-red-600 dark:text-red-400">
+              {t("subscriptions.createError")}
+            </p>
+          )}
+          <div className="flex justify-end gap-3 pt-2">
+            <Button variant="secondary" onClick={() => setCreateOpen(false)}>
+              {t("subscriptions.cancel")}
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={!createForm.tenant_id || !createForm.plan_id}
+              isLoading={createSubscription.isPending}
+            >
+              {t("subscriptions.createConfirm")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Edit Subscription */}
       <Modal
