@@ -24,6 +24,7 @@ import {
   useUpdateFeature,
   useDeleteFeature,
 } from "./hooks/useFeatureFlags";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type Feature = Record<string, unknown>;
 type Translations = Record<string, string>;
@@ -61,6 +62,7 @@ function getTr(obj: unknown, key: string): string {
 
 export function FeaturesPage() {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
   const [deletingFeature, setDeletingFeature] = useState<Feature | null>(null);
@@ -291,7 +293,8 @@ export function FeaturesPage() {
             <Button variant="secondary" type="button" onClick={() => setDeletingFeature(null)}>
               {t("features.cancel")}
             </Button>
-            <Button variant="danger" onClick={handleDelete} isLoading={deleteFeature.isPending}>
+            <Button
+  {...superOnly.button} variant="danger" onClick={handleDelete} isLoading={deleteFeature.isPending}>
               {t("features.delete")}
             </Button>
           </div>

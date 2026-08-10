@@ -8,6 +8,7 @@ import {
   useTenantFeatures,
   useUpdateTenantFeatures,
 } from "@/features/admin/features/hooks/useFeatureFlags";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type Feature = Record<string, unknown>;
 type Override = Record<string, unknown>;
@@ -18,21 +19,21 @@ type OverrideState = "inherit" | "on" | "off";
 
 export function TenantFeaturesTab({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const { data: featuresData, isLoading: featuresLoading } = useAdminFeatures();
   const { data: overridesData, isLoading: overridesLoading } = useTenantFeatures(tenantId);
   const updateTenantFeatures = useUpdateTenantFeatures();
 
   const features = (featuresData || []) as Feature[];
-  const overrides = (overridesData || []) as Override[];
 
-  // Map featureId -> current override boolean (undefined = inherit)
+  // Map featureId -> current override boolean (absent = inherit)
   const overrideMap = useMemo(() => {
     const m = new Map<string, boolean>();
-    for (const o of overrides) {
+    for (const o of (overridesData || []) as Override[]) {
       m.set(String(o.feature_id), Boolean(o.enabled));
     }
     return m;
-  }, [overrides]);
+  }, [overridesData]);
 
   const [pending, setPending] = useState<Record<string, OverrideState>>({});
 
@@ -49,16 +50,14 @@ export function TenantFeaturesTab({ tenantId }: { tenantId: string }) {
   const dirty = Object.keys(pending).length > 0;
 
   const handleSave = async () => {
-    // Only "on"/"off" are persistable via the upsert API; "inherit" has no
-    // delete endpoint, so it's a no-op here (surfaced in the helper text).
-    const toSend = features
-      .map((f) => {
-        const id = String(f.id);
-        const s = stateOf(id);
-        if (s === "inherit") return null;
-        return { feature_id: id, enabled: s === "on" };
-      })
-      .filter((x): x is { feature_id: string; enabled: boolean } => x !== null);
+    // Only the rows the admin actually touched are sent. "inherit" travels as
+    // `enabled: null`, which removes the override server-side and hands the
+    // feature back to the plan default.
+    const toSend = Object.entries(pending).map(([featureId, state]) => ({
+      feature_id: featureId,
+      enabled: state === "inherit" ? null : state === "on",
+    }));
+    if (toSend.length === 0) return;
 
     await updateTenantFeatures.mutateAsync({ tenantId, input: { features: toSend } });
     setPending({});
@@ -114,7 +113,8 @@ export function TenantFeaturesTab({ tenantId }: { tenantId: string }) {
           )}
         </div>
         <div className="flex justify-end">
-          <Button onClick={handleSave} isLoading={updateTenantFeatures.isPending} disabled={!dirty}>
+          <Button
+  {...superOnly.button} onClick={handleSave} isLoading={updateTenantFeatures.isPending} disabled={!dirty}>
             {t("tenants.features.save")}
           </Button>
         </div>

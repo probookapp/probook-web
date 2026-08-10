@@ -460,11 +460,17 @@ export const createPlanSchema = z.object({
   currency: z.string().default("DZD"),
   trial_days: z.coerce.number().int().min(0).default(0),
   sort_order: z.coerce.number().int().default(0),
+  // Archiving a plan is a deactivation, never a delete: subscriptions and
+  // invoices keep pointing at it. The dashboard toggle used to send this field
+  // into a schema that dropped it, so deactivating silently did nothing.
+  is_active: z.boolean().optional(),
   prices: z.array(planPriceSchema).optional(),
   quotas: z.array(z.object({
     quota_key: z.string().min(1),
     limit_value: z.coerce.number().int().min(0),
   })).optional(),
+  // Which feature flags this plan includes (the entitlement map).
+  feature_ids: z.array(z.string()).optional(),
 });
 
 export const updatePlanSchema = createPlanSchema.partial();
@@ -594,7 +600,7 @@ export const updatePlatformAdminSchema = z.object({
 }).partial();
 
 export const adminResetPasswordSchema = z.object({
-  new_password: z.string().min(6, "Password must be at least 6 characters"),
+  new_password: z.string().min(8, "Password must be at least 8 characters"),
 });
 
 export const createDataRequestSchema = z.object({
@@ -604,10 +610,13 @@ export const createDataRequestSchema = z.object({
 });
 
 export const updateTenantFeaturesSchema = z.object({
+  // `enabled: null` means "back to inherit" — the override row is removed so
+  // the plan default applies again. Without it, forcing a feature on or off
+  // for a tenant was a one-way door.
   features: z.array(z.object({
     feature_id: requiredString("Feature ID"),
-    enabled: z.boolean(),
-  })).min(1, "At least one feature is required"),
+    enabled: z.boolean().nullable(),
+  })),
 });
 
 export const markInvoicePaidSchema = z.object({

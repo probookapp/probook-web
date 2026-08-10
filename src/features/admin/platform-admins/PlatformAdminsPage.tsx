@@ -25,6 +25,7 @@ import {
   useDeletePlatformAdmin,
 } from "./hooks/usePlatformAdmins";
 import { AdminSecuritySection } from "./AdminSecuritySection";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type PlatformAdmin = Record<string, unknown>;
 
@@ -48,6 +49,7 @@ const emptyForm: AdminFormState = {
 
 export function PlatformAdminsPage() {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAdmin, setEditingAdmin] = useState<PlatformAdmin | null>(null);
   const [formData, setFormData] = useState<AdminFormState>(emptyForm);
@@ -207,6 +209,7 @@ export function PlatformAdminsPage() {
                           <Pencil className="h-4 w-4" />
                         </Button>
                         <Button
+                          {...superOnly.button}
                           variant="danger"
                           size="sm"
                           onClick={() => handleDelete(admin)}

@@ -21,6 +21,7 @@ import {
 } from "@/components/ui";
 import { useAdminDataRequests, useCreateDataRequest, useUpdateDataRequest, useExecuteDataRequest } from "./hooks/useDataRequests";
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type DataRequest = Record<string, unknown>;
 type TenantOption = { id: string; name: string };
@@ -54,6 +55,7 @@ function getStatusVariant(status: string): "default" | "info" | "success" | "war
 
 export function DataRequestsPage() {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<CreateFormState>(emptyForm);
 
@@ -208,6 +210,7 @@ export function DataRequestsPage() {
                           {(dr.status === "pending" || dr.status === "processing") && (
                             <>
                               <Button
+                                {...superOnly.button}
                                 variant="secondary"
                                 size="sm"
                                 onClick={() => handleSetStatus(String(dr.id), "completed")}
@@ -288,7 +291,8 @@ export function DataRequestsPage() {
             <Button variant="secondary" type="button" onClick={handleClose}>
               {t("common.cancel")}
             </Button>
-            <Button type="submit" isLoading={createDataRequest.isPending}>
+            <Button
+  {...superOnly.button} type="submit" isLoading={createDataRequest.isPending}>
               {t("common.create")}
             </Button>
           </div>
@@ -318,6 +322,7 @@ export function DataRequestsPage() {
               {t("common.cancel")}
             </Button>
             <Button
+              {...superOnly.button}
               variant="danger"
               onClick={handleExecuteDeletion}
               isLoading={executeDataRequest.isPending}

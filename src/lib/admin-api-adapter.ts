@@ -65,6 +65,7 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
       const q: Record<string, string> = {};
       if (a.status) q.status = String(a.status);
       if (a.search) q.search = String(a.search);
+      if (a.trial) q.trial = String(a.trial);
       return q;
     }),
   },
@@ -176,6 +177,12 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   get_admin_subscription_requests: {
     method: "GET",
     path: "/api/admin/subscription-requests",
+    query: listQuery((a) => {
+      const q: Record<string, string> = {};
+      if (a.status) q.status = String(a.status);
+      if (a.search) q.search = String(a.search);
+      return q;
+    }),
   },
   approve_subscription_request: {
     method: "POST",
@@ -268,6 +275,8 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
       if (a.action) q.action = String(a.action);
       if (a.adminId) q.adminId = String(a.adminId);
       if (a.tenantId) q.tenantId = String(a.tenantId);
+      if (a.from) q.from = String(a.from);
+      if (a.to) q.to = String(a.to);
       return q;
     },
   },

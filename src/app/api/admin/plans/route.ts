@@ -52,6 +52,14 @@ export const POST = withSuperAdmin(async (req, ctx) => {
     });
   }
 
+  // Link the plan's feature entitlements if provided
+  if (Array.isArray(body.feature_ids) && body.feature_ids.length > 0) {
+    await prisma.planFeature.createMany({
+      data: body.feature_ids.map((featureId: string) => ({ planId: plan.id, featureId })),
+      skipDuplicates: true,
+    });
+  }
+
   // Create PlanQuota rows if provided
   if (Array.isArray(body.quotas) && body.quotas.length > 0) {
     await prisma.planQuota.createMany({

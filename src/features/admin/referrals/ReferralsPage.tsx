@@ -20,12 +20,14 @@ import {
 } from "@/components/ui";
 import { useAdminReferrals, useToggleReferralCode, useCreateReferralCode } from "./hooks/useReferrals";
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type ReferralCode = Record<string, unknown>;
 type TenantOption = { id: string; name: string };
 
 export function ReferralsPage() {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const { data: referrals, isLoading } = useAdminReferrals();
   const toggleCode = useToggleReferralCode();
   const createCode = useCreateReferralCode();
@@ -102,7 +104,8 @@ export function ReferralsPage() {
             <Button variant="secondary" onClick={() => setCreateOpen(false)}>
               {t("referrals.cancel")}
             </Button>
-            <Button onClick={handleCreate} isLoading={createCode.isPending} disabled={!newTenantId}>
+            <Button
+  {...superOnly.button} onClick={handleCreate} isLoading={createCode.isPending} disabled={!newTenantId}>
               {t("referrals.create")}
             </Button>
           </div>

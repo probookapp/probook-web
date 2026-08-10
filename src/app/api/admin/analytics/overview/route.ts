@@ -7,6 +7,9 @@ export const GET = withPlatformAdmin(async () => {
   const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
   // Run all counts in parallel
+  // "Soon" for the attention list: a week out.
+  const inSevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
   const [
     totalTenants,
     activeTenants,
@@ -16,6 +19,12 @@ export const GET = withPlatformAdmin(async () => {
     activeSubscriptions,
     paidInvoices,
     subscriptionBreakdown,
+    trialsRunning,
+    trialsEndingSoon,
+    trialsConverted,
+    pendingRequests,
+    unpaidInvoices,
+    subscriptionsExpiringSoon,
   ] = await Promise.all([
     prisma.tenant.count(),
     prisma.tenant.count({ where: { status: "active" } }),
@@ -40,6 +49,19 @@ export const GET = withPlatformAdmin(async () => {
     prisma.subscription.groupBy({
       by: ["status"],
       _count: { id: true },
+    }),
+    // Trial funnel: running now, ending within the week, and how many tenants
+    // that started a trial ended up with a subscription.
+    prisma.tenant.count({ where: { trialEndsAt: { gt: now } } }),
+    prisma.tenant.count({ where: { trialEndsAt: { gt: now, lte: inSevenDays } } }),
+    prisma.tenant.count({
+      where: { trialStartedAt: { not: null }, subscriptions: { some: {} } },
+    }),
+    // The three queues that need someone to act.
+    prisma.subscriptionRequest.count({ where: { status: "pending" } }),
+    prisma.subscriptionInvoice.count({ where: { status: "unpaid" } }),
+    prisma.subscription.count({
+      where: { status: "active", currentPeriodEnd: { gt: now, lte: inSevenDays } },
     }),
   ]);
 
@@ -88,5 +110,14 @@ export const GET = withPlatformAdmin(async () => {
     mrr,
     total_revenue: totalRevenue,
     subscription_breakdown: breakdown,
+    trials_running: trialsRunning,
+    trials_ending_soon: trialsEndingSoon,
+    trials_converted: trialsConverted,
+    needs_attention: {
+      pending_requests: pendingRequests,
+      unpaid_invoices: unpaidInvoices,
+      subscriptions_expiring_soon: subscriptionsExpiringSoon,
+      trials_ending_soon: trialsEndingSoon,
+    },
   });
 });

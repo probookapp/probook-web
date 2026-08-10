@@ -127,7 +127,16 @@
     "no_data": "No data available",
     "from": "From",
     "to": "To",
-    "reset": "Reset"
+    "reset": "Reset",
+    "needs_attention": "Needs attention",
+    "pending_requests": "Pending requests",
+    "unpaid_invoices": "Unpaid invoices",
+    "expiring_soon": "Expiring in 7 days",
+    "trials_ending_soon": "Trials ending in 7 days",
+    "trials_running": "Trials running",
+    "trials_running_desc": "{{count}} ending within 7 days",
+    "trials_converted": "Trials converted",
+    "trials_converted_desc": "Tenants that started a trial and now have a subscription"
   },
   "tenants": {
     "title": "Tenants",
@@ -212,8 +221,20 @@
       "noUsers": "No users found",
       "noOnboarding": "No onboarding data available",
       "completed": "Completed",
-      "confirmDeleteMessage": "Are you sure you want to delete tenant \"{{name}}\"? This action cannot be undone."
-    }
+      "confirmDeleteMessage": "Are you sure you want to delete tenant \"{{name}}\"? This action cannot be undone.",
+      "subscriptionHistory": "Earlier subscriptions",
+      "userActive": "Active",
+      "userDisabled": "Disabled",
+      "enableUser": "Enable",
+      "disableUser": "Disable",
+      "resetPassword": "Reset password",
+      "resetPasswordFor": "Set a new password for {{username}}. Their sessions are signed out immediately.",
+      "newPassword": "New password"
+    },
+    "allTrials": "All trials",
+    "trialActive": "Trial running",
+    "trialExpired": "Trial ended",
+    "trialNone": "No trial"
   },
   "subscriptions": {
     "title": "Subscriptions",
@@ -285,7 +306,8 @@
     "rejectTitle": "Reject Request",
     "rejectMessage": "Please provide a reason for rejecting this request.",
     "adminNotes": "Admin Notes",
-    "rejectNotesPlaceholder": "Optional notes for rejection..."
+    "rejectNotesPlaceholder": "Optional notes for rejection...",
+    "searchPlaceholder": "Search by tenant..."
   },
   "plans": {
     "title": "Plans",
@@ -332,8 +354,16 @@
       "pricing": "Pricing",
       "addCurrency": "Add Currency",
       "trialDays": "Trial Days",
-      "sortOrder": "Sort Order"
-    }
+      "sortOrder": "Sort Order",
+      "features": "Included features",
+      "featuresHelp": "Tenants on this plan get these features. Per-tenant overrides can still force one on or off.",
+      "noFeatures": "No feature flags defined yet."
+    },
+    "showArchived": "Show archived",
+    "archive": "Archive",
+    "restore": "Restore",
+    "archivePlan": "Archive plan",
+    "archiveConfirm": "Archive \"{{name}}\"? It stops being offered to tenants. Existing subscriptions and invoices are untouched, and you can restore it at any time."
   },
   "coupons": {
     "title": "Coupons",
@@ -358,7 +388,7 @@
     "no": "No",
     "allPlans": "All Plans",
     "empty": "No coupons created yet.",
-    "confirmDelete": "Are you sure you want to delete this coupon?",
+    "confirmDelete": "Delete coupon {{code}}? Subscriptions that already used it keep their discount.",
     "codeLabel": "Code",
     "typeLabel": "Discount Type",
     "valuePercentLabel": "Discount (%)",
@@ -372,7 +402,10 @@
     "planRestrictionsHelp": "Select which plans this coupon can be applied to. Leave empty for all plans.",
     "cancel": "Cancel",
     "update": "Update Coupon",
-    "createSubmit": "Create Coupon"
+    "createSubmit": "Create Coupon",
+    "deleteTitle": "Delete coupon",
+    "delete": "Delete",
+    "exportCsv": "Export CSV"
   },
   "features": {
     "title": "Features",
@@ -460,7 +493,13 @@
     "target": "Target",
     "tenant": "Tenant",
     "ip": "IP",
-    "noLogs": "No audit logs found"
+    "noLogs": "No audit logs found",
+    "exportCsv": "Export CSV",
+    "from": "From",
+    "to": "To",
+    "range": "{{first}}–{{last}} of {{total}}",
+    "previous": "Previous page",
+    "next": "Next page"
   },
   "subscriptionInvoices": {
     "title": "Subscription Invoices",
@@ -502,7 +541,8 @@
     "method": {
       "cash": "Cash",
       "bank_transfer": "Bank Transfer"
-    }
+    },
+    "exportCsv": "Export CSV"
   },
   "users": {
     "title": "Users",
@@ -679,5 +719,10 @@
       "first_quote": "First quote",
       "first_invoice": "First invoice"
     }
+  },
+  "errors": {
+    "generic": "Something went wrong. Please try again.",
+    "unauthorized": "Your session has expired. Please sign in again.",
+    "superAdminOnly": "Super admin access required"
   }
 }

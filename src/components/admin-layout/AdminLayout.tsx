@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Menu } from "lucide-react";
 import { AdminSidebar } from "./AdminSidebar";
 import { ToastContainer } from "@/components/ui";
+import { useAdminMutationErrors } from "./useAdminMutationErrors";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -11,6 +12,9 @@ interface AdminLayoutProps {
 export function AdminLayout({ children }: AdminLayoutProps) {
   const { t } = useTranslation("admin");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Failed writes become toasts for the whole admin surface.
+  useAdminMutationErrors();
 
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900">

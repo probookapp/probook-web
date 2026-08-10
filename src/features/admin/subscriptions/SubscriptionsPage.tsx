@@ -32,6 +32,7 @@ import {
 } from "./hooks/useSubscriptions";
 import { useAdminPlans } from "@/features/admin/plans/hooks/usePlans";
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type Subscription = Record<string, unknown>;
 type PlanPrice = { currency: string; monthly_price: number; yearly_price: number };
@@ -91,6 +92,7 @@ function getStatusVariant(status: string): "success" | "warning" | "danger" | "d
 
 export function SubscriptionsPage() {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const [statusFilter, setStatusFilter] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [renewConfirmId, setRenewConfirmId] = useState<string | null>(null);
@@ -323,24 +325,27 @@ export function SubscriptionsPage() {
                     </span>
                     <div className="flex items-center gap-2">
                       <button
+                        {...superOnly.icon}
                         onClick={() => handleOpenEdit(sub)}
-                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         title={t("subscriptions.edit")}
                         aria-label={t("subscriptions.edit")}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
+                        {...superOnly.icon}
                         onClick={() => setRenewConfirmId(String(sub.id))}
-                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         title={t("subscriptions.renew")}
                         aria-label={t("subscriptions.renew")}
                       >
                         <RefreshCw className="h-4 w-4" />
                       </button>
                       <button
+                        {...superOnly.icon}
                         onClick={() => setCancelConfirmId(String(sub.id))}
-                        className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+                        className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         title={t("subscriptions.cancel")}
                         aria-label={t("subscriptions.cancel")}
                       >
@@ -427,16 +432,18 @@ export function SubscriptionsPage() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <button
+                            {...superOnly.icon}
                             onClick={() => setRenewConfirmId(String(sub.id))}
-                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             title={t("subscriptions.renew")}
                             aria-label={t("subscriptions.renew")}
                           >
                             <RefreshCw className="h-4 w-4" />
                           </button>
                           <button
+                            {...superOnly.icon}
                             onClick={() => setCancelConfirmId(String(sub.id))}
-                            className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+                            className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             title={t("subscriptions.cancel")}
                             aria-label={t("subscriptions.cancel")}
                           >
@@ -556,6 +563,7 @@ export function SubscriptionsPage() {
               {t("subscriptions.cancel")}
             </Button>
             <Button
+              {...superOnly.button}
               onClick={handleCreate}
               disabled={!createForm.tenant_id || !createForm.plan_id}
               isLoading={createSubscription.isPending}
@@ -615,7 +623,8 @@ export function SubscriptionsPage() {
             <Button variant="secondary" onClick={() => setEditSub(null)}>
               {t("subscriptions.cancel")}
             </Button>
-            <Button onClick={handleSaveEdit} isLoading={updateSubscription.isPending}>
+            <Button
+  {...superOnly.button} onClick={handleSaveEdit} isLoading={updateSubscription.isPending}>
               {t("subscriptions.save")}
             </Button>
           </div>
@@ -637,6 +646,7 @@ export function SubscriptionsPage() {
             {t("subscriptions.cancel")}
           </Button>
           <Button
+            {...superOnly.button}
             onClick={() => renewConfirmId && handleRenew(renewConfirmId)}
             isLoading={renewSubscription.isPending}
           >
@@ -660,6 +670,7 @@ export function SubscriptionsPage() {
             {t("subscriptions.keepActive")}
           </Button>
           <Button
+            {...superOnly.button}
             variant="danger"
             onClick={() => cancelConfirmId && handleCancel(cancelConfirmId)}
             isLoading={cancelSubscription.isPending}

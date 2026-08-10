@@ -127,7 +127,16 @@
     "no_data": "لا توجد بيانات متاحة",
     "from": "من",
     "to": "إلى",
-    "reset": "إعادة تعيين"
+    "reset": "إعادة تعيين",
+    "needs_attention": "يتطلب انتباهك",
+    "pending_requests": "طلبات معلقة",
+    "unpaid_invoices": "فواتير غير مدفوعة",
+    "expiring_soon": "تنتهي خلال 7 أيام",
+    "trials_ending_soon": "تجارب تنتهي خلال 7 أيام",
+    "trials_running": "تجارب جارية",
+    "trials_running_desc": "{{count}} تنتهي خلال 7 أيام",
+    "trials_converted": "تجارب تحوّلت",
+    "trials_converted_desc": "مستأجرون بدأوا تجربة ولديهم اشتراك الآن"
   },
   "tenants": {
     "title": "المستأجرون",
@@ -211,9 +220,21 @@
       "noUsers": "لم يتم العثور على مستخدمين",
       "noOnboarding": "لا تتوفر بيانات إعداد",
       "completed": "مكتمل",
-      "confirmDeleteMessage": "هل أنت متأكد من حذف المستأجر \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء."
+      "confirmDeleteMessage": "هل أنت متأكد من حذف المستأجر \"{{name}}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+      "subscriptionHistory": "الاشتراكات السابقة",
+      "userActive": "نشط",
+      "userDisabled": "معطّل",
+      "enableUser": "تفعيل",
+      "disableUser": "تعطيل",
+      "resetPassword": "إعادة تعيين كلمة المرور",
+      "resetPasswordFor": "عيّن كلمة مرور جديدة لـ {{username}}. سيتم إنهاء جلساته فوراً.",
+      "newPassword": "كلمة المرور الجديدة"
     },
-    "exportCsv": "تصدير CSV"
+    "exportCsv": "تصدير CSV",
+    "allTrials": "كل التجارب",
+    "trialActive": "تجربة جارية",
+    "trialExpired": "انتهت التجربة",
+    "trialNone": "بدون تجربة"
   },
   "subscriptions": {
     "title": "الاشتراكات",
@@ -285,7 +306,8 @@
     "rejectTitle": "رفض الطلب",
     "rejectMessage": "يرجى تقديم سبب لرفض هذا الطلب.",
     "adminNotes": "ملاحظات المسؤول",
-    "rejectNotesPlaceholder": "ملاحظات اختيارية للرفض..."
+    "rejectNotesPlaceholder": "ملاحظات اختيارية للرفض...",
+    "searchPlaceholder": "البحث حسب المستأجر..."
   },
   "plans": {
     "title": "الخطط",
@@ -332,8 +354,16 @@
       "pricing": "التسعير",
       "addCurrency": "إضافة عملة",
       "trialDays": "أيام التجربة",
-      "sortOrder": "ترتيب العرض"
-    }
+      "sortOrder": "ترتيب العرض",
+      "features": "الميزات المضمّنة",
+      "featuresHelp": "يحصل مستأجرو هذه الخطة على هذه الميزات. لا يزال بإمكان تجاوزات المستأجر فرض تفعيل أو تعطيل أي منها.",
+      "noFeatures": "لم يتم تعريف أي ميزات بعد."
+    },
+    "showArchived": "إظهار المؤرشفة",
+    "archive": "أرشفة",
+    "restore": "استعادة",
+    "archivePlan": "أرشفة الخطة",
+    "archiveConfirm": "أرشفة «{{name}}»؟ لن تُعرض بعد الآن على المستأجرين. لا تتأثر الاشتراكات والفواتير الحالية، ويمكنك استعادتها في أي وقت."
   },
   "coupons": {
     "title": "القسائم",
@@ -358,7 +388,7 @@
     "no": "لا",
     "allPlans": "جميع الخطط",
     "empty": "لم يتم إنشاء قسائم بعد.",
-    "confirmDelete": "هل أنت متأكد من حذف هذه القسيمة؟",
+    "confirmDelete": "حذف القسيمة {{code}}؟ الاشتراكات التي استخدمتها تحتفظ بخصمها.",
     "codeLabel": "الرمز",
     "typeLabel": "نوع الخصم",
     "valuePercentLabel": "الخصم (%)",
@@ -372,7 +402,10 @@
     "planRestrictionsHelp": "حدد الخطط التي يمكن تطبيق هذه القسيمة عليها. اتركه فارغًا لجميع الخطط.",
     "cancel": "إلغاء",
     "update": "تحديث القسيمة",
-    "createSubmit": "إنشاء القسيمة"
+    "createSubmit": "إنشاء القسيمة",
+    "deleteTitle": "حذف القسيمة",
+    "delete": "حذف",
+    "exportCsv": "تصدير CSV"
   },
   "features": {
     "title": "الميزات",
@@ -460,7 +493,13 @@
     "target": "الهدف",
     "tenant": "المستأجر",
     "ip": "عنوان IP",
-    "noLogs": "لم يتم العثور على سجلات تدقيق"
+    "noLogs": "لم يتم العثور على سجلات تدقيق",
+    "exportCsv": "تصدير CSV",
+    "from": "من",
+    "to": "إلى",
+    "range": "{{first}}–{{last}} من {{total}}",
+    "previous": "الصفحة السابقة",
+    "next": "الصفحة التالية"
   },
   "subscriptionInvoices": {
     "title": "فواتير الاشتراك",
@@ -502,7 +541,8 @@
     "method": {
       "cash": "نقدًا",
       "bank_transfer": "تحويل بنكي"
-    }
+    },
+    "exportCsv": "تصدير CSV"
   },
   "users": {
     "title": "المستخدمون",
@@ -679,5 +719,10 @@
       "first_quote": "أول عرض سعر",
       "first_invoice": "أول فاتورة"
     }
+  },
+  "errors": {
+    "generic": "حدث خطأ ما. يرجى المحاولة مرة أخرى.",
+    "unauthorized": "انتهت جلستك. يرجى تسجيل الدخول مرة أخرى.",
+    "superAdminOnly": "مطلوب وصول المسؤول الأعلى"
   }
 }

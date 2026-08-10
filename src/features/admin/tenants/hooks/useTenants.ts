@@ -11,6 +11,8 @@ import { LIST_PAGE_SIZE } from "@/lib/pagination";
 interface TenantsFilters {
   status?: string;
   search?: string;
+  /** "active" | "expired" | "none" — derived from trialEndsAt server-side. */
+  trial?: string;
 }
 
 /**
@@ -27,6 +29,7 @@ export function useAdminTenantsInfinite(filters?: TenantsFilters) {
         cursor: pageParam ?? undefined,
         status: filters?.status,
         search: filters?.search,
+        trial: filters?.trial,
       }),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.next_cursor,

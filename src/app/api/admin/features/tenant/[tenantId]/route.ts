@@ -26,23 +26,31 @@ export const PUT = withSuperAdmin(async (req, ctx) => {
   const body = await validateBody(req, updateTenantFeaturesSchema);
   if (isValidationError(body)) return body;
 
-  // Upsert each tenant feature override
-  for (const item of body.features) {
-    await prisma.tenantFeature.upsert({
-      where: {
-        tenantId_featureId: {
-          tenantId: tenantId!,
-          featureId: item.feature_id,
-        },
-      },
-      update: { enabled: item.enabled },
-      create: {
-        tenantId: tenantId!,
-        featureId: item.feature_id,
-        enabled: item.enabled,
-      },
-    });
-  }
+  // One transaction so a half-applied set of overrides can't survive a failure.
+  // `enabled: null` removes the override, which is how a feature goes back to
+  // inheriting the plan default.
+  await prisma.$transaction(
+    body.features.map((item) =>
+      item.enabled === null
+        ? prisma.tenantFeature.deleteMany({
+            where: { tenantId: tenantId!, featureId: item.feature_id },
+          })
+        : prisma.tenantFeature.upsert({
+            where: {
+              tenantId_featureId: {
+                tenantId: tenantId!,
+                featureId: item.feature_id,
+              },
+            },
+            update: { enabled: item.enabled },
+            create: {
+              tenantId: tenantId!,
+              featureId: item.feature_id,
+              enabled: item.enabled,
+            },
+          })
+    )
+  );
 
   const result = await prisma.tenantFeature.findMany({
     where: { tenantId },

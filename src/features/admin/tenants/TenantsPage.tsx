@@ -31,8 +31,17 @@ import {
   useUpdateTenant,
   useImpersonateTenant,
 } from "./hooks/useTenants";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type Tenant = Record<string, unknown>;
+
+/** Trial state of a row, derived the same way the server filter derives it. */
+function trialStateOf(tenant: Tenant): "active" | "expired" | "none" {
+  if (!tenant.trial_ends_at) return "none";
+  return new Date(String(tenant.trial_ends_at)).getTime() > new Date().getTime()
+    ? "active"
+    : "expired";
+}
 
 function getStatusVariant(status: string): "success" | "warning" | "danger" | "default" {
   switch (status) {
@@ -50,10 +59,12 @@ function getStatusVariant(status: string): "success" | "warning" | "danger" | "d
 
 export function TenantsPage() {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const router = useRouter();
   const locale = useLocale();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [trialFilter, setTrialFilter] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editTenant, setEditTenant] = useState<Tenant | null>(null);
   const [editForm, setEditForm] = useState({ name: "", slug: "" });
@@ -76,6 +87,7 @@ export function TenantsPage() {
   } = useAdminTenantsInfinite({
     status: statusFilter || undefined,
     search: debouncedSearch || undefined,
+    trial: trialFilter || undefined,
   });
   const tenants = useMemo(
     () => tenantPages?.pages.flatMap((page) => page.data),
@@ -152,7 +164,8 @@ export function TenantsPage() {
                 { header: t("tenants.name"), accessor: (r) => String(r.name ?? "") },
                 { header: t("tenants.slug"), accessor: (r) => String(r.slug ?? "") },
                 { header: t("tenants.status"), accessor: (r) => String(r.status ?? "") },
-                { header: t("tenants.plan"), accessor: (r) => String(r.plan_name ?? r.plan ?? "") },
+                { header: t("tenants.plan"), accessor: (r) => String(r.plan_name ?? "") },
+                { header: t("tenants.trial.label"), accessor: (r) => (r.trial_ends_at ? new Date(String(r.trial_ends_at)).toISOString().slice(0, 10) : "") },
                 { header: t("tenants.users"), accessor: (r) => String(r.user_count ?? r.users_count ?? "") },
                 { header: t("tenants.created"), accessor: (r) => (r.created_at ? new Date(String(r.created_at)).toISOString().slice(0, 10) : "") },
               ],
@@ -181,6 +194,18 @@ export function TenantsPage() {
                   { value: "pending", label: t("tenants.pending") },
                   { value: "suspended", label: t("tenants.suspended") },
                   { value: "expired", label: t("tenants.expired") },
+                ]}
+              />
+              <Select
+                name="trial-filter"
+                value={trialFilter}
+                onChange={(e) => setTrialFilter(e.target.value)}
+                className="w-full sm:w-40"
+                options={[
+                  { value: "", label: t("tenants.allTrials") },
+                  { value: "active", label: t("tenants.trialActive") },
+                  { value: "expired", label: t("tenants.trialExpired") },
+                  { value: "none", label: t("tenants.trialNone") },
                 ]}
               />
               <div className="relative w-full sm:w-56 md:w-64">
@@ -214,15 +239,16 @@ export function TenantsPage() {
                     <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
                       <button
                         onClick={() => router.push(`/admin/tenants/${tenant.id}`)}
-                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         title={t("tenants.view")}
                         aria-label={t("tenants.view")}
                       >
                         <Eye className="h-4 w-4" />
                       </button>
                       <button
+                        {...superOnly.icon}
                         onClick={() => handleToggleStatus(tenant)}
-                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         title={tenant.status === "suspended" ? t("tenants.activate") : t("tenants.suspend")}
                         aria-label={tenant.status === "suspended" ? t("tenants.activate") : t("tenants.suspend")}
                       >
@@ -233,24 +259,27 @@ export function TenantsPage() {
                         )}
                       </button>
                       <button
+                        {...superOnly.icon}
                         onClick={() => setImpersonateTarget(tenant)}
-                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         title={t("tenants.impersonate")}
                         aria-label={t("tenants.impersonate")}
                       >
                         <LogIn className="h-4 w-4" />
                       </button>
                       <button
+                        {...superOnly.icon}
                         onClick={() => handleOpenEdit(tenant)}
-                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         title={t("tenants.edit")}
                         aria-label={t("tenants.edit")}
                       >
                         <Pencil className="h-4 w-4" />
                       </button>
                       <button
+                        {...superOnly.icon}
                         onClick={() => setDeleteConfirmId(String(tenant.id))}
-                        className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+                        className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         title={t("tenants.delete")}
                         aria-label={t("tenants.delete")}
                       >
@@ -291,10 +320,11 @@ export function TenantsPage() {
                   <TableHead>{t("tenants.slug")}</TableHead>
                   <TableHead>{t("tenants.status")}</TableHead>
                   <TableHead>{t("tenants.plan")}</TableHead>
+                  <TableHead>{t("tenants.trial.label")}</TableHead>
                   <TableHead>{t("tenants.users")}</TableHead>
                   <TableHead>{t("tenants.lastActive")}</TableHead>
                   <TableHead>{t("tenants.created")}</TableHead>
-                  <TableHead className="w-32">{t("tenants.actions")}</TableHead>
+                  <TableHead className="w-44">{t("tenants.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -317,7 +347,16 @@ export function TenantsPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-gray-600 dark:text-gray-400">
-                        {String(tenant.plan_name || tenant.plan || "-")}
+                        {String(tenant.plan_name || "-")}
+                      </TableCell>
+                      <TableCell>
+                        {trialStateOf(tenant) === "none" ? (
+                          <span className="text-gray-400 dark:text-gray-500">-</span>
+                        ) : (
+                          <Badge variant={trialStateOf(tenant) === "active" ? "success" : "default"}>
+                            {new Date(String(tenant.trial_ends_at)).toLocaleDateString()}
+                          </Badge>
+                        )}
                       </TableCell>
                       <TableCell className="text-gray-600 dark:text-gray-400">
                         {String(tenant.user_count ?? tenant.users_count ?? "-")}
@@ -336,15 +375,16 @@ export function TenantsPage() {
                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                           <button
                             onClick={() => router.push(`/admin/tenants/${tenant.id}`)}
-                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             title={t("tenants.view")}
                             aria-label={t("tenants.view")}
                           >
                             <Eye className="h-4 w-4" />
                           </button>
                           <button
+                            {...superOnly.icon}
                             onClick={() => handleToggleStatus(tenant)}
-                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             title={tenant.status === "suspended" ? t("tenants.activate") : t("tenants.suspend")}
                             aria-label={tenant.status === "suspended" ? t("tenants.activate") : t("tenants.suspend")}
                           >
@@ -355,8 +395,27 @@ export function TenantsPage() {
                             )}
                           </button>
                           <button
+                            {...superOnly.icon}
+                            onClick={() => setImpersonateTarget(tenant)}
+                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            title={t("tenants.impersonate")}
+                            aria-label={t("tenants.impersonate")}
+                          >
+                            <LogIn className="h-4 w-4" />
+                          </button>
+                          <button
+                            {...superOnly.icon}
+                            onClick={() => handleOpenEdit(tenant)}
+                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            title={t("tenants.edit")}
+                            aria-label={t("tenants.edit")}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            {...superOnly.icon}
                             onClick={() => setDeleteConfirmId(String(tenant.id))}
-                            className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+                            className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                             title={t("tenants.delete")}
                             aria-label={t("tenants.delete")}
                           >
@@ -368,7 +427,7 @@ export function TenantsPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <TableCell colSpan={9} className="text-center text-gray-500 dark:text-gray-400 py-8">
                       {t("tenants.noTenants")}
                     </TableCell>
                   </TableRow>
@@ -409,7 +468,8 @@ export function TenantsPage() {
             <Button variant="secondary" onClick={() => setEditTenant(null)}>
               {t("tenants.cancel")}
             </Button>
-            <Button onClick={handleSaveEdit} isLoading={updateTenant.isPending}>
+            <Button
+  {...superOnly.button} onClick={handleSaveEdit} isLoading={updateTenant.isPending}>
               {t("tenants.save")}
             </Button>
           </div>
@@ -430,7 +490,8 @@ export function TenantsPage() {
           <Button variant="secondary" onClick={() => setImpersonateTarget(null)}>
             {t("tenants.cancel")}
           </Button>
-          <Button onClick={handleImpersonate} isLoading={impersonateTenant.isPending}>
+          <Button
+  {...superOnly.button} onClick={handleImpersonate} isLoading={impersonateTenant.isPending}>
             {t("tenants.impersonate")}
           </Button>
         </div>
@@ -450,6 +511,7 @@ export function TenantsPage() {
             {t("tenants.cancel")}
           </Button>
           <Button
+            {...superOnly.button}
             variant="danger"
             onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
             isLoading={deleteTenant.isPending}

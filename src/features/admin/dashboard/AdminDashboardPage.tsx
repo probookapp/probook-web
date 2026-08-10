@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
 import {
   Building2,
@@ -9,6 +10,10 @@ import {
   DollarSign,
   UserPlus,
   Activity,
+  ClipboardList,
+  Receipt,
+  CalendarClock,
+  Gift,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Input, Button } from "@/components/ui";
 import {
@@ -136,6 +141,52 @@ function BarChart({
   );
 }
 
+/**
+ * One queue that needs someone to act. Zero is rendered too, in a muted style:
+ * "nothing pending" is the information you want at a glance.
+ */
+function AttentionTile({
+  label,
+  count,
+  icon: Icon,
+  href,
+  onNavigate,
+}: {
+  label: string;
+  count: number;
+  icon: React.ElementType;
+  href: string;
+  onNavigate: (href: string) => void;
+}) {
+  const empty = count === 0;
+  return (
+    <button
+      onClick={() => onNavigate(href)}
+      className={`flex items-center gap-3 rounded-lg border p-4 text-left transition-colors ${
+        empty
+          ? "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+          : "border-amber-300 bg-amber-50 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:hover:bg-amber-900/30"
+      }`}
+    >
+      <Icon
+        className={`h-5 w-5 shrink-0 ${
+          empty ? "text-gray-400" : "text-amber-600 dark:text-amber-400"
+        }`}
+      />
+      <div className="min-w-0">
+        <p
+          className={`text-xl font-bold ${
+            empty ? "text-gray-400 dark:text-gray-500" : "text-gray-900 dark:text-gray-100"
+          }`}
+        >
+          {count}
+        </p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
+      </div>
+    </button>
+  );
+}
+
 const STATUS_COLORS: Record<string, "success" | "warning" | "danger" | "default"> = {
   active: "success",
   pending: "warning",
@@ -146,6 +197,7 @@ const STATUS_COLORS: Record<string, "success" | "warning" | "danger" | "default"
 
 export function AdminDashboardPage() {
   const { t } = useTranslation("admin");
+  const router = useRouter();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const { data: overview, isLoading: overviewLoading } = useAdminOverview();
@@ -173,6 +225,7 @@ export function AdminDashboardPage() {
     new Set(revenueData.flatMap((entry) => Object.keys(entry.revenue || {})))
   ).sort();
   const breakdown = (stats.subscription_breakdown || {}) as Record<string, number>;
+  const attention = (stats.needs_attention || {}) as Record<string, number>;
 
   return (
     <div className="space-y-8">
@@ -184,6 +237,45 @@ export function AdminDashboardPage() {
           {t("dashboard.subtitle")}
         </p>
       </div>
+
+      {/* What needs someone today */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("dashboard.needs_attention")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <AttentionTile
+              label={t("dashboard.pending_requests")}
+              count={Number(attention.pending_requests ?? 0)}
+              icon={ClipboardList}
+              href="/admin/subscriptions/requests"
+              onNavigate={router.push}
+            />
+            <AttentionTile
+              label={t("dashboard.unpaid_invoices")}
+              count={Number(attention.unpaid_invoices ?? 0)}
+              icon={Receipt}
+              href="/admin/subscription-invoices"
+              onNavigate={router.push}
+            />
+            <AttentionTile
+              label={t("dashboard.expiring_soon")}
+              count={Number(attention.subscriptions_expiring_soon ?? 0)}
+              icon={CalendarClock}
+              href="/admin/subscriptions"
+              onNavigate={router.push}
+            />
+            <AttentionTile
+              label={t("dashboard.trials_ending_soon")}
+              count={Number(attention.trials_ending_soon ?? 0)}
+              icon={Gift}
+              href="/admin/tenants"
+              onNavigate={router.push}
+            />
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -219,6 +311,20 @@ export function AdminDashboardPage() {
           value={Number(stats.new_signups_this_month ?? 0)}
           icon={UserPlus}
           description={t("dashboard.new_signups_desc")}
+        />
+        <StatCard
+          title={t("dashboard.trials_running")}
+          value={Number(stats.trials_running ?? 0)}
+          icon={Gift}
+          description={t("dashboard.trials_running_desc", {
+            count: Number(stats.trials_ending_soon ?? 0),
+          })}
+        />
+        <StatCard
+          title={t("dashboard.trials_converted")}
+          value={Number(stats.trials_converted ?? 0)}
+          icon={TrendingUp}
+          description={t("dashboard.trials_converted_desc")}
         />
       </div>
 

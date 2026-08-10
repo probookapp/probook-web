@@ -24,11 +24,13 @@ import {
   useDisableUser,
   useResetUserPassword,
 } from "./hooks/useAdminUsers";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type User = Record<string, unknown>;
 
 export function AdminUsersPage() {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const [search, setSearch] = useState("");
   const [resetPasswordUser, setResetPasswordUser] = useState<User | null>(null);
   const [newPassword, setNewPassword] = useState("");
@@ -163,6 +165,7 @@ export function AdminUsersPage() {
                   </div>
                   <div className="flex gap-2 pt-1">
                     <Button
+                      {...superOnly.button}
                       variant={user.is_active ? "danger" : "primary"}
                       size="sm"
                       onClick={() => handleToggleActive(user)}
@@ -232,6 +235,7 @@ export function AdminUsersPage() {
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2">
                           <Button
+                            {...superOnly.button}
                             variant={user.is_active ? "danger" : "primary"}
                             size="sm"
                             onClick={() => handleToggleActive(user)}
@@ -296,7 +300,7 @@ export function AdminUsersPage() {
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
             required
-            minLength={6}
+            minLength={8}
             placeholder={t("users.new_password_placeholder")}
           />
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -307,7 +311,8 @@ export function AdminUsersPage() {
             >
               {t("common.cancel")}
             </Button>
-            <Button type="submit" isLoading={resetPassword.isPending}>
+            <Button
+  {...superOnly.button} type="submit" isLoading={resetPassword.isPending}>
               {t("users.reset_password")}
             </Button>
           </div>

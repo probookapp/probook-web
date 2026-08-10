@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Pause, Play, Trash2, Gift, CalendarX } from "lucide-react";
+import { ArrowLeft, Pause, Play, Trash2, Gift, CalendarX, Power, KeyRound } from "lucide-react";
 import {
   Button,
   Card,
@@ -23,6 +23,11 @@ import {
   useEndTrial,
 } from "./hooks/useTenants";
 import { TenantFeaturesTab } from "./components/TenantFeaturesTab";
+import {
+  useDisableUser,
+  useResetUserPassword,
+} from "@/features/admin/users/hooks/useAdminUsers";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type TenantDetail = Record<string, unknown>;
 
@@ -51,12 +56,15 @@ function InfoField({ label, value }: { label: string; value: string }) {
 
 export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<"info" | "subscription" | "users" | "onboarding" | "features">("info");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [trialModalOpen, setTrialModalOpen] = useState(false);
   const [endTrialConfirmOpen, setEndTrialConfirmOpen] = useState(false);
   const [trialDays, setTrialDays] = useState("10");
+  const [resetUser, setResetUser] = useState<Record<string, unknown> | null>(null);
+  const [newPassword, setNewPassword] = useState("");
 
   const { data, isLoading } = useAdminTenant(tenantId);
   const suspendTenant = useSuspendTenant();
@@ -64,6 +72,19 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const deleteTenant = useDeleteTenant();
   const grantTrial = useGrantTrial();
   const endTrial = useEndTrial();
+  const toggleUser = useDisableUser();
+  const resetPassword = useResetUserPassword();
+
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetUser) return;
+    await resetPassword.mutateAsync({
+      id: String(resetUser.id),
+      input: { new_password: newPassword },
+    });
+    setResetUser(null);
+    setNewPassword("");
+  };
 
   const tenant = data as TenantDetail | undefined;
 
@@ -135,7 +156,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
         <div className="flex items-center gap-3">
           <button
             onClick={() => router.push("/admin/tenants")}
-            className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            className="p-1 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             aria-label={t("tenants.backToTenants")}
           >
             <ArrowLeft className="h-5 w-5" />
@@ -303,6 +324,36 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             ) : (
               <p className="text-gray-500 dark:text-gray-400">{t("tenants.detail.noSubscription")}</p>
             )}
+
+            {/* Everything before the current one: a cancelled or expired row is
+                often what explains the tenant's present state. */}
+            {subscriptions.length > 1 && (
+              <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  {t("tenants.detail.subscriptionHistory")}
+                </p>
+                <div className="space-y-2">
+                  {subscriptions.slice(1).map((sub) => (
+                    <div
+                      key={String(sub.id)}
+                      className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
+                    >
+                      <span className="font-medium text-gray-900 dark:text-gray-100">
+                        {String((sub.plan as Record<string, unknown> | undefined)?.name || "-")}
+                      </span>
+                      <span className="text-gray-500 dark:text-gray-400">
+                        {sub.current_period_start && sub.current_period_end
+                          ? `${new Date(String(sub.current_period_start)).toLocaleDateString()} – ${new Date(String(sub.current_period_end)).toLocaleDateString()}`
+                          : "-"}
+                      </span>
+                      <Badge variant={getStatusVariant(String(sub.status || ""))}>
+                        {String(sub.status || "-")}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -318,19 +369,52 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                 {users.map((user) => (
                   <div
                     key={String(user.id)}
-                    className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700"
+                    className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-lg border border-gray-200 dark:border-gray-700"
                   >
-                    <div>
+                    <div className="min-w-0">
                       <p className="font-medium text-gray-900 dark:text-gray-100">
                         {String(user.display_name || user.name || user.username || "-")}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {String(user.email || "-")}
+                        {String(user.username || user.email || "-")}
                       </p>
                     </div>
-                    <Badge variant={user.role === "admin" ? "info" : "default"}>
-                      {String(user.role || "user")}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={user.is_active === false ? "danger" : "default"}>
+                        {user.is_active === false
+                          ? t("tenants.detail.userDisabled")
+                          : t("tenants.detail.userActive")}
+                      </Badge>
+                      <Badge variant={user.role === "admin" ? "info" : "default"}>
+                        {String(user.role || "user")}
+                      </Badge>
+                      {/* The same two actions the Users page offers, where you
+                          actually go looking for them: on the tenant. */}
+                      <Button
+                        {...superOnly.button}
+                        variant={user.is_active === false ? "primary" : "danger"}
+                        size="sm"
+                        onClick={() => toggleUser.mutateAsync(String(user.id))}
+                        isLoading={toggleUser.isPending}
+                      >
+                        <Power className="h-4 w-4 mr-1" />
+                        {user.is_active === false
+                          ? t("tenants.detail.enableUser")
+                          : t("tenants.detail.disableUser")}
+                      </Button>
+                      <Button
+                        {...superOnly.button}
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setResetUser(user);
+                          setNewPassword("");
+                        }}
+                      >
+                        <KeyRound className="h-4 w-4 mr-1" />
+                        {t("tenants.detail.resetPassword")}
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -408,10 +492,44 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
           <Button variant="secondary" onClick={() => setTrialModalOpen(false)}>
             {t("tenants.cancel")}
           </Button>
-          <Button onClick={handleGrantTrial} isLoading={grantTrial.isPending}>
+          <Button
+  {...superOnly.button} onClick={handleGrantTrial} isLoading={grantTrial.isPending}>
             {t("tenants.trial.confirm")}
           </Button>
         </div>
+      </Modal>
+
+      {/* Reset a tenant user's password */}
+      <Modal
+        isOpen={!!resetUser}
+        onClose={() => setResetUser(null)}
+        title={t("tenants.detail.resetPassword")}
+        size="sm"
+      >
+        <form onSubmit={handleResetPassword} className="space-y-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            {t("tenants.detail.resetPasswordFor", {
+              username: String(resetUser?.username || resetUser?.display_name || ""),
+            })}
+          </p>
+          <Input
+            name="tenant-user-new-password"
+            type="password"
+            label={t("tenants.detail.newPassword")}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            required
+            minLength={8}
+          />
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" type="button" onClick={() => setResetUser(null)}>
+              {t("tenants.cancel")}
+            </Button>
+            <Button {...superOnly.button} type="submit" isLoading={resetPassword.isPending}>
+              {t("tenants.detail.resetPassword")}
+            </Button>
+          </div>
+        </form>
       </Modal>
 
       {/* End Trial Confirmation */}
@@ -428,7 +546,8 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
           <Button variant="secondary" onClick={() => setEndTrialConfirmOpen(false)}>
             {t("tenants.cancel")}
           </Button>
-          <Button variant="danger" onClick={handleEndTrial} isLoading={endTrial.isPending}>
+          <Button
+  {...superOnly.button} variant="danger" onClick={handleEndTrial} isLoading={endTrial.isPending}>
             {t("tenants.trial.endNow")}
           </Button>
         </div>
@@ -449,6 +568,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             {t("tenants.cancel")}
           </Button>
           <Button
+            {...superOnly.button}
             variant="danger"
             onClick={handleDelete}
             isLoading={deleteTenant.isPending}

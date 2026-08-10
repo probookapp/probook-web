@@ -27,6 +27,7 @@ import {
 } from "./hooks/useAnnouncements";
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 import { useAdminPlans } from "@/features/admin/plans/hooks/usePlans";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type Announcement = Record<string, unknown>;
 type NamedOption = { id: string; name?: string; slug?: string };
@@ -53,6 +54,7 @@ const emptyForm: AnnouncementFormState = {
 
 export function AnnouncementsPage() {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [formData, setFormData] = useState<AnnouncementFormState>(emptyForm);
@@ -354,6 +356,7 @@ export function AnnouncementsPage() {
             {t("common.cancel")}
           </Button>
           <Button
+            {...superOnly.button}
             variant="danger"
             onClick={() => deleteConfirmId && handleDelete(deleteConfirmId)}
             isLoading={deleteAnnouncement.isPending}

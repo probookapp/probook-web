@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Download } from "lucide-react";
+import { exportToCsv } from "@/lib/csv-export";
 import {
   Button,
   Card,
@@ -25,6 +26,7 @@ import {
   useDeleteCoupon,
 } from "./hooks/useCoupons";
 import { useAdminPlans } from "../plans/hooks/usePlans";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type Coupon = Record<string, unknown>;
 type PlanRestriction = { plan: { id: string; name: string; slug: string } };
@@ -71,8 +73,10 @@ function formatDiscountValue(
 
 export function CouponsPage() {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+  const [deletingCoupon, setDeletingCoupon] = useState<Coupon | null>(null);
   const [formData, setFormData] = useState<CouponFormState>(emptyForm);
 
   const { data: coupons, isLoading } = useAdminCoupons();
@@ -141,9 +145,13 @@ export function CouponsPage() {
     handleClose();
   };
 
-  const handleDelete = async (coupon: Coupon) => {
-    if (!confirm(t("coupons.confirmDelete"))) return;
-    await deleteCoupon.mutateAsync(String(coupon.id));
+  // A Modal, like every other destructive confirmation in the dashboard —
+  // window.confirm was the one place that broke the pattern (and can't be
+  // styled, translated by us, or tested reliably).
+  const handleDelete = async () => {
+    if (!deletingCoupon) return;
+    await deleteCoupon.mutateAsync(String(deletingCoupon.id));
+    setDeletingCoupon(null);
   };
 
   const togglePlanId = (planId: string) => {
@@ -184,10 +192,41 @@ export function CouponsPage() {
             {t("coupons.subtitle")}
           </p>
         </div>
-        <Button onClick={handleOpenCreate} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          {t("coupons.create")}
-        </Button>
+        <div className="flex gap-2 self-start sm:self-auto">
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={couponList.length === 0}
+            onClick={() =>
+              exportToCsv(
+                couponList,
+                [
+                  { header: t("coupons.code"), accessor: (r) => String(r.code ?? "") },
+                  { header: t("coupons.type"), accessor: (r) => String(r.discount_type ?? "") },
+                  {
+                    header: t("coupons.value"),
+                    accessor: (r) =>
+                      r.discount_type === "percentage"
+                        ? Number(r.discount_value ?? 0)
+                        : Number(r.discount_value ?? 0) / 100,
+                  },
+                  { header: t("coupons.currency"), accessor: (r) => String(r.currency ?? "") },
+                  { header: t("coupons.uses"), accessor: (r) => String(r.current_uses ?? 0) },
+                  { header: t("coupons.expires"), accessor: (r) => (r.expires_at ? String(r.expires_at).slice(0, 10) : "") },
+                  { header: t("coupons.active"), accessor: (r) => (r.is_active ? "yes" : "no") },
+                ],
+                "coupons"
+              )
+            }
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t("coupons.exportCsv")}
+          </Button>
+          <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            {t("coupons.create")}
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -266,10 +305,11 @@ export function CouponsPage() {
                             <Pencil className="h-4 w-4" />
                           </Button>
                           <Button
+                            {...superOnly.button}
                             variant="danger"
                             size="sm"
-                            onClick={() => handleDelete(coupon)}
-                            isLoading={deleteCoupon.isPending}
+                            onClick={() => setDeletingCoupon(coupon)}
+                            aria-label={t("coupons.delete")}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
@@ -290,6 +330,31 @@ export function CouponsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Delete confirmation */}
+      <Modal
+        isOpen={!!deletingCoupon}
+        onClose={() => setDeletingCoupon(null)}
+        title={t("coupons.deleteTitle")}
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          {t("coupons.confirmDelete", { code: String(deletingCoupon?.code || "") })}
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setDeletingCoupon(null)}>
+            {t("coupons.cancel")}
+          </Button>
+          <Button
+            {...superOnly.button}
+            variant="danger"
+            onClick={handleDelete}
+            isLoading={deleteCoupon.isPending}
+          >
+            {t("coupons.delete")}
+          </Button>
+        </div>
+      </Modal>
 
       {/* Create/Edit Modal */}
       <Modal

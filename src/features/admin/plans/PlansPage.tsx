@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Power, Trash2 } from "lucide-react";
+import { Plus, Pencil, Archive, ArchiveRestore, Trash2 } from "lucide-react";
 import {
   Button,
   Card,
@@ -13,12 +13,9 @@ import {
   Select,
   Textarea,
 } from "@/components/ui";
-import {
-  useAdminPlans,
-  useCreatePlan,
-  useUpdatePlan,
-  useDeletePlan,
-} from "./hooks/usePlans";
+import { useAdminPlans, useCreatePlan, useUpdatePlan } from "./hooks/usePlans";
+import { useAdminFeatures } from "@/features/admin/features/hooks/useFeatureFlags";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type Plan = Record<string, unknown>;
 type Translations = Record<string, string>;
@@ -36,6 +33,8 @@ interface QuotaEntry {
   limit_value: string;
 }
 
+type FeatureOption = { id: string; key?: string; name?: string };
+
 const QUOTA_KEYS = ["max_users", "max_invoices_month", "storage_mb"] as const;
 
 interface PlanFormState {
@@ -50,6 +49,7 @@ interface PlanFormState {
   sort_order: string;
   prices: PriceEntry[];
   quotas: QuotaEntry[];
+  feature_ids: string[];
 }
 
 const emptyForm: PlanFormState = {
@@ -64,6 +64,7 @@ const emptyForm: PlanFormState = {
   sort_order: "0",
   prices: [{ currency: "DZD", monthly_price: "", yearly_price: "" }],
   quotas: [],
+  feature_ids: [],
 };
 
 function formatPrice(amount: number, currency: string): string {
@@ -82,15 +83,18 @@ function getTr(obj: unknown, key: string): string {
 
 export function PlansPage() {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
-  const [deletingPlan, setDeletingPlan] = useState<Plan | null>(null);
+  const [archivingPlan, setArchivingPlan] = useState<Plan | null>(null);
+  const [showArchived, setShowArchived] = useState(false);
   const [formData, setFormData] = useState<PlanFormState>(emptyForm);
 
   const { data: plans, isLoading } = useAdminPlans();
+  const { data: featuresData } = useAdminFeatures();
+  const features = (featuresData || []) as unknown as FeatureOption[];
   const createPlan = useCreatePlan();
   const updatePlan = useUpdatePlan();
-  const deletePlan = useDeletePlan();
 
   const handleOpenCreate = () => {
     setEditingPlan(null);
@@ -119,6 +123,9 @@ export function PlansPage() {
       limit_value: String(q.limit_value),
     }));
 
+    // `features` on a plan row is the PlanFeature join, each carrying its flag.
+    const planFeatures = (plan.features || []) as Record<string, unknown>[];
+
     setFormData({
       slug: String(plan.slug || ""),
       name: String(plan.name || ""),
@@ -131,6 +138,7 @@ export function PlansPage() {
       sort_order: String(plan.sort_order ?? "0"),
       prices,
       quotas,
+      feature_ids: planFeatures.map((pf) => String(pf.feature_id || "")).filter(Boolean),
     });
     setIsModalOpen(true);
   };
@@ -181,6 +189,7 @@ export function PlansPage() {
       sort_order: parseInt(formData.sort_order || "0", 10),
       prices,
       quotas,
+      feature_ids: formData.feature_ids,
     };
 
     if (editingPlan) {
@@ -192,17 +201,17 @@ export function PlansPage() {
     handleClose();
   };
 
-  const handleDeactivate = async (plan: Plan) => {
-    await updatePlan.mutateAsync({
-      id: plan.id,
-      is_active: !plan.is_active,
-    });
+  // Archive == deactivate: the plan stays in the database because live
+  // subscriptions and past invoices still point at it, it just stops being
+  // offered. Restoring is the same call the other way.
+  const handleSetActive = async (plan: Plan, isActive: boolean) => {
+    await updatePlan.mutateAsync({ id: plan.id, is_active: isActive });
   };
 
-  const handleDelete = async () => {
-    if (!deletingPlan) return;
-    await deletePlan.mutateAsync(String(deletingPlan.id));
-    setDeletingPlan(null);
+  const handleArchive = async () => {
+    if (!archivingPlan) return;
+    await handleSetActive(archivingPlan, false);
+    setArchivingPlan(null);
   };
 
   const addPriceRow = () => {
@@ -227,6 +236,15 @@ export function PlansPage() {
     setFormData((prev) => ({
       ...prev,
       prices: prev.prices.map((p, i) => (i === index ? { ...p, [field]: value } : p)),
+    }));
+  };
+
+  const toggleFeatureId = (featureId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      feature_ids: prev.feature_ids.includes(featureId)
+        ? prev.feature_ids.filter((id) => id !== featureId)
+        : [...prev.feature_ids, featureId],
     }));
   };
 
@@ -265,6 +283,8 @@ export function PlansPage() {
   }
 
   const planList = (plans || []) as Plan[];
+  // Archived plans stay out of the way unless asked for.
+  const visiblePlans = showArchived ? planList : planList.filter((p) => p.is_active);
 
   return (
     <div className="space-y-6">
@@ -273,14 +293,26 @@ export function PlansPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("plans.title")}</h1>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("plans.subtitle")}</p>
         </div>
-        <Button onClick={handleOpenCreate} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          {t("plans.newPlan")}
-        </Button>
+        <div className="flex items-center gap-3 self-start sm:self-auto">
+          <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <input
+              type="checkbox"
+              name="show-archived"
+              className="h-4 w-4 rounded border-gray-300 text-primary-600"
+              checked={showArchived}
+              onChange={(e) => setShowArchived(e.target.checked)}
+            />
+            {t("plans.showArchived")}
+          </label>
+          <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            {t("plans.newPlan")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {planList.map((plan) => {
+        {visiblePlans.map((plan) => {
           const features = (plan.features || []) as Record<string, unknown>[];
           const prices = (plan.prices || []) as { currency: string; monthly_price: number; yearly_price: number }[];
           const quotas = (plan.quotas || []) as { quota_key: string; limit_value: number }[];
@@ -369,60 +401,75 @@ export function PlansPage() {
                 </div>
 
                 <div className="flex gap-2">
-                  <Button variant="secondary" size="sm" onClick={() => handleOpenEdit(plan)} className="flex-1">
+                  <Button
+                    {...superOnly.button}
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => handleOpenEdit(plan)}
+                    className="flex-1"
+                  >
                     <Pencil className="h-4 w-4 mr-1" />
                     {t("plans.edit")}
                   </Button>
-                  <Button
-                    variant={plan.is_active ? "danger" : "primary"}
-                    size="sm"
-                    onClick={() => handleDeactivate(plan)}
-                    isLoading={updatePlan.isPending}
-                    className="flex-1"
-                  >
-                    <Power className="h-4 w-4 mr-1" />
-                    {plan.is_active ? t("plans.deactivate") : t("plans.activate")}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeletingPlan(plan)}
-                    aria-label={t("plans.delete")}
-                    title={t("plans.delete")}
-                    className="shrink-0 text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {plan.is_active ? (
+                    <Button
+                      {...superOnly.button}
+                      variant="danger"
+                      size="sm"
+                      onClick={() => setArchivingPlan(plan)}
+                      className="flex-1"
+                    >
+                      <Archive className="h-4 w-4 mr-1" />
+                      {t("plans.archive")}
+                    </Button>
+                  ) : (
+                    <Button
+                      {...superOnly.button}
+                      variant="primary"
+                      size="sm"
+                      onClick={() => handleSetActive(plan, true)}
+                      isLoading={updatePlan.isPending}
+                      className="flex-1"
+                    >
+                      <ArchiveRestore className="h-4 w-4 mr-1" />
+                      {t("plans.restore")}
+                    </Button>
+                  )}
                 </div>
               </CardContent>
             </Card>
           );
         })}
 
-        {planList.length === 0 && (
+        {visiblePlans.length === 0 && (
           <div className="col-span-full text-center py-12 text-gray-500 dark:text-gray-400">
             {t("plans.noPlans")}
           </div>
         )}
       </div>
 
-      {/* Delete confirmation Modal */}
+      {/* Archive confirmation Modal */}
       <Modal
-        isOpen={!!deletingPlan}
-        onClose={() => setDeletingPlan(null)}
-        title={t("plans.deletePlan")}
+        isOpen={!!archivingPlan}
+        onClose={() => setArchivingPlan(null)}
+        title={t("plans.archivePlan")}
         size="sm"
       >
         <div className="space-y-4">
           <p className="text-sm text-gray-600 dark:text-gray-400">
-            {t("plans.deleteConfirm", { name: String(deletingPlan?.name || "") })}
+            {t("plans.archiveConfirm", { name: String(archivingPlan?.name || "") })}
           </p>
           <div className="flex justify-end gap-3 pt-2">
-            <Button variant="secondary" type="button" onClick={() => setDeletingPlan(null)}>
+            <Button variant="secondary" type="button" onClick={() => setArchivingPlan(null)}>
               {t("plans.cancel")}
             </Button>
-            <Button variant="danger" onClick={handleDelete} isLoading={deletePlan.isPending}>
-              {t("plans.delete")}
+            <Button
+              {...superOnly.button}
+              variant="danger"
+              onClick={handleArchive}
+              isLoading={updatePlan.isPending}
+            >
+              {t("plans.archive")}
             </Button>
           </div>
         </div>
@@ -614,6 +661,39 @@ export function PlansPage() {
             ))}
             {formData.quotas.length === 0 && (
               <p className="text-sm text-gray-400 dark:text-gray-500">{t("plans.noQuotas")}</p>
+            )}
+          </div>
+
+          {/* Feature entitlements: what this plan includes */}
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t("plans.form.features")}
+            </label>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {t("plans.form.featuresHelp")}
+            </p>
+            {features.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {features.map((feature) => {
+                  const selected = formData.feature_ids.includes(feature.id);
+                  return (
+                    <button
+                      key={feature.id}
+                      type="button"
+                      onClick={() => toggleFeatureId(feature.id)}
+                      className={`px-3 py-1 rounded-full text-sm border transition-colors ${
+                        selected
+                          ? "bg-primary-100 border-primary-500 text-primary-700 dark:bg-primary-900 dark:border-primary-400 dark:text-primary-300"
+                          : "bg-gray-100 border-gray-300 text-gray-600 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-400"
+                      }`}
+                    >
+                      {String(feature.name || feature.key || feature.id)}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 dark:text-gray-500">{t("plans.form.noFeatures")}</p>
             )}
           </div>
 

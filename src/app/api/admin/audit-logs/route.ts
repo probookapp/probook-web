@@ -8,6 +8,8 @@ export const GET = withPlatformAdmin(async (req: NextRequest) => {
   const action = searchParams.get("action");
   const adminId = searchParams.get("adminId");
   const tenantId = searchParams.get("tenantId");
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "50");
 
@@ -15,6 +17,17 @@ export const GET = withPlatformAdmin(async (req: NextRequest) => {
   if (action) where.action = { contains: action };
   if (adminId) where.actorId = adminId;
   if (tenantId) where.tenantId = tenantId;
+  // Date range over createdAt: "to" is inclusive of the whole day chosen.
+  if (from || to) {
+    const createdAt: Record<string, Date> = {};
+    if (from) createdAt.gte = new Date(from);
+    if (to) {
+      const end = new Date(to);
+      end.setHours(23, 59, 59, 999);
+      createdAt.lte = end;
+    }
+    where.createdAt = createdAt;
+  }
 
   const [logs, total] = await Promise.all([
     prisma.auditLog.findMany({

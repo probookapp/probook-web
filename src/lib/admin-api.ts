@@ -31,8 +31,13 @@ export const adminPlansApi = {
 // Tenants commands
 export const adminTenantsApi = {
   getAll: () => adminApiCall<unknown[]>("get_admin_tenants"),
-  getPage: (p: { limit: number; cursor?: string; status?: string; search?: string }) =>
-    adminApiCall<CursorPage<AdminRow>>("get_admin_tenants", p),
+  getPage: (p: {
+    limit: number;
+    cursor?: string;
+    status?: string;
+    search?: string;
+    trial?: string;
+  }) => adminApiCall<CursorPage<AdminRow>>("get_admin_tenants", p),
   getById: (id: string) => adminApiCall<unknown>("get_admin_tenant", { id }),
   update: (input: Record<string, unknown>) => adminApiCall<unknown>("update_admin_tenant", { input }),
   delete: (id: string) => adminApiCall<void>("delete_admin_tenant", { id }),
@@ -81,6 +86,8 @@ export const adminSubscriptionsApi = {
 // Subscription Requests commands
 export const adminSubscriptionRequestsApi = {
   getAll: () => adminApiCall<unknown[]>("get_admin_subscription_requests"),
+  getPage: (p: { limit: number; cursor?: string; status?: string; search?: string }) =>
+    adminApiCall<CursorPage<AdminRow>>("get_admin_subscription_requests", p),
   approve: (id: string) => adminApiCall<unknown>("approve_subscription_request", { id }),
   reject: (id: string, input: Record<string, unknown>) =>
     adminApiCall<unknown>("reject_subscription_request", { id, input }),
@@ -117,7 +124,7 @@ export const adminAnalyticsApi = {
 
 // Audit Logs commands
 export const adminAuditLogsApi = {
-  getAll: (params?: { page?: number; limit?: number; action?: string; adminId?: string; tenantId?: string }) =>
+  getAll: (params?: { page?: number; limit?: number; action?: string; adminId?: string; tenantId?: string; from?: string; to?: string }) =>
     adminApiCall<unknown>("get_admin_audit_logs", params as Record<string, unknown>),
 };
 

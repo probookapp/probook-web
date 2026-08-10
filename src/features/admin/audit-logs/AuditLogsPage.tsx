@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { ChevronLeft, ChevronRight, Download } from "lucide-react";
+import { exportToCsv } from "@/lib/csv-export";
 import {
+  Button,
   Card,
   CardContent,
   CardHeader,
@@ -13,6 +16,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  Input,
   Select,
 } from "@/components/ui";
 import { useAdminAuditLogs } from "./hooks/useAuditLogs";
@@ -21,17 +25,33 @@ import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 type AuditLog = Record<string, unknown>;
 type TenantOption = { id: string; name: string };
 
+const PAGE_SIZE = 50;
+
 export function AuditLogsPage() {
   const { t } = useTranslation("admin");
   const [actionFilter, setActionFilter] = useState("");
   const [tenantId, setTenantId] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+  const [page, setPage] = useState(1);
 
   const { data: tenantsData } = useAdminTenants();
   const tenants = (tenantsData || []) as unknown as TenantOption[];
 
+  // Any filter change restarts at page 1 — otherwise a narrower filter can
+  // leave you stranded on a page that no longer exists.
+  const applyFilter = <T,>(set: (value: T) => void) => (value: T) => {
+    set(value);
+    setPage(1);
+  };
+
   const { data, isLoading } = useAdminAuditLogs({
     action: actionFilter || undefined,
     tenantId: tenantId || undefined,
+    from: fromDate || undefined,
+    to: toDate || undefined,
+    page,
+    limit: PAGE_SIZE,
   });
 
   if (isLoading) {
@@ -43,10 +63,14 @@ export function AuditLogsPage() {
   }
 
   // Data may be paginated { data: [], total: n } or a plain array
-  const rawData = data as { data?: unknown[]; logs?: unknown[] } | unknown[];
+  const rawData = data as { data?: unknown[]; logs?: unknown[]; total?: number } | unknown[];
   const logList: AuditLog[] = Array.isArray(rawData)
     ? (rawData as AuditLog[])
     : ((rawData?.data || rawData?.logs || []) as AuditLog[]);
+  const total = Array.isArray(rawData) ? logList.length : Number(rawData?.total ?? logList.length);
+  const firstRow = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const lastRow = (page - 1) * PAGE_SIZE + logList.length;
+  const hasNextPage = lastRow < total;
 
   return (
     <div className="space-y-6">
@@ -55,6 +79,31 @@ export function AuditLogsPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("auditLogs.title")}</h1>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("auditLogs.subtitle")}</p>
         </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={logList.length === 0}
+          onClick={() =>
+            exportToCsv(
+              logList,
+              [
+                {
+                  header: t("auditLogs.dateTime"),
+                  accessor: (r) => (r.created_at ? new Date(String(r.created_at)).toISOString() : ""),
+                },
+                { header: t("auditLogs.actor"), accessor: (r) => String(r.actor_name ?? "") },
+                { header: t("auditLogs.action"), accessor: (r) => String(r.action ?? "") },
+                { header: t("auditLogs.target"), accessor: (r) => `${String(r.target_type ?? "")} ${String(r.target_id ?? "")}`.trim() },
+                { header: t("auditLogs.tenant"), accessor: (r) => String(r.tenant_name ?? "") },
+                { header: t("auditLogs.ip"), accessor: (r) => String(r.ip_address ?? "") },
+              ],
+              "audit-logs"
+            )
+          }
+        >
+          <Download className="h-4 w-4 mr-2" />
+          {t("auditLogs.exportCsv")}
+        </Button>
       </div>
 
       <Card>
@@ -65,7 +114,7 @@ export function AuditLogsPage() {
               <Select
                 name="action-filter"
                 value={actionFilter}
-                onChange={(e) => setActionFilter(e.target.value)}
+                onChange={(e) => applyFilter(setActionFilter)(e.target.value)}
                 className="w-full sm:w-44"
                 options={[
                   { value: "", label: t("auditLogs.allActions") },
@@ -83,7 +132,7 @@ export function AuditLogsPage() {
               <Select
                 name="tenant-filter"
                 value={tenantId}
-                onChange={(e) => setTenantId(e.target.value)}
+                onChange={(e) => applyFilter(setTenantId)(e.target.value)}
                 className="w-full sm:w-56"
                 options={[
                   { value: "", label: t("auditLogs.allTenants") },
@@ -92,6 +141,22 @@ export function AuditLogsPage() {
                     label: tenant.name,
                   })),
                 ]}
+              />
+              <Input
+                name="audit-from"
+                type="date"
+                value={fromDate}
+                onChange={(e) => applyFilter(setFromDate)(e.target.value)}
+                className="w-full sm:w-40"
+                aria-label={t("auditLogs.from")}
+              />
+              <Input
+                name="audit-to"
+                type="date"
+                value={toDate}
+                onChange={(e) => applyFilter(setToDate)(e.target.value)}
+                className="w-full sm:w-40"
+                aria-label={t("auditLogs.to")}
               />
             </div>
           </div>
@@ -181,6 +246,33 @@ export function AuditLogsPage() {
                 )}
               </TableBody>
             </Table>
+          </div>
+          {/* Page navigation: the route caps each response, so without this the
+              log was silently truncated to its first page. */}
+          <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-gray-200 dark:border-gray-700">
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {t("auditLogs.range", { first: firstRow, last: lastRow, total })}
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                aria-label={t("auditLogs.previous")}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
+                disabled={!hasNextPage}
+                onClick={() => setPage((p) => p + 1)}
+                aria-label={t("auditLogs.next")}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

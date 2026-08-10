@@ -2,7 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { CheckCircle, Plus, Pencil, RotateCcw } from "lucide-react";
+import { CheckCircle, Plus, Pencil, RotateCcw, Download } from "lucide-react";
+import { exportToCsv } from "@/lib/csv-export";
 import {
   Button,
   Card,
@@ -26,8 +27,12 @@ import {
   useUpdateSubscriptionInvoice,
 } from "./hooks/useSubscriptionInvoices";
 import { useAdminSubscriptions } from "@/features/admin/subscriptions/hooks/useSubscriptions";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type Invoice = Record<string, unknown>;
+
+// Same set the plan and coupon editors offer.
+const CURRENCIES = ["DZD", "EUR", "USD", "MAD"] as const;
 type Subscription = Record<string, unknown>;
 
 const emptyCreate = {
@@ -57,6 +62,7 @@ function formatDate(dateStr: string | null | undefined): string {
 
 export function SubscriptionInvoicesPage() {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [markPaidModal, setMarkPaidModal] = useState<Invoice | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("cash");
@@ -185,7 +191,30 @@ export function SubscriptionInvoicesPage() {
               ]}
             />
           </div>
-          <Button size="sm" onClick={() => { setCreateForm(emptyCreate); setCreateOpen(true); }}>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={invoiceList.length === 0}
+            onClick={() =>
+              exportToCsv(
+                invoiceList,
+                [
+                  { header: t("subscriptionInvoices.invoiceNumber"), accessor: (r) => String(r.invoice_number ?? "") },
+                  { header: t("subscriptionInvoices.tenant"), accessor: (r) => String(((r.subscription as Record<string, unknown>)?.tenant as Record<string, unknown>)?.name ?? "") },
+                  { header: t("subscriptionInvoices.plan"), accessor: (r) => String(((r.subscription as Record<string, unknown>)?.plan as Record<string, unknown>)?.name ?? "") },
+                  { header: t("subscriptionInvoices.amount"), accessor: (r) => Number(r.amount ?? 0) / 100 },
+                  { header: t("subscriptionInvoices.currency"), accessor: (r) => String(r.currency ?? "") },
+                  { header: t("subscriptionInvoices.status"), accessor: (r) => String(r.status ?? "") },
+                  { header: t("subscriptionInvoices.paidAt"), accessor: (r) => (r.paid_at ? String(r.paid_at).slice(0, 10) : "") },
+                ],
+                "subscription-invoices"
+              )
+            }
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t("subscriptionInvoices.exportCsv")}
+          </Button>
+          <Button {...superOnly.button} size="sm" onClick={() => { setCreateForm(emptyCreate); setCreateOpen(true); }}>
             <Plus className="h-4 w-4 mr-2" />
             {t("subscriptionInvoices.newInvoice")}
           </Button>
@@ -340,7 +369,8 @@ export function SubscriptionInvoicesPage() {
             >
               {t("subscriptionInvoices.cancel")}
             </Button>
-            <Button type="submit" isLoading={markPaid.isPending}>
+            <Button
+  {...superOnly.button} type="submit" isLoading={markPaid.isPending}>
               {t("subscriptionInvoices.confirmMarkPaid")}
             </Button>
           </div>
@@ -375,11 +405,12 @@ export function SubscriptionInvoicesPage() {
               value={createForm.amount}
               onChange={(e) => setCreateForm((p) => ({ ...p, amount: e.target.value }))}
             />
-            <Input
+            <Select
               name="create-currency"
               label={t("subscriptionInvoices.currency")}
               value={createForm.currency}
-              onChange={(e) => setCreateForm((p) => ({ ...p, currency: e.target.value.toUpperCase() }))}
+              onChange={(e) => setCreateForm((p) => ({ ...p, currency: e.target.value }))}
+              options={CURRENCIES.map((c) => ({ value: c, label: c }))}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -412,7 +443,8 @@ export function SubscriptionInvoicesPage() {
             <Button variant="secondary" onClick={() => setCreateOpen(false)}>
               {t("subscriptionInvoices.cancel")}
             </Button>
-            <Button onClick={handleCreate} isLoading={createInvoice.isPending} disabled={!createForm.subscription_id || !createForm.amount}>
+            <Button
+  {...superOnly.button} onClick={handleCreate} isLoading={createInvoice.isPending} disabled={!createForm.subscription_id || !createForm.amount}>
               {t("subscriptionInvoices.create")}
             </Button>
           </div>
@@ -432,11 +464,12 @@ export function SubscriptionInvoicesPage() {
               value={editForm.amount}
               onChange={(e) => setEditForm((p) => ({ ...p, amount: e.target.value }))}
             />
-            <Input
+            <Select
               name="edit-currency"
               label={t("subscriptionInvoices.currency")}
               value={editForm.currency}
-              onChange={(e) => setEditForm((p) => ({ ...p, currency: e.target.value.toUpperCase() }))}
+              onChange={(e) => setEditForm((p) => ({ ...p, currency: e.target.value }))}
+              options={CURRENCIES.map((c) => ({ value: c, label: c }))}
             />
           </div>
           <Select
@@ -454,7 +487,8 @@ export function SubscriptionInvoicesPage() {
             <Button variant="secondary" onClick={() => setEditInvoice(null)}>
               {t("subscriptionInvoices.cancel")}
             </Button>
-            <Button onClick={handleSaveEdit} isLoading={updateInvoice.isPending}>
+            <Button
+  {...superOnly.button} onClick={handleSaveEdit} isLoading={updateInvoice.isPending}>
               {t("subscriptionInvoices.save")}
             </Button>
           </div>
@@ -470,7 +504,8 @@ export function SubscriptionInvoicesPage() {
           <Button variant="secondary" onClick={() => setRefundTarget(null)}>
             {t("subscriptionInvoices.cancel")}
           </Button>
-          <Button variant="danger" onClick={handleRefund} isLoading={updateInvoice.isPending}>
+          <Button
+  {...superOnly.button} variant="danger" onClick={handleRefund} isLoading={updateInvoice.isPending}>
             {t("subscriptionInvoices.refund")}
           </Button>
         </div>

@@ -37,6 +37,27 @@ export function useAdminSubscriptionsInfinite(status?: string) {
 
 interface RequestsFilters {
   status?: string;
+  search?: string;
+}
+
+/**
+ * Cursor-paginated subscription requests. The pending queue is the busiest
+ * list in the dashboard and used to load every request ever made, unfiltered.
+ */
+export function useAdminSubscriptionRequestsInfinite(filters?: RequestsFilters) {
+  return useInfiniteQuery({
+    queryKey: ["admin-subscription-requests", "infinite", filters ?? {}],
+    queryFn: ({ pageParam }) =>
+      adminSubscriptionRequestsApi.getPage({
+        limit: LIST_PAGE_SIZE,
+        cursor: pageParam ?? undefined,
+        status: filters?.status,
+        search: filters?.search,
+      }),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor,
+    placeholderData: keepPreviousData,
+  });
 }
 
 export function useAdminSubscriptions(filters?: SubscriptionsFilters) {

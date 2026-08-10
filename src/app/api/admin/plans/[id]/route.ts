@@ -49,6 +49,7 @@ export const PUT = withSuperAdmin(async (req, ctx) => {
       currency: body.currency ?? existing.currency,
       trialDays: body.trial_days ?? existing.trialDays,
       sortOrder: body.sort_order ?? existing.sortOrder,
+      isActive: body.is_active ?? existing.isActive,
     },
   });
 
@@ -77,6 +78,17 @@ export const PUT = withSuperAdmin(async (req, ctx) => {
           quotaKey: q.quota_key,
           limitValue: q.limit_value,
         })),
+      });
+    }
+  }
+
+  // Replace the plan's feature entitlements if provided
+  if (Array.isArray(body.feature_ids)) {
+    await prisma.planFeature.deleteMany({ where: { planId: id } });
+    if (body.feature_ids.length > 0) {
+      await prisma.planFeature.createMany({
+        data: body.feature_ids.map((featureId: string) => ({ planId: id!, featureId })),
+        skipDuplicates: true,
       });
     }
   }

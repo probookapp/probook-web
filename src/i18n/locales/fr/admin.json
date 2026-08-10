@@ -127,7 +127,16 @@
     "no_data": "Aucune donnée disponible",
     "from": "Du",
     "to": "Au",
-    "reset": "Réinitialiser"
+    "reset": "Réinitialiser",
+    "needs_attention": "À traiter",
+    "pending_requests": "Demandes en attente",
+    "unpaid_invoices": "Factures impayées",
+    "expiring_soon": "Expirent sous 7 jours",
+    "trials_ending_soon": "Essais finissant sous 7 jours",
+    "trials_running": "Essais en cours",
+    "trials_running_desc": "{{count}} se terminent sous 7 jours",
+    "trials_converted": "Essais convertis",
+    "trials_converted_desc": "Locataires ayant commencé un essai et désormais abonnés"
   },
   "tenants": {
     "title": "Locataires",
@@ -211,9 +220,21 @@
       "noUsers": "Aucun utilisateur trouvé",
       "noOnboarding": "Aucune donnée d'intégration disponible",
       "completed": "Terminé",
-      "confirmDeleteMessage": "Êtes-vous sûr de vouloir supprimer le locataire « {{name}} » ? Cette action est irréversible."
+      "confirmDeleteMessage": "Êtes-vous sûr de vouloir supprimer le locataire « {{name}} » ? Cette action est irréversible.",
+      "subscriptionHistory": "Abonnements précédents",
+      "userActive": "Actif",
+      "userDisabled": "Désactivé",
+      "enableUser": "Activer",
+      "disableUser": "Désactiver",
+      "resetPassword": "Réinitialiser le mot de passe",
+      "resetPasswordFor": "Définir un nouveau mot de passe pour {{username}}. Ses sessions sont fermées immédiatement.",
+      "newPassword": "Nouveau mot de passe"
     },
-    "exportCsv": "Exporter CSV"
+    "exportCsv": "Exporter CSV",
+    "allTrials": "Tous les essais",
+    "trialActive": "Essai en cours",
+    "trialExpired": "Essai terminé",
+    "trialNone": "Sans essai"
   },
   "subscriptions": {
     "title": "Abonnements",
@@ -285,7 +306,8 @@
     "rejectTitle": "Rejeter la demande",
     "rejectMessage": "Veuillez indiquer le motif du rejet de cette demande.",
     "adminNotes": "Notes de l'administrateur",
-    "rejectNotesPlaceholder": "Notes facultatives pour le rejet..."
+    "rejectNotesPlaceholder": "Notes facultatives pour le rejet...",
+    "searchPlaceholder": "Rechercher par locataire..."
   },
   "plans": {
     "title": "Forfaits",
@@ -332,8 +354,16 @@
       "pricing": "Tarification",
       "addCurrency": "Ajouter une devise",
       "trialDays": "Jours d'essai",
-      "sortOrder": "Ordre d'affichage"
-    }
+      "sortOrder": "Ordre d'affichage",
+      "features": "Fonctionnalités incluses",
+      "featuresHelp": "Les locataires de ce forfait obtiennent ces fonctionnalités. Les remplacements par locataire peuvent toujours en forcer une.",
+      "noFeatures": "Aucune fonctionnalité définie pour le moment."
+    },
+    "showArchived": "Afficher les archivés",
+    "archive": "Archiver",
+    "restore": "Restaurer",
+    "archivePlan": "Archiver le forfait",
+    "archiveConfirm": "Archiver « {{name}} » ? Il ne sera plus proposé aux locataires. Les abonnements et factures existants ne changent pas, et vous pouvez le restaurer à tout moment."
   },
   "coupons": {
     "title": "Coupons",
@@ -358,7 +388,7 @@
     "no": "Non",
     "allPlans": "Tous les forfaits",
     "empty": "Aucun coupon créé pour le moment.",
-    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce coupon ?",
+    "confirmDelete": "Supprimer le coupon {{code}} ? Les abonnements qui l’ont déjà utilisé gardent leur remise.",
     "codeLabel": "Code",
     "typeLabel": "Type de réduction",
     "valuePercentLabel": "Réduction (%)",
@@ -372,7 +402,10 @@
     "planRestrictionsHelp": "Sélectionnez les forfaits auxquels ce coupon peut être appliqué. Laissez vide pour tous les forfaits.",
     "cancel": "Annuler",
     "update": "Mettre à jour le coupon",
-    "createSubmit": "Créer le coupon"
+    "createSubmit": "Créer le coupon",
+    "deleteTitle": "Supprimer le coupon",
+    "delete": "Supprimer",
+    "exportCsv": "Exporter CSV"
   },
   "features": {
     "title": "Fonctionnalités",
@@ -460,7 +493,13 @@
     "target": "Cible",
     "tenant": "Locataire",
     "ip": "IP",
-    "noLogs": "Aucun journal d'audit trouvé"
+    "noLogs": "Aucun journal d'audit trouvé",
+    "exportCsv": "Exporter CSV",
+    "from": "Du",
+    "to": "Au",
+    "range": "{{first}}–{{last}} sur {{total}}",
+    "previous": "Page précédente",
+    "next": "Page suivante"
   },
   "subscriptionInvoices": {
     "title": "Factures d'abonnement",
@@ -502,7 +541,8 @@
     "method": {
       "cash": "Espèces",
       "bank_transfer": "Virement bancaire"
-    }
+    },
+    "exportCsv": "Exporter CSV"
   },
   "users": {
     "title": "Utilisateurs",
@@ -679,5 +719,10 @@
       "first_quote": "Premier devis",
       "first_invoice": "Première facture"
     }
+  },
+  "errors": {
+    "generic": "Une erreur est survenue. Veuillez réessayer.",
+    "unauthorized": "Votre session a expiré. Veuillez vous reconnecter.",
+    "superAdminOnly": "Accès super administrateur requis"
   }
 }

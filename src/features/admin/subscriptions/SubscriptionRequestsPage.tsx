@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { Check, X } from "lucide-react";
+import { Check, X, Search } from "lucide-react";
 import {
   Button,
   Card,
@@ -18,13 +19,16 @@ import {
   TableCell,
   Badge,
   Select,
+  Input,
   Textarea,
 } from "@/components/ui";
+import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import {
-  useAdminSubscriptionRequests,
+  useAdminSubscriptionRequestsInfinite,
   useApproveSubscriptionRequest,
   useRejectSubscriptionRequest,
 } from "./hooks/useSubscriptions";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type SubRequest = Record<string, unknown>;
 
@@ -43,14 +47,35 @@ function getStatusVariant(status: string): "success" | "warning" | "danger" | "d
 
 export function SubscriptionRequestsPage() {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
   const [statusFilter, setStatusFilter] = useState("pending");
   const [approveId, setApproveId] = useState<string | null>(null);
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectNotes, setRejectNotes] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const router = useRouter();
 
-  const { data: requests, isLoading } = useAdminSubscriptionRequests({
+  // Debounce before hitting the route's server-side tenant search.
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const {
+    data: requestPages,
+    isLoading,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useAdminSubscriptionRequestsInfinite({
     status: statusFilter || undefined,
+    search: debouncedSearch || undefined,
   });
+  const requests = useMemo(
+    () => requestPages?.pages.flatMap((page) => page.data),
+    [requestPages]
+  );
   const approveRequest = useApproveSubscriptionRequest();
   const rejectRequest = useRejectSubscriptionRequest();
 
@@ -91,18 +116,31 @@ export function SubscriptionRequestsPage() {
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("subscriptionRequests.list")}</CardTitle>
-            <Select
-              name="status-filter"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full sm:w-40"
-              options={[
-                { value: "", label: t("subscriptionRequests.allStatuses") },
-                { value: "pending", label: t("subscriptionRequests.pending") },
-                { value: "approved", label: t("subscriptionRequests.approved") },
-                { value: "rejected", label: t("subscriptionRequests.rejected") },
-              ]}
-            />
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <Select
+                name="status-filter"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                className="w-full sm:w-40"
+                options={[
+                  { value: "", label: t("subscriptionRequests.allStatuses") },
+                  { value: "pending", label: t("subscriptionRequests.pending") },
+                  { value: "approved", label: t("subscriptionRequests.approved") },
+                  { value: "rejected", label: t("subscriptionRequests.rejected") },
+                ]}
+              />
+              <div className="relative w-full sm:w-56">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  name="request-search"
+                  placeholder={t("subscriptionRequests.searchPlaceholder")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoComplete="off"
+                  className="pl-9"
+                />
+              </div>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -122,16 +160,18 @@ export function SubscriptionRequestsPage() {
                     {req.status === "pending" && (
                       <div className="flex items-center gap-2">
                         <button
+                          {...superOnly.icon}
                           onClick={() => setApproveId(String(req.id))}
-                          className="p-1 text-gray-500 hover:text-green-600 transition-colors"
+                          className="p-1 text-gray-500 hover:text-green-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                           title={t("subscriptionRequests.approve")}
                           aria-label={t("subscriptionRequests.approve")}
                         >
                           <Check className="h-4 w-4" />
                         </button>
                         <button
+                          {...superOnly.icon}
                           onClick={() => setRejectId(String(req.id))}
-                          className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+                          className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                           title={t("subscriptionRequests.reject")}
                           aria-label={t("subscriptionRequests.reject")}
                         >
@@ -181,10 +221,15 @@ export function SubscriptionRequestsPage() {
                   requestList.map((req) => (
                     <TableRow key={String(req.id)}>
                       <TableCell className="font-medium text-gray-900 dark:text-gray-100">
-                        {String(
-                          (req.tenant as Record<string, unknown>)?.name ||
-                          req.tenant_name ||
-                          "-"
+                        {req.tenant_id ? (
+                          <button
+                            onClick={() => router.push(`/admin/tenants/${req.tenant_id}`)}
+                            className="text-primary-600 dark:text-primary-400 hover:underline"
+                          >
+                            {String((req.tenant as Record<string, unknown>)?.name || req.tenant_name || "-")}
+                          </button>
+                        ) : (
+                          String((req.tenant as Record<string, unknown>)?.name || req.tenant_name || "-")
                         )}
                       </TableCell>
                       <TableCell className="text-gray-600 dark:text-gray-400">
@@ -214,16 +259,18 @@ export function SubscriptionRequestsPage() {
                         {req.status === "pending" && (
                           <div className="flex items-center gap-2">
                             <button
+                              {...superOnly.icon}
                               onClick={() => setApproveId(String(req.id))}
-                              className="p-1 text-gray-500 hover:text-green-600 transition-colors"
+                              className="p-1 text-gray-500 hover:text-green-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                               title={t("subscriptionRequests.approve")}
                               aria-label={t("subscriptionRequests.approve")}
                             >
                               <Check className="h-4 w-4" />
                             </button>
                             <button
+                              {...superOnly.icon}
                               onClick={() => setRejectId(String(req.id))}
-                              className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+                              className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                               title={t("subscriptionRequests.reject")}
                               aria-label={t("subscriptionRequests.reject")}
                             >
@@ -244,6 +291,12 @@ export function SubscriptionRequestsPage() {
               </TableBody>
             </Table>
           </div>
+          <LoadMoreSentinel
+            hasNextPage={!!hasNextPage}
+            isFetchingNextPage={isFetchingNextPage}
+            fetchNextPage={fetchNextPage}
+            loadedCount={requestList.length}
+          />
         </CardContent>
       </Card>
 
@@ -262,6 +315,7 @@ export function SubscriptionRequestsPage() {
             {t("subscriptionRequests.cancel")}
           </Button>
           <Button
+            {...superOnly.button}
             onClick={() => approveId && handleApprove(approveId)}
             isLoading={approveRequest.isPending}
           >
@@ -303,6 +357,7 @@ export function SubscriptionRequestsPage() {
               {t("subscriptionRequests.cancel")}
             </Button>
             <Button
+              {...superOnly.button}
               variant="danger"
               onClick={() => rejectId && handleReject(rejectId)}
               isLoading={rejectRequest.isPending}
