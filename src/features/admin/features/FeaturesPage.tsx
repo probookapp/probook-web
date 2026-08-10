@@ -25,6 +25,7 @@ import {
   useDeleteFeature,
 } from "./hooks/useFeatureFlags";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
+import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
 
 type Feature = Record<string, unknown>;
 type Translations = Record<string, string>;
@@ -181,7 +182,70 @@ export function FeaturesPage() {
 
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <MobileCardList isEmpty={featureList.length === 0} emptyLabel={t("features.empty")}>
+            {featureList.map((feature) => {
+              const planFeatures = (feature.plan_features || []) as Record<string, unknown>[];
+              return (
+                <MobileCard
+                  key={String(feature.id)}
+                  title={t(`features.name_${feature.key}`, String(feature.name || ""))}
+                  subtitle={<span className="font-mono text-xs">{String(feature.key || "")}</span>}
+                  badges={
+                    <Badge variant={feature.is_global ? "success" : "default"}>
+                      {feature.is_global ? t("features.enabled") : t("features.disabled")}
+                    </Badge>
+                  }
+                  fields={[
+                    {
+                      label: t("features.plans"),
+                      value:
+                        planFeatures.length > 0
+                          ? planFeatures
+                              .map((pf) => {
+                                const plan = pf.plan as Record<string, unknown> | undefined;
+                                return String(plan?.name || plan?.slug || "?");
+                              })
+                              .join(", ")
+                          : "-",
+                    },
+                  ]}
+                  actions={
+                    <>
+                      <Button
+                        {...superOnly.button}
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleToggleGlobal(feature)}
+                        isLoading={updateFeature.isPending}
+                      >
+                        <Globe className="h-4 w-4 mr-1" />
+                        {feature.is_global ? t("features.disabled") : t("features.enabled")}
+                      </Button>
+                      <Button
+                        {...superOnly.button}
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleOpenEdit(feature)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        {...superOnly.button}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDeletingFeature(feature)}
+                        aria-label={t("features.delete")}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  }
+                />
+              );
+            })}
+          </MobileCardList>
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

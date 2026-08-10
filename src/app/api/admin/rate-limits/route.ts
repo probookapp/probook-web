@@ -32,12 +32,33 @@ export const GET = withPlatformAdmin(async (req: NextRequest, _ctx) => {
     take: 200,
   });
 
+  // Resolve tenant names in one batch: the page used to print raw UUIDs, which
+  // tells an operator nothing about who is being throttled.
+  const tenantIds = [...new Set(logs.map((log) => log.tenantId))];
+  const tenants = tenantIds.length
+    ? await prisma.tenant.findMany({
+        where: { id: { in: tenantIds } },
+        select: { id: true, name: true, slug: true },
+      })
+    : [];
+  const tenantMap = new Map(tenants.map((tenant) => [tenant.id, tenant]));
+
   // Group by tenant
-  const grouped: Record<string, { tenant_id: string; endpoints: Record<string, unknown>[] }> = {};
+  const grouped: Record<
+    string,
+    {
+      tenant_id: string;
+      tenant_name: string | null;
+      tenant_slug: string | null;
+      endpoints: Record<string, unknown>[];
+    }
+  > = {};
   for (const log of logs) {
     if (!grouped[log.tenantId]) {
       grouped[log.tenantId] = {
         tenant_id: log.tenantId,
+        tenant_name: tenantMap.get(log.tenantId)?.name ?? null,
+        tenant_slug: tenantMap.get(log.tenantId)?.slug ?? null,
         endpoints: [],
       };
     }

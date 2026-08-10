@@ -27,6 +27,7 @@ import {
 } from "./hooks/useCoupons";
 import { useAdminPlans } from "../plans/hooks/usePlans";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
+import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
 
 type Coupon = Record<string, unknown>;
 type PlanRestriction = { plan: { id: string; name: string; slug: string } };
@@ -231,7 +232,73 @@ export function CouponsPage() {
 
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <MobileCardList isEmpty={couponList.length === 0} emptyLabel={t("coupons.empty")}>
+            {couponList.map((coupon) => {
+              const restrictions = (coupon.plan_restrictions || []) as PlanRestriction[];
+              return (
+                <MobileCard
+                  key={String(coupon.id)}
+                  title={<span className="font-mono">{String(coupon.code || "-")}</span>}
+                  badges={
+                    <Badge variant={coupon.is_active ? "success" : "default"}>
+                      {coupon.is_active ? t("coupons.yes") : t("coupons.no")}
+                    </Badge>
+                  }
+                  fields={[
+                    {
+                      label: t("coupons.value"),
+                      value: formatDiscountValue(
+                        String(coupon.discount_type),
+                        Number(coupon.discount_value || 0),
+                        String(coupon.currency || "DZD")
+                      ),
+                    },
+                    {
+                      label: t("coupons.uses"),
+                      value: `${String(coupon.current_uses ?? 0)} / ${
+                        coupon.max_uses != null ? String(coupon.max_uses) : t("coupons.unlimited")
+                      }`,
+                    },
+                    {
+                      label: t("coupons.expires"),
+                      value: coupon.expires_at
+                        ? new Date(String(coupon.expires_at)).toLocaleDateString()
+                        : t("coupons.never"),
+                    },
+                    {
+                      label: t("coupons.plans"),
+                      value:
+                        restrictions.length > 0
+                          ? restrictions.map((r) => r.plan.name).join(", ")
+                          : t("coupons.allPlans"),
+                    },
+                  ]}
+                  actions={
+                    <>
+                      <Button
+                        {...superOnly.button}
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => handleOpenEdit(coupon)}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        {...superOnly.button}
+                        variant="danger"
+                        size="sm"
+                        onClick={() => setDeletingCoupon(coupon)}
+                        aria-label={t("coupons.delete")}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </>
+                  }
+                />
+              );
+            })}
+          </MobileCardList>
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

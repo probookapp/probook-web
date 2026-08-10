@@ -12,6 +12,7 @@ import {
   Input,
   Badge,
   Select,
+  SearchableSelect,
   Table,
   TableHeader,
   TableBody,
@@ -28,6 +29,7 @@ import {
 } from "./hooks/useSubscriptionInvoices";
 import { useAdminSubscriptions } from "@/features/admin/subscriptions/hooks/useSubscriptions";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
+import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
 
 type Invoice = Record<string, unknown>;
 
@@ -85,9 +87,9 @@ export function SubscriptionInvoicesPage() {
     () => invoicePages?.pages.flatMap((page) => page.data),
     [invoicePages]
   );
-  // The create-invoice dropdown needs every subscription — keep the legacy
-  // full-list fetch here.
-  const { data: subsData } = useAdminSubscriptions();
+  // The create-invoice picker is the only consumer of the full subscription
+  // list, so it is fetched when that modal opens rather than on page load.
+  const { data: subsData } = useAdminSubscriptions(undefined, { enabled: createOpen });
   const subscriptions = (subsData || []) as Subscription[];
   const markPaid = useMarkInvoicePaid();
   const createInvoice = useCreateSubscriptionInvoice();
@@ -223,7 +225,90 @@ export function SubscriptionInvoicesPage() {
 
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <MobileCardList
+            isEmpty={invoiceList.length === 0}
+            emptyLabel={t("subscriptionInvoices.empty")}
+          >
+            {invoiceList.map((invoice) => {
+              const subscription = (invoice.subscription || {}) as Subscription;
+              const plan = (subscription.plan || {}) as Record<string, unknown>;
+              const tenant = (subscription.tenant || {}) as Record<string, unknown>;
+              const isPaid = invoice.status === "paid";
+              const isRefunded = invoice.status === "refunded";
+              return (
+                <MobileCard
+                  key={String(invoice.id)}
+                  title={String(tenant.name || "-")}
+                  subtitle={<span className="font-mono">{String(invoice.invoice_number || "-")}</span>}
+                  badges={
+                    <Badge variant={isRefunded ? "danger" : isPaid ? "success" : "warning"}>
+                      {isRefunded
+                        ? t("subscriptionInvoices.refunded")
+                        : isPaid
+                          ? t("subscriptionInvoices.paid")
+                          : t("subscriptionInvoices.unpaid")}
+                    </Badge>
+                  }
+                  fields={[
+                    { label: t("subscriptionInvoices.plan"), value: String(plan.name || "-") },
+                    {
+                      label: t("subscriptionInvoices.amount"),
+                      value: formatAmount(
+                        Number(invoice.amount || 0),
+                        String(invoice.currency || "DZD")
+                      ),
+                    },
+                    {
+                      label: t("subscriptionInvoices.period"),
+                      value: `${formatDate(invoice.period_start as string | null)} - ${formatDate(
+                        invoice.period_end as string | null
+                      )}`,
+                    },
+                    {
+                      label: t("subscriptionInvoices.paidAt"),
+                      value: formatDate(invoice.paid_at as string | null),
+                    },
+                  ]}
+                  actions={
+                    <>
+                      {!isPaid && !isRefunded && (
+                        <Button
+                          {...superOnly.button}
+                          variant="primary"
+                          size="sm"
+                          onClick={() => handleOpenMarkPaid(invoice)}
+                        >
+                          <CheckCircle className="h-4 w-4 mr-1" />
+                          {t("subscriptionInvoices.markPaid")}
+                        </Button>
+                      )}
+                      {isPaid && (
+                        <Button
+                          {...superOnly.button}
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setRefundTarget(invoice)}
+                        >
+                          <RotateCcw className="h-4 w-4 mr-1" />
+                          {t("subscriptionInvoices.refund")}
+                        </Button>
+                      )}
+                      <Button
+                        {...superOnly.button}
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleOpenEdit(invoice)}
+                        aria-label={t("subscriptionInvoices.edit")}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </>
+                  }
+                />
+              );
+            })}
+          </MobileCardList>
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -380,20 +465,21 @@ export function SubscriptionInvoicesPage() {
       {/* Create Invoice Modal */}
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title={t("subscriptionInvoices.newInvoice")}>
         <div className="space-y-4">
-          <Select
-            name="create-subscription"
+          {/* Searchable: a plain select of every subscription on the platform
+              is unusable once there are more than a screenful. */}
+          <SearchableSelect
             label={t("subscriptionInvoices.subscription")}
+            placeholder={t("subscriptionInvoices.selectSubscription")}
             value={createForm.subscription_id}
-            onChange={(e) => setCreateForm((p) => ({ ...p, subscription_id: e.target.value }))}
-            required
-            options={[
-              { value: "", label: t("subscriptionInvoices.selectSubscription") },
-              ...subscriptions.map((s) => {
-                const tn = (s.tenant as Record<string, unknown>)?.name || s.tenant_name || s.id;
-                const pl = (s.plan as Record<string, unknown>)?.name || s.plan_name || "";
-                return { value: String(s.id), label: `${String(tn)}${pl ? ` — ${String(pl)}` : ""}` };
-              }),
-            ]}
+            onChange={(value) => setCreateForm((p) => ({ ...p, subscription_id: value }))}
+            options={subscriptions.map((s) => {
+              const tn = (s.tenant as Record<string, unknown>)?.name || s.tenant_name || s.id;
+              const pl = (s.plan as Record<string, unknown>)?.name || s.plan_name || "";
+              return {
+                value: String(s.id),
+                label: `${String(tn)}${pl ? ` — ${String(pl)}` : ""}`,
+              };
+            })}
           />
           <div className="grid grid-cols-2 gap-3">
             <Input

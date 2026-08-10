@@ -643,7 +643,9 @@
     "status": "Statut",
     "endpoints": "points de terminaison",
     "flagged": "Signalé",
-    "empty": "Aucune violation de limite de débit trouvée."
+    "empty": "Aucune violation de limite de débit trouvée.",
+    "tenant": "Locataire",
+    "unknownTenant": "Locataire supprimé"
   },
   "subscriptionWall": {
     "title": "Abonnement requis",
@@ -705,8 +707,10 @@
     "actions": "Actions",
     "update": "Mettre à jour",
     "createSubmit": "Créer l'admin",
-    "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce compte administrateur ?",
-    "empty": "Aucun administrateur trouvé."
+    "confirmDelete": "Supprimer l’administrateur {{username}} ? Il perd l’accès au tableau de bord immédiatement.",
+    "empty": "Aucun administrateur trouvé.",
+    "deleteTitle": "Supprimer l’administrateur",
+    "delete": "Supprimer"
   },
   "onboardingFunnel": {
     "title": "Entonnoir d’intégration",

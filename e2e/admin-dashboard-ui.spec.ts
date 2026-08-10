@@ -122,15 +122,15 @@ test.describe("Admin rate limits (UI)", () => {
     await expect(page.getByRole("heading", { name: "Rate Limits" })).toBeVisible();
     expect(page.url()).toContain("/admin/rate-limits");
 
-    // Either the empty-state or a table of violations is rendered. The
-    // "Flagged Endpoints" column header is always present, so the empty-state
-    // message coexists with it; take the first match to assert either is shown.
+    // Either the empty-state or a list of violations is rendered. The page now
+    // renders responsive duplicates (cards below md, table above), so one of
+    // the two matches is always the hidden variant — assert DOM presence.
     await expect(
       page
         .getByText("No rate limit violations found.")
         .or(page.getByText("Flagged Endpoints"))
         .first()
-    ).toBeVisible();
+    ).toBeAttached();
   });
 });
 

@@ -60,9 +60,15 @@ export function useAdminSubscriptionRequestsInfinite(filters?: RequestsFilters) 
   });
 }
 
-export function useAdminSubscriptions(filters?: SubscriptionsFilters) {
+// `options.enabled` lets callers that only need the full list behind a modal
+// (the invoice create picker) skip the fetch until it opens.
+export function useAdminSubscriptions(
+  filters?: SubscriptionsFilters,
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: ["admin-subscriptions", filters],
+    enabled: options?.enabled ?? true,
     queryFn: async () => {
       const subscriptions = await adminSubscriptionsApi.getAll();
       if (!filters) return subscriptions;

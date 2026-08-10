@@ -21,6 +21,7 @@ import {
 import { useAdminReferrals, useToggleReferralCode, useCreateReferralCode } from "./hooks/useReferrals";
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
+import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
 
 type ReferralCode = Record<string, unknown>;
 type TenantOption = { id: string; name: string };
@@ -114,7 +115,41 @@ export function ReferralsPage() {
 
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <MobileCardList isEmpty={list.length === 0} emptyLabel={t("referrals.empty")}>
+            {list.map((rc) => {
+              const tenant = rc.tenant as Record<string, unknown> | undefined;
+              return (
+                <MobileCard
+                  key={String(rc.id)}
+                  title={tenant ? String(tenant.name || "-") : "-"}
+                  subtitle={<span className="font-mono">{String(rc.code || "-")}</span>}
+                  badges={
+                    <Badge variant={rc.is_active ? "success" : "default"}>
+                      {rc.is_active ? t("common.yes") : t("common.no")}
+                    </Badge>
+                  }
+                  fields={[
+                    { label: t("referrals.referrals_count"), value: String(rc.referrals_count ?? 0) },
+                    { label: t("referrals.converted_count"), value: String(rc.converted_count ?? 0) },
+                  ]}
+                  actions={
+                    <Button
+                      {...superOnly.button}
+                      variant={rc.is_active ? "ghost" : "secondary"}
+                      size="sm"
+                      onClick={() =>
+                        toggleCode.mutate({ id: String(rc.id), isActive: !rc.is_active })
+                      }
+                      isLoading={toggleCode.isPending && toggleCode.variables?.id === rc.id}
+                    >
+                      {rc.is_active ? t("referrals.deactivate") : t("referrals.activate")}
+                    </Button>
+                  }
+                />
+              );
+            })}
+          </MobileCardList>
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

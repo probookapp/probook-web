@@ -643,7 +643,9 @@
     "status": "Status",
     "endpoints": "endpoints",
     "flagged": "Flagged",
-    "empty": "No rate limit violations found."
+    "empty": "No rate limit violations found.",
+    "tenant": "Tenant",
+    "unknownTenant": "Deleted tenant"
   },
   "subscriptionWall": {
     "title": "Subscription Required",
@@ -705,8 +707,10 @@
     "actions": "Actions",
     "update": "Update",
     "createSubmit": "Create Admin",
-    "confirmDelete": "Are you sure you want to delete this admin account?",
-    "empty": "No platform admins found."
+    "confirmDelete": "Delete admin {{username}}? They lose access to the dashboard immediately.",
+    "empty": "No platform admins found.",
+    "deleteTitle": "Delete admin",
+    "delete": "Delete"
   },
   "onboardingFunnel": {
     "title": "Onboarding funnel",

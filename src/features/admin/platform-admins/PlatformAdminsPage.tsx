@@ -26,6 +26,7 @@ import {
 } from "./hooks/usePlatformAdmins";
 import { AdminSecuritySection } from "./AdminSecuritySection";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
+import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
 
 type PlatformAdmin = Record<string, unknown>;
 
@@ -51,6 +52,7 @@ export function PlatformAdminsPage() {
   const { t } = useTranslation("admin");
   const superOnly = useSuperAdminOnly();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deletingAdmin, setDeletingAdmin] = useState<PlatformAdmin | null>(null);
   const [editingAdmin, setEditingAdmin] = useState<PlatformAdmin | null>(null);
   const [formData, setFormData] = useState<AdminFormState>(emptyForm);
 
@@ -112,9 +114,10 @@ export function PlatformAdminsPage() {
     handleClose();
   };
 
-  const handleDelete = async (admin: PlatformAdmin) => {
-    if (!confirm(t("platformAdmins.confirmDelete"))) return;
-    await deleteAdmin.mutateAsync(String(admin.id));
+  const handleDelete = async () => {
+    if (!deletingAdmin) return;
+    await deleteAdmin.mutateAsync(String(deletingAdmin.id));
+    setDeletingAdmin(null);
   };
 
   const updateField = (field: keyof AdminFormState, value: string | boolean) => {
@@ -157,7 +160,58 @@ export function PlatformAdminsPage() {
 
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <MobileCardList isEmpty={adminList.length === 0} emptyLabel={t("platformAdmins.empty")}>
+            {adminList.map((admin) => (
+              <MobileCard
+                key={String(admin.id)}
+                title={String(admin.username || "-")}
+                subtitle={String(admin.email || "")}
+                badges={
+                  <>
+                    <Badge variant={admin.role === "super_admin" ? "warning" : "default"}>
+                      {admin.role === "super_admin"
+                        ? t("platformAdmins.superAdmin")
+                        : t("platformAdmins.supportAgent")}
+                    </Badge>
+                    <Badge variant={admin.is_active ? "success" : "danger"}>
+                      {admin.is_active ? t("common.yes") : t("common.no")}
+                    </Badge>
+                  </>
+                }
+                fields={[
+                  { label: t("platformAdmins.displayName"), value: String(admin.display_name || "-") },
+                  {
+                    label: t("platformAdmins.created"),
+                    value: admin.created_at
+                      ? new Date(String(admin.created_at)).toLocaleDateString()
+                      : "-",
+                  },
+                ]}
+                actions={
+                  <>
+                    <Button
+                      {...superOnly.button}
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleOpenEdit(admin)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      {...superOnly.button}
+                      variant="danger"
+                      size="sm"
+                      onClick={() => setDeletingAdmin(admin)}
+                      aria-label={t("platformAdmins.delete")}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                }
+              />
+            ))}
+          </MobileCardList>
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -212,8 +266,8 @@ export function PlatformAdminsPage() {
                           {...superOnly.button}
                           variant="danger"
                           size="sm"
-                          onClick={() => handleDelete(admin)}
-                          isLoading={deleteAdmin.isPending}
+                          onClick={() => setDeletingAdmin(admin)}
+                          aria-label={t("platformAdmins.delete")}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -233,6 +287,30 @@ export function PlatformAdminsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Modal
+        isOpen={!!deletingAdmin}
+        onClose={() => setDeletingAdmin(null)}
+        title={t("platformAdmins.deleteTitle")}
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          {t("platformAdmins.confirmDelete", { username: String(deletingAdmin?.username || "") })}
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setDeletingAdmin(null)}>
+            {t("platformAdmins.cancel")}
+          </Button>
+          <Button
+            {...superOnly.button}
+            variant="danger"
+            onClick={handleDelete}
+            isLoading={deleteAdmin.isPending}
+          >
+            {t("platformAdmins.delete")}
+          </Button>
+        </div>
+      </Modal>
 
       <Modal
         isOpen={isModalOpen}

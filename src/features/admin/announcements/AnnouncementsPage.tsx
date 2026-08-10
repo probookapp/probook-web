@@ -28,6 +28,7 @@ import {
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 import { useAdminPlans } from "@/features/admin/plans/hooks/usePlans";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
+import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
 
 type Announcement = Record<string, unknown>;
 type NamedOption = { id: string; name?: string; slug?: string };
@@ -159,7 +160,56 @@ export function AnnouncementsPage() {
 
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <MobileCardList isEmpty={list.length === 0} emptyLabel={t("announcements.empty")}>
+            {list.map((a) => (
+              <MobileCard
+                key={String(a.id)}
+                title={String(a.title || "-")}
+                badges={
+                  <Badge variant={a.target_type === "all" ? "default" : "info"}>
+                    {String(a.target_type || "all")}
+                  </Badge>
+                }
+                fields={[
+                  {
+                    label: t("announcements.published"),
+                    value: a.published_at
+                      ? new Date(String(a.published_at)).toLocaleDateString()
+                      : "-",
+                  },
+                  {
+                    label: t("announcements.expires"),
+                    value: a.expires_at ? new Date(String(a.expires_at)).toLocaleDateString() : "-",
+                  },
+                  {
+                    label: t("announcements.dismissals"),
+                    value: String(a.dismissal_count ?? 0),
+                  },
+                ]}
+                actions={
+                  <>
+                    <Button
+                      {...superOnly.button}
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => handleOpenEdit(a)}
+                    >
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      {...superOnly.button}
+                      variant="danger"
+                      size="sm"
+                      onClick={() => setDeleteConfirmId(String(a.id))}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                }
+              />
+            ))}
+          </MobileCardList>
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>

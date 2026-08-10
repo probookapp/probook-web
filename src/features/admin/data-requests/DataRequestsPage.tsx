@@ -22,6 +22,7 @@ import {
 import { useAdminDataRequests, useCreateDataRequest, useUpdateDataRequest, useExecuteDataRequest } from "./hooks/useDataRequests";
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
+import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
 
 type DataRequest = Record<string, unknown>;
 type TenantOption = { id: string; name: string };
@@ -140,7 +141,94 @@ export function DataRequestsPage() {
 
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <MobileCardList isEmpty={list.length === 0} emptyLabel={t("data_requests.empty")}>
+            {list.map((dr) => {
+              const tenant = dr.tenant as Record<string, unknown> | undefined;
+              return (
+                <MobileCard
+                  key={String(dr.id)}
+                  title={tenant ? String(tenant.name || "-") : "-"}
+                  badges={
+                    <>
+                      <Badge variant={dr.request_type === "export" ? "info" : "warning"}>
+                        {String(dr.request_type || "-")}
+                      </Badge>
+                      <Badge variant={getStatusVariant(String(dr.status || ""))}>
+                        {String(dr.status || "-")}
+                      </Badge>
+                    </>
+                  }
+                  fields={[
+                    {
+                      label: t("data_requests.created"),
+                      value: dr.created_at
+                        ? new Date(String(dr.created_at)).toLocaleDateString()
+                        : "-",
+                    },
+                    {
+                      label: t("data_requests.completed"),
+                      value: dr.completed_at
+                        ? new Date(String(dr.completed_at)).toLocaleDateString()
+                        : "-",
+                    },
+                  ]}
+                  actions={
+                    <>
+                      {dr.status === "completed" && dr.request_type === "export" && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleDownload(String(dr.id))}
+                        >
+                          <Download className="h-4 w-4 mr-1" />
+                          {t("data_requests.download")}
+                        </Button>
+                      )}
+                      {dr.request_type === "deletion" && dr.status === "processing" && (
+                        <Button
+                          {...superOnly.button}
+                          variant="danger"
+                          size="sm"
+                          onClick={() => {
+                            setDeleteTarget(dr);
+                            setConfirmName("");
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 mr-1" />
+                          {t("data_requests.execute_deletion")}
+                        </Button>
+                      )}
+                      {(dr.status === "pending" || dr.status === "processing") && (
+                        <>
+                          <Button
+                            {...superOnly.button}
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleSetStatus(String(dr.id), "completed")}
+                            isLoading={updateDataRequest.isPending}
+                          >
+                            <Check className="h-4 w-4 mr-1" />
+                            {t("data_requests.mark_completed")}
+                          </Button>
+                          <Button
+                            {...superOnly.button}
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleSetStatus(String(dr.id), "failed")}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="h-4 w-4 mr-1" />
+                            {t("data_requests.mark_failed")}
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  }
+                />
+              );
+            })}
+          </MobileCardList>
+          <div className="hidden md:block overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
