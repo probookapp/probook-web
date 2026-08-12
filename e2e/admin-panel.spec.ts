@@ -50,6 +50,9 @@ test.describe("Admin panel", () => {
 
 test.describe("Admin: tenants", () => {
   test.beforeEach(async ({ page }) => {
+    // Stub the service worker BEFORE navigating: it claims the page and reloads
+    // it, which would tear down the page.evaluate inside setupPlatformAdmin.
+    await stubServiceWorker(page);
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
   });
@@ -116,6 +119,9 @@ test.describe("Admin: tenants", () => {
 
 test.describe("Admin: plans", () => {
   test.beforeEach(async ({ page }) => {
+    // Stub the service worker BEFORE navigating: it claims the page and reloads
+    // it, which would tear down the page.evaluate inside setupPlatformAdmin.
+    await stubServiceWorker(page);
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
   });
@@ -182,6 +188,9 @@ test.describe("Admin: plans", () => {
 
 test.describe("Admin: coupons", () => {
   test.beforeEach(async ({ page }) => {
+    // Stub the service worker BEFORE navigating: it claims the page and reloads
+    // it, which would tear down the page.evaluate inside setupPlatformAdmin.
+    await stubServiceWorker(page);
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
   });
@@ -240,6 +249,9 @@ test.describe("Admin: coupons", () => {
 
 test.describe("Admin: feature flags", () => {
   test.beforeEach(async ({ page }) => {
+    // Stub the service worker BEFORE navigating: it claims the page and reloads
+    // it, which would tear down the page.evaluate inside setupPlatformAdmin.
+    await stubServiceWorker(page);
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
   });
@@ -281,6 +293,9 @@ test.describe("Admin: feature flags", () => {
 
 test.describe("Admin: announcements", () => {
   test.beforeEach(async ({ page }) => {
+    // Stub the service worker BEFORE navigating: it claims the page and reloads
+    // it, which would tear down the page.evaluate inside setupPlatformAdmin.
+    await stubServiceWorker(page);
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
   });
@@ -320,6 +335,9 @@ test.describe("Admin: announcements", () => {
 
 test.describe("Admin: platform admins", () => {
   test.beforeEach(async ({ page }) => {
+    // Stub the service worker BEFORE navigating: it claims the page and reloads
+    // it, which would tear down the page.evaluate inside setupPlatformAdmin.
+    await stubServiceWorker(page);
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
   });
@@ -358,6 +376,9 @@ test.describe("Admin: platform admins", () => {
 
 test.describe("Admin: analytics & system", () => {
   test.beforeEach(async ({ page }) => {
+    // Stub the service worker BEFORE navigating: it claims the page and reloads
+    // it, which would tear down the page.evaluate inside setupPlatformAdmin.
+    await stubServiceWorker(page);
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
   });
@@ -405,6 +426,9 @@ test.describe("Admin: analytics & system", () => {
 
 test.describe("Admin: data requests", () => {
   test.beforeEach(async ({ page }) => {
+    // Stub the service worker BEFORE navigating: it claims the page and reloads
+    // it, which would tear down the page.evaluate inside setupPlatformAdmin.
+    await stubServiceWorker(page);
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
   });
@@ -436,6 +460,9 @@ test.describe("Admin: data requests", () => {
 
 test.describe("Admin: subscription requests", () => {
   test.beforeEach(async ({ page }) => {
+    // Stub the service worker BEFORE navigating: it claims the page and reloads
+    // it, which would tear down the page.evaluate inside setupPlatformAdmin.
+    await stubServiceWorker(page);
     await page.goto("/en/login");
     await page.waitForLoadState("networkidle");
   });
