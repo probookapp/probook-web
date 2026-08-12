@@ -136,7 +136,8 @@
     "trials_running": "Trials running",
     "trials_running_desc": "{{count}} ending within 7 days",
     "trials_converted": "Trials converted",
-    "trials_converted_desc": "Tenants that started a trial and now have a subscription"
+    "trials_converted_desc": "Tenants that started a trial and now have a subscription",
+    "subscriptions_by_plan": "Subscriptions by plan"
   },
   "tenants": {
     "title": "Tenants",
@@ -229,7 +230,9 @@
       "disableUser": "Disable",
       "resetPassword": "Reset password",
       "resetPasswordFor": "Set a new password for {{username}}. Their sessions are signed out immediately.",
-      "newPassword": "New password"
+      "newPassword": "New password",
+      "invoices": "Invoices",
+      "noInvoices": "No invoices for this tenant"
     },
     "allTrials": "All trials",
     "trialActive": "Trial running",
@@ -307,7 +310,8 @@
     "rejectMessage": "Please provide a reason for rejecting this request.",
     "adminNotes": "Admin Notes",
     "rejectNotesPlaceholder": "Optional notes for rejection...",
-    "searchPlaceholder": "Search by tenant..."
+    "searchPlaceholder": "Search by tenant...",
+    "exportCsv": "Export CSV"
   },
   "plans": {
     "title": "Plans",
@@ -363,7 +367,9 @@
     "archive": "Archive",
     "restore": "Restore",
     "archivePlan": "Archive plan",
-    "archiveConfirm": "Archive \"{{name}}\"? It stops being offered to tenants. Existing subscriptions and invoices are untouched, and you can restore it at any time."
+    "archiveConfirm": "Archive \"{{name}}\"? It stops being offered to tenants. Existing subscriptions and invoices are untouched, and you can restore it at any time.",
+    "searchPlaceholder": "Search plans...",
+    "exportCsv": "Export CSV"
   },
   "coupons": {
     "title": "Coupons",
@@ -405,7 +411,8 @@
     "createSubmit": "Create Coupon",
     "deleteTitle": "Delete coupon",
     "delete": "Delete",
-    "exportCsv": "Export CSV"
+    "exportCsv": "Export CSV",
+    "searchPlaceholder": "Search by code..."
   },
   "features": {
     "title": "Features",
@@ -442,7 +449,9 @@
     "desc_multi_user": "Invite and manage multiple team members with role-based access control (admin, manager, employee) within a single tenant.",
     "desc_delivery_notes": "Create and manage delivery notes for tracking shipped goods. Supports batch operations, duplication, and conversion to invoices.",
     "desc_quotes": "Create and send quotes/estimates to clients. Supports batch operations, duplication, and conversion to delivery notes or invoices.",
-    "desc_expenses": "Track business expenses with categorization and batch management. Monitor spending alongside revenue for a complete financial picture."
+    "desc_expenses": "Track business expenses with categorization and batch management. Monitor spending alongside revenue for a complete financial picture.",
+    "searchPlaceholder": "Search features...",
+    "exportCsv": "Export CSV"
   },
   "announcements": {
     "title": "Announcements",
@@ -469,7 +478,9 @@
     "published_at": "Publish Date",
     "expires_at": "Expiration Date",
     "delete_confirm_title": "Delete Announcement",
-    "delete_confirm_message": "Are you sure you want to delete this announcement? This action cannot be undone."
+    "delete_confirm_message": "Are you sure you want to delete this announcement? This action cannot be undone.",
+    "searchPlaceholder": "Search announcements...",
+    "exportCsv": "Export CSV"
   },
   "auditLogs": {
     "title": "Audit Logs",
@@ -584,7 +595,9 @@
     "actions": "Actions",
     "activate": "Activate",
     "deactivate": "Deactivate",
-    "empty": "No referral codes found."
+    "empty": "No referral codes found.",
+    "searchPlaceholder": "Search by tenant or code...",
+    "exportCsv": "Export CSV"
   },
   "data_requests": {
     "title": "Data Requests",
@@ -610,7 +623,9 @@
     "request_type": "Request Type",
     "type_export": "Data Export",
     "type_deletion": "Data Deletion",
-    "notes": "Notes"
+    "notes": "Notes",
+    "searchPlaceholder": "Search by tenant...",
+    "exportCsv": "Export CSV"
   },
   "system": {
     "title": "System Health",
@@ -645,7 +660,13 @@
     "flagged": "Flagged",
     "empty": "No rate limit violations found.",
     "tenant": "Tenant",
-    "unknownTenant": "Deleted tenant"
+    "unknownTenant": "Deleted tenant",
+    "actions": "Actions",
+    "clear": "Clear",
+    "clearTitle": "Clear rate-limit flags",
+    "clearConfirm": "Clear the flagged rate-limit history for {{tenant}}? The log rows are kept, they just stop being reported as live incidents.",
+    "cancel": "Cancel",
+    "exportCsv": "Export CSV"
   },
   "subscriptionWall": {
     "title": "Subscription Required",
@@ -710,7 +731,10 @@
     "confirmDelete": "Delete admin {{username}}? They lose access to the dashboard immediately.",
     "empty": "No platform admins found.",
     "deleteTitle": "Delete admin",
-    "delete": "Delete"
+    "delete": "Delete",
+    "searchPlaceholder": "Search admins...",
+    "exportCsv": "Export CSV",
+    "cancel": "Cancel"
   },
   "onboardingFunnel": {
     "title": "Onboarding funnel",
@@ -728,5 +752,18 @@
     "generic": "Something went wrong. Please try again.",
     "unauthorized": "Your session has expired. Please sign in again.",
     "superAdminOnly": "Super admin access required"
+  },
+  "bulk": {
+    "selected": "{{count}} selected",
+    "clear": "Clear",
+    "approve": "Approve selected",
+    "reject": "Reject selected",
+    "rejectTitle": "Reject {{count}} requests",
+    "markPaid": "Mark selected paid",
+    "markPaidTitle": "Mark {{count}} invoices paid",
+    "selectRow": "Select row",
+    "selectAll": "Select all",
+    "done": "{{count}} done",
+    "partial": "{{ok}} done, {{failed}} failed"
   }
 }

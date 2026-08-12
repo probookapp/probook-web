@@ -140,7 +140,7 @@ export const adminAnnouncementsApi = {
 
 // Subscription Invoices commands
 export const adminSubscriptionInvoicesApi = {
-  getAll: (filters?: { status?: string }) =>
+  getAll: (filters?: { status?: string; tenantId?: string }) =>
     adminApiCall<unknown[]>("get_admin_subscription_invoices", filters as Record<string, unknown>),
   getPage: (p: { limit: number; cursor?: string; status?: string }) =>
     adminApiCall<CursorPage<AdminRow>>("get_admin_subscription_invoices", p),
@@ -192,6 +192,10 @@ export const adminSystemApi = {
 // Rate Limits commands
 export const adminRateLimitsApi = {
   getAll: () => adminApiCall<unknown[]>("get_admin_rate_limits"),
+  clear: (tenantId: string) =>
+    adminApiCall<{ cleared: number }>("clear_admin_rate_limits", {
+      input: { tenant_id: tenantId },
+    }),
 };
 
 // Tenant-facing Subscription commands

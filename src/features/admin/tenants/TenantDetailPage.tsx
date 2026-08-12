@@ -28,6 +28,7 @@ import {
   useResetUserPassword,
 } from "@/features/admin/users/hooks/useAdminUsers";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
+import { useAdminSubscriptionInvoices } from "@/features/admin/subscription-invoices/hooks/useSubscriptionInvoices";
 
 type TenantDetail = Record<string, unknown>;
 
@@ -58,7 +59,9 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const { t } = useTranslation("admin");
   const superOnly = useSuperAdminOnly();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"info" | "subscription" | "users" | "onboarding" | "features">("info");
+  const [activeTab, setActiveTab] = useState<
+    "info" | "subscription" | "invoices" | "users" | "onboarding" | "features"
+  >("info");
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [trialModalOpen, setTrialModalOpen] = useState(false);
   const [endTrialConfirmOpen, setEndTrialConfirmOpen] = useState(false);
@@ -72,6 +75,11 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const deleteTenant = useDeleteTenant();
   const grantTrial = useGrantTrial();
   const endTrial = useEndTrial();
+  const { data: invoicesData } = useAdminSubscriptionInvoices(
+    { tenantId },
+    { enabled: activeTab === "invoices" }
+  );
+  const invoices = (invoicesData || []) as Record<string, unknown>[];
   const toggleUser = useDisableUser();
   const resetPassword = useResetUserPassword();
 
@@ -136,6 +144,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
   const tabs = [
     { key: "info" as const, label: t("tenants.detail.info") },
     { key: "subscription" as const, label: t("tenants.detail.subscription") },
+    { key: "invoices" as const, label: t("tenants.detail.invoices") },
     { key: "users" as const, label: t("tenants.detail.users") },
     { key: "onboarding" as const, label: t("tenants.detail.onboarding") },
     { key: "features" as const, label: t("tenants.detail.features") },
@@ -353,6 +362,54 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                   ))}
                 </div>
               </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {activeTab === "invoices" && (
+        <Card>
+          <CardHeader>
+            <CardTitle>
+              {t("tenants.detail.invoices")} ({invoices.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {invoices.length > 0 ? (
+              <div className="space-y-2">
+                {invoices.map((invoice) => (
+                  <div
+                    key={String(invoice.id)}
+                    className="flex flex-wrap items-center justify-between gap-2 p-3 rounded-lg border border-gray-200 dark:border-gray-700 text-sm"
+                  >
+                    <span className="font-mono text-gray-900 dark:text-gray-100">
+                      {String(invoice.invoice_number || "-")}
+                    </span>
+                    <span className="text-gray-500 dark:text-gray-400">
+                      {invoice.period_start && invoice.period_end
+                        ? `${new Date(String(invoice.period_start)).toLocaleDateString()} – ${new Date(String(invoice.period_end)).toLocaleDateString()}`
+                        : "-"}
+                    </span>
+                    <span className="text-gray-900 dark:text-gray-100">
+                      {(Number(invoice.amount || 0) / 100).toLocaleString()}{" "}
+                      {String(invoice.currency || "")}
+                    </span>
+                    <Badge
+                      variant={
+                        invoice.status === "paid"
+                          ? "success"
+                          : invoice.status === "refunded"
+                            ? "danger"
+                            : "warning"
+                      }
+                    >
+                      {String(invoice.status || "-")}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-500 dark:text-gray-400">{t("tenants.detail.noInvoices")}</p>
             )}
           </CardContent>
         </Card>

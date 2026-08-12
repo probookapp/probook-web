@@ -1,10 +1,15 @@
 "use client";
 
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Download, Eraser } from "lucide-react";
+import { exportToCsv } from "@/lib/csv-export";
 import {
+  Button,
   Card,
   CardContent,
+  Modal,
   Badge,
   Table,
   TableHeader,
@@ -15,6 +20,7 @@ import {
 } from "@/components/ui";
 import { adminRateLimitsApi } from "@/lib/admin-api";
 import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
+import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type RateLimitGroup = {
   tenant_id: string;
@@ -25,10 +31,27 @@ type RateLimitGroup = {
 
 export function RateLimitsPage() {
   const { t } = useTranslation("admin");
+  const superOnly = useSuperAdminOnly();
+  const queryClient = useQueryClient();
+  const [clearing, setClearing] = useState<RateLimitGroup | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["admin-rate-limits"],
     queryFn: adminRateLimitsApi.getAll,
   });
+
+  // Acknowledging an incident: the rows are unflagged, never deleted.
+  const clearFlags = useMutation({
+    mutationFn: (tenantId: string) => adminRateLimitsApi.clear(tenantId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-rate-limits"] });
+    },
+  });
+
+  const handleClear = async () => {
+    if (!clearing) return;
+    await clearFlags.mutateAsync(clearing.tenant_id);
+    setClearing(null);
+  };
 
   if (isLoading) {
     return (
@@ -42,13 +65,37 @@ export function RateLimitsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-          {t("rate_limits.title")}
-        </h1>
-        <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-          {t("rate_limits.description")}
-        </p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
+            {t("rate_limits.title")}
+          </h1>
+          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
+            {t("rate_limits.description")}
+          </p>
+        </div>
+        <Button
+          variant="secondary"
+          size="sm"
+          disabled={groups.length === 0}
+          onClick={() =>
+            exportToCsv(
+              groups as unknown as Record<string, unknown>[],
+              [
+                { header: t("rate_limits.tenant"), accessor: (r) => String(r.tenant_name ?? "") },
+                { header: "tenant_id", accessor: (r) => String(r.tenant_id ?? "") },
+                {
+                  header: t("rate_limits.flagged_endpoints"),
+                  accessor: (r) => (r.endpoints as unknown[]).length,
+                },
+              ],
+              "rate-limits"
+            )
+          }
+        >
+          <Download className="h-4 w-4 mr-2" />
+          {t("rate_limits.exportCsv")}
+        </Button>
       </div>
 
       <Card>
@@ -66,6 +113,17 @@ export function RateLimitsPage() {
                     value: `${group.endpoints.length} ${t("rate_limits.endpoints")}`,
                   },
                 ]}
+                actions={
+                  <Button
+                    {...superOnly.button}
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => setClearing(group)}
+                  >
+                    <Eraser className="h-4 w-4 mr-1" />
+                    {t("rate_limits.clear")}
+                  </Button>
+                }
               />
             ))}
           </MobileCardList>
@@ -76,6 +134,7 @@ export function RateLimitsPage() {
                   <TableHead>{t("rate_limits.tenant")}</TableHead>
                   <TableHead>{t("rate_limits.flagged_endpoints")}</TableHead>
                   <TableHead>{t("rate_limits.status")}</TableHead>
+                  <TableHead className="w-28">{t("rate_limits.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -93,11 +152,22 @@ export function RateLimitsPage() {
                         {t("rate_limits.flagged")}
                       </Badge>
                     </TableCell>
+                    <TableCell>
+                      <Button
+                        {...superOnly.button}
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setClearing(group)}
+                      >
+                        <Eraser className="h-4 w-4 mr-1" />
+                        {t("rate_limits.clear")}
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
                 {groups.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <TableCell colSpan={4} className="text-center text-gray-500 dark:text-gray-400 py-8">
                       {t("rate_limits.empty")}
                     </TableCell>
                   </TableRow>
@@ -107,6 +177,27 @@ export function RateLimitsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <Modal
+        isOpen={!!clearing}
+        onClose={() => setClearing(null)}
+        title={t("rate_limits.clearTitle")}
+        size="sm"
+      >
+        <p className="text-gray-600 dark:text-gray-400 mb-6">
+          {t("rate_limits.clearConfirm", {
+            tenant: clearing?.tenant_name || clearing?.tenant_id || "",
+          })}
+        </p>
+        <div className="flex justify-end gap-3">
+          <Button variant="secondary" onClick={() => setClearing(null)}>
+            {t("rate_limits.cancel")}
+          </Button>
+          <Button {...superOnly.button} onClick={handleClear} isLoading={clearFlags.isPending}>
+            {t("rate_limits.clear")}
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }

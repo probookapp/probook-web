@@ -20,6 +20,7 @@ import {
   useAdminOverview,
   useAdminSignups,
   useAdminRevenue,
+  useAdminSubscriptionAnalytics,
 } from "./hooks/useAdminAnalytics";
 import { OnboardingFunnel } from "./OnboardingFunnel";
 
@@ -203,6 +204,7 @@ export function AdminDashboardPage() {
   const { data: overview, isLoading: overviewLoading } = useAdminOverview();
   const { data: signups } = useAdminSignups(startDate || undefined, endDate || undefined);
   const { data: revenue } = useAdminRevenue(startDate || undefined, endDate || undefined);
+  const { data: subscriptionMix } = useAdminSubscriptionAnalytics();
 
   const handleResetRange = () => {
     setStartDate("");
@@ -226,6 +228,18 @@ export function AdminDashboardPage() {
   ).sort();
   const breakdown = (stats.subscription_breakdown || {}) as Record<string, number>;
   const attention = (stats.needs_attention || {}) as Record<string, number>;
+  // { "Pro": { active: 4, cancelled: 1 }, ... }
+  const byPlan = ((subscriptionMix as Record<string, unknown> | undefined)?.by_plan || {}) as Record<
+    string,
+    Record<string, number>
+  >;
+  const planRows = Object.entries(byPlan)
+    .map(([plan, statuses]) => ({
+      plan,
+      statuses,
+      total: Object.values(statuses).reduce((sum, n) => sum + n, 0),
+    }))
+    .sort((a, b) => b.total - a.total);
 
   return (
     <div className="space-y-8">
@@ -351,6 +365,40 @@ export function AdminDashboardPage() {
               </p>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Which plans the subscriptions actually sit on */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("dashboard.subscriptions_by_plan")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {planRows.length > 0 ? (
+            <div className="space-y-3">
+              {planRows.map((row) => (
+                <div key={row.plan} className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-medium text-gray-900 dark:text-gray-100">{row.plan}</span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {Object.entries(row.statuses)
+                      .sort(([a], [b]) => a.localeCompare(b))
+                      .map(([status, count]) => (
+                        <span key={status} className="flex items-center gap-1.5">
+                          <Badge variant={STATUS_COLORS[status] || "default"}>
+                            {t(`dashboard.status_${status}`, status)}
+                          </Badge>
+                          <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                            {count}
+                          </span>
+                        </span>
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">{t("dashboard.no_subscriptions")}</p>
+          )}
         </CardContent>
       </Card>
 

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus } from "lucide-react";
+import { Plus, Download } from "lucide-react";
 import {
   Button,
   Card,
@@ -22,6 +22,8 @@ import { useAdminReferrals, useToggleReferralCode, useCreateReferralCode } from 
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
+import { ListSearch, matchesQuery } from "@/features/admin/components/ListSearch";
+import { exportToCsv } from "@/lib/csv-export";
 
 type ReferralCode = Record<string, unknown>;
 type TenantOption = { id: string; name: string };
@@ -39,6 +41,7 @@ export function ReferralsPage() {
   const [createOpen, setCreateOpen] = useState(false);
   const [newTenantId, setNewTenantId] = useState("");
   const [newCode, setNewCode] = useState("");
+  const [search, setSearch] = useState("");
 
   // Tenants that already have a code can't get a second one (1 per tenant).
   const usedTenantIds = new Set(
@@ -62,7 +65,10 @@ export function ReferralsPage() {
     );
   }
 
-  const list = (referrals || []) as ReferralCode[];
+  const allReferrals = (referrals || []) as ReferralCode[];
+  const list = allReferrals.filter((rc) =>
+    matchesQuery(search, rc.code, (rc.tenant as Record<string, unknown>)?.name)
+  );
 
   return (
     <div className="space-y-6">
@@ -75,10 +81,42 @@ export function ReferralsPage() {
             {t("referrals.description")}
           </p>
         </div>
-        <Button size="sm" onClick={() => setCreateOpen(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          {t("referrals.newCode")}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center self-start sm:self-auto">
+          <ListSearch
+            name="referral-search"
+            value={search}
+            onChange={setSearch}
+            placeholder={t("referrals.searchPlaceholder")}
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={list.length === 0}
+            onClick={() =>
+              exportToCsv(
+                list as unknown as Record<string, unknown>[],
+                [
+                  {
+                    header: t("referrals.tenant"),
+                    accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? ""),
+                  },
+                  { header: t("referrals.code"), accessor: (r) => String(r.code ?? "") },
+                  { header: t("referrals.active"), accessor: (r) => (r.is_active ? "yes" : "no") },
+                  { header: t("referrals.referrals_count"), accessor: (r) => Number(r.referrals_count ?? 0) },
+                  { header: t("referrals.converted_count"), accessor: (r) => Number(r.converted_count ?? 0) },
+                ],
+                "referrals"
+              )
+            }
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t("referrals.exportCsv")}
+          </Button>
+          <Button {...superOnly.button} size="sm" onClick={() => setCreateOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            {t("referrals.newCode")}
+          </Button>
+        </div>
       </div>
 
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title={t("referrals.newCode")} size="sm">

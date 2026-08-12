@@ -23,6 +23,8 @@ import { useAdminDataRequests, useCreateDataRequest, useUpdateDataRequest, useEx
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
+import { ListSearch, matchesQuery } from "@/features/admin/components/ListSearch";
+import { exportToCsv } from "@/lib/csv-export";
 
 type DataRequest = Record<string, unknown>;
 type TenantOption = { id: string; name: string };
@@ -57,6 +59,7 @@ function getStatusVariant(status: string): "default" | "info" | "success" | "war
 export function DataRequestsPage() {
   const { t } = useTranslation("admin");
   const superOnly = useSuperAdminOnly();
+  const [search, setSearch] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState<CreateFormState>(emptyForm);
 
@@ -120,7 +123,10 @@ export function DataRequestsPage() {
     );
   }
 
-  const list = (dataRequests || []) as DataRequest[];
+  const allRequests = (dataRequests || []) as DataRequest[];
+  const list = allRequests.filter((dr) =>
+    matchesQuery(search, (dr.tenant as Record<string, unknown>)?.name, dr.request_type, dr.status)
+  );
 
   return (
     <div className="space-y-6">
@@ -133,10 +139,48 @@ export function DataRequestsPage() {
             {t("data_requests.description")}
           </p>
         </div>
-        <Button onClick={handleOpenCreate} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          {t("data_requests.create")}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center self-start sm:self-auto">
+          <ListSearch
+            name="data-request-search"
+            value={search}
+            onChange={setSearch}
+            placeholder={t("data_requests.searchPlaceholder")}
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={list.length === 0}
+            onClick={() =>
+              exportToCsv(
+                list,
+                [
+                  {
+                    header: t("data_requests.tenant"),
+                    accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? ""),
+                  },
+                  { header: t("data_requests.type"), accessor: (r) => String(r.request_type ?? "") },
+                  { header: t("data_requests.status"), accessor: (r) => String(r.status ?? "") },
+                  {
+                    header: t("data_requests.created"),
+                    accessor: (r) => (r.created_at ? String(r.created_at).slice(0, 10) : ""),
+                  },
+                  {
+                    header: t("data_requests.completed"),
+                    accessor: (r) => (r.completed_at ? String(r.completed_at).slice(0, 10) : ""),
+                  },
+                ],
+                "data-requests"
+              )
+            }
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t("data_requests.exportCsv")}
+          </Button>
+          <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            {t("data_requests.create")}
+          </Button>
+        </div>
       </div>
 
       <Card>

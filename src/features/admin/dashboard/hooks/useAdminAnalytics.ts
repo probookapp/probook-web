@@ -28,3 +28,14 @@ export function useAdminSubscriptionStats() {
     queryFn: adminAnalyticsApi.getSubscriptions,
   });
 }
+
+/**
+ * Subscription mix by plan and status. The route existed and was wired into
+ * admin-api.ts, but nothing rendered it.
+ */
+export function useAdminSubscriptionAnalytics() {
+  return useQuery({
+    queryKey: ["admin-analytics-subscriptions"],
+    queryFn: () => adminAnalyticsApi.getSubscriptions(),
+  });
+}

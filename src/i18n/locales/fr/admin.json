@@ -136,7 +136,8 @@
     "trials_running": "Essais en cours",
     "trials_running_desc": "{{count}} se terminent sous 7 jours",
     "trials_converted": "Essais convertis",
-    "trials_converted_desc": "Locataires ayant commencé un essai et désormais abonnés"
+    "trials_converted_desc": "Locataires ayant commencé un essai et désormais abonnés",
+    "subscriptions_by_plan": "Abonnements par forfait"
   },
   "tenants": {
     "title": "Locataires",
@@ -228,7 +229,9 @@
       "disableUser": "Désactiver",
       "resetPassword": "Réinitialiser le mot de passe",
       "resetPasswordFor": "Définir un nouveau mot de passe pour {{username}}. Ses sessions sont fermées immédiatement.",
-      "newPassword": "Nouveau mot de passe"
+      "newPassword": "Nouveau mot de passe",
+      "invoices": "Factures",
+      "noInvoices": "Aucune facture pour ce locataire"
     },
     "exportCsv": "Exporter CSV",
     "allTrials": "Tous les essais",
@@ -307,7 +310,8 @@
     "rejectMessage": "Veuillez indiquer le motif du rejet de cette demande.",
     "adminNotes": "Notes de l'administrateur",
     "rejectNotesPlaceholder": "Notes facultatives pour le rejet...",
-    "searchPlaceholder": "Rechercher par locataire..."
+    "searchPlaceholder": "Rechercher par locataire...",
+    "exportCsv": "Exporter CSV"
   },
   "plans": {
     "title": "Forfaits",
@@ -363,7 +367,9 @@
     "archive": "Archiver",
     "restore": "Restaurer",
     "archivePlan": "Archiver le forfait",
-    "archiveConfirm": "Archiver « {{name}} » ? Il ne sera plus proposé aux locataires. Les abonnements et factures existants ne changent pas, et vous pouvez le restaurer à tout moment."
+    "archiveConfirm": "Archiver « {{name}} » ? Il ne sera plus proposé aux locataires. Les abonnements et factures existants ne changent pas, et vous pouvez le restaurer à tout moment.",
+    "searchPlaceholder": "Rechercher des forfaits...",
+    "exportCsv": "Exporter CSV"
   },
   "coupons": {
     "title": "Coupons",
@@ -405,7 +411,8 @@
     "createSubmit": "Créer le coupon",
     "deleteTitle": "Supprimer le coupon",
     "delete": "Supprimer",
-    "exportCsv": "Exporter CSV"
+    "exportCsv": "Exporter CSV",
+    "searchPlaceholder": "Rechercher par code..."
   },
   "features": {
     "title": "Fonctionnalités",
@@ -442,7 +449,9 @@
     "desc_multi_user": "Invitez et gérez plusieurs membres d'équipe avec un contrôle d'accès basé sur les rôles (admin, gérant, employé) au sein d'un même locataire.",
     "desc_delivery_notes": "Créez et gérez des bons de livraison pour le suivi des marchandises expédiées. Supporte les opérations groupées, la duplication et la conversion en factures.",
     "desc_quotes": "Créez et envoyez des devis aux clients. Supporte les opérations groupées, la duplication et la conversion en bons de livraison ou factures.",
-    "desc_expenses": "Suivez les dépenses professionnelles avec catégorisation et gestion groupée. Surveillez les dépenses aux côtés des revenus pour une vue financière complète."
+    "desc_expenses": "Suivez les dépenses professionnelles avec catégorisation et gestion groupée. Surveillez les dépenses aux côtés des revenus pour une vue financière complète.",
+    "searchPlaceholder": "Rechercher des fonctionnalités...",
+    "exportCsv": "Exporter CSV"
   },
   "announcements": {
     "title": "Annonces",
@@ -469,7 +478,9 @@
     "published_at": "Date de publication",
     "expires_at": "Date d'expiration",
     "delete_confirm_title": "Supprimer l'annonce",
-    "delete_confirm_message": "Êtes-vous sûr de vouloir supprimer cette annonce ? Cette action est irréversible."
+    "delete_confirm_message": "Êtes-vous sûr de vouloir supprimer cette annonce ? Cette action est irréversible.",
+    "searchPlaceholder": "Rechercher des annonces...",
+    "exportCsv": "Exporter CSV"
   },
   "auditLogs": {
     "title": "Journaux d'audit",
@@ -584,7 +595,9 @@
     "actions": "Actions",
     "activate": "Activer",
     "deactivate": "Désactiver",
-    "empty": "Aucun code de parrainage trouvé."
+    "empty": "Aucun code de parrainage trouvé.",
+    "searchPlaceholder": "Rechercher par locataire ou code...",
+    "exportCsv": "Exporter CSV"
   },
   "data_requests": {
     "title": "Demandes de données",
@@ -610,7 +623,9 @@
     "request_type": "Type de demande",
     "type_export": "Export de données",
     "type_deletion": "Suppression de données",
-    "notes": "Notes"
+    "notes": "Notes",
+    "searchPlaceholder": "Rechercher par locataire...",
+    "exportCsv": "Exporter CSV"
   },
   "system": {
     "title": "État du système",
@@ -645,7 +660,13 @@
     "flagged": "Signalé",
     "empty": "Aucune violation de limite de débit trouvée.",
     "tenant": "Locataire",
-    "unknownTenant": "Locataire supprimé"
+    "unknownTenant": "Locataire supprimé",
+    "actions": "Actions",
+    "clear": "Effacer",
+    "clearTitle": "Effacer les signalements",
+    "clearConfirm": "Effacer l’historique de limitation signalé pour {{tenant}} ? Les entrées du journal sont conservées, elles ne sont simplement plus signalées comme incidents actifs.",
+    "cancel": "Annuler",
+    "exportCsv": "Exporter CSV"
   },
   "subscriptionWall": {
     "title": "Abonnement requis",
@@ -710,7 +731,10 @@
     "confirmDelete": "Supprimer l’administrateur {{username}} ? Il perd l’accès au tableau de bord immédiatement.",
     "empty": "Aucun administrateur trouvé.",
     "deleteTitle": "Supprimer l’administrateur",
-    "delete": "Supprimer"
+    "delete": "Supprimer",
+    "searchPlaceholder": "Rechercher des administrateurs...",
+    "exportCsv": "Exporter CSV",
+    "cancel": "Annuler"
   },
   "onboardingFunnel": {
     "title": "Entonnoir d’intégration",
@@ -728,5 +752,18 @@
     "generic": "Une erreur est survenue. Veuillez réessayer.",
     "unauthorized": "Votre session a expiré. Veuillez vous reconnecter.",
     "superAdminOnly": "Accès super administrateur requis"
+  },
+  "bulk": {
+    "selected": "{{count}} sélectionné(s)",
+    "clear": "Effacer",
+    "approve": "Approuver la sélection",
+    "reject": "Rejeter la sélection",
+    "rejectTitle": "Rejeter {{count}} demandes",
+    "markPaid": "Marquer payées",
+    "markPaidTitle": "Marquer {{count}} factures payées",
+    "selectRow": "Sélectionner la ligne",
+    "selectAll": "Tout sélectionner",
+    "done": "{{count}} traité(s)",
+    "partial": "{{ok}} traité(s), {{failed}} en échec"
   }
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Archive, ArchiveRestore, Trash2 } from "lucide-react";
+import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Download } from "lucide-react";
 import {
   Button,
   Card,
@@ -15,6 +15,8 @@ import {
 } from "@/components/ui";
 import { useAdminPlans, useCreatePlan, useUpdatePlan } from "./hooks/usePlans";
 import { useAdminFeatures } from "@/features/admin/features/hooks/useFeatureFlags";
+import { ListSearch, matchesQuery } from "@/features/admin/components/ListSearch";
+import { exportToCsv } from "@/lib/csv-export";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 
 type Plan = Record<string, unknown>;
@@ -88,6 +90,7 @@ export function PlansPage() {
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [archivingPlan, setArchivingPlan] = useState<Plan | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [search, setSearch] = useState("");
   const [formData, setFormData] = useState<PlanFormState>(emptyForm);
 
   const { data: plans, isLoading } = useAdminPlans();
@@ -284,7 +287,9 @@ export function PlansPage() {
 
   const planList = (plans || []) as Plan[];
   // Archived plans stay out of the way unless asked for.
-  const visiblePlans = showArchived ? planList : planList.filter((p) => p.is_active);
+  const visiblePlans = (showArchived ? planList : planList.filter((p) => p.is_active)).filter((p) =>
+    matchesQuery(search, p.name, p.slug)
+  );
 
   return (
     <div className="space-y-6">
@@ -293,7 +298,35 @@ export function PlansPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("plans.title")}</h1>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("plans.subtitle")}</p>
         </div>
-        <div className="flex items-center gap-3 self-start sm:self-auto">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center self-start sm:self-auto">
+          <ListSearch
+            name="plan-search"
+            value={search}
+            onChange={setSearch}
+            placeholder={t("plans.searchPlaceholder")}
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={visiblePlans.length === 0}
+            onClick={() =>
+              exportToCsv(
+                visiblePlans,
+                [
+                  { header: t("plans.form.name"), accessor: (r) => String(r.name ?? "") },
+                  { header: t("plans.slug"), accessor: (r) => String(r.slug ?? "") },
+                  { header: t("plans.monthly"), accessor: (r) => Number(r.monthly_price ?? 0) / 100 },
+                  { header: t("plans.yearly"), accessor: (r) => Number(r.yearly_price ?? 0) / 100 },
+                  { header: t("plans.form.currency"), accessor: (r) => String(r.currency ?? "") },
+                  { header: t("plans.active"), accessor: (r) => (r.is_active ? "yes" : "no") },
+                ],
+                "plans"
+              )
+            }
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t("plans.exportCsv")}
+          </Button>
           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
             <input
               type="checkbox"

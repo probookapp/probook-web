@@ -305,6 +305,7 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     query: listQuery((a) => {
       const q: Record<string, string> = {};
       if (a.status) q.status = String(a.status);
+      if (a.tenantId) q.tenant_id = String(a.tenantId);
       return q;
     }),
   },
@@ -380,6 +381,11 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
 
   // Rate Limits
   get_admin_rate_limits: { method: "GET", path: "/api/admin/rate-limits" },
+  clear_admin_rate_limits: {
+    method: "POST",
+    path: "/api/admin/rate-limits/reset",
+    body: (a) => a.input,
+  },
 
   // Tenant-facing Subscription
   get_current_subscription: { method: "GET", path: "/api/subscription/current" },

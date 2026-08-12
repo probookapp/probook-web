@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Download } from "lucide-react";
+import { exportToCsv } from "@/lib/csv-export";
 import {
   Button,
   Card,
@@ -29,6 +30,7 @@ import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 import { useAdminPlans } from "@/features/admin/plans/hooks/usePlans";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
+import { ListSearch, matchesQuery } from "@/features/admin/components/ListSearch";
 
 type Announcement = Record<string, unknown>;
 type NamedOption = { id: string; name?: string; slug?: string };
@@ -60,6 +62,7 @@ export function AnnouncementsPage() {
   const [editingAnnouncement, setEditingAnnouncement] = useState<Announcement | null>(null);
   const [formData, setFormData] = useState<AnnouncementFormState>(emptyForm);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const { data: announcements, isLoading } = useAdminAnnouncements();
   const createAnnouncement = useCreateAnnouncement();
@@ -139,7 +142,8 @@ export function AnnouncementsPage() {
     );
   }
 
-  const list = (announcements || []) as Announcement[];
+  const allAnnouncements = (announcements || []) as Announcement[];
+  const list = allAnnouncements.filter((a) => matchesQuery(search, a.title, a.body));
 
   return (
     <div className="space-y-6">
@@ -152,10 +156,45 @@ export function AnnouncementsPage() {
             {t("announcements.description")}
           </p>
         </div>
-        <Button onClick={handleOpenCreate} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          {t("announcements.create")}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center self-start sm:self-auto">
+          <ListSearch
+            name="announcement-search"
+            value={search}
+            onChange={setSearch}
+            placeholder={t("announcements.searchPlaceholder")}
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={list.length === 0}
+            onClick={() =>
+              exportToCsv(
+                list,
+                [
+                  { header: t("announcements.field_title"), accessor: (r) => String(r.title ?? "") },
+                  { header: t("announcements.target"), accessor: (r) => String(r.target_type ?? "") },
+                  {
+                    header: t("announcements.published"),
+                    accessor: (r) => (r.published_at ? String(r.published_at).slice(0, 10) : ""),
+                  },
+                  {
+                    header: t("announcements.expires"),
+                    accessor: (r) => (r.expires_at ? String(r.expires_at).slice(0, 10) : ""),
+                  },
+                  { header: t("announcements.dismissals"), accessor: (r) => Number(r.dismissal_count ?? 0) },
+                ],
+                "announcements"
+              )
+            }
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t("announcements.exportCsv")}
+          </Button>
+          <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            {t("announcements.create")}
+          </Button>
+        </div>
       </div>
 
       <Card>

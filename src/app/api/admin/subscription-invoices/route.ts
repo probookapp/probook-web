@@ -11,8 +11,11 @@ function generateSubInvoiceNumber(): string {
 export const GET = withPlatformAdmin(async (req) => {
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status");
+  const tenantId = searchParams.get("tenant_id");
 
-  const where = status ? { status } : {};
+  const where: Record<string, unknown> = {};
+  if (status) where.status = status;
+  if (tenantId) where.tenantId = tenantId;
 
   // Opt-in cursor pagination (audit ADM-13): scalars + the nested one-row
   // subscription→plan/tenant references, same status filter, keyset order.

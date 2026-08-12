@@ -28,6 +28,7 @@ import {
 import { useAdminPlans } from "../plans/hooks/usePlans";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
+import { ListSearch, matchesQuery } from "@/features/admin/components/ListSearch";
 
 type Coupon = Record<string, unknown>;
 type PlanRestriction = { plan: { id: string; name: string; slug: string } };
@@ -79,6 +80,7 @@ export function CouponsPage() {
   const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
   const [deletingCoupon, setDeletingCoupon] = useState<Coupon | null>(null);
   const [formData, setFormData] = useState<CouponFormState>(emptyForm);
+  const [search, setSearch] = useState("");
 
   const { data: coupons, isLoading } = useAdminCoupons();
   const { data: plans } = useAdminPlans();
@@ -179,7 +181,8 @@ export function CouponsPage() {
     );
   }
 
-  const couponList = (coupons || []) as Coupon[];
+  const allCoupons = (coupons || []) as Coupon[];
+  const couponList = allCoupons.filter((c) => matchesQuery(search, c.code, c.currency));
   const planList = (plans || []) as Record<string, unknown>[];
 
   return (
@@ -223,6 +226,12 @@ export function CouponsPage() {
             <Download className="h-4 w-4 mr-2" />
             {t("coupons.exportCsv")}
           </Button>
+          <ListSearch
+            name="coupon-search"
+            value={search}
+            onChange={setSearch}
+            placeholder={t("coupons.searchPlaceholder")}
+          />
           <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
             <Plus className="h-4 w-4 mr-2" />
             {t("coupons.create")}

@@ -30,6 +30,13 @@ import {
 import { useAdminSubscriptions } from "@/features/admin/subscriptions/hooks/useSubscriptions";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
+import {
+  BulkBar,
+  RowCheckbox,
+  runBulk,
+  useRowSelection,
+} from "@/features/admin/components/BulkSelection";
+import { toast } from "@/stores/useToastStore";
 
 type Invoice = Record<string, unknown>;
 
@@ -91,6 +98,9 @@ export function SubscriptionInvoicesPage() {
   // list, so it is fetched when that modal opens rather than on page load.
   const { data: subsData } = useAdminSubscriptions(undefined, { enabled: createOpen });
   const subscriptions = (subsData || []) as Subscription[];
+  const selection = useRowSelection();
+  const [bulkPaidOpen, setBulkPaidOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
   const markPaid = useMarkInvoicePaid();
   const createInvoice = useCreateSubscriptionInvoice();
   const updateInvoice = useUpdateSubscriptionInvoice();
@@ -137,6 +147,23 @@ export function SubscriptionInvoicesPage() {
     setRefundTarget(null);
   };
 
+  const handleBulkMarkPaid = async () => {
+    setBulkBusy(true);
+    try {
+      // One summary toast: a per-row failure would otherwise raise the global
+      // error toast once per invoice in the batch.
+      const { ok, failed } = await runBulk(selection.selected, (id) =>
+        markPaid.mutateAsync({ id, payment_method: paymentMethod })
+      );
+      if (failed === 0) toast.success(t("bulk.done", { count: ok }));
+      else toast.warning(t("bulk.partial", { ok, failed }));
+      selection.clear();
+      setBulkPaidOpen(false);
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
   const handleOpenMarkPaid = (invoice: Invoice) => {
     setMarkPaidModal(invoice);
     setPaymentMethod("cash");
@@ -166,6 +193,10 @@ export function SubscriptionInvoicesPage() {
   }
 
   const invoiceList = (invoices || []) as Invoice[];
+  // Only unpaid invoices can be settled in bulk.
+  const unpaidIds = invoiceList
+    .filter((invoice) => invoice.status !== "paid" && invoice.status !== "refunded")
+    .map((invoice) => String(invoice.id));
 
   return (
     <div className="space-y-6">
@@ -225,6 +256,20 @@ export function SubscriptionInvoicesPage() {
 
       <Card>
         <CardContent className="p-0">
+          <BulkBar count={selection.selected.length} onClear={selection.clear}>
+            <Button
+              {...superOnly.button}
+              size="sm"
+              onClick={() => {
+                setPaymentMethod("cash");
+                setBulkPaidOpen(true);
+              }}
+              isLoading={bulkBusy}
+            >
+              <CheckCircle className="h-4 w-4 mr-1" />
+              {t("bulk.markPaid")}
+            </Button>
+          </BulkBar>
           <MobileCardList
             isEmpty={invoiceList.length === 0}
             emptyLabel={t("subscriptionInvoices.empty")}
@@ -272,6 +317,14 @@ export function SubscriptionInvoicesPage() {
                   actions={
                     <>
                       {!isPaid && !isRefunded && (
+                        <RowCheckbox
+                          checked={selection.isSelected(String(invoice.id))}
+                          onChange={() => selection.toggle(String(invoice.id))}
+                          label={t("bulk.selectRow")}
+                          disabled={!superOnly.allowed}
+                        />
+                      )}
+                      {!isPaid && !isRefunded && (
                         <Button
                           {...superOnly.button}
                           variant="primary"
@@ -312,6 +365,14 @@ export function SubscriptionInvoicesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <RowCheckbox
+                      checked={unpaidIds.length > 0 && selection.selected.length === unpaidIds.length}
+                      onChange={() => selection.toggleAll(unpaidIds)}
+                      label={t("bulk.selectAll")}
+                      disabled={!superOnly.allowed || unpaidIds.length === 0}
+                    />
+                  </TableHead>
                   <TableHead>{t("subscriptionInvoices.invoiceNumber")}</TableHead>
                   <TableHead>{t("subscriptionInvoices.tenant")}</TableHead>
                   <TableHead>{t("subscriptionInvoices.plan")}</TableHead>
@@ -333,6 +394,16 @@ export function SubscriptionInvoicesPage() {
 
                   return (
                     <TableRow key={String(invoice.id)}>
+                      <TableCell>
+                        {!isPaid && !isRefunded && (
+                          <RowCheckbox
+                            checked={selection.isSelected(String(invoice.id))}
+                            onChange={() => selection.toggle(String(invoice.id))}
+                            label={t("bulk.selectRow")}
+                            disabled={!superOnly.allowed}
+                          />
+                        )}
+                      </TableCell>
                       <TableCell className="font-mono font-semibold">
                         {String(invoice.invoice_number || "-")}
                       </TableCell>
@@ -405,7 +476,7 @@ export function SubscriptionInvoicesPage() {
                 })}
                 {invoiceList.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <TableCell colSpan={10} className="text-center py-12 text-gray-500 dark:text-gray-400">
                       {t("subscriptionInvoices.empty")}
                     </TableCell>
                   </TableRow>
@@ -421,6 +492,34 @@ export function SubscriptionInvoicesPage() {
           />
         </CardContent>
       </Card>
+
+      {/* Bulk mark paid */}
+      <Modal
+        isOpen={bulkPaidOpen}
+        onClose={() => setBulkPaidOpen(false)}
+        title={t("bulk.markPaidTitle", { count: selection.selected.length })}
+      >
+        <div className="space-y-4">
+          <Select
+            name="bulk-payment-method"
+            label={t("subscriptionInvoices.paymentMethodLabel")}
+            value={paymentMethod}
+            onChange={(e) => setPaymentMethod(e.target.value)}
+            options={[
+              { value: "cash", label: t("subscriptionInvoices.method.cash") },
+              { value: "bank_transfer", label: t("subscriptionInvoices.method.bank_transfer") },
+            ]}
+          />
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <Button variant="secondary" onClick={() => setBulkPaidOpen(false)}>
+              {t("subscriptionInvoices.cancel")}
+            </Button>
+            <Button {...superOnly.button} onClick={handleBulkMarkPaid} isLoading={bulkBusy}>
+              {t("subscriptionInvoices.confirmMarkPaid")}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {/* Mark Paid Modal */}
       <Modal

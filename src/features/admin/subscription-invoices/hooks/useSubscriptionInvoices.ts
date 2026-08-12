@@ -8,10 +8,14 @@ import {
 import { adminSubscriptionInvoicesApi } from "@/lib/admin-api";
 import { LIST_PAGE_SIZE } from "@/lib/pagination";
 
-export function useAdminSubscriptionInvoices(filters?: { status?: string }) {
+export function useAdminSubscriptionInvoices(
+  filters?: { status?: string; tenantId?: string },
+  options?: { enabled?: boolean }
+) {
   return useQuery({
     queryKey: ["admin-subscription-invoices", filters],
     queryFn: () => adminSubscriptionInvoicesApi.getAll(filters),
+    enabled: options?.enabled ?? true,
   });
 }
 

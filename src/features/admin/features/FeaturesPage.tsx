@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Globe, Trash2 } from "lucide-react";
+import { Plus, Pencil, Globe, Trash2, Download } from "lucide-react";
+import { exportToCsv } from "@/lib/csv-export";
 import {
   Button,
   Card,
@@ -26,6 +27,7 @@ import {
 } from "./hooks/useFeatureFlags";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
+import { ListSearch, matchesQuery } from "@/features/admin/components/ListSearch";
 
 type Feature = Record<string, unknown>;
 type Translations = Record<string, string>;
@@ -68,6 +70,7 @@ export function FeaturesPage() {
   const [editingFeature, setEditingFeature] = useState<Feature | null>(null);
   const [deletingFeature, setDeletingFeature] = useState<Feature | null>(null);
   const [formData, setFormData] = useState<FeatureFormState>(emptyForm);
+  const [search, setSearch] = useState("");
 
   const { data: features, isLoading } = useAdminFeatures();
   const createFeature = useCreateFeature();
@@ -161,7 +164,8 @@ export function FeaturesPage() {
     );
   }
 
-  const featureList = (features || []) as Feature[];
+  const allFeatures = (features || []) as Feature[];
+  const featureList = allFeatures.filter((f) => matchesQuery(search, f.key, f.name));
 
   return (
     <div className="space-y-6">
@@ -174,10 +178,44 @@ export function FeaturesPage() {
             {t("features.subtitle")}
           </p>
         </div>
-        <Button onClick={handleOpenCreate} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          {t("features.create")}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center self-start sm:self-auto">
+          <ListSearch
+            name="feature-search"
+            value={search}
+            onChange={setSearch}
+            placeholder={t("features.searchPlaceholder")}
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={featureList.length === 0}
+            onClick={() =>
+              exportToCsv(
+                featureList,
+                [
+                  { header: t("features.key"), accessor: (r) => String(r.key ?? "") },
+                  { header: t("features.name"), accessor: (r) => String(r.name ?? "") },
+                  { header: t("features.global"), accessor: (r) => (r.is_global ? "yes" : "no") },
+                  {
+                    header: t("features.plans"),
+                    accessor: (r) =>
+                      ((r.plan_features || []) as Record<string, unknown>[])
+                        .map((pf) => String((pf.plan as Record<string, unknown>)?.name ?? ""))
+                        .join(" | "),
+                  },
+                ],
+                "features"
+              )
+            }
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t("features.exportCsv")}
+          </Button>
+          <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            {t("features.create")}
+          </Button>
+        </div>
       </div>
 
       <Card>

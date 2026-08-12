@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Download } from "lucide-react";
 import {
   Button,
   Card,
@@ -27,6 +27,8 @@ import {
 import { AdminSecuritySection } from "./AdminSecuritySection";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
+import { ListSearch, matchesQuery } from "@/features/admin/components/ListSearch";
+import { exportToCsv } from "@/lib/csv-export";
 
 type PlatformAdmin = Record<string, unknown>;
 
@@ -53,6 +55,7 @@ export function PlatformAdminsPage() {
   const superOnly = useSuperAdminOnly();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingAdmin, setDeletingAdmin] = useState<PlatformAdmin | null>(null);
+  const [search, setSearch] = useState("");
   const [editingAdmin, setEditingAdmin] = useState<PlatformAdmin | null>(null);
   const [formData, setFormData] = useState<AdminFormState>(emptyForm);
 
@@ -132,7 +135,10 @@ export function PlatformAdminsPage() {
     );
   }
 
-  const adminList = (admins || []) as PlatformAdmin[];
+  const allAdmins = (admins || []) as PlatformAdmin[];
+  const adminList = allAdmins.filter((a) =>
+    matchesQuery(search, a.username, a.display_name, a.email)
+  );
 
   return (
     <div className="space-y-6">
@@ -145,10 +151,39 @@ export function PlatformAdminsPage() {
             {t("platformAdmins.description")}
           </p>
         </div>
-        <Button onClick={handleOpenCreate} size="sm">
-          <Plus className="h-4 w-4 mr-2" />
-          {t("platformAdmins.create")}
-        </Button>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center self-start sm:self-auto">
+          <ListSearch
+            name="platform-admin-search"
+            value={search}
+            onChange={setSearch}
+            placeholder={t("platformAdmins.searchPlaceholder")}
+          />
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={adminList.length === 0}
+            onClick={() =>
+              exportToCsv(
+                adminList as unknown as Record<string, unknown>[],
+                [
+                  { header: t("platformAdmins.username"), accessor: (r) => String(r.username ?? "") },
+                  { header: t("platformAdmins.displayName"), accessor: (r) => String(r.display_name ?? "") },
+                  { header: t("platformAdmins.email"), accessor: (r) => String(r.email ?? "") },
+                  { header: t("platformAdmins.role"), accessor: (r) => String(r.role ?? "") },
+                  { header: t("platformAdmins.active"), accessor: (r) => (r.is_active ? "yes" : "no") },
+                ],
+                "platform-admins"
+              )
+            }
+          >
+            <Download className="h-4 w-4 mr-2" />
+            {t("platformAdmins.exportCsv")}
+          </Button>
+          <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
+            <Plus className="h-4 w-4 mr-2" />
+            {t("platformAdmins.create")}
+          </Button>
+        </div>
       </div>
 
       <div className="max-w-2xl">
