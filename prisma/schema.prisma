@@ -10,15 +10,15 @@ datasource db {
 // ========== Multi-tenancy ==========
 
 model Tenant {
-  id           String    @id @default(uuid())
-  name         String
-  slug         String    @unique
-  status       String    @default("pending") // "active" | "suspended" | "pending"
-  lastActiveAt DateTime? @map("last_active_at")
+  id             String    @id @default(uuid())
+  name           String
+  slug           String    @unique
+  status         String    @default("pending") // "active" | "suspended" | "pending"
+  lastActiveAt   DateTime? @map("last_active_at")
   trialStartedAt DateTime? @map("trial_started_at")
   trialEndsAt    DateTime? @map("trial_ends_at")
-  createdAt    DateTime  @default(now()) @map("created_at")
-  updatedAt    DateTime  @updatedAt @map("updated_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+  updatedAt      DateTime  @updatedAt @map("updated_at")
 
   users                User[]
   clients              Client[]
@@ -33,6 +33,7 @@ model Tenant {
   payments             Payment[]
   deliveryNotes        DeliveryNote[]
   expenses             Expense[]
+  expenseCategories    ExpenseCategory[]
   suppliers            Supplier[]
   productSuppliers     ProductSupplier[]
   clientContacts       ClientContact[]
@@ -221,8 +222,14 @@ model Client {
   city       String?
   postalCode String?  @map("postal_code")
   country    String?
+  // Company identifiers. One storage, two vocabularies — the tenant's fiscal
+  // profile decides how these are labelled and which of them are shown:
+  //   DZ  siret -> RC (registre de commerce), vatNumber -> NIF, plus nis / art
+  //   FR  siret -> SIRET,                    vatNumber -> N° TVA intracom.
   siret      String?
   vatNumber  String?  @map("vat_number")
+  nis        String?
+  art        String?
   notes      String?
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
@@ -339,25 +346,32 @@ model ProductCategory {
 // ========== Quotes ==========
 
 model Quote {
-  id                 String   @id @default(uuid())
-  tenantId           String   @map("tenant_id")
-  quoteNumber        String   @map("quote_number")
-  clientId           String   @map("client_id")
-  status             String   @default("DRAFT")
-  issueDate          DateTime @map("issue_date") @db.Date
-  validityDate       DateTime @map("validity_date") @db.Date
-  subtotal           Decimal  @default(0) @map("subtotal") @db.Decimal(16, 3)
-  taxAmount          Decimal  @default(0) @map("tax_amount") @db.Decimal(16, 3)
-  total              Decimal  @default(0) @map("total") @db.Decimal(16, 3)
+  id                 String    @id @default(uuid())
+  tenantId           String    @map("tenant_id")
+  quoteNumber        String    @map("quote_number")
+  clientId           String    @map("client_id")
+  status             String    @default("DRAFT")
+  issueDate          DateTime  @map("issue_date") @db.Date
+  validityDate       DateTime  @map("validity_date") @db.Date
+  subtotal           Decimal   @default(0) @map("subtotal") @db.Decimal(16, 3)
+  taxAmount          Decimal   @default(0) @map("tax_amount") @db.Decimal(16, 3)
+  total              Decimal   @default(0) @map("total") @db.Decimal(16, 3)
   notes              String?
-  notesHtml          String?  @map("notes_html")
-  logoSnapshot       String?  @map("logo_snapshot")
-  shippingCost       Decimal  @default(0) @map("shipping_cost") @db.Decimal(16, 3)
-  shippingTaxRate    Float    @default(20) @map("shipping_tax_rate")
-  downPaymentPercent Float    @default(0) @map("down_payment_percent")
-  downPaymentAmount  Decimal  @default(0) @map("down_payment_amount") @db.Decimal(16, 3)
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  notesHtml          String?   @map("notes_html")
+  logoSnapshot       String?   @map("logo_snapshot")
+  shippingCost       Decimal   @default(0) @map("shipping_cost") @db.Decimal(16, 3)
+  shippingTaxRate    Float     @default(20) @map("shipping_tax_rate")
+  downPaymentPercent Float     @default(0) @map("down_payment_percent")
+  downPaymentAmount  Decimal   @default(0) @map("down_payment_amount") @db.Decimal(16, 3)
+  // Commercial discount off the pre-tax base. Percent and amount are additive:
+  // percent applies first, then the fixed amount. Both are printed on the PDF —
+  // a document's total must always be reconstructable from its own lines.
+  discountPercent    Float     @default(0) @map("discount_percent")
+  discountAmount     Decimal   @default(0) @map("discount_amount") @db.Decimal(16, 3)
+  // Set once the document is settled and put away; never deleted.
+  archivedAt         DateTime? @map("archived_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
 
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   client        Client         @relation(fields: [clientId], references: [id])
@@ -383,6 +397,7 @@ model QuoteLine {
   subtotal        Decimal  @map("subtotal") @db.Decimal(16, 3)
   taxAmount       Decimal  @map("tax_amount") @db.Decimal(16, 3)
   total           Decimal  @map("total") @db.Decimal(16, 3)
+  discountPercent Float    @default(0) @map("discount_percent")
   position        Int      @default(0)
   groupName       String?  @map("group_name")
   isSubtotalLine  Boolean? @default(false) @map("is_subtotal_line")
@@ -397,34 +412,38 @@ model QuoteLine {
 // ========== Invoices ==========
 
 model Invoice {
-  id                   String   @id @default(uuid())
-  tenantId             String   @map("tenant_id")
-  invoiceNumber        String   @map("invoice_number")
-  clientId             String   @map("client_id")
-  quoteId              String?  @map("quote_id")
-  status               String   @default("DRAFT")
-  issueDate            DateTime @map("issue_date") @db.Date
-  dueDate              DateTime @map("due_date") @db.Date
-  subtotal             Decimal  @default(0) @map("subtotal") @db.Decimal(16, 3)
-  taxAmount            Decimal  @default(0) @map("tax_amount") @db.Decimal(16, 3)
-  total                Decimal  @default(0) @map("total") @db.Decimal(16, 3)
+  id                   String    @id @default(uuid())
+  tenantId             String    @map("tenant_id")
+  invoiceNumber        String    @map("invoice_number")
+  clientId             String    @map("client_id")
+  quoteId              String?   @map("quote_id")
+  status               String    @default("DRAFT")
+  issueDate            DateTime  @map("issue_date") @db.Date
+  dueDate              DateTime  @map("due_date") @db.Date
+  subtotal             Decimal   @default(0) @map("subtotal") @db.Decimal(16, 3)
+  taxAmount            Decimal   @default(0) @map("tax_amount") @db.Decimal(16, 3)
+  total                Decimal   @default(0) @map("total") @db.Decimal(16, 3)
   notes                String?
-  notesHtml            String?  @map("notes_html")
-  integrityHash        String?  @map("integrity_hash")
-  logoSnapshot         String?  @map("logo_snapshot")
-  shippingCost         Decimal  @default(0) @map("shipping_cost") @db.Decimal(16, 3)
-  shippingTaxRate      Float    @default(20) @map("shipping_tax_rate")
-  downPaymentPercent   Float    @default(0) @map("down_payment_percent")
-  downPaymentAmount    Decimal  @default(0) @map("down_payment_amount") @db.Decimal(16, 3)
-  isDownPaymentInvoice Boolean  @default(false) @map("is_down_payment_invoice")
-  parentQuoteId        String?  @map("parent_quote_id")
-  isCashSale           Boolean  @default(false) @map("is_cash_sale") // droit de timbre only applies to cash settlements
-  stampDutyExempt      Boolean  @default(false) @map("stamp_duty_exempt") // legal exemption: no timbre even when cash
-  stampDuty            Decimal  @default(0) @map("stamp_duty") @db.Decimal(16, 3) // droit de timbre snapshot (cash invoices, above threshold)
+  notesHtml            String?   @map("notes_html")
+  integrityHash        String?   @map("integrity_hash")
+  logoSnapshot         String?   @map("logo_snapshot")
+  shippingCost         Decimal   @default(0) @map("shipping_cost") @db.Decimal(16, 3)
+  shippingTaxRate      Float     @default(20) @map("shipping_tax_rate")
+  downPaymentPercent   Float     @default(0) @map("down_payment_percent")
+  downPaymentAmount    Decimal   @default(0) @map("down_payment_amount") @db.Decimal(16, 3)
+  isDownPaymentInvoice Boolean   @default(false) @map("is_down_payment_invoice")
+  parentQuoteId        String?   @map("parent_quote_id")
+  // See Quote.discountPercent — same semantics.
+  discountPercent      Float     @default(0) @map("discount_percent")
+  discountAmount       Decimal   @default(0) @map("discount_amount") @db.Decimal(16, 3)
+  archivedAt           DateTime? @map("archived_at")
+  isCashSale           Boolean   @default(false) @map("is_cash_sale") // droit de timbre only applies to cash settlements
+  stampDutyExempt      Boolean   @default(false) @map("stamp_duty_exempt") // legal exemption: no timbre even when cash
+  stampDuty            Decimal   @default(0) @map("stamp_duty") @db.Decimal(16, 3) // droit de timbre snapshot (cash invoices, above threshold)
   // Client-minted dedupe key so offline replays / lost-response retries cannot create the document twice.
-  idempotencyKey       String?  @map("idempotency_key")
-  createdAt            DateTime @default(now()) @map("created_at")
-  updatedAt            DateTime @updatedAt @map("updated_at")
+  idempotencyKey       String?   @map("idempotency_key")
+  createdAt            DateTime  @default(now()) @map("created_at")
+  updatedAt            DateTime  @updatedAt @map("updated_at")
 
   tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   client          Client           @relation(fields: [clientId], references: [id])
@@ -455,6 +474,7 @@ model InvoiceLine {
   subtotal          Decimal  @map("subtotal") @db.Decimal(16, 3)
   taxAmount         Decimal  @map("tax_amount") @db.Decimal(16, 3)
   total             Decimal  @map("total") @db.Decimal(16, 3)
+  discountPercent   Float    @default(0) @map("discount_percent")
   position          Int      @default(0)
   groupName         String?  @map("group_name")
   isSubtotalLine    Boolean? @default(false) @map("is_subtotal_line")
@@ -554,10 +574,16 @@ model CompanySettings {
   phone                  String?
   email                  String?
   website                String?
+  // See Client.siret — same dual vocabulary, driven by fiscalProfile below.
   siret                  String?
   vatNumber              String?  @map("vat_number")
+  nis                    String?
+  art                    String?
+  // Country fiscal regime: drives the VAT scale offered, the identifier labels
+  // and whether the droit de timbre section applies. "DZ" | "FR".
+  fiscalProfile          String   @default("DZ") @map("fiscal_profile")
   logoPath               String?  @map("logo_path")
-  defaultTaxRate         Float    @default(20.0) @map("default_tax_rate")
+  defaultTaxRate         Float    @default(19.0) @map("default_tax_rate")
   defaultPaymentTerms    Int      @default(30) @map("default_payment_terms")
   invoicePrefix          String   @default("INV-") @map("invoice_prefix")
   quotePrefix            String   @default("QT-") @map("quote_prefix")
@@ -568,9 +594,9 @@ model CompanySettings {
   bankDetails            String?  @map("bank_details")
   deliveryNotePrefix     String?  @default("DN-") @map("delivery_note_prefix")
   nextDeliveryNoteNumber Int?     @default(1) @map("next_delivery_note_number")
-  appLanguage            String?  @default("en") @map("app_language")
+  appLanguage            String?  @default("fr") @map("app_language")
   appTheme               String?  @default("light") @map("app_theme")
-  currency               String?  @default("EUR")
+  currency               String?  @default("DZD")
   posTicketPrefix        String?  @default("TK-") @map("pos_ticket_prefix")
   posAutoPrintReceipt    Boolean? @default(true) @map("pos_auto_print_receipt")
   posShowStockWarning    Boolean? @default(true) @map("pos_show_stock_warning")
@@ -591,19 +617,42 @@ model CompanySettings {
 // ========== Expenses ==========
 
 model Expense {
+  id         String   @id @default(uuid())
+  tenantId   String   @map("tenant_id")
+  // Optional: an expense can always be a one-off with no category.
+  categoryId String?  @map("category_id")
+  name       String
+  amount     Decimal  @default(0) @db.Decimal(16, 3)
+  date       DateTime @db.Date
+  notes      String?
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([categoryId])
+  @@map("expenses")
+}
+
+/// Recurring expense headings a business defines for itself (fuel, rent,
+/// electricity...). Entirely user-owned: the picker only *suggests* common ones,
+/// translated, and materialises the chosen suggestion as a real row — so an
+/// Arabic-speaking tenant never inherits French headings.
+model ExpenseCategory {
   id        String   @id @default(uuid())
   tenantId  String   @map("tenant_id")
   name      String
-  amount    Decimal  @default(0) @db.Decimal(16, 3)
-  date      DateTime @db.Date
-  notes     String?
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  expenses Expense[]
 
+  @@unique([tenantId, name])
   @@index([tenantId])
-  @@map("expenses")
+  @@map("expense_categories")
 }
 
 // ========== Suppliers ==========
