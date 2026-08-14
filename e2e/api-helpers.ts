@@ -3,6 +3,13 @@ import { type Page } from "@playwright/test";
 /**
  * Helper to make authenticated API calls via page.evaluate.
  * Returns { status, body } for assertions.
+ *
+ * The evaluation runs inside the page so it carries the session cookie, which
+ * also means an in-flight navigation can tear its execution context down
+ * mid-call — "Execution context was destroyed" — and fail a test that has
+ * nothing to do with navigation. That is a property of the harness, not of the
+ * application, so it is retried once against the settled page rather than
+ * surfacing as a false failure.
  */
 export async function api(
   page: Page,
@@ -10,20 +17,35 @@ export async function api(
   path: string,
   body?: unknown
 ): Promise<{ status: number; body: Record<string, unknown> }> {
-  return page.evaluate(
-    async ([m, p, b]) => {
-      const opts: RequestInit = {
-        method: m,
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      };
-      if (b) opts.body = b;
-      const r = await fetch(p, opts);
-      const json = await r.json().catch(() => ({}));
-      return { status: r.status, body: json };
-    },
-    [method, path, body ? JSON.stringify(body) : null] as [string, string, string | null]
-  );
+  const run = () =>
+    page.evaluate(
+      async ([m, p, b]) => {
+        const opts: RequestInit = {
+          method: m,
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        };
+        if (b) opts.body = b;
+        const r = await fetch(p, opts);
+        const json = await r.json().catch(() => ({}));
+        return { status: r.status, body: json };
+      },
+      [method, path, body ? JSON.stringify(body) : null] as [string, string, string | null]
+    );
+
+  try {
+    return await run();
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    if (!/Execution context was destroyed|Target closed|frame was detached/i.test(message)) {
+      throw err;
+    }
+    // Let the navigation finish, then ask again. A GET is safe to repeat; a
+    // write that already reached the server is protected by the idempotency
+    // keys the routes carry.
+    await page.waitForLoadState("domcontentloaded").catch(() => {});
+    return run();
+  }
 }
 
 /** Shorthand for GET */
@@ -95,4 +117,18 @@ export async function openSession(page: Page, registerId: string, openingFloat: 
     opening_float: openingFloat,
   });
   return res.body as Record<string, unknown>;
+}
+
+/**
+ * Create an invoice and issue it, the way the application does.
+ *
+ * The create route only makes drafts: issuing is a separate transition, and it
+ * is where the integrity hash, the stamp-duty snapshot, the COGS snapshot and
+ * the stock decrement happen. A test that wanted an issued invoice used to ask
+ * for one at creation time and got an invoice with none of those.
+ */
+export async function setupIssuedInvoice(page: Page, body: Record<string, unknown>) {
+  const created = await apiPost(page, "/api/invoices", body);
+  if (created.status !== 200) return created;
+  return apiPost(page, `/api/invoices/${created.body.id}/issue`);
 }

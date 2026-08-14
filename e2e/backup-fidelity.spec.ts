@@ -97,8 +97,8 @@ async function restoreBackup(page: Page, payload: unknown) {
  * supplier payment, and a POS register + printer config.
  */
 async function seedRichTenant(page: Page) {
-  // Locations FIRST: creating a product with stock auto-creates a "Main"
-  // default location otherwise, which would muddy the per-location assertions.
+  // Locations FIRST: creating a product with stock otherwise auto-creates a
+  // default location, which would muddy the per-location assertions.
   const locA = (await apiPost(page, "/api/locations", {
     name: "A Warehouse",
     type: "warehouse",
@@ -601,8 +601,9 @@ test.describe("backup export/restore fidelity", () => {
 
     const after = await exportBackup(page);
 
-    // The fallback reconstructs a single default location ("Main", since the
-    // backup carried none) and rebuilds levels from each product's aggregate.
+    // The fallback reconstructs a single default location (named after the
+    // business, since the backup carried none) and rebuilds levels from each
+    // product's aggregate.
     const locations = after.locations as Json[];
     expect(locations).toHaveLength(1);
     expect(locations[0].is_default).toBe(true);

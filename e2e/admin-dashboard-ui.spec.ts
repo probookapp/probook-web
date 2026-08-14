@@ -46,7 +46,13 @@ test.describe("Admin dashboard (UI)", () => {
     await setupPlatformAdmin(page);
 
     await page.goto("/en/admin");
-    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible();
+    // First hit on the admin route: in dev the server compiles it on demand and
+    // the dashboard fans out a dozen aggregate queries over a test database that
+    // has accumulated a thousand-odd tenants. The default 5 s expect timeout
+    // occasionally loses that race — the page renders, just late.
+    await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({
+      timeout: 30_000,
+    });
 
     // Onboarding funnel renders with its steps.
     await expect(page.getByText("Onboarding funnel")).toBeVisible();

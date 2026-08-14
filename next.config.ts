@@ -2,6 +2,13 @@ import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
 const nextConfig: NextConfig = {
+  // The dev badge and its "Compiling…" pill are burned into a screen recording
+  // like anything else on the page. They are hidden only while filming, set by
+  // the guide's Playwright config — during ordinary development, and during
+  // `guide:check`, the indicator stays: it is what showed that a test was
+  // failing on a route Next was still compiling, not on the product.
+  devIndicators: process.env.GUIDE_RECORDING === "1" ? false : undefined,
+
   async headers() {
     return [
       {

@@ -32,8 +32,12 @@ async function importProductsCsv(page: Page, csv: string) {
 }
 
 test.describe("Import product stock levels", () => {
+  // The lazily-created default location is named after the business, so the
+  // company name from signup is what the stock level should report.
+  let company = "";
+
   test.beforeEach(async ({ page }) => {
-    await signUp(page);
+    ({ company } = await signUp(page));
   });
 
   test("imported product with quantity seeds a default-location stock level", async ({
@@ -62,8 +66,7 @@ test.describe("Import product stock levels", () => {
     const levels = levelsRes.body as unknown as StockLevelRow[];
     expect(levels.length).toBe(1);
     expect(levels[0].quantity).toBe(42);
-    // The lazily-created default location is named "Main".
-    expect(levels[0].location_name).toBe("Main");
+    expect(levels[0].location_name).toBe(company);
 
     // And the movements ledger recorded the initial import entry.
     const movRes = await apiGet(page, `/api/products/${product!.id}/movements`);

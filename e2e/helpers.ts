@@ -57,9 +57,14 @@ export async function signUp(
 
   await page.locator('button[type="submit"]').click();
 
-  // Wait for redirect to dashboard or subscription wall
+  // Wait for redirect to dashboard or subscription wall.
+  //
+  // 45 s, not 15: signing up creates a tenant, its settings, its default stock
+  // location and a trial, then lands on a dashboard the dev server may still be
+  // compiling on first hit. Under a full-suite run that occasionally overshot
+  // 15 s and failed a test before it had begun.
   await page.waitForURL(new RegExp(`/${LOCALE}/(dashboard|settings)`), {
-    timeout: 15_000,
+    timeout: 45_000,
   });
 
   return { company, username, password, email };

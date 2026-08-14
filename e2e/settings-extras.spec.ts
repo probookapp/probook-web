@@ -105,10 +105,14 @@ test.describe("Dashboard customization (Settings)", () => {
     // Reload the dashboard on this device: the hidden card is gone.
     await page.goto("/en/dashboard");
     await page.waitForLoadState("networkidle");
-    // "Total clients" only appears in the Clients stat card's description.
-    await expect(page.getByText("Total clients")).toBeHidden();
+    // Scoped to <main>: the sidebar carries a "Clients" nav link too. This used
+    // to key on the card's description ("Total clients"), which only the
+    // featured card renders now — so the assertion would have passed whether
+    // the card was there or not.
+    const stats = page.getByRole("main");
+    await expect(stats.getByRole("link", { name: /Clients/ })).toBeHidden();
     // A non-hidden card still renders.
-    await expect(page.getByText("Quotes created")).toBeVisible();
+    await expect(stats.getByRole("link", { name: /Quotes/ })).toBeVisible();
 
     // Cross-device simulation: fresh context, same credentials.
     const context2 = await browser.newContext();
@@ -118,7 +122,7 @@ test.describe("Dashboard customization (Settings)", () => {
     await logIn(page2, creds.username, creds.password);
     await page2.goto("/en/dashboard");
     await page2.waitForLoadState("networkidle");
-    await expect(page2.getByText("Total clients")).toBeHidden();
+    await expect(page2.getByRole("main").getByRole("link", { name: /Clients/ })).toBeHidden();
     await context2.close();
   });
 });
