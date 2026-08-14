@@ -6,18 +6,29 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
   variant?: "default" | "success" | "warning" | "danger" | "info";
 }
 
+/**
+ * A tint plus a hairline of the same hue, not a pill. A fully rounded capsule
+ * reads as a tag — something you attached; a squared chip reads as a state —
+ * something the document is. These say what a document is.
+ */
+const BADGE_VARIANTS = {
+  default:
+    "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700",
+  success:
+    "bg-success-50 text-success-700 border-success-200 dark:bg-success-950 dark:text-success-300 dark:border-success-800",
+  warning:
+    "bg-warning-50 text-warning-700 border-warning-200 dark:bg-warning-950 dark:text-warning-300 dark:border-warning-800",
+  danger:
+    "bg-danger-50 text-danger-700 border-danger-200 dark:bg-danger-950 dark:text-danger-300 dark:border-danger-800",
+  info: "bg-info-50 text-info-700 border-info-200 dark:bg-info-950 dark:text-info-300 dark:border-info-800",
+} as const;
+
 export function Badge({ className, variant = "default", ...props }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium",
-        {
-          "bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200": variant === "default",
-          "bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300": variant === "success",
-          "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-300": variant === "warning",
-          "bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-300": variant === "danger",
-          "bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-300": variant === "info",
-        },
+        "inline-flex items-center rounded-sm border px-2 py-0.5 text-xs font-medium whitespace-nowrap",
+        BADGE_VARIANTS[variant],
         className
       )}
       {...props}

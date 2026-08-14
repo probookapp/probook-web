@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
+import { Logo } from "@/components/shared/Logo";
 
 export function Footer() {
   const { t } = useTranslation("common");
@@ -16,7 +17,7 @@ export function Footer() {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
           <div>
             <div className="flex items-center gap-2.5 mb-6">
-              <img src="/probook-icon.png" alt="Probook" className="h-7 w-7" />
+              <Logo className="h-7 w-7" title="Probook" />
               <span className="text-lg font-bold text-white">Probook</span>
             </div>
             <p dir={textDir} className="text-sm leading-relaxed">

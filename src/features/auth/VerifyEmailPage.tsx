@@ -9,6 +9,7 @@ import { isApiError } from "@/lib/api-adapter";
 import { useLocale } from "@/lib/navigation";
 import { Button } from "@/components/ui";
 import Link from "next/link";
+import { Logo } from "@/components/shared/Logo";
 
 /**
  * Machine-readable reason from the API, so the UI never guesses. Handles both
@@ -122,7 +123,7 @@ export function VerifyEmailPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">
-            <img src="/probook-icon.png" alt="Probook" className="h-9 w-9" />
+            <Logo className="h-9 w-9" title="Probook" />
             Probook
           </h1>
         </div>

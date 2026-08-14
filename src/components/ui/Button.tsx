@@ -8,8 +8,52 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   disabledReason?: string;
 }
 
+/**
+ * Fixed heights rather than padding alone, so a button placed beside an input
+ * lines up with it instead of missing by a pixel or two — the kind of drift
+ * that reads as sloppiness long before anyone can name it.
+ */
+const SIZES = {
+  sm: "h-8 px-3 text-sm gap-1.5",
+  md: "h-9 px-4 text-sm gap-2",
+  lg: "h-11 px-6 text-base gap-2",
+} as const;
+
+const VARIANTS = {
+  // The accent is spent here and almost nowhere else: one primary action per
+  // view, unmistakable because nothing around it competes.
+  primary:
+    "bg-primary-600 text-white hover:bg-primary-700 active:bg-primary-800 " +
+    "shadow-xs focus-visible:ring-primary-500",
+  // A hairline on the page surface, not a filled grey block. Secondary actions
+  // should recede; a grey fill has nearly the same visual weight as the accent.
+  secondary:
+    "bg-(--color-bg-primary) text-(--color-text-primary) border border-(--color-border-secondary) " +
+    "hover:bg-(--color-bg-tertiary) active:bg-gray-200 dark:active:bg-gray-700 " +
+    "shadow-xs focus-visible:ring-gray-500",
+  danger:
+    "bg-danger-600 text-white hover:bg-danger-700 active:bg-danger-800 " +
+    "shadow-xs focus-visible:ring-danger-500",
+  ghost:
+    "bg-transparent text-(--color-text-secondary) hover:bg-(--color-bg-tertiary) " +
+    "hover:text-(--color-text-primary) active:bg-gray-200 dark:active:bg-gray-700 " +
+    "focus-visible:ring-gray-500",
+} as const;
+
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ className, variant = "primary", size = "md", isLoading, disabled, disabledReason, children, ...props }, ref) => {
+  (
+    {
+      className,
+      variant = "primary",
+      size = "md",
+      isLoading,
+      disabled,
+      disabledReason,
+      children,
+      ...props
+    },
+    ref
+  ) => {
     const isDisabled = disabled || isLoading;
 
     const button = (
@@ -17,31 +61,24 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={disabledReason && isDisabled ? undefined : ref}
         disabled={isDisabled}
         className={cn(
-          "inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed",
-          {
-            "bg-primary-600 text-white hover:bg-primary-700 focus-visible:ring-primary-500":
-              variant === "primary",
-            "bg-gray-200 dark:bg-gray-700 text-gray-900 dark:text-gray-100 hover:bg-gray-300 dark:hover:bg-gray-600 focus-visible:ring-gray-500":
-              variant === "secondary",
-            "bg-red-600 text-white hover:bg-red-700 focus-visible:ring-red-500": variant === "danger",
-            "bg-transparent text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 focus-visible:ring-gray-500":
-              variant === "ghost",
-          },
-          {
-            "px-3 py-1.5 text-sm": size === "sm",
-            "px-4 py-2 text-sm": size === "md",
-            "px-6 py-3 text-base": size === "lg",
-          },
+          "inline-flex items-center justify-center whitespace-nowrap rounded-md font-medium",
+          "transition-[background-color,border-color,color,box-shadow] duration-150",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
+          "focus-visible:ring-offset-(--color-bg-primary)",
+          "disabled:opacity-45 disabled:cursor-not-allowed disabled:shadow-none",
+          SIZES[size],
+          VARIANTS[variant],
           className
         )}
         {...props}
       >
         {isLoading && (
           <svg
-            className="animate-spin -ml-1 mr-2 h-4 w-4"
+            className="animate-spin h-4 w-4 shrink-0"
             xmlns="http://www.w3.org/2000/svg"
             fill="none"
             viewBox="0 0 24 24"
+            aria-hidden="true"
           >
             <circle
               className="opacity-25"
@@ -49,7 +86,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
               cy="12"
               r="10"
               stroke="currentColor"
-              strokeWidth="4"
+              strokeWidth="3"
             />
             <path
               className="opacity-75"

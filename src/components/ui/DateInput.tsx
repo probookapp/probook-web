@@ -2,6 +2,7 @@ import { forwardRef, useState, useRef, type InputHTMLAttributes } from "react";
 import { useTranslation } from "react-i18next";
 import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { fieldBase, fieldError, fieldLabel, FIELD_HEIGHT } from "./field";
 
 export interface DateInputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, "type" | "value" | "onChange"> {
   label?: string;
@@ -110,7 +111,7 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     return (
       <div className="w-full">
         {label && (
-          <label htmlFor={inputId} className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+          <label htmlFor={inputId} className={fieldLabel}>
             {label}
           </label>
         )}
@@ -125,14 +126,10 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             onBlur={handleBlur}
             placeholder={getPlaceholder(locale)}
             disabled={disabled}
-            className={cn(
-              "w-full px-3 py-2 pr-10 border rounded-lg shadow-sm transition-colors",
-              "bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100",
-              "focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500",
-              "disabled:bg-gray-100 dark:disabled:bg-gray-800 disabled:cursor-not-allowed",
-              "placeholder:text-gray-400 dark:placeholder:text-gray-500",
-              error ? "border-red-500 focus:ring-red-500 focus:border-red-500" : "border-gray-300 dark:border-gray-600",
-              className
+            // A date is a number: mono keeps 01/09 and 11/09 the same width.
+            className={fieldBase(
+              !!error,
+              cn(FIELD_HEIGHT, "pe-10 font-mono tabular-nums", className)
             )}
             {...props}
           />
@@ -141,7 +138,9 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             onClick={handleCalendarClick}
             disabled={disabled}
             aria-label={t("aria.openCalendar")}
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            // Logical inset, so the icon sits inside the padding in Arabic too
+            // rather than landing on top of the text.
+            className="absolute inset-e-2 top-1/2 -translate-y-1/2 rounded-sm p-1 text-(--color-text-tertiary) transition-colors hover:text-(--color-text-primary) disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Calendar className="h-4 w-4" />
           </button>
@@ -158,7 +157,7 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             aria-hidden="true"
           />
         </div>
-        {error && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{error}</p>}
+        {error && <p className={fieldError}>{error}</p>}
       </div>
     );
   }

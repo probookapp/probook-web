@@ -6,6 +6,7 @@ import { useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
 import { useTheme } from "@/components/providers/ThemeContext";
 import { Globe, ChevronDown, Sun, Moon, Menu, X } from "lucide-react";
+import { Logo } from "@/components/shared/Logo";
 
 const languages = [
   { code: "en", label: "English" },
@@ -46,7 +47,7 @@ export function Navbar({ actions }: NavbarProps) {
     <header className="fixed top-0 left-0 right-0 z-50 border-b border-gray-100 dark:border-gray-800 bg-white/85 dark:bg-gray-950/85 backdrop-blur-xl">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <Link href={`/${locale}`} className="flex items-center gap-2.5">
-          <img src="/probook-icon.png" alt="Probook" className="h-8 w-8" />
+          <Logo className="h-8 w-8" title="Probook" />
           <span className="text-xl font-bold text-gray-900 dark:text-white">Probook</span>
         </Link>
 

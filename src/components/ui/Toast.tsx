@@ -11,18 +11,24 @@ const iconMap: Record<ToastType, React.ComponentType<{ className?: string }>> = 
   info: Info,
 };
 
+/**
+ * The toast sits on the page surface and carries its meaning in a coloured
+ * rail down its leading edge, rather than tinting the whole panel. A full wash
+ * of colour has to stay pale to keep the text legible, which is precisely when
+ * the four kinds stop being distinguishable at a glance.
+ */
 const styleMap: Record<ToastType, string> = {
-  success: "bg-green-50 dark:bg-green-900/30 border-green-200 dark:border-green-800 text-green-800 dark:text-green-200",
-  error: "bg-red-50 dark:bg-red-900/30 border-red-200 dark:border-red-800 text-red-800 dark:text-red-200",
-  warning: "bg-yellow-50 dark:bg-yellow-900/30 border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200",
-  info: "bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-800 dark:text-blue-200",
+  success: "border-success-200 dark:border-success-800 border-s-4 border-s-success-500",
+  error: "border-danger-200 dark:border-danger-800 border-s-4 border-s-danger-500",
+  warning: "border-warning-200 dark:border-warning-800 border-s-4 border-s-warning-500",
+  info: "border-info-200 dark:border-info-800 border-s-4 border-s-info-500",
 };
 
 const iconStyleMap: Record<ToastType, string> = {
-  success: "text-green-500 dark:text-green-400",
-  error: "text-red-500 dark:text-red-400",
-  warning: "text-yellow-500 dark:text-yellow-400",
-  info: "text-blue-500 dark:text-blue-400",
+  success: "text-success-600 dark:text-success-400",
+  error: "text-danger-600 dark:text-danger-400",
+  warning: "text-warning-600 dark:text-warning-400",
+  info: "text-info-600 dark:text-info-400",
 };
 
 interface ToastItemProps {
@@ -53,7 +59,8 @@ function ToastItem({ type, message, onClose }: ToastItemProps) {
       role="alert"
       aria-live="polite"
       className={cn(
-        "flex items-start gap-3 p-4 rounded-lg border shadow-lg transition-all duration-200",
+        "flex items-start gap-3 p-4 rounded-lg border shadow-md transition-all duration-200",
+        "bg-(--color-bg-elevated) text-(--color-text-primary)",
         styleMap[type],
         isVisible && !isLeaving
           ? "opacity-100 translate-x-0"
@@ -64,7 +71,7 @@ function ToastItem({ type, message, onClose }: ToastItemProps) {
       <p className="flex-1 text-sm font-medium">{message}</p>
       <button
         onClick={handleClose}
-        className="shrink-0 p-1 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+        className="shrink-0 p-1 rounded-sm text-(--color-text-tertiary) transition-colors hover:bg-(--color-bg-tertiary) hover:text-(--color-text-primary)"
         aria-label={t("aria.closeNotification")}
       >
         <X className="h-4 w-4" />
@@ -80,7 +87,7 @@ export function ToastContainer() {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+    <div className="fixed top-4 inset-e-4 z-50 flex flex-col gap-2 max-w-sm w-[calc(100%-2rem)] pointer-events-none">
       {toasts.map((toast) => (
         <div key={toast.id} className="pointer-events-auto">
           <ToastItem

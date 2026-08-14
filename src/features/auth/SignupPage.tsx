@@ -10,6 +10,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { clearAllUserData } from "@/lib/session-cleanup";
 import { MetaPixel, trackMetaEvent } from "@/components/analytics/MetaPixel";
 import Link from "next/link";
+import { Logo } from "@/components/shared/Logo";
 
 export function SignupPage() {
   const { t } = useTranslation("auth");
@@ -83,7 +84,7 @@ export function SignupPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">
-            <img src="/probook-icon.png" alt="Probook" className="h-9 w-9" />
+            <Logo className="h-9 w-9" title="Probook" />
             Probook
           </h1>
           <p className="text-gray-500 dark:text-gray-400 mt-2">

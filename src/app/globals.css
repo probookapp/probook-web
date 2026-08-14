@@ -2,118 +2,316 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Probook — design tokens
+   ───────────────────────────────────────────────────────────────────────
+   Every value here is chosen. That is the whole point: the palette this
+   replaced was Tailwind's factory set, unrenamed — `blue` for the accent,
+   `gray` for the neutrals, Inter declared but never loaded. Those are the
+   same defaults every quickly-built tool ships with, which is why they all
+   look like each other.
+
+   Three decisions carry the identity:
+
+   1. Warm neutrals. The greys are biased toward stone rather than Tailwind's
+      cool blue-grey, so surfaces read as paper instead of screen.
+   2. A petrol accent, not a blue. Deep, low-key, and rare in this category;
+      it sits calmly on warm paper where a bright blue vibrates.
+   3. Numbers in a mono face. Money lines up, the way it does on a statement.
+      This single detail does more than any amount of colour to say
+      "accounting tool" rather than "web app".
+
+   Tailwind's own `gray-*` and `primary-*` scales are redefined below, so the
+   utility classes already scattered through the components inherit the new
+   palette rather than fighting it.
+   ═══════════════════════════════════════════════════════════════════════ */
+
 @theme {
-  --font-sans: "Inter", system-ui, sans-serif;
+  /* ─── Type ───
+     IBM Plex: drawn for engineering documentation, so it stays legible at
+     small sizes and has real character in the letterforms — the opposite of
+     Inter's deliberate neutrality. Loaded from our own domain by next/font,
+     never a CDN (the CSP forbids it, and a silent fallback would undo the
+     whole exercise). */
+  --font-sans: var(--font-plex-sans), "Segoe UI", system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, "Cascadia Mono", monospace;
 
-  --color-primary-50: #eff6ff;
-  --color-primary-100: #dbeafe;
-  --color-primary-200: #bfdbfe;
-  --color-primary-300: #93c5fd;
-  --color-primary-400: #60a5fa;
-  --color-primary-500: #3b82f6;
-  --color-primary-600: #2563eb;
-  --color-primary-700: #1d4ed8;
-  --color-primary-800: #1e40af;
-  --color-primary-900: #1e3a8a;
-  --color-primary-950: #172554;
+  /* ─── Neutrals: warm stone ───
+     Hue ~40°, saturation kept under 8% so it reads as neutral, not beige. */
+  --color-gray-50:  #faf9f7;
+  --color-gray-100: #f2f0ed;
+  --color-gray-200: #e5e2dc;
+  --color-gray-300: #d1ccc4;
+  --color-gray-400: #a8a299;
+  --color-gray-500: #837d73;
+  --color-gray-600: #635e56;
+  --color-gray-700: #4a4640;
+  --color-gray-800: #302d29;
+  --color-gray-900: #1e1c19;
+  --color-gray-950: #131211;
 
-  --color-success-500: #22c55e;
-  --color-warning-500: #f59e0b;
-  --color-danger-500: #ef4444;
+  /* Tailwind's `slate`/`zinc`/`neutral` are aliased to the same ramp so a
+     stray `slate-200` in a component cannot reintroduce the cool grey. */
+  --color-slate-50:  #faf9f7;
+  --color-slate-100: #f2f0ed;
+  --color-slate-200: #e5e2dc;
+  --color-slate-300: #d1ccc4;
+  --color-slate-400: #a8a299;
+  --color-slate-500: #837d73;
+  --color-slate-600: #635e56;
+  --color-slate-700: #4a4640;
+  --color-slate-800: #302d29;
+  --color-slate-900: #1e1c19;
+  --color-slate-950: #131211;
+
+  /* ─── Accent: petrol ───
+     Deep blue-green. Reads as considered rather than corporate, and leaves
+     the semantic colours below free to mean only what they mean. */
+  --color-primary-50:  #eef6f6;
+  --color-primary-100: #d3e9e9;
+  --color-primary-200: #a8d3d5;
+  --color-primary-300: #74b6ba;
+  --color-primary-400: #46939a;
+  --color-primary-500: #2a767e;
+  --color-primary-600: #1c5f68;
+  --color-primary-700: #174c55;
+  --color-primary-800: #143d45;
+  --color-primary-900: #12333a;
+  --color-primary-950: #0a1f24;
+
+  /* ─── Semantic ───
+     Desaturated to sit on warm paper. These say what happened; they are never
+     decoration, and never stand in for the accent.
+
+     Full ramps, not three steps: badges tint at 100, borders sit at 200, and
+     dark mode needs the 900s. A missing step is not a fallback — Tailwind
+     simply emits no class, and the element loses its colour without a word.
+
+     Tailwind's own `red`/`green`/`amber`/`yellow`/`blue` scales are aliased to
+     these below. Around eight hundred utility classes across the feature
+     folders were written against the factory palette; redefining the scale
+     converges all of them at once, and means a later `text-red-600` cannot
+     reintroduce the bright original. */
+  --color-success-50:  #eaf4ee;
+  --color-success-100: #d2e8da;
+  --color-success-200: #a7d0b8;
+  --color-success-300: #75b393;
+  --color-success-400: #47966f;
+  --color-success-500: #2e7d5b;
+  --color-success-600: #256a4c;
+  --color-success-700: #1d543d;
+  --color-success-800: #184331;
+  --color-success-900: #143628;
+  --color-success-950: #0a1f17;
+
+  --color-warning-50:  #fbf2e4;
+  --color-warning-100: #f6e5c8;
+  --color-warning-200: #eccb95;
+  --color-warning-300: #ddad64;
+  --color-warning-400: #ca9040;
+  --color-warning-500: #b4762a;
+  --color-warning-600: #986222;
+  --color-warning-700: #7a4e1b;
+  --color-warning-800: #613e16;
+  --color-warning-900: #4e3212;
+  --color-warning-950: #2c1c0a;
+
+  --color-danger-50:  #fbecea;
+  --color-danger-100: #f6d9d5;
+  --color-danger-200: #ecb8b2;
+  --color-danger-300: #de908a;
+  --color-danger-400: #cb6863;
+  --color-danger-500: #b0413e;
+  --color-danger-600: #963631;
+  --color-danger-700: #7a2b28;
+  --color-danger-800: #5f2320;
+  --color-danger-900: #4a1c1a;
+  --color-danger-950: #2a0f0e;
+
+  /* Information: a muted steel blue, held well away from the petrol accent so
+     "this is a note" never reads as "this is the primary action". */
+  --color-info-50:  #eef2f7;
+  --color-info-100: #dae2ee;
+  --color-info-200: #b6c6dc;
+  --color-info-300: #8ba4c5;
+  --color-info-400: #6483ab;
+  --color-info-500: #456691;
+  --color-info-600: #38547a;
+  --color-info-700: #2d4462;
+  --color-info-800: #26374f;
+  --color-info-900: #202e41;
+  --color-info-950: #121a26;
+
+  /* ─── Aliases onto Tailwind's factory scales ─── */
+  --color-red-50:  #fbecea;  --color-red-100: #f6d9d5;  --color-red-200: #ecb8b2;
+  --color-red-300: #de908a;  --color-red-400: #cb6863;  --color-red-500: #b0413e;
+  --color-red-600: #963631;  --color-red-700: #7a2b28;  --color-red-800: #5f2320;
+  --color-red-900: #4a1c1a;  --color-red-950: #2a0f0e;
+
+  --color-rose-50:  #fbecea;  --color-rose-100: #f6d9d5;  --color-rose-200: #ecb8b2;
+  --color-rose-300: #de908a;  --color-rose-400: #cb6863;  --color-rose-500: #b0413e;
+  --color-rose-600: #963631;  --color-rose-700: #7a2b28;  --color-rose-800: #5f2320;
+  --color-rose-900: #4a1c1a;  --color-rose-950: #2a0f0e;
+
+  --color-green-50:  #eaf4ee;  --color-green-100: #d2e8da;  --color-green-200: #a7d0b8;
+  --color-green-300: #75b393;  --color-green-400: #47966f;  --color-green-500: #2e7d5b;
+  --color-green-600: #256a4c;  --color-green-700: #1d543d;  --color-green-800: #184331;
+  --color-green-900: #143628;  --color-green-950: #0a1f17;
+
+  --color-emerald-50:  #eaf4ee;  --color-emerald-100: #d2e8da;  --color-emerald-200: #a7d0b8;
+  --color-emerald-300: #75b393;  --color-emerald-400: #47966f;  --color-emerald-500: #2e7d5b;
+  --color-emerald-600: #256a4c;  --color-emerald-700: #1d543d;  --color-emerald-800: #184331;
+  --color-emerald-900: #143628;  --color-emerald-950: #0a1f17;
+
+  --color-amber-50:  #fbf2e4;  --color-amber-100: #f6e5c8;  --color-amber-200: #eccb95;
+  --color-amber-300: #ddad64;  --color-amber-400: #ca9040;  --color-amber-500: #b4762a;
+  --color-amber-600: #986222;  --color-amber-700: #7a4e1b;  --color-amber-800: #613e16;
+  --color-amber-900: #4e3212;  --color-amber-950: #2c1c0a;
+
+  --color-yellow-50:  #fbf2e4;  --color-yellow-100: #f6e5c8;  --color-yellow-200: #eccb95;
+  --color-yellow-300: #ddad64;  --color-yellow-400: #ca9040;  --color-yellow-500: #b4762a;
+  --color-yellow-600: #986222;  --color-yellow-700: #7a4e1b;  --color-yellow-800: #613e16;
+  --color-yellow-900: #4e3212;  --color-yellow-950: #2c1c0a;
+
+  --color-orange-50:  #fbf2e4;  --color-orange-100: #f6e5c8;  --color-orange-200: #eccb95;
+  --color-orange-300: #ddad64;  --color-orange-400: #ca9040;  --color-orange-500: #b4762a;
+  --color-orange-600: #986222;  --color-orange-700: #7a4e1b;  --color-orange-800: #613e16;
+  --color-orange-900: #4e3212;  --color-orange-950: #2c1c0a;
+
+  --color-blue-50:  #eef2f7;  --color-blue-100: #dae2ee;  --color-blue-200: #b6c6dc;
+  --color-blue-300: #8ba4c5;  --color-blue-400: #6483ab;  --color-blue-500: #456691;
+  --color-blue-600: #38547a;  --color-blue-700: #2d4462;  --color-blue-800: #26374f;
+  --color-blue-900: #202e41;  --color-blue-950: #121a26;
+
+  --color-indigo-50:  #eef2f7;  --color-indigo-100: #dae2ee;  --color-indigo-200: #b6c6dc;
+  --color-indigo-300: #8ba4c5;  --color-indigo-400: #6483ab;  --color-indigo-500: #456691;
+  --color-indigo-600: #38547a;  --color-indigo-700: #2d4462;  --color-indigo-800: #26374f;
+  --color-indigo-900: #202e41;  --color-indigo-950: #121a26;
+
+  /* Teal and cyan sit next door to the accent; folding them in stops a stray
+     `text-teal-500` from reading as a second, slightly-wrong brand colour. */
+  --color-teal-50:  #eef6f6;  --color-teal-100: #d3e9e9;  --color-teal-200: #a8d3d5;
+  --color-teal-300: #74b6ba;  --color-teal-400: #46939a;  --color-teal-500: #2a767e;
+  --color-teal-600: #1c5f68;  --color-teal-700: #174c55;  --color-teal-800: #143d45;
+  --color-teal-900: #12333a;  --color-teal-950: #0a1f24;
+
+  --color-cyan-50:  #eef6f6;  --color-cyan-100: #d3e9e9;  --color-cyan-200: #a8d3d5;
+  --color-cyan-300: #74b6ba;  --color-cyan-400: #46939a;  --color-cyan-500: #2a767e;
+  --color-cyan-600: #1c5f68;  --color-cyan-700: #174c55;  --color-cyan-800: #143d45;
+  --color-cyan-900: #12333a;  --color-cyan-950: #0a1f24;
+
+  /* ─── Geometry ───
+     Tighter than the 8px everything-is-a-pill default. A 5px radius on a
+     control and 10px on a surface reads as drawn rather than rounded off. */
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
+  --radius-xl: 12px;
+  --radius-2xl: 16px;
+
+  /* ─── Elevation ───
+     Structure comes from hairlines; shadow is reserved for things that
+     genuinely float above the page. */
+  --shadow-xs: 0 1px 1px rgb(30 28 25 / 0.04);
+  --shadow-sm: 0 1px 2px rgb(30 28 25 / 0.06);
+  --shadow-md: 0 2px 4px rgb(30 28 25 / 0.06), 0 8px 20px -12px rgb(30 28 25 / 0.18);
+  --shadow-lg: 0 4px 8px rgb(30 28 25 / 0.07), 0 20px 40px -20px rgb(30 28 25 / 0.28);
 }
 
-/* Light theme (default) */
+/* ─── Surfaces, light ─── */
 :root {
   --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f9fafb;
-  --color-bg-tertiary: #f3f4f6;
+  --color-bg-secondary: #faf9f7;
+  --color-bg-tertiary: #f2f0ed;
   --color-bg-elevated: #ffffff;
   --color-bg-input: #ffffff;
 
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-tertiary: #9ca3af;
+  --color-text-primary: #1e1c19;
+  --color-text-secondary: #635e56;
+  --color-text-tertiary: #a8a299;
   --color-text-inverse: #ffffff;
 
-  --color-border-primary: #e5e7eb;
-  --color-border-secondary: #d1d5db;
-  --color-border-input: #d1d5db;
+  --color-border-primary: #e5e2dc;
+  --color-border-secondary: #d1ccc4;
+  --color-border-input: #d1ccc4;
 
-  --color-sidebar-bg: #111827;
-  --color-sidebar-text: #d1d5db;
-  --color-sidebar-hover: #1f2937;
-  --color-sidebar-active: #374151;
+  /* The rail is petrol, not black: a neutral-on-neutral shell is what makes
+     an admin template look like an admin template. */
+  --color-sidebar-bg: #12333a;
+  --color-sidebar-text: #a8d3d5;
+  --color-sidebar-hover: #143d45;
+  --color-sidebar-active: #1c5f68;
 }
 
-/* Dark theme - explicit class */
+/* ─── Surfaces, dark ───
+   Warm-shifted the same way, so the two themes are one family. */
 .dark {
-  --color-bg-primary: #111827;
-  --color-bg-secondary: #1f2937;
-  --color-bg-tertiary: #374151;
-  --color-bg-elevated: #1f2937;
-  --color-bg-input: #374151;
+  --color-bg-primary: #1e1c19;
+  --color-bg-secondary: #131211;
+  --color-bg-tertiary: #302d29;
+  --color-bg-elevated: #262421;
+  --color-bg-input: #262421;
 
-  --color-text-primary: #f9fafb;
-  --color-text-secondary: #d1d5db;
-  --color-text-tertiary: #9ca3af;
-  --color-text-inverse: #111827;
+  --color-text-primary: #faf9f7;
+  --color-text-secondary: #d1ccc4;
+  --color-text-tertiary: #a8a299;
+  --color-text-inverse: #1e1c19;
 
-  --color-border-primary: #374151;
-  --color-border-secondary: #4b5563;
-  --color-border-input: #4b5563;
+  --color-border-primary: #3a3630;
+  --color-border-secondary: #4a4640;
+  --color-border-input: #4a4640;
 
-  --color-sidebar-bg: #030712;
-  --color-sidebar-text: #d1d5db;
-  --color-sidebar-hover: #111827;
-  --color-sidebar-active: #1f2937;
+  --color-sidebar-bg: #0a1f24;
+  --color-sidebar-text: #a8d3d5;
+  --color-sidebar-hover: #12333a;
+  --color-sidebar-active: #174c55;
 }
 
-/* System preference - when no explicit class is set */
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    --color-bg-primary: #111827;
-    --color-bg-secondary: #1f2937;
-    --color-bg-tertiary: #374151;
-    --color-bg-elevated: #1f2937;
-    --color-bg-input: #374151;
+    --color-bg-primary: #1e1c19;
+    --color-bg-secondary: #131211;
+    --color-bg-tertiary: #302d29;
+    --color-bg-elevated: #262421;
+    --color-bg-input: #262421;
 
-    --color-text-primary: #f9fafb;
-    --color-text-secondary: #d1d5db;
-    --color-text-tertiary: #9ca3af;
-    --color-text-inverse: #111827;
+    --color-text-primary: #faf9f7;
+    --color-text-secondary: #d1ccc4;
+    --color-text-tertiary: #a8a299;
+    --color-text-inverse: #1e1c19;
 
-    --color-border-primary: #374151;
-    --color-border-secondary: #4b5563;
-    --color-border-input: #4b5563;
+    --color-border-primary: #3a3630;
+    --color-border-secondary: #4a4640;
+    --color-border-input: #4a4640;
 
-    --color-sidebar-bg: #030712;
-    --color-sidebar-text: #d1d5db;
-    --color-sidebar-hover: #111827;
-    --color-sidebar-active: #1f2937;
+    --color-sidebar-bg: #0a1f24;
+    --color-sidebar-text: #a8d3d5;
+    --color-sidebar-hover: #12333a;
+    --color-sidebar-active: #174c55;
   }
 }
 
-/* Force light mode - use :root.light for higher specificity than the media query */
+/* Explicit light choice must beat a dark OS preference. */
 :root.light {
   --color-bg-primary: #ffffff;
-  --color-bg-secondary: #f9fafb;
-  --color-bg-tertiary: #f3f4f6;
+  --color-bg-secondary: #faf9f7;
+  --color-bg-tertiary: #f2f0ed;
   --color-bg-elevated: #ffffff;
   --color-bg-input: #ffffff;
 
-  --color-text-primary: #111827;
-  --color-text-secondary: #6b7280;
-  --color-text-tertiary: #9ca3af;
+  --color-text-primary: #1e1c19;
+  --color-text-secondary: #635e56;
+  --color-text-tertiary: #a8a299;
   --color-text-inverse: #ffffff;
 
-  --color-border-primary: #e5e7eb;
-  --color-border-secondary: #d1d5db;
-  --color-border-input: #d1d5db;
+  --color-border-primary: #e5e2dc;
+  --color-border-secondary: #d1ccc4;
+  --color-border-input: #d1ccc4;
 
-  --color-sidebar-bg: #111827;
-  --color-sidebar-text: #d1d5db;
-  --color-sidebar-hover: #1f2937;
-  --color-sidebar-active: #374151;
+  --color-sidebar-bg: #12333a;
+  --color-sidebar-text: #a8d3d5;
+  --color-sidebar-hover: #143d45;
+  --color-sidebar-active: #1c5f68;
 }
 
 * {
@@ -128,6 +326,58 @@ body {
   background-color: var(--color-bg-secondary);
   color: var(--color-text-primary);
   transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Money lines up. Every figure in a column shares a width, so a total reads
+   as a total instead of a ragged string of digits. */
+.tabular-nums,
+table td,
+table th {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Arabic: punctuation on the correct side ───
+   The layout is deliberately not mirrored — the rail stays where it is — but
+   that is a layout choice, and this is not. With no direction declared, the
+   bidirectional algorithm treats every block as left-to-right, so a neutral
+   character closing an Arabic sentence is pushed to the far left: the trial
+   notice ended with its full stop on the wrong side, and a placeholder read
+   "...البحث عن فاتورة" with its ellipsis leading instead of trailing.
+
+   `unicode-bidi: plaintext` is what `dir="auto"` compiles to: the paragraph
+   direction is taken from the first strong character of the text itself, so
+   Arabic sentences resolve right-to-left while the surrounding layout is
+   untouched. Scoped to text-bearing elements, and to Arabic, so nothing in the
+   French or English interfaces can move. */
+html[lang="ar"] :where(p, span, h1, h2, h3, h4, h5, h6, li, td, th, label,
+  legend, figcaption, dt, dd, blockquote, option, summary, caption) {
+  unicode-bidi: plaintext;
+}
+
+html[lang="ar"] :where(input, textarea) {
+  unicode-bidi: plaintext;
+}
+
+html[lang="ar"] :where(input, textarea)::placeholder {
+  unicode-bidi: plaintext;
+}
+
+/* Keyboard focus is visible and uses the accent, everywhere, once. */
+:where(a, button, input, select, textarea, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-primary-500);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* Hide native browser password reveal button (Edge, Chrome) */

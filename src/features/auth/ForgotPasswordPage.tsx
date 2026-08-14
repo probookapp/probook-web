@@ -7,6 +7,7 @@ import { authApi } from '@/lib/api';
 import { useLocale } from '@/lib/navigation';
 import { Button, Input } from '@/components/ui';
 import Link from 'next/link';
+import { Logo } from "@/components/shared/Logo";
 
 export function ForgotPasswordPage() {
   const { t } = useTranslation('auth');
@@ -34,7 +35,7 @@ export function ForgotPasswordPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">
-            <img src="/probook-icon.png" alt="Probook" className="h-8 w-9" />
+            <Logo className="h-9 w-9" title="Probook" />
             Probook
           </h1>
         </div>

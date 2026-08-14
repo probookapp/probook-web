@@ -26,6 +26,7 @@ import { authApi } from "@/lib/api";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearAllUserData } from "@/lib/session-cleanup";
 import type { PermissionKey } from "@/types";
+import { Logo } from "@/components/shared/Logo";
 
 interface SidebarProps {
   onClose?: () => void;
@@ -78,7 +79,7 @@ export function Sidebar({ onClose }: SidebarProps) {
     <aside className="w-56 lg:w-64 h-full bg-gray-900 dark:bg-gray-950 text-white flex flex-col">
       <div className="p-6 flex items-center justify-between">
         <div className="flex items-center justify-center gap-2.5 flex-1">
-          <img src="/probook-icon.png" alt="Probook" className="h-7 w-7" />
+          <Logo className="h-7 w-7 text-white" title="Probook" />
           <h1 className="text-xl font-bold">Probook</h1>
         </div>
         {onClose && (
@@ -121,7 +122,10 @@ export function Sidebar({ onClose }: SidebarProps) {
         {hasPermission("pos") && (
           <button
             onClick={() => router.push("/pos")}
-            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium bg-green-600 hover:bg-green-700 text-white transition-colors"
+            // Outlined, not a green slab. Green is the "it worked" colour
+            // everywhere else in the application; spending it on a navigation
+            // button makes the rail argue with itself.
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-md text-sm font-medium border border-white/25 text-white hover:bg-white/10 transition-colors"
           >
             <Store className="h-5 w-5" />
             {t("posMode")}

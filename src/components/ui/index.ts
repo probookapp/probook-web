@@ -13,7 +13,9 @@ export {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
 } from "./Table";
+export { fieldBase, fieldLabel, fieldError, FIELD_HEIGHT } from "./field";
 export {
   Badge,
   getQuoteStatusVariant,

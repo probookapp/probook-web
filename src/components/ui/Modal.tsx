@@ -29,12 +29,17 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
       }}
     >
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50" />
+        {/* Warm-tinted rather than pure black: a neutral scrim over warm paper
+            drains the colour out of the page behind it. */}
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-gray-950/45 backdrop-blur-[2px]" />
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <Dialog.Content
             aria-describedby={undefined}
             className={cn(
-              "relative bg-white dark:bg-gray-800 rounded-lg shadow-xl max-h-[90vh] overflow-auto focus:outline-none",
+              // A dialog genuinely floats, so this is one of the few places a
+              // real shadow is earned.
+              "relative bg-(--color-bg-elevated) rounded-xl border border-(--color-border-primary)",
+              "shadow-lg max-h-[90vh] overflow-auto focus:outline-none",
               {
                 "w-full max-w-[calc(100%-2rem)] sm:max-w-sm": size === "sm",
                 "w-full max-w-[calc(100%-2rem)] sm:max-w-md": size === "md",
@@ -43,14 +48,14 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
               }
             )}
           >
-            <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 dark:border-gray-700">
-              <Dialog.Title className="text-base sm:text-lg font-semibold text-gray-900 dark:text-gray-100">
+            <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 border-b border-(--color-border-primary)">
+              <Dialog.Title className="text-base sm:text-lg font-semibold text-(--color-text-primary)">
                 {title}
               </Dialog.Title>
               <Dialog.Close asChild>
                 <button
                   aria-label={t("aria.close")}
-                  className="p-1 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  className="-me-1 shrink-0 rounded-md p-1.5 text-(--color-text-tertiary) transition-colors hover:bg-(--color-bg-tertiary) hover:text-(--color-text-primary)"
                 >
                   <X className="h-5 w-5" />
                 </button>
