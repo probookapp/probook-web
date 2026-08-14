@@ -21,6 +21,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
   Input,
   Badge,
 } from "@/components/ui";
@@ -30,6 +31,7 @@ import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
+import { StatusFilterChips } from "@/components/shared/StatusFilterChips";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -266,22 +268,12 @@ export function PurchasesPage() {
             </div>
           </div>
 
-          {/* Status filter chips */}
-          <div className="flex flex-wrap gap-2 mt-3">
-            {statusFilters.map((filter) => (
-              <button
-                key={filter.key}
-                onClick={() => setStatusFilter(filter.key)}
-                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                  statusFilter === filter.key
-                    ? "bg-primary-600 text-white"
-                    : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                }`}
-              >
-                {filter.label}
-              </button>
-            ))}
-          </div>
+          <StatusFilterChips
+            options={statusFilters}
+            value={statusFilter}
+            onChange={(v) => setStatusFilter(v as StatusFilter)}
+            label={tCommon("filters.filterByStatus")}
+          />
         </CardHeader>
 
         <CardContent className="p-0">
@@ -410,7 +402,7 @@ export function PurchasesPage() {
                   <TableHead>{t("fields.date")}</TableHead>
                   <TableHead>{t("fields.status")}</TableHead>
                   <TableHead>{t("fields.paymentStatus")}</TableHead>
-                  <TableHead>{t("fields.total")}</TableHead>
+                  <TableHead className="text-end">{t("fields.total")}</TableHead>
                   <TableHead className="w-32">
                     {tCommon("buttons.actions")}
                   </TableHead>
@@ -462,9 +454,9 @@ export function PurchasesPage() {
                             )}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-gray-600 dark:text-gray-400">
+                        <TableNumericCell className="text-gray-600 dark:text-gray-400">
                           {formatCurrency(purchase.total)}
-                        </TableCell>
+                        </TableNumericCell>
                         <TableCell>
                           {isReceivable && (
                             <div className="flex items-center gap-1">

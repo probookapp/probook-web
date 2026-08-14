@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2 } from "lucide-react";
