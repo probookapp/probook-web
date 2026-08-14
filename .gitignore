@@ -48,3 +48,13 @@ next-env.d.ts
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+
+# guide videos (recordings + exports are build artefacts, not source)
+/guide-output/
+/e2e-guide/.session.json
+
+# Screenshots from the identity preview run (e2e/identity-preview.spec.ts)
+/identity-preview/
+
+# Sample PDFs from the typography comparison (e2e/pdf-typography-preview.spec.ts)
+/comparaison-pdf/
