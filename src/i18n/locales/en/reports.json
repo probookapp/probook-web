@@ -1,4 +1,26 @@
 {
+  "pipeline": {
+    "title": "Pipeline",
+    "quotes": "Quotes",
+    "invoices": "Invoices",
+    "deliveryNotes": "Delivery notes",
+    "document": "Document",
+    "status": "Status",
+    "count": "Count",
+    "amount": "Amount",
+    "awaitingInvoice": "Accepted, to invoice",
+    "awaitingPayment": "Invoiced, to collect",
+    "overdue": "Of which overdue",
+    "awaitingInvoiceDetail": "Accepted quotes awaiting invoicing",
+    "awaitingPaymentDetail": "Invoices awaiting payment",
+    "documentCount_one": "{{count}} document",
+    "documentCount_other": "{{count}} documents",
+    "number": "Number",
+    "client": "Client",
+    "date": "Date",
+    "dueDate": "Due date",
+    "remaining": "Outstanding"
+  },
   "title": "Reports",
   "subtitle": "Analyze your business performance",
   "exportCsv": "Export CSV",
@@ -97,6 +119,15 @@
     "expenseCount": "Expense Count",
     "total": "Total expenses"
   },
+  "expensesByCategory": {
+    "title": "Expenses by heading",
+    "category": "Heading",
+    "expenseCount": "Count",
+    "totalAmount": "Amount",
+    "share": "Share",
+    "total": "Total expenses",
+    "uncategorized": "Unfiled"
+  },
   "lowStock": {
     "title": "Low Stock",
     "product": "Product",
@@ -126,6 +157,10 @@
     "ht": "Excl. VAT",
     "vat": "VAT",
     "ttc": "Incl. VAT",
+    "grossHt": "Gross sales excl. VAT",
+    "discountHt": "Discounts granted",
+    "taxableHt": "Taxable base excl. VAT",
+    "discountNote": "Taxable base = {{gross}} gross excl. VAT less {{discount}} of commercial discounts, i.e. {{base}}.",
     "stampDutyNote": "Stamp duty at {{rate}}% on cash payments totalling {{base}}."
   },
   "accountingExport": {
@@ -140,12 +175,15 @@
     "entryType": "Type",
     "document": "Document",
     "party": "Party",
+    "discount": "Discount",
+    "grossHt": "Gross excl. VAT",
     "ht": "Excl. VAT",
     "vat": "VAT",
     "ttc": "Incl. VAT",
     "types": {
       "sale": "Sale",
       "purchase": "Purchase",
+      "refund": "Credit note",
       "payment": "Payment",
       "expense": "Expense"
     },

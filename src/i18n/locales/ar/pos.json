@@ -126,5 +126,16 @@
     "transactionFailed": "فشل اتمام المعاملة",
     "cancelFailed": "فشل الغاء المعاملة",
     "cashMovementFailed": "فشل تسجيل حركة النقد"
-  }
+  },
+  "cheque": "شيك",
+  "transfer": "تحويل بنكي",
+  "credit": "حساب العميل",
+  "amountReceived": "المبلغ المستلم",
+  "amountReceivedHint": "اتركه فارغًا لتحصيل المبلغ كاملًا. مبلغ أقل يترك الباقي على حساب العميل.",
+  "paymentReference": "المرجع",
+  "paymentReferencePlaceholder": "رقم الشيك، مرجع التحويل…",
+  "leftOnAccount": "المتبقي على حساب العميل",
+  "creditNeedsClient": "اختر عميلًا لترك رصيد للتحصيل.",
+  "compactView": "عرض مضغوط",
+  "gridView": "عرض المربعات"
 }

@@ -29,7 +29,13 @@
     "quantity": "الكمية",
     "unit": "الوحدة",
     "addLine": "إضافة صنف",
-    "noLines": "لا توجد أصناف"
+    "noLines": "لا توجد أصناف",
+    "count_one": "سطر واحد",
+    "count_other": "{{count}} أسطر",
+    "lineNumber": "السطر {{number}}",
+    "untitled": "بدون عنوان",
+    "doneLine": "إنهاء السطر",
+    "discountPercent": "تخفيض %"
   },
   "actions": {
     "duplicate": "نسخ",

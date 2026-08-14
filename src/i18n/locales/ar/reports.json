@@ -1,4 +1,26 @@
 {
+  "pipeline": {
+    "title": "القيادة",
+    "quotes": "عروض الأسعار",
+    "invoices": "الفواتير",
+    "deliveryNotes": "سندات التسليم",
+    "document": "المستند",
+    "status": "الحالة",
+    "count": "العدد",
+    "amount": "المبلغ",
+    "awaitingInvoice": "مقبول، في انتظار الفوترة",
+    "awaitingPayment": "مفوتر، في انتظار التحصيل",
+    "overdue": "منها متأخرة",
+    "awaitingInvoiceDetail": "عروض أسعار مقبولة في انتظار الفوترة",
+    "awaitingPaymentDetail": "فواتير في انتظار الدفع",
+    "documentCount_one": "مستند واحد",
+    "documentCount_other": "{{count}} مستندات",
+    "number": "الرقم",
+    "client": "العميل",
+    "date": "التاريخ",
+    "dueDate": "تاريخ الاستحقاق",
+    "remaining": "المتبقي"
+  },
   "title": "التقارير",
   "subtitle": "تحليل أداء عملك التجاري",
   "exportCsv": "CSV تصدير ",
@@ -97,6 +119,15 @@
     "expenseCount": "عدد المصاريف",
     "total": "إجمالي المصاريف"
   },
+  "expensesByCategory": {
+    "title": "المصاريف حسب البند",
+    "category": "البند",
+    "expenseCount": "العدد",
+    "totalAmount": "المبلغ",
+    "share": "الحصة",
+    "total": "إجمالي المصاريف",
+    "uncategorized": "بدون بند"
+  },
   "lowStock": {
     "title": "المخزون المنخفض",
     "product": "المنتج",
@@ -126,6 +157,10 @@
     "ht": "بدون ضريبة",
     "vat": "ض.ق.م",
     "ttc": "شامل الضريبة",
+    "grossHt": "رقم الأعمال الإجمالي بدون ضريبة",
+    "discountHt": "التخفيضات الممنوحة",
+    "taxableHt": "الوعاء الخاضع للضريبة",
+    "discountNote": "الوعاء الخاضع للضريبة = {{gross}} إجمالي بدون ضريبة ناقص {{discount}} من التخفيضات التجارية، أي {{base}}.",
     "stampDutyNote": "رسم الطابع بنسبة {{rate}}% على المدفوعات النقدية بإجمالي {{base}}."
   },
   "accountingExport": {
@@ -140,12 +175,15 @@
     "entryType": "النوع",
     "document": "المستند",
     "party": "الطرف",
+    "discount": "تخفيض",
+    "grossHt": "الإجمالي بدون ضريبة",
     "ht": "بدون ضريبة",
     "vat": "ض.ق.م",
     "ttc": "شامل الضريبة",
     "types": {
       "sale": "بيع",
       "purchase": "شراء",
+      "refund": "إشعار دائن",
       "payment": "دفعة",
       "expense": "مصروف"
     },

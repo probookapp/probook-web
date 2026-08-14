@@ -29,7 +29,13 @@
     "quantity": "Quantité",
     "unit": "Unité",
     "addLine": "Ajouter un article",
-    "noLines": "Aucun article"
+    "noLines": "Aucun article",
+    "count_one": "{{count}} ligne",
+    "count_other": "{{count}} lignes",
+    "lineNumber": "Ligne {{number}}",
+    "untitled": "Sans titre",
+    "doneLine": "Terminer la ligne",
+    "discountPercent": "Remise %"
   },
   "actions": {
     "duplicate": "Dupliquer",

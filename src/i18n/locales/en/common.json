@@ -31,7 +31,9 @@
     "details": "Details",
     "actions": "Actions",
     "loading": "Loading...",
-    "addLine": "Add line"
+    "addLine": "Add line",
+    "archive": "Archive",
+    "unarchive": "Unarchive"
   },
   "status": {
     "draft": "Draft",
@@ -47,6 +49,11 @@
     "dueSoon": "Due soon",
     "active": "Active",
     "inactive": "Inactive"
+  },
+  "filters": {
+    "all": "All",
+    "filterByStatus": "Filter by status",
+    "archived": "Archived"
   },
   "labels": {
     "name": "Name",
@@ -105,10 +112,6 @@
     "meter": "meter",
     "liter": "liter",
     "forfait": "flat rate"
-  },
-  "currency": {
-    "symbol": "€",
-    "code": "EUR"
   },
   "dates": "Dates",
   "phonebook": {
@@ -188,7 +191,7 @@
     "noPayments": "No payments recorded",
     "deleteConfirm": "Are you sure you want to delete this payment? This action cannot be undone.",
     "savePayment": "Save payment",
-    "amount": "Amount (€) *",
+    "amount": "Amount *",
     "date": "Payment date *",
     "method": "Payment method *",
     "reference": "Reference",
@@ -313,6 +316,9 @@
     "openCalendar": "Open calendar",
     "close": "Close"
   },
+  "nav": {
+    "openMenu": "Open menu"
+  },
   "update": {
     "available": "Update available",
     "availableDescription": "Version {{version}} is ready to download.",
@@ -422,5 +428,27 @@
     "promptTitle": "Subscribe to unlock",
     "promptDescription": "Create clients, invoices, quotes, and more with an active subscription.",
     "maybeLater": "Maybe later"
+  },
+  "fiscalProfiles": {
+    "label": "Tax regime",
+    "hint": "Drives the VAT rates offered, the company identifiers and whether stamp duty applies.",
+    "DZ": "Algeria",
+    "FR": "France"
+  },
+  "identifiers": {
+    "nif": "NIF (tax identification number)",
+    "rc": "RC (trade register number)",
+    "nis": "NIS (statistical identification number)",
+    "art": "Tax article number",
+    "siret": "SIRET",
+    "vatNumber": "VAT number"
+  },
+  "identifiersShort": {
+    "nif": "NIF",
+    "rc": "RC",
+    "nis": "NIS",
+    "art": "Tax art.",
+    "siret": "SIRET",
+    "vatNumber": "VAT"
   }
 }

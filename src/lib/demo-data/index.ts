@@ -2,11 +2,28 @@ export { DEMO_CLIENTS } from "./clients";
 export { DEMO_PRODUCTS } from "./products";
 export { DEMO_INVOICES } from "./invoices";
 export { DEMO_QUOTES } from "./quotes";
-export { DEMO_EXPENSES } from "./expenses";
+export { DEMO_EXPENSES, DEMO_EXPENSE_CATEGORIES } from "./expenses";
 export { DEMO_SUPPLIERS } from "./suppliers";
 export { DEMO_DASHBOARD_STATS } from "./dashboard";
 export { DEMO_ALERTS_SUMMARY } from "./alerts";
 export { DEMO_DELIVERY_NOTES } from "./delivery-notes";
 export { DEMO_CLIENT_CONTACTS } from "./contacts";
 export { DEMO_PURCHASES } from "./purchases";
-export { DEMO_REVENUE_BY_MONTH, DEMO_REVENUE_BY_CLIENT, DEMO_PRODUCT_SALES, DEMO_OUTSTANDING_PAYMENTS } from "./reports";
+export {
+  DEMO_REVENUE_BY_MONTH,
+  DEMO_REVENUE_BY_CLIENT,
+  DEMO_PRODUCT_SALES,
+  DEMO_OUTSTANDING_PAYMENTS,
+  DEMO_EXPENSES_BY_CATEGORY,
+  DEMO_EXPENSES_BY_MONTH,
+  DEMO_PIPELINE,
+} from "./reports";
+export {
+  DEMO_PROFIT_MARGIN,
+  DEMO_SUPPLIER_SPEND,
+  DEMO_INVENTORY_VALUATION,
+  DEMO_QUOTE_CONVERSION,
+  DEMO_TAX_SUMMARY,
+  DEMO_ACCOUNTING_EXPORT,
+  DEMO_POS_DAILY,
+} from "./reports-derived";

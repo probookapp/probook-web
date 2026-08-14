@@ -31,7 +31,9 @@
     "details": "التفاصيل",
     "actions": "الإجراءات",
     "loading": "جاري التحميل...",
-    "addLine": "إضافة سطر"
+    "addLine": "إضافة سطر",
+    "archive": "أرشفة",
+    "unarchive": "إلغاء الأرشفة"
   },
   "status": {
     "draft": "مسودة",
@@ -47,6 +49,11 @@
     "dueSoon": "يستحق قريباً",
     "active": "نشط",
     "inactive": "غير نشط"
+  },
+  "filters": {
+    "all": "الكل",
+    "filterByStatus": "تصفية حسب الحالة",
+    "archived": "المؤرشفة"
   },
   "labels": {
     "name": "الاسم",
@@ -105,10 +112,6 @@
     "meter": "متر",
     "liter": "لتر",
     "forfait": "مقطوعية"
-  },
-  "currency": {
-    "symbol": "€",
-    "code": "EUR"
   },
   "dates": "التواريخ",
   "phonebook": {
@@ -188,7 +191,7 @@
     "noPayments": "لا توجد مدفوعات مسجلة",
     "deleteConfirm": "هل أنت متأكد من حذف هذه الدفعة؟ لا يمكن التراجع عن هذا الإجراء.",
     "savePayment": "حفظ الدفعة",
-    "amount": "المبلغ (€) *",
+    "amount": "المبلغ *",
     "date": "تاريخ الدفع *",
     "method": "طريقة الدفع *",
     "reference": "المرجع",
@@ -313,6 +316,9 @@
     "openCalendar": "فتح التقويم",
     "close": "إغلاق"
   },
+  "nav": {
+    "openMenu": "فتح القائمة"
+  },
   "update": {
     "available": "تحديث متاح",
     "availableDescription": "الإصدار {{version}} جاهز للتنزيل.",
@@ -422,5 +428,27 @@
     "promptTitle": "اشترك للفتح",
     "promptDescription": "أنشئ العملاء والفواتير وعروض الأسعار والمزيد مع اشتراك فعّال.",
     "maybeLater": "ربما لاحقاً"
+  },
+  "fiscalProfiles": {
+    "label": "النظام الجبائي",
+    "hint": "يحدد نسب الرسم على القيمة المضافة المتاحة ومعرّفات الشركة وتطبيق رسم الطابع.",
+    "DZ": "الجزائر",
+    "FR": "فرنسا"
+  },
+  "identifiers": {
+    "nif": "رقم التعريف الجبائي (NIF)",
+    "rc": "السجل التجاري (RC)",
+    "nis": "رقم التعريف الإحصائي (NIS)",
+    "art": "رقم المادة الجبائية",
+    "siret": "SIRET",
+    "vatNumber": "رقم الرسم على القيمة المضافة"
+  },
+  "identifiersShort": {
+    "nif": "NIF",
+    "rc": "RC",
+    "nis": "NIS",
+    "art": "المادة",
+    "siret": "SIRET",
+    "vatNumber": "TVA"
   }
 }

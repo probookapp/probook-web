@@ -126,5 +126,16 @@
     "transactionFailed": "Failed to complete transaction",
     "cancelFailed": "Failed to cancel transaction",
     "cashMovementFailed": "Failed to record cash movement"
-  }
+  },
+  "cheque": "Cheque",
+  "transfer": "Bank transfer",
+  "credit": "Client account",
+  "amountReceived": "Amount received",
+  "amountReceivedHint": "Leave empty to collect the full amount. A smaller figure leaves the rest on the client's account.",
+  "paymentReference": "Reference",
+  "paymentReferencePlaceholder": "Cheque number, transfer reference…",
+  "leftOnAccount": "Left on the client's account",
+  "creditNeedsClient": "Select a client to leave a balance to collect.",
+  "compactView": "Compact view",
+  "gridView": "Tile view"
 }

@@ -12,15 +12,19 @@
     "name": "Nom",
     "nameRequired": "Nom *",
     "amount": "Montant",
-    "amountRequired": "Montant (€) *",
+    "amountRequired": "Montant *",
     "date": "Date",
     "dateRequired": "Date *",
-    "notes": "Notes"
+    "notes": "Notes",
+    "category": "Poste de dépense",
+    "categoryPlaceholder": "Ex. Carburant",
+    "categoryHint": "Choisissez un poste existant ou saisissez-en un nouveau : il sera créé à l'enregistrement."
   },
   "validation": {
     "nameRequired": "Le nom est requis",
     "amountPositive": "Le montant doit être un nombre positif",
-    "dateRequired": "La date est requise"
+    "dateRequired": "La date est requise",
+    "categoryTooLong": "Le nom du poste est trop long"
   },
   "messages": {
     "created": "Dépense créée avec succès",
@@ -29,5 +33,38 @@
     "updateError": "Erreur lors de la mise à jour de la dépense",
     "deleted": "Dépense supprimée avec succès",
     "deleteError": "Erreur lors de la suppression de la dépense"
+  },
+  "categories": {
+    "manage": "Postes",
+    "title": "Postes de dépense",
+    "description": "Regroupez vos charges récurrentes pour savoir où part l'argent. Supprimer un poste ne supprime jamais les dépenses enregistrées dessus.",
+    "newPlaceholder": "Nouveau poste",
+    "empty": "Aucun poste pour l'instant. Saisissez-en un dans une dépense et il apparaîtra ici.",
+    "usage_one": "{{count}} dépense",
+    "usage_other": "{{count}} dépenses",
+    "created": "Poste créé",
+    "renamed": "Poste renommé",
+    "deleted": "Poste supprimé",
+    "saveError": "Erreur lors de l'enregistrement du poste",
+    "deleteError": "Erreur lors de la suppression du poste",
+    "deleteConfirmation": "Supprimer ce poste ? Les dépenses concernées seront simplement laissées sans poste."
+  },
+  "suggestions": {
+    "fuel": "Carburant",
+    "rent": "Loyer",
+    "salaries": "Salaires",
+    "electricity": "Électricité",
+    "water": "Eau",
+    "phoneInternet": "Téléphone et internet",
+    "insurance": "Assurances",
+    "vehicleMaintenance": "Entretien des véhicules",
+    "supplies": "Fournitures",
+    "transport": "Transport",
+    "taxes": "Impôts et taxes",
+    "bankFees": "Frais bancaires",
+    "advertising": "Publicité",
+    "subcontracting": "Sous-traitance",
+    "training": "Formation",
+    "software": "Logiciels"
   }
 }

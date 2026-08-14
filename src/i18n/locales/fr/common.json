@@ -31,7 +31,9 @@
     "details": "Détails",
     "actions": "Actions",
     "loading": "Chargement...",
-    "addLine": "Ajouter une ligne"
+    "addLine": "Ajouter une ligne",
+    "archive": "Archiver",
+    "unarchive": "Désarchiver"
   },
   "status": {
     "draft": "Brouillon",
@@ -47,6 +49,11 @@
     "dueSoon": "Échéance proche",
     "active": "Actif",
     "inactive": "Inactif"
+  },
+  "filters": {
+    "all": "Tous",
+    "filterByStatus": "Filtrer par état",
+    "archived": "Archivés"
   },
   "labels": {
     "name": "Nom",
@@ -105,10 +112,6 @@
     "meter": "mètre",
     "liter": "litre",
     "forfait": "forfait"
-  },
-  "currency": {
-    "symbol": "€",
-    "code": "EUR"
   },
   "dates": "Dates",
   "phonebook": {
@@ -188,7 +191,7 @@
     "noPayments": "Aucun paiement enregistré",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer ce paiement ? Cette action est irréversible.",
     "savePayment": "Enregistrer le paiement",
-    "amount": "Montant (€) *",
+    "amount": "Montant *",
     "date": "Date de paiement *",
     "method": "Mode de paiement *",
     "reference": "Référence",
@@ -313,6 +316,9 @@
     "openCalendar": "Ouvrir le calendrier",
     "close": "Fermer"
   },
+  "nav": {
+    "openMenu": "Ouvrir le menu"
+  },
   "update": {
     "available": "Mise à jour disponible",
     "availableDescription": "La version {{version}} est prête à être téléchargée.",
@@ -422,5 +428,27 @@
     "promptTitle": "Abonnez-vous pour débloquer",
     "promptDescription": "Créez des clients, factures, devis et bien plus avec un abonnement actif.",
     "maybeLater": "Plus tard"
+  },
+  "fiscalProfiles": {
+    "label": "Régime fiscal",
+    "hint": "Détermine les taux de TVA proposés, les identifiants de l'entreprise et l'application du droit de timbre.",
+    "DZ": "Algérie",
+    "FR": "France"
+  },
+  "identifiers": {
+    "nif": "NIF (n° d'identification fiscale)",
+    "rc": "RC (registre de commerce)",
+    "nis": "NIS (n° d'identification statistique)",
+    "art": "Article d'imposition",
+    "siret": "SIRET",
+    "vatNumber": "N° de TVA intracommunautaire"
+  },
+  "identifiersShort": {
+    "nif": "NIF",
+    "rc": "RC",
+    "nis": "NIS",
+    "art": "Art. imp.",
+    "siret": "SIRET",
+    "vatNumber": "TVA"
   }
 }

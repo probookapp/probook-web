@@ -26,7 +26,9 @@
       "stampDuty": "Stamp duty",
       "totalWithStamp": "Total payable (incl. stamp duty)",
       "downPayment": "Down Payment",
-      "remaining": "Amount Due"
+      "remaining": "Amount Due",
+      "linesSubtotal": "Lines total",
+      "discount": "Discount"
     },
     "groupSubtotal": "Subtotal {{group}}",
     "amountInWords": "Amount in words",
@@ -59,7 +61,9 @@
       "shippingVat": "VAT on shipping",
       "totalTtc": "Total (incl. VAT)",
       "downPayment": "Down Payment Required",
-      "remaining": "Remaining"
+      "remaining": "Remaining",
+      "linesSubtotal": "Lines total",
+      "discount": "Discount"
     },
     "groupSubtotal": "Subtotal {{group}}",
     "amountInWords": "Amount in words",

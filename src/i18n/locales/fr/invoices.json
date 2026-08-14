@@ -38,7 +38,15 @@
     "groupTotal": "Total du groupe",
     "subtotalHint": "Cette ligne affichera le sous-total du groupe dans le PDF",
     "addLine": "Ajouter une ligne",
-    "noLines": "Aucune ligne"
+    "noLines": "Aucune ligne",
+    "denseView": "Vue dense",
+    "detailedView": "Vue détaillée",
+    "count_one": "{{count}} ligne",
+    "count_other": "{{count}} lignes",
+    "lineNumber": "Ligne {{number}}",
+    "untitled": "Sans titre",
+    "doneLine": "Terminer la ligne",
+    "discountPercent": "Remise %"
   },
   "shipping": {
     "title": "Frais de port",
@@ -48,7 +56,7 @@
   "downPayment": {
     "title": "Acompte",
     "percent": "Acompte versé (%)",
-    "amount": "Montant fixe (€)",
+    "amount": "Montant fixe",
     "amountPaid": "Acompte déjà versé",
     "remaining": "Reste à payer",
     "percentPlaceholder": "Ex : 30",
@@ -61,7 +69,8 @@
     "shippingVat": "TVA frais de port",
     "totalTtc": "Total TTC",
     "labelHt": "HT",
-    "labelTtc": "TTC"
+    "labelTtc": "TTC",
+    "taxableBase": "Base HT"
   },
   "payments": {
     "title": "Paiements",
@@ -145,5 +154,16 @@
     "relatedInvoice": "Facture liée",
     "stockRestored": "Les articles retournés ont été réintégrés en stock",
     "stockNotRestored": "Le stock n'a pas été modifié"
+  },
+  "discount": {
+    "label": "Remise commerciale",
+    "percent": "Remise (%)",
+    "amount": "Remise (montant)",
+    "hint": "La remise s'applique au total hors taxe : le pourcentage d'abord, puis le montant. Elle figure sur le document et la TVA est calculée sur le montant remisé."
+  },
+  "margin": {
+    "label": "Marge",
+    "cost": "Coût d'achat",
+    "partial": "Marge partielle : certaines lignes n'ont pas de prix d'achat renseigné."
   }
 }

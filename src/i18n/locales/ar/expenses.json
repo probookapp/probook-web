@@ -12,15 +12,19 @@
     "name": "الاسم",
     "nameRequired": "الاسم *",
     "amount": "المبلغ",
-    "amountRequired": "المبلغ (€) *",
+    "amountRequired": "المبلغ *",
     "date": "التاريخ",
     "dateRequired": "التاريخ *",
-    "notes": "ملاحظات"
+    "notes": "ملاحظات",
+    "category": "بند المصروف",
+    "categoryPlaceholder": "مثال: الوقود",
+    "categoryHint": "اختر بندًا موجودًا أو اكتب بندًا جديدًا: سيتم إنشاؤه عند الحفظ."
   },
   "validation": {
     "nameRequired": "الاسم مطلوب",
     "amountPositive": "يجب أن يكون المبلغ رقمًا موجبًا",
-    "dateRequired": "التاريخ مطلوب"
+    "dateRequired": "التاريخ مطلوب",
+    "categoryTooLong": "اسم البند طويل جدًا"
   },
   "messages": {
     "created": "تم إنشاء المصروف بنجاح",
@@ -29,5 +33,38 @@
     "updateError": "فشل في تحديث المصروف",
     "deleted": "تم حذف المصروف بنجاح",
     "deleteError": "فشل في حذف المصروف"
+  },
+  "categories": {
+    "manage": "البنود",
+    "title": "بنود المصاريف",
+    "description": "اجمع مصاريفك المتكررة لتعرف أين تذهب الأموال. حذف بند لا يحذف أبدًا المصاريف المسجلة تحته.",
+    "newPlaceholder": "بند جديد",
+    "empty": "لا توجد بنود بعد. اكتب بندًا في مصروف وسيظهر هنا.",
+    "usage_one": "مصروف واحد",
+    "usage_other": "{{count}} مصاريف",
+    "created": "تم إنشاء البند",
+    "renamed": "تمت إعادة تسمية البند",
+    "deleted": "تم حذف البند",
+    "saveError": "فشل في حفظ البند",
+    "deleteError": "فشل في حذف البند",
+    "deleteConfirmation": "حذف هذا البند؟ ستبقى المصاريف المعنية بدون بند."
+  },
+  "suggestions": {
+    "fuel": "الوقود",
+    "rent": "الإيجار",
+    "salaries": "الأجور",
+    "electricity": "الكهرباء",
+    "water": "الماء",
+    "phoneInternet": "الهاتف والإنترنت",
+    "insurance": "التأمينات",
+    "vehicleMaintenance": "صيانة المركبات",
+    "supplies": "اللوازم",
+    "transport": "النقل",
+    "taxes": "الضرائب والرسوم",
+    "bankFees": "المصاريف البنكية",
+    "advertising": "الإشهار",
+    "subcontracting": "المناولة",
+    "training": "التكوين",
+    "software": "البرمجيات"
   }
 }

@@ -12,15 +12,19 @@
     "name": "Name",
     "nameRequired": "Name *",
     "amount": "Amount",
-    "amountRequired": "Amount (€) *",
+    "amountRequired": "Amount *",
     "date": "Date",
     "dateRequired": "Date *",
-    "notes": "Notes"
+    "notes": "Notes",
+    "category": "Expense heading",
+    "categoryPlaceholder": "e.g. Fuel",
+    "categoryHint": "Pick an existing heading or type a new one — it is created on save."
   },
   "validation": {
     "nameRequired": "Name is required",
     "amountPositive": "Amount must be a positive number",
-    "dateRequired": "Date is required"
+    "dateRequired": "Date is required",
+    "categoryTooLong": "Heading name is too long"
   },
   "messages": {
     "created": "Expense created successfully",
@@ -29,5 +33,38 @@
     "updateError": "Failed to update expense",
     "deleted": "Expense deleted successfully",
     "deleteError": "Failed to delete expense"
+  },
+  "categories": {
+    "manage": "Headings",
+    "title": "Expense headings",
+    "description": "Group recurring charges to see where the money goes. Deleting a heading never deletes the expenses recorded under it.",
+    "newPlaceholder": "New heading",
+    "empty": "No headings yet. Type one on an expense and it will appear here.",
+    "usage_one": "{{count}} expense",
+    "usage_other": "{{count}} expenses",
+    "created": "Heading created",
+    "renamed": "Heading renamed",
+    "deleted": "Heading deleted",
+    "saveError": "Failed to save the heading",
+    "deleteError": "Failed to delete the heading",
+    "deleteConfirmation": "Delete this heading? The expenses under it are simply left unfiled."
+  },
+  "suggestions": {
+    "fuel": "Fuel",
+    "rent": "Rent",
+    "salaries": "Salaries",
+    "electricity": "Electricity",
+    "water": "Water",
+    "phoneInternet": "Phone and internet",
+    "insurance": "Insurance",
+    "vehicleMaintenance": "Vehicle maintenance",
+    "supplies": "Supplies",
+    "transport": "Transport",
+    "taxes": "Taxes",
+    "bankFees": "Bank fees",
+    "advertising": "Advertising",
+    "subcontracting": "Subcontracting",
+    "training": "Training",
+    "software": "Software"
   }
 }

@@ -1,4 +1,26 @@
 {
+  "pipeline": {
+    "title": "Pilotage",
+    "quotes": "Devis",
+    "invoices": "Factures",
+    "deliveryNotes": "Bons de livraison",
+    "document": "Document",
+    "status": "État",
+    "count": "Nombre",
+    "amount": "Montant",
+    "awaitingInvoice": "Accepté, à facturer",
+    "awaitingPayment": "Facturé, à encaisser",
+    "overdue": "Dont en retard",
+    "awaitingInvoiceDetail": "Devis acceptés en attente de facturation",
+    "awaitingPaymentDetail": "Factures en attente de règlement",
+    "documentCount_one": "{{count}} document",
+    "documentCount_other": "{{count}} documents",
+    "number": "Numéro",
+    "client": "Client",
+    "date": "Date",
+    "dueDate": "Échéance",
+    "remaining": "Reste dû"
+  },
   "title": "Rapports",
   "subtitle": "Analysez vos performances commerciales",
   "exportCsv": "Exporter CSV",
@@ -97,6 +119,15 @@
     "expenseCount": "Nombre de dépenses",
     "total": "Total des dépenses"
   },
+  "expensesByCategory": {
+    "title": "Dépenses par poste",
+    "category": "Poste",
+    "expenseCount": "Nombre",
+    "totalAmount": "Montant",
+    "share": "Part",
+    "total": "Total des dépenses",
+    "uncategorized": "Sans poste"
+  },
   "lowStock": {
     "title": "Stock faible",
     "product": "Produit",
@@ -126,6 +157,10 @@
     "ht": "HT",
     "vat": "TVA",
     "ttc": "TTC",
+    "grossHt": "Chiffre d'affaires brut HT",
+    "discountHt": "Remises accordées",
+    "taxableHt": "Base imposable HT",
+    "discountNote": "Base imposable = {{gross}} brut HT moins {{discount}} de remises commerciales, soit {{base}}.",
     "stampDutyNote": "Droit de timbre à {{rate}}% sur les paiements en espèces totalisant {{base}}."
   },
   "accountingExport": {
@@ -140,12 +175,15 @@
     "entryType": "Type",
     "document": "Document",
     "party": "Tiers",
+    "discount": "Remise",
+    "grossHt": "Brut HT",
     "ht": "HT",
     "vat": "TVA",
     "ttc": "TTC",
     "types": {
       "sale": "Vente",
       "purchase": "Achat",
+      "refund": "Avoir",
       "payment": "Règlement",
       "expense": "Dépense"
     },

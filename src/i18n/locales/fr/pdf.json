@@ -26,7 +26,9 @@
       "stampDuty": "Droit de timbre",
       "totalWithStamp": "Total à payer (timbre inclus)",
       "downPayment": "Acompte versé",
-      "remaining": "Reste à payer"
+      "remaining": "Reste à payer",
+      "linesSubtotal": "Total des lignes",
+      "discount": "Remise commerciale"
     },
     "groupSubtotal": "Sous-total {{group}}",
     "amountInWords": "Arrêté à la somme de",
@@ -59,7 +61,9 @@
       "shippingVat": "TVA frais de port",
       "totalTtc": "Total TTC",
       "downPayment": "Acompte à verser",
-      "remaining": "Reste à payer"
+      "remaining": "Reste à payer",
+      "linesSubtotal": "Total des lignes",
+      "discount": "Remise commerciale"
     },
     "groupSubtotal": "Sous-total {{group}}",
     "amountInWords": "Arrêté à la somme de",

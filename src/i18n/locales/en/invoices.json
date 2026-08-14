@@ -38,7 +38,15 @@
     "groupTotal": "Group total",
     "subtotalHint": "This line will display the group subtotal in the PDF",
     "addLine": "Add Line",
-    "noLines": "No lines"
+    "noLines": "No lines",
+    "denseView": "Dense view",
+    "detailedView": "Detailed view",
+    "count_one": "{{count}} line",
+    "count_other": "{{count}} lines",
+    "lineNumber": "Line {{number}}",
+    "untitled": "Untitled",
+    "doneLine": "Done",
+    "discountPercent": "Discount %"
   },
   "shipping": {
     "title": "Shipping",
@@ -48,7 +56,7 @@
   "downPayment": {
     "title": "Down Payment",
     "percent": "Down Payment (%)",
-    "amount": "Fixed Amount (€)",
+    "amount": "Fixed Amount",
     "amountPaid": "Down Payment Paid",
     "remaining": "Remaining",
     "percentPlaceholder": "e.g. 30",
@@ -61,7 +69,8 @@
     "shippingVat": "VAT on shipping",
     "totalTtc": "Total (incl. VAT)",
     "labelHt": "excl. VAT",
-    "labelTtc": "incl. VAT"
+    "labelTtc": "incl. VAT",
+    "taxableBase": "Taxable base"
   },
   "payments": {
     "title": "Payments",
@@ -145,5 +154,16 @@
     "relatedInvoice": "Related Invoice",
     "stockRestored": "Returned items were restocked",
     "stockNotRestored": "Stock was not modified"
+  },
+  "discount": {
+    "label": "Discount",
+    "percent": "Discount (%)",
+    "amount": "Discount (amount)",
+    "hint": "The discount applies to the pre-tax total: percentage first, then the fixed amount. It is printed on the document and VAT is charged on the discounted base."
+  },
+  "margin": {
+    "label": "Margin",
+    "cost": "Cost",
+    "partial": "Partial margin: some lines have no purchase price recorded."
   }
 }

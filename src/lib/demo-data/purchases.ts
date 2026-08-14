@@ -89,7 +89,7 @@ export const DEMO_PURCHASES: PurchaseOrder[] = [
     subtotal: 12000,
     tax_amount: 2280,
     total: 14280,
-    notes: "Waiting for delivery",
+    notes: "En attente de livraison",
     lines: [
       {
         id: "demo-pol-003",
@@ -135,7 +135,7 @@ export const DEMO_PURCHASES: PurchaseOrder[] = [
     subtotal: 85000,
     tax_amount: 16150,
     total: 101150,
-    notes: "Supplier credit - payment due in 30 days",
+    notes: "Crédit fournisseur — règlement à 30 jours",
     lines: [
       {
         id: "demo-pol-004",
