@@ -7,6 +7,7 @@ import {
 } from "@react-pdf/renderer";
 import { styles } from "./styles";
 import i18n from "@/i18n";
+import { renderIdentifiers, identifierSummary } from "./identifiers";
 import type { DeliveryNote, CompanySettings } from "@/types";
 
 // Helper to get PDF translations
@@ -32,7 +33,7 @@ export function DeliveryNotePDF({ deliveryNote, company, logoBase64 }: DeliveryN
       case "DELIVERED":
         return styles.statusPaid;
       case "CANCELLED":
-        return { ...styles.statusDraft, backgroundColor: "#fee2e2", color: "#dc2626" };
+        return { ...styles.statusDraft, backgroundColor: "#f6d9d5", color: "#963631" };
       default:
         return styles.statusDraft;
     }
@@ -71,14 +72,11 @@ export function DeliveryNotePDF({ deliveryNote, company, logoBase64 }: DeliveryN
             </View>
           </View>
           <View style={styles.companyInfo}>
-            {company.siret && (
-              <Text style={styles.companyDetail}>{t("common.siret")}: {company.siret}</Text>
-            )}
-            {company.vat_number && (
-              <Text style={styles.companyDetail}>
-                {t("common.vatNumber")}: {company.vat_number}
+            {renderIdentifiers(company, company).map((id) => (
+              <Text key={id.label} style={styles.companyDetail}>
+                {id.label}: {id.value}
               </Text>
-            )}
+            ))}
           </View>
         </View>
 
@@ -133,7 +131,7 @@ export function DeliveryNotePDF({ deliveryNote, company, logoBase64 }: DeliveryN
         {/* Table */}
         <View style={styles.table}>
           {/* Table Header */}
-          <View style={[styles.tableHeader, { backgroundColor: "#059669" }]}>
+          <View style={[styles.tableHeader, { backgroundColor: "#256a4c" }]}>
             <Text style={[styles.colDescription, { flex: 3 }]}>{t("deliveryNote.table.description")}</Text>
             <Text style={[styles.colQuantity, { flex: 1, textAlign: "right" }]}>{t("deliveryNote.table.quantity")}</Text>
             <Text style={[styles.colUnitPrice, { flex: 1 }]}>{t("deliveryNote.table.unit")}</Text>
@@ -154,11 +152,11 @@ export function DeliveryNotePDF({ deliveryNote, company, logoBase64 }: DeliveryN
 
         {/* Summary */}
         <View style={{ marginTop: 20, alignItems: "flex-end" }}>
-          <View style={{ backgroundColor: "#f0fdf4", padding: 15, borderRadius: 4, minWidth: 200 }}>
-            <Text style={{ fontSize: 10, color: "#047857", fontWeight: "bold" }}>
+          <View style={{ backgroundColor: "#eaf4ee", padding: 15, borderRadius: 4, minWidth: 200 }}>
+            <Text style={{ fontSize: 10, color: "#1d543d", fontWeight: "bold" }}>
               {t("deliveryNote.totalItems")}: {deliveryNote.lines.length}
             </Text>
-            <Text style={{ fontSize: 10, color: "#047857", marginTop: 4 }}>
+            <Text style={{ fontSize: 10, color: "#1d543d", marginTop: 4 }}>
               {t("deliveryNote.totalQuantity")}: {deliveryNote.lines.reduce((sum, l) => sum + l.quantity, 0)}
             </Text>
           </View>
@@ -178,14 +176,14 @@ export function DeliveryNotePDF({ deliveryNote, company, logoBase64 }: DeliveryN
             <Text style={{ fontSize: 9, fontWeight: "bold", marginBottom: 5 }}>
               {t("deliveryNote.deliverySignature")}
             </Text>
-            <View style={{ borderWidth: 1, borderColor: "#d1d5db", height: 60, borderRadius: 4 }} />
+            <View style={{ borderWidth: 1, borderColor: "#d1ccc4", height: 60, borderRadius: 4 }} />
           </View>
           <View style={{ width: "45%" }}>
             <Text style={{ fontSize: 9, fontWeight: "bold", marginBottom: 5 }}>
               {t("deliveryNote.recipientSignature")}
             </Text>
-            <View style={{ borderWidth: 1, borderColor: "#d1d5db", height: 60, borderRadius: 4 }} />
-            <Text style={{ fontSize: 8, color: "#6b7280", marginTop: 4 }}>
+            <View style={{ borderWidth: 1, borderColor: "#d1ccc4", height: 60, borderRadius: 4 }} />
+            <Text style={{ fontSize: 8, color: "#837d73", marginTop: 4 }}>
               {t("deliveryNote.receivedInGoodCondition")}
             </Text>
           </View>
@@ -194,8 +192,9 @@ export function DeliveryNotePDF({ deliveryNote, company, logoBase64 }: DeliveryN
         {/* Footer */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            {company.company_name} - {company.siret && `${t("common.siret")}: ${company.siret}`}
-            {company.vat_number && ` - ${t("common.vatNumber")}: ${company.vat_number}`}
+            {company.company_name}
+            {identifierSummary(company, company) &&
+              ` - ${identifierSummary(company, company)}`}
           </Text>
         </View>
       </Page>

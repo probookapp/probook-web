@@ -26,13 +26,13 @@ export const styles = StyleSheet.create({
   },
   companyDetail: {
     fontSize: 9,
-    color: "#666",
+    color: "#635e56",
     marginBottom: 2,
   },
   documentTitle: {
     fontSize: 24,
     fontWeight: "bold",
-    color: "#2563eb",
+    color: "#1c5f68",
     marginBottom: 20,
   },
   documentInfo: {
@@ -45,7 +45,7 @@ export const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 8,
-    color: "#666",
+    color: "#635e56",
     marginBottom: 2,
     textTransform: "uppercase",
   },
@@ -54,7 +54,7 @@ export const styles = StyleSheet.create({
     marginBottom: 8,
   },
   clientBox: {
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "#f2f0ed",
     padding: 15,
     borderRadius: 4,
   },
@@ -65,7 +65,7 @@ export const styles = StyleSheet.create({
   },
   clientDetail: {
     fontSize: 9,
-    color: "#374151",
+    color: "#4a4640",
     marginBottom: 2,
   },
   table: {
@@ -74,7 +74,7 @@ export const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#2563eb",
+    backgroundColor: "#1c5f68",
     color: "#fff",
     padding: 8,
     fontWeight: "bold",
@@ -83,12 +83,12 @@ export const styles = StyleSheet.create({
   tableRow: {
     flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    borderBottomColor: "#e5e2dc",
     padding: 8,
     fontSize: 9,
   },
   tableRowAlt: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#faf9f7",
   },
   colDescription: {
     width: "40%",
@@ -122,11 +122,11 @@ export const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 4,
     borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    borderBottomColor: "#e5e2dc",
   },
   totalLabel: {
     fontSize: 10,
-    color: "#374151",
+    color: "#4a4640",
   },
   totalValue: {
     fontSize: 10,
@@ -136,7 +136,7 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     paddingVertical: 8,
-    backgroundColor: "#2563eb",
+    backgroundColor: "#1c5f68",
     color: "#fff",
     paddingHorizontal: 8,
     marginTop: 4,
@@ -152,7 +152,7 @@ export const styles = StyleSheet.create({
   notes: {
     marginTop: 30,
     padding: 15,
-    backgroundColor: "#fef3c7",
+    backgroundColor: "#f6e5c8",
     borderRadius: 4,
   },
   notesTitle: {
@@ -162,7 +162,7 @@ export const styles = StyleSheet.create({
   },
   notesText: {
     fontSize: 9,
-    color: "#92400e",
+    color: "#613e16",
   },
   footer: {
     position: "absolute",
@@ -171,9 +171,9 @@ export const styles = StyleSheet.create({
     right: 40,
     textAlign: "center",
     fontSize: 8,
-    color: "#9ca3af",
+    color: "#a8a299",
     borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
+    borderTopColor: "#e5e2dc",
     paddingTop: 10,
   },
   footerText: {
@@ -188,29 +188,29 @@ export const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   statusDraft: {
-    backgroundColor: "#e5e7eb",
-    color: "#374151",
+    backgroundColor: "#e5e2dc",
+    color: "#4a4640",
   },
   statusSent: {
-    backgroundColor: "#dbeafe",
-    color: "#1d4ed8",
+    backgroundColor: "#d3e9e9",
+    color: "#174c55",
   },
   statusAccepted: {
-    backgroundColor: "#d1fae5",
-    color: "#065f46",
+    backgroundColor: "#d2e8da",
+    color: "#184331",
   },
   statusIssued: {
-    backgroundColor: "#fef3c7",
-    color: "#92400e",
+    backgroundColor: "#f6e5c8",
+    color: "#613e16",
   },
   statusPaid: {
-    backgroundColor: "#d1fae5",
-    color: "#065f46",
+    backgroundColor: "#d2e8da",
+    color: "#184331",
   },
   bankDetails: {
     marginTop: 20,
     padding: 10,
-    backgroundColor: "#f3f4f6",
+    backgroundColor: "#f2f0ed",
     borderRadius: 4,
   },
   bankTitle: {
@@ -220,6 +220,6 @@ export const styles = StyleSheet.create({
   },
   bankText: {
     fontSize: 9,
-    color: "#374151",
+    color: "#4a4640",
   },
 });

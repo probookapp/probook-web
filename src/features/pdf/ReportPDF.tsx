@@ -1,5 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import i18n from "@/i18n";
+import { pdfSafe } from "./text";
 
 export interface ReportPDFColumn {
   header: string;
@@ -22,12 +23,12 @@ export interface ReportPDFProps {
 
 const s = StyleSheet.create({
   page: { padding: 40, fontSize: 9, fontFamily: "Helvetica" },
-  title: { fontSize: 20, fontWeight: "bold", color: "#2563eb", marginBottom: 4 },
-  subtitle: { fontSize: 10, color: "#666", marginBottom: 20 },
-  generatedAt: { fontSize: 8, color: "#9ca3af", marginBottom: 16 },
+  title: { fontSize: 20, fontWeight: "bold", color: "#1c5f68", marginBottom: 4 },
+  subtitle: { fontSize: 10, color: "#635e56", marginBottom: 20 },
+  generatedAt: { fontSize: 8, color: "#a8a299", marginBottom: 16 },
   tableHeader: {
     flexDirection: "row",
-    backgroundColor: "#2563eb",
+    backgroundColor: "#1c5f68",
     color: "#fff",
     padding: 6,
     fontWeight: "bold",
@@ -35,10 +36,10 @@ const s = StyleSheet.create({
   row: {
     flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    borderBottomColor: "#e5e2dc",
     padding: 6,
   },
-  rowAlt: { backgroundColor: "#f9fafb" },
+  rowAlt: { backgroundColor: "#faf9f7" },
   cell: { paddingHorizontal: 2 },
   totalsBox: { marginTop: 20, flexDirection: "column", alignItems: "flex-end" },
   totalRow: {
@@ -47,9 +48,9 @@ const s = StyleSheet.create({
     width: 240,
     paddingVertical: 4,
     borderBottomWidth: 1,
-    borderBottomColor: "#e5e7eb",
+    borderBottomColor: "#e5e2dc",
   },
-  totalLabel: { fontSize: 10, color: "#374151" },
+  totalLabel: { fontSize: 10, color: "#4a4640" },
   totalValue: { fontSize: 10, fontWeight: "bold" },
   footer: {
     position: "absolute",
@@ -58,9 +59,9 @@ const s = StyleSheet.create({
     right: 40,
     textAlign: "center",
     fontSize: 8,
-    color: "#9ca3af",
+    color: "#a8a299",
     borderTopWidth: 1,
-    borderTopColor: "#e5e7eb",
+    borderTopColor: "#e5e2dc",
     paddingTop: 10,
   },
 });
@@ -74,8 +75,8 @@ export function ReportPDF({ title, subtitle, columns, rows, totals }: ReportPDFP
   return (
     <Document>
       <Page size="A4" orientation="landscape" style={s.page}>
-        <Text style={s.title}>{title}</Text>
-        {subtitle ? <Text style={s.subtitle}>{subtitle}</Text> : null}
+        <Text style={s.title}>{pdfSafe(title)}</Text>
+        {subtitle ? <Text style={s.subtitle}>{pdfSafe(subtitle)}</Text> : null}
         <Text style={s.generatedAt}>
           {i18n.t("reports:pdf.generatedAt", { date: generatedAt })}
         </Text>
@@ -86,7 +87,7 @@ export function ReportPDF({ title, subtitle, columns, rows, totals }: ReportPDFP
               key={i}
               style={[s.cell, { flex: col.flex ?? 1, textAlign: col.align ?? "left" }]}
             >
-              {col.header}
+              {pdfSafe(col.header)}
             </Text>
           ))}
         </View>
@@ -101,7 +102,7 @@ export function ReportPDF({ title, subtitle, columns, rows, totals }: ReportPDFP
                   { flex: columns[c]?.flex ?? 1, textAlign: columns[c]?.align ?? "left" },
                 ]}
               >
-                {cell}
+                {pdfSafe(cell)}
               </Text>
             ))}
           </View>
@@ -111,14 +112,14 @@ export function ReportPDF({ title, subtitle, columns, rows, totals }: ReportPDFP
           <View style={s.totalsBox}>
             {totals.map((tot, i) => (
               <View key={i} style={s.totalRow}>
-                <Text style={s.totalLabel}>{tot.label}</Text>
-                <Text style={s.totalValue}>{tot.value}</Text>
+                <Text style={s.totalLabel}>{pdfSafe(tot.label)}</Text>
+                <Text style={s.totalValue}>{pdfSafe(tot.value)}</Text>
               </View>
             ))}
           </View>
         ) : null}
 
-        <Text style={s.footer}>{title}</Text>
+        <Text style={s.footer}>{pdfSafe(title)}</Text>
       </Page>
     </Document>
   );

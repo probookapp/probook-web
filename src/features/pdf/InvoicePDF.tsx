@@ -10,7 +10,9 @@ import { numberToFrenchWords, CURRENCY_WORDS } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 import { renderHtmlToPdf } from "./htmlToPdf";
 import i18n from "@/i18n";
+import { renderIdentifiers, identifierSummary } from "./identifiers";
 import type { Invoice, CompanySettings } from "@/types";
+import { pdfCurrency } from "./text";
 
 // Helper to get PDF translations
 const t = (key: string) => i18n.t(`pdf:${key}`);
@@ -21,13 +23,6 @@ interface InvoicePDFProps {
   logoBase64?: string | null;
 }
 
-const formatCurrency = (amount: number): string => {
-  const currency = useSettingsStore.getState().currency || "EUR";
-  return new Intl.NumberFormat(i18n.language, {
-    style: "currency",
-    currency,
-  }).format(amount);
-};
 
 const formatDate = (date: string): string => {
   return new Intl.DateTimeFormat(i18n.language, {
@@ -38,6 +33,17 @@ const formatDate = (date: string): string => {
 };
 
 export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
+  // Lines carry their own (already line-discounted) subtotal; the document
+  // discount is what separates their sum from the taxable base.
+  const linesSubtotal = invoice.lines.reduce(
+    (sum, l) => sum + (l.is_subtotal_line ? 0 : l.subtotal),
+    0
+  );
+  const documentDiscount = Math.max(
+    0,
+    linesSubtotal - (invoice.subtotal - (invoice.shipping_cost || 0))
+  );
+
   const getStatusStyle = () => {
     switch (invoice.status) {
       case "PAID":
@@ -82,14 +88,11 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
             </View>
           </View>
           <View style={styles.companyInfo}>
-            {company.siret && (
-              <Text style={styles.companyDetail}>{t("common.siret")}: {company.siret}</Text>
-            )}
-            {company.vat_number && (
-              <Text style={styles.companyDetail}>
-                {t("common.vatNumber")}: {company.vat_number}
+            {renderIdentifiers(company, company).map((id) => (
+              <Text key={id.label} style={styles.companyDetail}>
+                {id.label}: {id.value}
               </Text>
-            )}
+            ))}
           </View>
         </View>
 
@@ -128,11 +131,11 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
             {invoice.client?.email && (
               <Text style={styles.clientDetail}>{invoice.client.email}</Text>
             )}
-            {invoice.client?.siret && (
-              <Text style={styles.clientDetail}>
-                {t("common.siret")}: {invoice.client.siret}
+            {renderIdentifiers(company, invoice.client).map((id) => (
+              <Text key={id.label} style={styles.clientDetail}>
+                {id.label}: {id.value}
               </Text>
-            )}
+            ))}
           </View>
         </View>
 
@@ -171,8 +174,8 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
             Object.entries(groupedLines).forEach(([groupName, lines]) => {
               // Group header
               elements.push(
-                <View key={`group-${groupName}`} style={{ backgroundColor: "#e5e7eb", padding: 6 }}>
-                  <Text style={{ fontSize: 9, fontWeight: "bold", color: "#374151" }}>{groupName}</Text>
+                <View key={`group-${groupName}`} style={{ backgroundColor: "#e5e2dc", padding: 6 }}>
+                  <Text style={{ fontSize: 9, fontWeight: "bold", color: "#4a4640" }}>{groupName}</Text>
                 </View>
               );
 
@@ -189,9 +192,9 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
                       {richTextContent || <Text>{line.description}</Text>}
                     </View>
                     <Text style={styles.colQuantity}>{line.quantity}</Text>
-                    <Text style={styles.colUnitPrice}>{formatCurrency(line.unit_price)}</Text>
+                    <Text style={styles.colUnitPrice}>{pdfCurrency(line.unit_price)}</Text>
                     <Text style={styles.colVat}>{line.tax_rate}%</Text>
-                    <Text style={styles.colTotal}>{formatCurrency(line.total)}</Text>
+                    <Text style={styles.colTotal}>{pdfCurrency(line.total)}</Text>
                   </View>
                 );
                 rowIndex++;
@@ -201,9 +204,9 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
               const groupTotalHt = lines.reduce((sum, l) => sum + l.subtotal, 0);
               const groupTotalTtc = lines.reduce((sum, l) => sum + l.total, 0);
               elements.push(
-                <View key={`subtotal-${groupName}`} style={{ backgroundColor: "#f3f4f6", padding: 6, flexDirection: "row", justifyContent: "flex-end" }}>
-                  <Text style={{ fontSize: 8, fontWeight: "bold", color: "#4b5563", marginRight: 10 }}>
-                    {i18n.t("pdf:invoice.groupSubtotal", { group: groupName })}: {formatCurrency(groupTotalHt)} {i18n.t("pdf:common.labelHt")} / {formatCurrency(groupTotalTtc)} {i18n.t("pdf:common.labelTtc")}
+                <View key={`subtotal-${groupName}`} style={{ backgroundColor: "#f2f0ed", padding: 6, flexDirection: "row", justifyContent: "flex-end" }}>
+                  <Text style={{ fontSize: 8, fontWeight: "bold", color: "#635e56", marginRight: 10 }}>
+                    {i18n.t("pdf:invoice.groupSubtotal", { group: groupName })}: {pdfCurrency(groupTotalHt)} {i18n.t("pdf:common.labelHt")} / {pdfCurrency(groupTotalTtc)} {i18n.t("pdf:common.labelTtc")}
                   </Text>
                 </View>
               );
@@ -222,9 +225,9 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
                     {richTextContent || <Text>{line.description}</Text>}
                   </View>
                   <Text style={styles.colQuantity}>{line.quantity}</Text>
-                  <Text style={styles.colUnitPrice}>{formatCurrency(line.unit_price)}</Text>
+                  <Text style={styles.colUnitPrice}>{pdfCurrency(line.unit_price)}</Text>
                   <Text style={styles.colVat}>{line.tax_rate}%</Text>
-                  <Text style={styles.colTotal}>{formatCurrency(line.total)}</Text>
+                  <Text style={styles.colTotal}>{pdfCurrency(line.total)}</Text>
                 </View>
               );
               rowIndex++;
@@ -237,16 +240,33 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
         {/* Totals */}
         <View style={styles.totalsContainer}>
           <View style={styles.totalsBox}>
+            {/* A commercial discount is stated, never folded into the prices:
+                the reader must be able to rebuild the total from the lines. */}
+            {documentDiscount > 0 && (
+              <>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>{t("invoice.totals.linesSubtotal")}</Text>
+                  <Text style={styles.totalValue}>{pdfCurrency(linesSubtotal)}</Text>
+                </View>
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel}>
+                    {t("invoice.totals.discount")}
+                    {invoice.discount_percent > 0 ? ` (${invoice.discount_percent}%)` : ""}
+                  </Text>
+                  <Text style={styles.totalValue}>-{pdfCurrency(documentDiscount)}</Text>
+                </View>
+              </>
+            )}
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>{t("invoice.totals.subtotalHt")}</Text>
               <Text style={styles.totalValue}>
-                {formatCurrency(invoice.subtotal)}
+                {pdfCurrency(invoice.subtotal)}
               </Text>
             </View>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>{t("invoice.totals.vatProducts")}</Text>
               <Text style={styles.totalValue}>
-                {formatCurrency(invoice.tax_amount)}
+                {pdfCurrency(invoice.tax_amount)}
               </Text>
             </View>
             {invoice.shipping_cost > 0 && (
@@ -254,13 +274,13 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>{t("invoice.totals.shippingHt")}</Text>
                   <Text style={styles.totalValue}>
-                    {formatCurrency(invoice.shipping_cost)}
+                    {pdfCurrency(invoice.shipping_cost)}
                   </Text>
                 </View>
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>{t("invoice.totals.shippingVat")} ({invoice.shipping_tax_rate}%)</Text>
                   <Text style={styles.totalValue}>
-                    {formatCurrency(invoice.shipping_cost * (invoice.shipping_tax_rate / 100))}
+                    {pdfCurrency(invoice.shipping_cost * (invoice.shipping_tax_rate / 100))}
                   </Text>
                 </View>
               </>
@@ -268,7 +288,7 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
             <View style={styles.totalRowFinal}>
               <Text style={styles.totalLabelFinal}>{t("invoice.totals.totalTtc")}</Text>
               <Text style={styles.totalValueFinal}>
-                {formatCurrency(
+                {pdfCurrency(
                   invoice.total +
                   (invoice.shipping_cost > 0
                     ? invoice.shipping_cost + invoice.shipping_cost * (invoice.shipping_tax_rate / 100)
@@ -288,12 +308,12 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
                       {t("invoice.totals.stampDuty")}
                       {company.stamp_duty_rate ? ` (${company.stamp_duty_rate}%)` : ""}
                     </Text>
-                    <Text style={styles.totalValue}>{formatCurrency(invoice.stamp_duty)}</Text>
+                    <Text style={styles.totalValue}>{pdfCurrency(invoice.stamp_duty)}</Text>
                   </View>
                   <View style={styles.totalRowFinal}>
                     <Text style={styles.totalLabelFinal}>{t("invoice.totals.totalWithStamp")}</Text>
                     <Text style={styles.totalValueFinal}>
-                      {formatCurrency(grandTotal + invoice.stamp_duty)}
+                      {pdfCurrency(grandTotal + invoice.stamp_duty)}
                     </Text>
                   </View>
                 </>
@@ -309,27 +329,27 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
                 : totalWithShipping * (invoice.down_payment_percent / 100);
               return (
                 <>
-                  <View style={[styles.totalRow, { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#e5e7eb" }]}>
-                    <Text style={[styles.totalLabel, { color: "#2563eb" }]}>
+                  <View style={[styles.totalRow, { marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#e5e2dc" }]}>
+                    <Text style={[styles.totalLabel, { color: "#1c5f68" }]}>
                       {t("invoice.totals.downPayment")} {invoice.down_payment_percent > 0 && invoice.down_payment_amount === 0 ? `(${invoice.down_payment_percent}%)` : ''}
                     </Text>
-                    <Text style={[styles.totalValue, { color: "#2563eb" }]}>
-                      {formatCurrency(downPaymentValue)}
+                    <Text style={[styles.totalValue, { color: "#1c5f68" }]}>
+                      {pdfCurrency(downPaymentValue)}
                     </Text>
                   </View>
                   <View style={styles.totalRow}>
                     <Text style={[styles.totalLabel, { fontWeight: "bold" }]}>{t("invoice.totals.remaining")}</Text>
                     <Text style={[styles.totalValue, { fontWeight: "bold" }]}>
-                      {formatCurrency(totalWithShipping - downPaymentValue)}
+                      {pdfCurrency(totalWithShipping - downPaymentValue)}
                     </Text>
                   </View>
                 </>
               );
             })()}
-            <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#e5e7eb" }}>
-              <Text style={{ fontSize: 8, color: "#6b7280", fontStyle: "italic" }}>
+            <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#e5e2dc" }}>
+              <Text style={{ fontSize: 8, color: "#837d73", fontStyle: "italic" }}>
                 {t("invoice.amountInWords")}: {(() => {
-                  const curr = useSettingsStore.getState().currency || "EUR";
+                  const curr = useSettingsStore.getState().currency || "DZD";
                   const words = CURRENCY_WORDS[curr] || { main: curr.toLowerCase(), sub: "centime" };
                   return numberToFrenchWords(
                     invoice.total +
@@ -368,8 +388,9 @@ export function InvoicePDF({ invoice, company, logoBase64 }: InvoicePDFProps) {
             <Text style={styles.footerText}>{company.legal_mentions}</Text>
           )}
           <Text style={styles.footerText}>
-            {company.company_name} - {company.siret && `${t("common.siret")}: ${company.siret}`}
-            {company.vat_number && ` - ${t("common.vatNumber")}: ${company.vat_number}`}
+            {company.company_name}
+            {identifierSummary(company, company) &&
+              ` - ${identifierSummary(company, company)}`}
           </Text>
         </View>
       </Page>
