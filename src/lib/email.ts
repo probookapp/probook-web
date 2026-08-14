@@ -108,6 +108,23 @@ ${params.companyName}`;
 
 // ─── Email Templates ───
 
+/**
+ * Escape a value before it goes into an HTML email body (audit CFG-N2).
+ *
+ * Client and company names are typed by users and land in a message sent to a
+ * third party. Unescaped, an apostrophe or an ampersand renders wrong and a
+ * tag renders as markup — in someone else's inbox, where nothing can be
+ * corrected after the fact.
+ */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 export function paymentOverdueEmail(params: {
   companyName: string;
   clientName: string;
@@ -120,25 +137,25 @@ export function paymentOverdueEmail(params: {
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #1a1a1a;">Payment Reminder</h2>
-      <p>Dear ${params.clientName},</p>
+      <p>Dear ${escapeHtml(params.clientName)},</p>
       <p>This is a friendly reminder that the following invoice is past due:</p>
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
         <tr style="border-bottom: 1px solid #e5e5e5;">
           <td style="padding: 8px 0; color: #666;">Invoice</td>
-          <td style="padding: 8px 0; font-weight: bold;">${params.invoiceNumber}</td>
+          <td style="padding: 8px 0; font-weight: bold;">${escapeHtml(params.invoiceNumber)}</td>
         </tr>
         <tr style="border-bottom: 1px solid #e5e5e5;">
           <td style="padding: 8px 0; color: #666;">Amount</td>
-          <td style="padding: 8px 0; font-weight: bold;">${params.total.toFixed(2)} ${params.currency}</td>
+          <td style="padding: 8px 0; font-weight: bold;">${params.total.toFixed(2)} ${escapeHtml(params.currency)}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #666;">Due Date</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #dc2626;">${params.dueDate}</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #dc2626;">${escapeHtml(params.dueDate)}</td>
         </tr>
       </table>
       <p>Please arrange payment at your earliest convenience.</p>
       <p style="margin-top: 32px; color: #666; font-size: 14px;">
-        Best regards,<br/>${params.companyName}
+        Best regards,<br/>${escapeHtml(params.companyName)}
       </p>
     </div>
   `;
@@ -157,25 +174,25 @@ export function quoteExpiringEmail(params: {
   const html = `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
       <h2 style="color: #1a1a1a;">Quote Expiring Soon</h2>
-      <p>Dear ${params.clientName},</p>
+      <p>Dear ${escapeHtml(params.clientName)},</p>
       <p>This is a reminder that the following quote will expire soon:</p>
       <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
         <tr style="border-bottom: 1px solid #e5e5e5;">
           <td style="padding: 8px 0; color: #666;">Quote</td>
-          <td style="padding: 8px 0; font-weight: bold;">${params.quoteNumber}</td>
+          <td style="padding: 8px 0; font-weight: bold;">${escapeHtml(params.quoteNumber)}</td>
         </tr>
         <tr style="border-bottom: 1px solid #e5e5e5;">
           <td style="padding: 8px 0; color: #666;">Amount</td>
-          <td style="padding: 8px 0; font-weight: bold;">${params.total.toFixed(2)} ${params.currency}</td>
+          <td style="padding: 8px 0; font-weight: bold;">${params.total.toFixed(2)} ${escapeHtml(params.currency)}</td>
         </tr>
         <tr>
           <td style="padding: 8px 0; color: #666;">Valid Until</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #f59e0b;">${params.validityDate}</td>
+          <td style="padding: 8px 0; font-weight: bold; color: #f59e0b;">${escapeHtml(params.validityDate)}</td>
         </tr>
       </table>
       <p>If you would like to proceed, please let us know before the expiry date.</p>
       <p style="margin-top: 32px; color: #666; font-size: 14px;">
-        Best regards,<br/>${params.companyName}
+        Best regards,<br/>${escapeHtml(params.companyName)}
       </p>
     </div>
   `;

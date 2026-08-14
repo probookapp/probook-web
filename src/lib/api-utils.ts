@@ -31,12 +31,26 @@ export function toSnakeCase<T>(obj: T): T {
   if (typeof obj === "object") {
     return Object.fromEntries(
       Object.entries(obj as Record<string, unknown>).map(([key, value]) => [
-        key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`),
+        snakeKey(key),
         toSnakeCase(value),
       ])
     ) as T;
   }
   return obj;
+}
+
+/**
+ * Only genuine camelCase identifiers are rewritten (audit CFG-N1).
+ *
+ * Every Prisma field is lowerCamelCase, so that rule covers the whole schema.
+ * What it protects is everything else that travels through this function: the
+ * keys of a JSON column, or of a map the route built itself. "CASH" used to
+ * come out as "_c_a_s_h" and a variant attribute "Color" as "_color" — the data
+ * was mangled on the way out, and only the caller noticed.
+ */
+function snakeKey(key: string): string {
+  if (!/^[a-z][a-zA-Z0-9]*$/.test(key)) return key;
+  return key.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
 }
 
 export interface ListPagination {

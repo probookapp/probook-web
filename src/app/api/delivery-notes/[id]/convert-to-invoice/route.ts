@@ -74,6 +74,22 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
   let subtotal = 0;
   let taxAmount = 0;
 
+  // A delivery note line carries a quantity but no price: what is billed comes
+  // from the product. A free-text line therefore has no price anywhere, and
+  // pricing it at 0 would hand the customer an invoice that under-bills without
+  // saying so. Refuse instead, and name the line.
+  const unpriceable = note.lines.filter((l) => !l.productId);
+  if (unpriceable.length > 0) {
+    return NextResponse.json(
+      {
+        error:
+          "These delivery note lines have no product to price them from: " +
+          unpriceable.map((l) => l.description).join(", "),
+      },
+      { status: 400 }
+    );
+  }
+
   for (const line of note.lines) {
     const product = line.productId ? productById.get(line.productId) : undefined;
     const unitPrice = num(product?.unitPrice);

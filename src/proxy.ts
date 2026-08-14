@@ -185,6 +185,19 @@ export async function proxy(req: NextRequest) {
       if (blocked) return blocked;
     }
 
+    // Scheduled jobs authenticate by secret, not by cookie (audit SEC-6).
+    //
+    // vercel.json schedules three of them; Vercel Cron sends only
+    // "Authorization: Bearer ${CRON_SECRET}" and no session cookie, so the
+    // check below was answering 401 before the route ever ran — reminders were
+    // never created, expired quotes never flipped, sessions never cleaned.
+    // Each route under /api/cron enforces the bearer itself; it is only the
+    // session requirement that has to step aside. The standard rate limit above
+    // still applies, so an unauthenticated caller cannot hammer them.
+    if (pathname.startsWith("/api/cron/")) {
+      return NextResponse.next();
+    }
+
     // Protected API routes — require tenant session (or admin impersonation)
     const token = req.cookies.get("probook_session")?.value;
     const session = token ? await verifyTokenMiddleware(token) : null;

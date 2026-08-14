@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { FISCAL_PROFILE_IDS } from "./fiscal-profiles";
+import { EXPENSE_CATEGORY_MAX_LENGTH } from "./expense-categories";
+import { POS_PAYMENT_METHODS } from "./pos-payment-methods";
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────
 
@@ -104,8 +107,13 @@ export const clientSchema = z.object({
   city: optionalString,
   postal_code: optionalString,
   country: optionalString,
+  // Company identifiers: shared storage, labelled per the tenant's fiscal
+  // profile (siret -> RC/SIRET, vat_number -> NIF/N° TVA). nis + art are
+  // Algeria-only. See src/lib/fiscal-profiles.ts.
   siret: optionalString,
   vat_number: optionalString,
+  nis: optionalString,
+  art: optionalString,
   notes: optionalString,
 });
 
@@ -226,6 +234,19 @@ export const expenseSchema = z.object({
   amount: positiveNumber,
   date: requiredString("Date"),
   notes: optionalString,
+  // Two ways to file an expense under a heading: an existing category, or a
+  // name that the server turns into one. The form offers suggestions and free
+  // text through the same field, so it sends the name and lets the server
+  // decide whether that heading already exists.
+  category_id: optionalString,
+  category_name: z.string().max(EXPENSE_CATEGORY_MAX_LENGTH, "Category name is too long").nullable().optional(),
+});
+
+export const expenseCategorySchema = z.object({
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(EXPENSE_CATEGORY_MAX_LENGTH, "Category name is too long"),
 });
 
 // ─── Document Lines (shared for invoices & quotes) ──────────────────────────
@@ -240,6 +261,8 @@ const documentLineSchema = z.object({
   position: z.number().int().optional(),
   group_name: optionalString,
   is_subtotal_line: z.boolean().default(false),
+  // Commercial discount off this line's pre-tax base. See src/lib/document-totals.ts.
+  discount_percent: percent.default(0),
 });
 
 // ─── Invoices ───────────────────────────────────────────────────────────────
@@ -253,7 +276,11 @@ const deliveryNoteStatusEnum = z.enum(["DRAFT", "DELIVERED", "CANCELLED"]);
 export const createInvoiceSchema = z.object({
   client_id: requiredString("Client ID"),
   quote_id: optionalString,
-  status: z.enum(["DRAFT", "ISSUED"]).default("DRAFT"),
+  // Creation makes a draft, full stop. Issuing goes through /issue, which is
+  // where the integrity hash, the stamp-duty snapshot, the COGS snapshot and
+  // the stock decrement happen — all four were silently skipped by an invoice
+  // that arrived already "ISSUED" through this door.
+  status: z.enum(["DRAFT"]).default("DRAFT"),
   issue_date: requiredString("Issue date"),
   due_date: optionalString,
   notes: optionalString,
@@ -262,6 +289,8 @@ export const createInvoiceSchema = z.object({
   shipping_tax_rate: z.coerce.number().min(0).max(100).default(20),
   down_payment_percent: percent.default(0),
   down_payment_amount: positiveNumber.default(0),
+  discount_percent: percent.default(0),
+  discount_amount: positiveNumber.default(0),
   is_down_payment_invoice: z.boolean().default(false),
   is_cash_sale: z.boolean().optional(),
   stamp_duty_exempt: z.boolean().optional(),
@@ -285,6 +314,8 @@ export const updateInvoiceSchema = z.object({
   shipping_tax_rate: z.coerce.number().min(0).max(100).default(20),
   down_payment_percent: percent.default(0),
   down_payment_amount: positiveNumber.default(0),
+  discount_percent: percent.default(0),
+  discount_amount: positiveNumber.default(0),
   is_down_payment_invoice: z.boolean().default(false),
   is_cash_sale: z.boolean().optional(),
   stamp_duty_exempt: z.boolean().optional(),
@@ -305,6 +336,8 @@ export const createQuoteSchema = z.object({
   shipping_tax_rate: z.coerce.number().min(0).max(100).default(20),
   down_payment_percent: percent.default(0),
   down_payment_amount: positiveNumber.default(0),
+  discount_percent: percent.default(0),
+  discount_amount: positiveNumber.default(0),
   lines: z.array(documentLineSchema).min(1, "At least one line is required"),
 });
 
@@ -369,8 +402,12 @@ const posLineSchema = z.object({
 });
 
 const posPaymentSchema = z.object({
-  payment_method: z.enum(["CASH", "CARD"], { message: "Must be CASH or CARD" }),
-  amount: z.coerce.number().min(0.01, "Amount must be positive"),
+  payment_method: z.enum(POS_PAYMENT_METHODS, {
+    message: `Must be one of ${POS_PAYMENT_METHODS.join(", ")}`,
+  }),
+  // Zero is allowed: a sale handed over entirely on the client's account
+  // records a CREDIT line worth nothing yet.
+  amount: z.coerce.number().min(0, "Amount must be non-negative"),
   cash_given: z.coerce.number().nullable().optional(),
   change_given: z.coerce.number().nullable().optional(),
   card_reference: optionalString,
@@ -415,6 +452,9 @@ export const settingsSchema = z.object({
   website: optionalString,
   siret: optionalString,
   vat_number: optionalString,
+  nis: optionalString,
+  art: optionalString,
+  fiscal_profile: z.enum(FISCAL_PROFILE_IDS).optional(),
   logo_path: optionalString,
   default_tax_rate: z.coerce.number().min(0).max(100).optional(),
   default_payment_terms: z.coerce.number().int().min(0).optional(),
