@@ -10,6 +10,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
 } from "@/components/ui";
 import {
   useProductsForSupplier,
@@ -165,8 +166,8 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
             <TableRow>
               <TableHead>{tCommon("labels.product")}</TableHead>
               <TableHead>{tCommon("labels.reference")}</TableHead>
-              <TableHead>{t("products.purchasePrice")}</TableHead>
-              <TableHead>{tCommon("labels.unitPrice")}</TableHead>
+              <TableHead className="text-end">{t("products.purchasePrice")}</TableHead>
+              <TableHead className="text-end">{tCommon("labels.unitPrice")}</TableHead>
               <TableHead className="w-24">{tCommon("buttons.actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -180,12 +181,12 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
                   <TableCell className="text-gray-600 dark:text-gray-400">
                     {product.reference || "-"}
                   </TableCell>
-                  <TableCell className="text-gray-600 dark:text-gray-400">
+                  <TableNumericCell className="text-gray-600 dark:text-gray-400">
                     {formatCurrency(product.purchase_price)}
-                  </TableCell>
-                  <TableCell className="text-gray-600 dark:text-gray-400">
+                  </TableNumericCell>
+                  <TableNumericCell className="text-gray-600 dark:text-gray-400">
                     {formatCurrency(product.unit_price)}
-                  </TableCell>
+                  </TableNumericCell>
                   <TableCell>
                     {canManage && (
                     <button

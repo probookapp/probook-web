@@ -15,8 +15,11 @@ export const createClientSchema = (t: (key: string) => string) => z.object({
   city: z.string().nullable().optional(),
   postal_code: z.string().nullable().optional(),
   country: z.string().nullable().optional(),
+  // Rendered from the tenant's fiscal profile — see useIdentifierFields().
   siret: z.string().nullable().optional(),
   vat_number: z.string().nullable().optional(),
+  nis: z.string().nullable().optional(),
+  art: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
 });
 

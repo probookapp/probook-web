@@ -121,7 +121,7 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
           />
         </div>
 
-        <div className="border border-(--color-border) rounded-lg overflow-x-auto">
+        <div className="border border-(--color-border-primary) rounded-lg overflow-x-auto">
           <table className="w-full min-w-125">
             <thead className="bg-(--color-bg-secondary)">
               <tr>
@@ -139,7 +139,7 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-(--color-border)">
+            <tbody className="divide-y divide-(--color-border-primary)">
               {refundableLines.map((line) => {
                 const qty = quantities[line.id] ?? 0;
                 const lineSub = qty * line.unit_price;
@@ -156,7 +156,7 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
                         step="any"
                         value={qty}
                         onChange={(e) => setQty(line.id, Number(e.target.value), line.quantity)}
-                        className="w-full text-center rounded-md border border-(--color-border) bg-(--color-bg-primary) px-2 py-1 text-sm"
+                        className="w-full text-center rounded-md border border-(--color-border-primary) bg-(--color-bg-primary) px-2 py-1 text-sm"
                       />
                       <p className="text-center text-xs text-(--color-text-secondary) mt-0.5">
                         / {line.quantity}

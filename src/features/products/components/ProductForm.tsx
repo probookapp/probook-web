@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
 import { Button, Input, Textarea, Select, SearchableSelect } from "@/components/ui";
+import { useVatRateOptions } from "@/hooks/useFiscalProfile";
 import { createProductSchema, type ProductFormData } from "../schemas/productSchema";
 import { useProductCategories } from "../hooks/useProductCategories";
 import { ProductPhotoUpload } from "./ProductPhotoUpload";
@@ -17,18 +18,16 @@ interface ProductFormProps {
   isLoading?: boolean;
 }
 
-const taxRateOptions = [
-  { value: "0", label: "0%" },
-  { value: "5.5", label: "5.5%" },
-  { value: "10", label: "10%" },
-  { value: "20", label: "20%" },
-];
 
 export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductFormProps) {
   const { t } = useTranslation(["products", "common"]);
   const { data: categories } = useProductCategories();
 
   const productSchema = useMemo(() => createProductSchema(t), [t]);
+
+  // VAT scale of the tenant's fiscal regime, with the product's own rate kept
+  // selectable so editing never silently resets it.
+  const taxRateOptions = useVatRateOptions(product?.tax_rate);
 
   const unitOptions = useMemo(() => [
     { value: "unit", label: t("units.unit") },

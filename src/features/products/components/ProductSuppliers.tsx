@@ -11,6 +11,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
 } from "@/components/ui";
 import {
   useSuppliersForProduct,
@@ -183,7 +184,7 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
               <TableHead>{tCommon("labels.name")}</TableHead>
               <TableHead>{tCommon("labels.email")}</TableHead>
               <TableHead>{tCommon("labels.phone")}</TableHead>
-              <TableHead>{t("suppliers.purchasePrice")}</TableHead>
+              <TableHead className="text-end">{t("suppliers.purchasePrice")}</TableHead>
               <TableHead className="w-24">{tCommon("buttons.actions")}</TableHead>
             </TableRow>
           </TableHeader>
@@ -200,7 +201,7 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
                   <TableCell className="text-gray-600 dark:text-gray-400">
                     {supplier.phone || "-"}
                   </TableCell>
-                  <TableCell className="text-gray-600 dark:text-gray-400">
+                  <TableNumericCell className="text-gray-600 dark:text-gray-400">
                     {editingLinkId === supplier.link_id ? (
                       <div className="flex items-center gap-1">
                         <input
@@ -243,7 +244,7 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
                     ) : (
                       formatCurrency(supplier.purchase_price)
                     )}
-                  </TableCell>
+                  </TableNumericCell>
                   <TableCell>
                     {canManage && (
                     <button

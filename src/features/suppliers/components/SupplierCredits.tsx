@@ -11,6 +11,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
 } from "@/components/ui";
 import { Badge } from "@/components/ui/Badge";
 import { supplierCreditApi } from "@/lib/api";
@@ -129,7 +130,7 @@ export function SupplierCredits({ supplier, onClose }: SupplierCreditsProps) {
               <TableRow>
                 <TableHead>{t("credits.orderNumber")}</TableHead>
                 <TableHead>{t("credits.orderDate")}</TableHead>
-                <TableHead>{t("credits.orderTotal")}</TableHead>
+                <TableHead className="text-end">{t("credits.orderTotal")}</TableHead>
                 <TableHead>{t("credits.orderStatus")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -143,9 +144,9 @@ export function SupplierCredits({ supplier, onClose }: SupplierCreditsProps) {
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       {formatDate(order.order_date)}
                     </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
+                    <TableNumericCell className="text-gray-600 dark:text-gray-400">
                       {formatCurrency(order.total)}
-                    </TableCell>
+                    </TableNumericCell>
                     <TableCell>
                       <Badge variant={getPaymentStatusVariant(order.payment_status)}>
                         {order.payment_status}
@@ -175,7 +176,7 @@ export function SupplierCredits({ supplier, onClose }: SupplierCreditsProps) {
             <TableHeader>
               <TableRow>
                 <TableHead>{t("credits.paymentDate")}</TableHead>
-                <TableHead>{t("credits.paymentAmount")}</TableHead>
+                <TableHead className="text-end">{t("credits.paymentAmount")}</TableHead>
                 <TableHead>{t("credits.paymentMethod")}</TableHead>
                 <TableHead>{t("credits.paymentReference")}</TableHead>
               </TableRow>
@@ -187,9 +188,9 @@ export function SupplierCredits({ supplier, onClose }: SupplierCreditsProps) {
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       {formatDate(payment.payment_date)}
                     </TableCell>
-                    <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                    <TableNumericCell className="font-medium text-gray-900 dark:text-gray-100">
                       {formatCurrency(payment.amount)}
-                    </TableCell>
+                    </TableNumericCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       {t(`credits.methods.${payment.payment_method}`, { defaultValue: payment.payment_method })}
                     </TableCell>

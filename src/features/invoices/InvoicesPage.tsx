@@ -13,6 +13,8 @@ import {
   Copy,
   Download,
   Undo2,
+  Archive,
+  ArchiveRestore,
 } from "lucide-react";
 import {
   Button,
@@ -27,6 +29,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
   Input,
   Badge,
   getInvoiceStatusVariantWithUrgency,
@@ -35,8 +38,11 @@ import {
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
+import { StatusFilterChips } from "@/components/shared/StatusFilterChips";
+import { ALL_STATUSES, ARCHIVED_FILTER, chipToQuery, INVOICE_STATUSES } from "@/lib/document-status";
+import { useStatusFilter } from "@/hooks/useStatusFilter";
 import { useSelection } from "@/hooks/useSelection";
-import { useInfiniteInvoices, useDeleteInvoice, useMarkInvoicePaid, useDuplicateInvoice, useBatchDeleteInvoices } from "./hooks/useInvoices";
+import { useInfiniteInvoices, useDeleteInvoice, useMarkInvoicePaid, useDuplicateInvoice, useBatchDeleteInvoices, useArchiveInvoice } from "./hooks/useInvoices";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -54,6 +60,7 @@ export function InvoicesPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [markPaidId, setMarkPaidId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useStatusFilter(INVOICE_STATUSES);
 
   const {
     data: invoicePages,
@@ -61,7 +68,7 @@ export function InvoicesPage() {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = useInfiniteInvoices();
+  } = useInfiniteInvoices(chipToQuery(statusFilter).status, chipToQuery(statusFilter).archived);
   const invoices = useMemo(
     () => invoicePages?.pages.flatMap((page) => page.data),
     [invoicePages]
@@ -70,6 +77,7 @@ export function InvoicesPage() {
   const markPaid = useMarkInvoicePaid();
   const duplicateInvoice = useDuplicateInvoice();
   const batchDeleteInvoices = useBatchDeleteInvoices();
+  const archiveInvoice = useArchiveInvoice();
 
   // Search filters client-side within the loaded pages (the route has no
   // server-side search filter).
@@ -86,7 +94,18 @@ export function InvoicesPage() {
   const selection = useSelection(selectableInvoices);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { selection.clear(); }, [searchQuery]);
+  useEffect(() => { selection.clear(); }, [searchQuery, statusFilter]);
+
+  const statusOptions = [
+    { key: ALL_STATUSES, label: t("common:filters.all") },
+    ...INVOICE_STATUSES.map((s) => ({
+      key: s,
+      label: t(`common:status.${s.toLowerCase()}`),
+    })),
+    // Archiving is a different axis from status: an archived invoice keeps
+    // its own state, it just leaves the working list.
+    { key: ARCHIVED_FILTER, label: t("common:filters.archived") },
+  ];
 
   const handleExportCsv = () => {
     exportToCsv(
@@ -164,6 +183,12 @@ export function InvoicesPage() {
               />
             </div>
           </div>
+          <StatusFilterChips
+            options={statusOptions}
+            value={statusFilter}
+            onChange={setStatusFilter}
+            label={t("common:filters.filterByStatus")}
+          />
         </CardHeader>
         <CardContent className="p-0">
           {/* Mobile card view */}
@@ -238,7 +263,7 @@ export function InvoicesPage() {
                 <TableHead>{t("invoices:fields.issueDate")}</TableHead>
                 <TableHead>{t("invoices:fields.dueDate")}</TableHead>
                 <TableHead>{t("invoices:fields.status")}</TableHead>
-                <TableHead>{t("invoices:fields.totalTtc")}</TableHead>
+                <TableHead className="text-end">{t("invoices:fields.totalTtc")}</TableHead>
                 <TableHead className="w-32">{t("common:buttons.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -267,9 +292,9 @@ export function InvoicesPage() {
                         {getInvoiceStatusLabelWithUrgency(invoice.status, invoice.due_date)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-medium">
+                    <TableNumericCell className="font-medium">
                       {formatCurrency(invoice.total)}
-                    </TableCell>
+                    </TableNumericCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <button
@@ -309,6 +334,27 @@ export function InvoicesPage() {
                             disabled={duplicateInvoice.isPending}
                           >
                             <Copy className="h-4 w-4" />
+                          </button>
+                        )}
+                        {canEdit && (
+                          <button
+                            onClick={() => {
+                              if (isDemoMode) { showSubscribePrompt(); return; }
+                              archiveInvoice.mutate({
+                                id: invoice.id,
+                                archived: !invoice.archived_at,
+                              });
+                            }}
+                            className="p-1 text-gray-500 hover:text-amber-600 transition-colors"
+                            title={t(invoice.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")}
+                            aria-label={t(invoice.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")}
+                            disabled={archiveInvoice.isPending}
+                          >
+                            {invoice.archived_at ? (
+                              <ArchiveRestore className="h-4 w-4" />
+                            ) : (
+                              <Archive className="h-4 w-4" />
+                            )}
                           </button>
                         )}
                         <button

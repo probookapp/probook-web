@@ -16,6 +16,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
   Input,
   Badge,
 } from "@/components/ui";
@@ -422,8 +423,8 @@ export function ProductsPage() {
                   <TableHead>{t("fields.designation")}</TableHead>
                   <TableHead>{t("fields.category")}</TableHead>
                   <TableHead>{t("fields.suppliers")}</TableHead>
-                  <TableHead>{t("fields.purchasePriceHt")}</TableHead>
-                  <TableHead>{t("fields.priceHT")}</TableHead>
+                  <TableHead className="text-end">{t("fields.purchasePriceHt")}</TableHead>
+                  <TableHead className="text-end">{t("fields.priceHT")}</TableHead>
                   <TableHead>{t("fields.quantity")}</TableHead>
                   <TableHead className="w-24">{tCommon("buttons.actions")}</TableHead>
                 </TableRow>
@@ -475,10 +476,10 @@ export function ProductsPage() {
                           <span className="text-gray-400 dark:text-gray-500">-</span>
                         )}
                       </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
+                      <TableNumericCell className="text-gray-600 dark:text-gray-400">
                         {product.purchase_price != null ? formatCurrency(product.purchase_price) : "-"}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">{formatCurrency(product.unit_price)}</TableCell>
+                      </TableNumericCell>
+                      <TableNumericCell className="text-gray-600 dark:text-gray-400">{formatCurrency(product.unit_price)}</TableNumericCell>
                       <TableCell>
                         {product.is_service ? (
                           <span className="text-gray-400 dark:text-gray-500">-</span>

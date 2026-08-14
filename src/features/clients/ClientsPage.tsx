@@ -14,6 +14,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
   Input,
 } from "@/components/ui";
 import { ClientForm } from "./components/ClientForm";
@@ -21,6 +22,7 @@ import { ClientContacts } from "./components/ClientContacts";
 import { ClientStatement } from "./components/ClientStatement";
 import { ImportDialog } from "@/components/shared/ImportDialog";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { useIdentifierFields } from "@/hooks/useFiscalProfile";
 import { toast } from "@/stores/useToastStore";
 import { isApiError } from "@/lib/api-adapter";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
@@ -47,6 +49,7 @@ export function ClientsPage() {
   const { t } = useTranslation("clients");
   const { t: tCommon } = useTranslation("common");
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  const identifiers = useIdentifierFields();
   const canCreate = useAuthStore((s) => s.hasPermission("clients", "create"));
   const canEdit = useAuthStore((s) => s.hasPermission("clients", "edit"));
   const canDelete = useAuthStore((s) => s.hasPermission("clients", "delete"));
@@ -101,8 +104,12 @@ export function ClientsPage() {
         { header: t("fields.city"), accessor: (c) => c.city },
         { header: tCommon("labels.postalCode"), accessor: (c) => c.postal_code },
         { header: tCommon("labels.country"), accessor: (c) => c.country },
-        { header: "SIRET", accessor: (c) => c.siret },
-        { header: tCommon("labels.vat"), accessor: (c) => c.vat_number },
+        // Identifier columns follow the tenant's fiscal regime, so the export
+        // round-trips through the matching import columns.
+        ...identifiers.map((field) => ({
+          header: field.shortLabel,
+          accessor: (c: Client) => c[field.key],
+        })),
       ],
       `clients_${new Date().toISOString().split("T")[0]}.csv`
     );
@@ -261,7 +268,7 @@ export function ClientsPage() {
                 <TableHead>{t("fields.email")}</TableHead>
                 <TableHead>{t("fields.phone")}</TableHead>
                 <TableHead>{t("fields.city")}</TableHead>
-                <TableHead className="text-right">{t("statement.outstanding")}</TableHead>
+                <TableHead className="text-right text-end">{t("statement.outstanding")}</TableHead>
                 <TableHead className="w-24">{tCommon("buttons.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -281,9 +288,9 @@ export function ClientsPage() {
                     <TableCell className="text-gray-600 dark:text-gray-400">{client.email || "-"}</TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">{client.phone || "-"}</TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">{client.city || "-"}</TableCell>
-                    <TableCell className="text-right font-medium text-gray-900 dark:text-gray-100">
+                    <TableNumericCell className="font-medium text-gray-900 dark:text-gray-100">
                       {balances?.has(client.id) ? formatCurrency(balances.get(client.id)) : "-"}
-                    </TableCell>
+                    </TableNumericCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <button

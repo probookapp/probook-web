@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Users } from "lucide-react";
 import { Button, Input, Textarea } from "@/components/ui";
+import { useIdentifierFields } from "@/hooks/useFiscalProfile";
 import { createClientSchema, type ClientFormData } from "../schemas/clientSchema";
 import type { Client } from "@/types";
 
@@ -17,6 +18,9 @@ interface ClientFormProps {
 export function ClientForm({ client, onSubmit, onCancel, onManageContacts, isLoading }: ClientFormProps) {
   const { t } = useTranslation("clients");
   const { t: tCommon } = useTranslation("common");
+  // Which company identifiers exist depends on the tenant's fiscal regime:
+  // NIF / RC / NIS / article d'imposition in Algeria, SIRET + VAT in France.
+  const identifiers = useIdentifierFields();
   const {
     register,
     handleSubmit,
@@ -33,6 +37,8 @@ export function ClientForm({ client, onSubmit, onCancel, onManageContacts, isLoa
       country: client?.country ?? "",
       siret: client?.siret ?? "",
       vat_number: client?.vat_number ?? "",
+      nis: client?.nis ?? "",
+      art: client?.art ?? "",
       notes: client?.notes ?? "",
     },
   });
@@ -59,18 +65,15 @@ export function ClientForm({ client, onSubmit, onCancel, onManageContacts, isLoa
           {...register("phone")}
           error={errors.phone?.message}
         />
-        <Input
-          label={t("fields.siret")}
-          autoComplete="off"
-          {...register("siret")}
-          error={errors.siret?.message}
-        />
-        <Input
-          label={t("fields.vatNumber")}
-          autoComplete="off"
-          {...register("vat_number")}
-          error={errors.vat_number?.message}
-        />
+        {identifiers.map((field) => (
+          <Input
+            key={field.key}
+            label={field.label}
+            autoComplete="off"
+            {...register(field.key)}
+            error={errors[field.key]?.message}
+          />
+        ))}
         <Input
           label={t("fields.country")}
           autoComplete="off"

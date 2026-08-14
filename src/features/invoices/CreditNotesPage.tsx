@@ -15,6 +15,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
   Input,
   Badge,
 } from "@/components/ui";
@@ -114,7 +115,7 @@ export function CreditNotesPage() {
                   <TableHead>{t("invoices:fields.client")}</TableHead>
                   <TableHead>{t("invoices:fields.issueDate")}</TableHead>
                   <TableHead>{t("invoices:creditNotes.restocked")}</TableHead>
-                  <TableHead>{t("invoices:fields.totalTtc")}</TableHead>
+                  <TableHead className="text-end">{t("invoices:fields.totalTtc")}</TableHead>
                   <TableHead className="w-24">{t("common:buttons.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -132,7 +133,7 @@ export function CreditNotesPage() {
                           <Badge variant="default">{t("common:labels.no")}</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="font-medium">{formatCurrency(cn.total)}</TableCell>
+                      <TableNumericCell className="font-medium">{formatCurrency(cn.total)}</TableNumericCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <button

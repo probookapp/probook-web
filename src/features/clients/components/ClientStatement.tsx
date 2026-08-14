@@ -11,6 +11,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
 } from "@/components/ui";
 import { type ReportPDFColumn } from "@/features/pdf";
 import { exportToCsv } from "@/lib/csv-export";
@@ -185,9 +186,9 @@ export function ClientStatement({ isOpen, onClose, clientId, clientName }: Clien
                   <TableHead>{t("statement.columns.date")}</TableHead>
                   <TableHead>{t("statement.columns.type")}</TableHead>
                   <TableHead>{t("statement.columns.reference")}</TableHead>
-                  <TableHead className="text-right">{t("statement.columns.debit")}</TableHead>
-                  <TableHead className="text-right">{t("statement.columns.credit")}</TableHead>
-                  <TableHead className="text-right">{t("statement.columns.balance")}</TableHead>
+                  <TableHead className="text-end">{t("statement.columns.debit")}</TableHead>
+                  <TableHead className="text-end">{t("statement.columns.credit")}</TableHead>
+                  <TableHead className="text-end">{t("statement.columns.balance")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -202,9 +203,9 @@ export function ClientStatement({ isOpen, onClose, clientId, clientName }: Clien
                   </TableCell>
                   <TableCell />
                   <TableCell />
-                  <TableCell className="text-right font-medium">
+                  <TableNumericCell className="font-medium">
                     {statement ? formatCurrency(statement.opening_balance) : "-"}
-                  </TableCell>
+                  </TableNumericCell>
                 </TableRow>
                 {statement && statement.entries.length > 0 ? (
                   statement.entries.map((e, i) => (
@@ -212,13 +213,13 @@ export function ClientStatement({ isOpen, onClose, clientId, clientName }: Clien
                       <TableCell>{formatDate(e.date)}</TableCell>
                       <TableCell>{typeLabel(e.type)}</TableCell>
                       <TableCell className="font-medium text-gray-900 dark:text-gray-100">{e.reference}</TableCell>
-                      <TableCell className="text-right text-gray-600 dark:text-gray-400">
+                      <TableNumericCell className="text-gray-600 dark:text-gray-400">
                         {e.debit ? formatCurrency(e.debit) : ""}
-                      </TableCell>
-                      <TableCell className="text-right text-gray-600 dark:text-gray-400">
+                      </TableNumericCell>
+                      <TableNumericCell className="text-gray-600 dark:text-gray-400">
                         {e.credit ? formatCurrency(e.credit) : ""}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">{formatCurrency(e.running_balance)}</TableCell>
+                      </TableNumericCell>
+                      <TableNumericCell className="font-medium">{formatCurrency(e.running_balance)}</TableNumericCell>
                     </TableRow>
                   ))
                 ) : (

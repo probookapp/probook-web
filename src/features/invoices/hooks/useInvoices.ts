@@ -5,6 +5,7 @@ import { toast } from "@/stores/useToastStore";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_INVOICES } from "@/lib/demo-data";
 import { LIST_PAGE_SIZE } from "@/lib/pagination";
+import { filterByStatus } from "@/lib/document-status";
 import type {
   CreateInvoiceInput,
   UpdateInvoiceInput,
@@ -23,20 +24,21 @@ export function useInvoices() {
 }
 
 /** Cursor-paginated invoices list (lean rows) for the invoices list page. */
-export function useInfiniteInvoices() {
+/** `status` is a comma-separated list of states, or undefined for every state. */
+export function useInfiniteInvoices(status?: string, archived?: string) {
   const { isDemoMode } = useDemoMode();
   return useInfiniteQuery({
     // Shares the ["invoices"] prefix so existing invalidations refresh it too.
-    queryKey: ["invoices", "infinite", { demo: isDemoMode }],
+    queryKey: ["invoices", "infinite", status ?? null, archived ?? null, { demo: isDemoMode }],
     queryFn: isDemoMode
       ? (): CursorPage<InvoiceListItem> => ({
-          data: DEMO_INVOICES.map((i) => ({
+          data: filterByStatus(DEMO_INVOICES, status).map((i) => ({
             ...i,
             paid_total: i.payments?.reduce((sum, p) => sum + p.amount, 0) ?? 0,
           })),
           next_cursor: null,
         })
-      : ({ pageParam }) => invoiceApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam }),
+      : ({ pageParam }) => invoiceApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam, status, archived }),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.next_cursor,
     staleTime: isDemoMode ? Infinity : undefined,
@@ -216,6 +218,24 @@ export function useBatchDeleteInvoices() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    },
+  });
+}
+
+/**
+ * Put a document away, or bring it back.
+ *
+ * Archiving never changes what the document is worth or what it declares —
+ * it only leaves the working list. See src/lib/archive-server.ts.
+ */
+export function useArchiveInvoice() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
+      archived ? invoiceApi.archive(id) : invoiceApi.unarchive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
     },
   });
 }

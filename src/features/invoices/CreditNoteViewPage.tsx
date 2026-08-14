@@ -89,7 +89,7 @@ export function CreditNoteViewPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-(--color-border)">
+                  <tbody className="divide-y divide-(--color-border-primary)">
                     {creditNote.lines.map((line) => (
                       <tr key={line.id}>
                         <td className="px-3 py-2 text-sm">{line.description}</td>

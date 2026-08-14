@@ -6,6 +6,16 @@ import {
   DEMO_REVENUE_BY_CLIENT,
   DEMO_PRODUCT_SALES,
   DEMO_OUTSTANDING_PAYMENTS,
+  DEMO_EXPENSES_BY_CATEGORY,
+  DEMO_EXPENSES_BY_MONTH,
+  DEMO_PIPELINE,
+  DEMO_PROFIT_MARGIN,
+  DEMO_SUPPLIER_SPEND,
+  DEMO_INVENTORY_VALUATION,
+  DEMO_QUOTE_CONVERSION,
+  DEMO_TAX_SUMMARY,
+  DEMO_ACCOUNTING_EXPORT,
+  DEMO_POS_DAILY,
 } from "@/lib/demo-data";
 
 // Each hook accepts an optional `enabled` flag (default true) so ReportsPage
@@ -56,7 +66,7 @@ export function useQuoteConversionStats(startDate?: string, endDate?: string, en
   return useQuery({
     queryKey: ["reports", "quote-conversion", startDate, endDate, { demo: isDemoMode }],
     queryFn: isDemoMode
-      ? () => ({ total_quotes: 3, converted_quotes: 1, conversion_rate: 33.3, total_quoted_amount: 346885, converted_amount: 59500 })
+      ? () => DEMO_QUOTE_CONVERSION
       : () => reportApi.getQuoteConversionStats(startDate, endDate),
     staleTime: isDemoMode ? Infinity : undefined,
     enabled,
@@ -67,7 +77,33 @@ export function useExpensesReport(startDate?: string, endDate?: string, enabled 
   const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["reports", "expenses", startDate, endDate, { demo: isDemoMode }],
-    queryFn: isDemoMode ? () => [] : () => reportApi.getExpensesReport(startDate, endDate),
+    queryFn: isDemoMode
+      ? () => DEMO_EXPENSES_BY_MONTH
+      : () => reportApi.getExpensesReport(startDate, endDate),
+    staleTime: isDemoMode ? Infinity : undefined,
+    enabled,
+  });
+}
+
+export function useExpensesByCategory(startDate?: string, endDate?: string, enabled = true) {
+  const { isDemoMode } = useDemoMode();
+  return useQuery({
+    queryKey: ["reports", "expenses-by-category", startDate, endDate, { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? () => DEMO_EXPENSES_BY_CATEGORY
+      : () => reportApi.getExpensesByCategory(startDate, endDate),
+    staleTime: isDemoMode ? Infinity : undefined,
+    enabled,
+  });
+}
+
+export function usePipelineReport(startDate?: string, endDate?: string, enabled = true) {
+  const { isDemoMode } = useDemoMode();
+  return useQuery({
+    queryKey: ["reports", "pipeline", startDate, endDate, { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? () => DEMO_PIPELINE
+      : () => reportApi.getPipeline(startDate, endDate),
     staleTime: isDemoMode ? Infinity : undefined,
     enabled,
   });
@@ -77,7 +113,9 @@ export function useProfitMargin(startDate?: string, endDate?: string, enabled = 
   const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["reports", "profit-margin", startDate, endDate, { demo: isDemoMode }],
-    queryFn: isDemoMode ? () => [] : () => reportApi.getProfitMargin(startDate, endDate),
+    queryFn: isDemoMode
+      ? () => DEMO_PROFIT_MARGIN
+      : () => reportApi.getProfitMargin(startDate, endDate),
     staleTime: isDemoMode ? Infinity : undefined,
     enabled,
   });
@@ -87,7 +125,9 @@ export function useSupplierSpend(startDate?: string, endDate?: string, enabled =
   const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["reports", "supplier-spend", startDate, endDate, { demo: isDemoMode }],
-    queryFn: isDemoMode ? () => [] : () => reportApi.getSupplierSpend(startDate, endDate),
+    queryFn: isDemoMode
+      ? () => DEMO_SUPPLIER_SPEND
+      : () => reportApi.getSupplierSpend(startDate, endDate),
     staleTime: isDemoMode ? Infinity : undefined,
     enabled,
   });
@@ -97,7 +137,9 @@ export function useInventoryValuation(locationId?: string, enabled = true) {
   const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["reports", "inventory-valuation", locationId ?? null, { demo: isDemoMode }],
-    queryFn: isDemoMode ? () => [] : () => reportApi.getInventoryValuation(locationId),
+    queryFn: isDemoMode
+      ? () => DEMO_INVENTORY_VALUATION
+      : () => reportApi.getInventoryValuation(locationId),
     staleTime: isDemoMode ? Infinity : undefined,
     enabled,
   });
@@ -107,7 +149,9 @@ export function useTaxSummary(startDate?: string, endDate?: string, enabled = tr
   const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["reports", "tax-summary", startDate, endDate, { demo: isDemoMode }],
-    queryFn: isDemoMode ? () => null : () => reportApi.getTaxSummary(startDate, endDate),
+    queryFn: isDemoMode
+      ? () => DEMO_TAX_SUMMARY
+      : () => reportApi.getTaxSummary(startDate, endDate),
     staleTime: isDemoMode ? Infinity : undefined,
     enabled,
   });
@@ -117,7 +161,9 @@ export function useAccountingExport(startDate?: string, endDate?: string, enable
   const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["reports", "accounting-export", startDate, endDate, { demo: isDemoMode }],
-    queryFn: isDemoMode ? () => null : () => reportApi.getAccountingExport(startDate, endDate),
+    queryFn: isDemoMode
+      ? () => DEMO_ACCOUNTING_EXPORT
+      : () => reportApi.getAccountingExport(startDate, endDate),
     staleTime: isDemoMode ? Infinity : undefined,
     enabled,
   });
@@ -127,9 +173,11 @@ export function usePosDailyReport(date: string, registerId?: string, enabled = t
   const { isDemoMode } = useDemoMode();
   return useQuery({
     queryKey: ["reports", "pos-daily", date, registerId, { demo: isDemoMode }],
-    // In demo mode the queryFn resolves to null immediately, so the query can
-    // stay enabled — keeping it disabled would leave isPending true forever.
-    queryFn: isDemoMode ? () => null : () => posApi.getDailyReport(date, registerId),
+    // In demo mode the queryFn resolves immediately, so the query can stay
+    // enabled — keeping it disabled would leave isPending true forever.
+    queryFn: isDemoMode
+      ? () => DEMO_POS_DAILY
+      : () => posApi.getDailyReport(date, registerId),
     enabled: enabled && !!date,
   });
 }

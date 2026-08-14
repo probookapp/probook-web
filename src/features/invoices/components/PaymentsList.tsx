@@ -97,24 +97,32 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
       </CardHeader>
       <CardContent>
         {/* Summary */}
-        <div className="grid grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4">
-          <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t("payments.invoiceTotal")}</p>
-            <p className="font-semibold">{formatCurrency(amountOwed)}</p>
+        {/* One figure per row, label left and amount right.
+            Three columns in this card gave each amount about 85 px, and a total
+            needs closer to 110 — so they ran into one another and read as
+            "178 166,80DZDDZD". A narrow card wants a list, not a grid. */}
+        <dl className="p-4 bg-(--color-bg-secondary) rounded-lg mb-4 divide-y divide-(--color-border-primary)">
+          <div className="flex items-baseline justify-between gap-3 pb-2">
+            <dt className="text-sm text-(--color-text-secondary)">{t("payments.invoiceTotal")}</dt>
+            <dd className="font-mono font-semibold tabular-nums">{formatCurrency(amountOwed)}</dd>
           </div>
-          <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t("payments.totalPaid")}</p>
-            <p className="font-semibold text-green-600">
+          <div className="flex items-baseline justify-between gap-3 py-2">
+            <dt className="text-sm text-(--color-text-secondary)">{t("payments.totalPaid")}</dt>
+            <dd className="font-mono font-semibold tabular-nums text-success-600">
               {formatCurrency(totalPaid)}
-            </p>
+            </dd>
           </div>
-          <div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">{t("payments.remaining")}</p>
-            <p className={`font-semibold ${remaining > 0 ? "text-orange-600" : "text-green-600"}`}>
+          <div className="flex items-baseline justify-between gap-3 pt-2">
+            <dt className="text-sm text-(--color-text-secondary)">{t("payments.remaining")}</dt>
+            <dd
+              className={`font-mono font-semibold tabular-nums ${
+                remaining > 0 ? "text-warning-600" : "text-success-600"
+              }`}
+            >
               {formatCurrency(remaining)}
-            </p>
+            </dd>
           </div>
-        </div>
+        </dl>
 
         {/* Payments List */}
         {invoice.payments && invoice.payments.length > 0 ? (

@@ -17,7 +17,9 @@ import {
   Receipt,
   DollarSign,
   Truck,
+  Activity,
   Percent,
+  PieChart,
   FileSpreadsheet,
 } from "lucide-react";
 import {
@@ -33,6 +35,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
   Badge,
 } from "@/components/ui";
 import type { ReportPDFColumn } from "@/features/pdf/ReportPDF";
@@ -52,9 +55,12 @@ import {
   usePosDailyReport,
   useTaxSummary,
   useAccountingExport,
+  useExpensesByCategory,
+  usePipelineReport,
 } from "./hooks/useReports";
 
 type ReportType =
+  | "pipeline"
   | "revenue"
   | "clients"
   | "products"
@@ -64,6 +70,7 @@ type ReportType =
   | "conversion"
   | "posDaily"
   | "expenses"
+  | "expensesByCategory"
   | "lowStock"
   | "inventoryValuation"
   | "taxSummary"
@@ -145,7 +152,7 @@ function ExportBar({ onCsv, onPdf }: { onCsv: () => void; onPdf: () => void }) {
 }
 
 export function ReportsPage() {
-  const { t } = useTranslation(["reports", "common"]);
+  const { t } = useTranslation(["reports", "common", "pos"]);
   const [activeReport, setActiveReport] = useState<ReportType>("revenue");
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
@@ -207,12 +214,17 @@ export function ReportsPage() {
     useLowStock(undefined, locationFilter, activeReport === "lowStock");
   const { data: valuationData, isPending: isLoadingValuation } =
     useInventoryValuation(locationFilter, activeReport === "inventoryValuation");
+  const { data: pipelineData, isPending: isLoadingPipeline } =
+    usePipelineReport(startDate, endDate, activeReport === "pipeline");
+  const { data: expensesByCategoryData, isPending: isLoadingExpensesByCategory } =
+    useExpensesByCategory(startDate, endDate, activeReport === "expensesByCategory");
   const { data: taxSummaryData, isPending: isLoadingTaxSummary } =
     useTaxSummary(startDate, endDate, activeReport === "taxSummary");
   const { data: accountingData, isPending: isLoadingAccounting } =
     useAccountingExport(startDate, endDate, activeReport === "accountingExport");
 
   const reports = [
+    { id: "pipeline" as const, label: t("reports:pipeline.title"), icon: Activity },
     { id: "revenue" as const, label: t("reports:revenueByPeriod.title"), icon: BarChart3 },
     { id: "clients" as const, label: t("reports:revenueByClient.title"), icon: Users },
     { id: "products" as const, label: t("reports:productSales.title"), icon: Package },
@@ -222,6 +234,7 @@ export function ReportsPage() {
     { id: "conversion" as const, label: t("reports:quoteConversion.title"), icon: TrendingUp },
     { id: "posDaily" as const, label: t("reports:posDaily.title"), icon: Calculator },
     { id: "expenses" as const, label: t("reports:expenses.title"), icon: Receipt },
+    { id: "expensesByCategory" as const, label: t("reports:expensesByCategory.title"), icon: PieChart },
     { id: "lowStock" as const, label: t("reports:lowStock.title"), icon: AlertTriangle },
     { id: "inventoryValuation" as const, label: t("reports:inventoryValuation.title"), icon: Boxes },
     { id: "taxSummary" as const, label: t("reports:taxSummary.title"), icon: Percent },
@@ -315,6 +328,200 @@ export function ReportsPage() {
 
   const renderReport = () => {
     switch (activeReport) {
+      case "pipeline": {
+        if (isLoadingPipeline) return <LoadingSpinner />;
+        const pipeline = pipelineData;
+        const statusLabel = (s: string) => t(`common:status.${s.toLowerCase()}`);
+        // Every known state is listed, empty ones included: "0 unpaid" is an
+        // answer, a missing row is not.
+        const countRows = [
+          ...(pipeline?.quotes ?? []).map((b) => ({
+            kind: t("reports:pipeline.quotes"),
+            status: statusLabel(b.status),
+            count: b.count,
+            total: b.total,
+          })),
+          ...(pipeline?.invoices ?? []).map((b) => ({
+            kind: t("reports:pipeline.invoices"),
+            status: statusLabel(b.status),
+            count: b.count,
+            total: b.total,
+          })),
+          ...(pipeline?.delivery_notes ?? []).map((b) => ({
+            kind: t("reports:pipeline.deliveryNotes"),
+            status: statusLabel(b.status),
+            count: b.count,
+            total: b.total,
+          })),
+        ];
+        const progress = pipeline?.in_progress;
+        return (
+          <div className="space-y-4">
+            <ExportBar
+              onCsv={() => exportToCSV(countRows, "pilotage")}
+              onPdf={() =>
+                exportToPDF(
+                  t("reports:pipeline.title"),
+                  [
+                    { header: t("reports:pipeline.document"), flex: 2 },
+                    { header: t("reports:pipeline.status"), flex: 2 },
+                    { header: t("reports:pipeline.count"), align: "right" },
+                    { header: t("reports:pipeline.amount"), align: "right" },
+                  ],
+                  countRows.map((r) => [
+                    r.kind,
+                    r.status,
+                    String(r.count),
+                    r.total > 0 ? formatCurrency(r.total) : "-",
+                  ]),
+                  "pilotage",
+                  [
+                    {
+                      label: t("reports:pipeline.awaitingInvoice"),
+                      value: formatCurrency(progress?.awaiting_invoice_total ?? 0),
+                    },
+                    {
+                      label: t("reports:pipeline.awaitingPayment"),
+                      value: formatCurrency(progress?.awaiting_payment_total ?? 0),
+                    },
+                  ]
+                )
+              }
+            />
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
+                <p className="text-sm text-(--color-text-secondary)">
+                  {t("reports:pipeline.awaitingInvoice")}
+                </p>
+                <p className="text-lg sm:text-2xl font-bold">
+                  {formatCurrency(progress?.awaiting_invoice_total ?? 0)}
+                </p>
+                <p className="text-xs text-(--color-text-secondary) mt-1">
+                  {t("reports:pipeline.documentCount", {
+                    count: progress?.awaiting_invoice.length ?? 0,
+                  })}
+                </p>
+              </div>
+              <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
+                <p className="text-sm text-(--color-text-secondary)">
+                  {t("reports:pipeline.awaitingPayment")}
+                </p>
+                <p className="text-lg sm:text-2xl font-bold">
+                  {formatCurrency(progress?.awaiting_payment_total ?? 0)}
+                </p>
+                <p className="text-xs text-(--color-text-secondary) mt-1">
+                  {t("reports:pipeline.documentCount", {
+                    count: progress?.awaiting_payment.length ?? 0,
+                  })}
+                </p>
+              </div>
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                <p className="text-sm text-amber-600 dark:text-amber-400">
+                  {t("reports:pipeline.overdue")}
+                </p>
+                <p className="text-lg sm:text-2xl font-bold text-amber-700 dark:text-amber-300">
+                  {formatCurrency(progress?.overdue_total ?? 0)}
+                </p>
+                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
+                  {t("reports:pipeline.documentCount", { count: progress?.overdue_count ?? 0 })}
+                </p>
+              </div>
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("reports:pipeline.document")}</TableHead>
+                  <TableHead>{t("reports:pipeline.status")}</TableHead>
+                  <TableHead className="text-right">{t("reports:pipeline.count")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:pipeline.amount")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {countRows.map((r, i) => (
+                  <TableRow key={`${r.kind}-${r.status}-${i}`}>
+                    <TableCell className="font-medium">{r.kind}</TableCell>
+                    <TableCell>{r.status}</TableCell>
+                    <TableCell className="text-right">{r.count}</TableCell>
+                    <TableNumericCell>
+                      {r.total > 0 ? formatCurrency(r.total) : "-"}
+                    </TableNumericCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+
+            {(progress?.awaiting_payment.length ?? 0) > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-(--color-text-secondary)">
+                  {t("reports:pipeline.awaitingPaymentDetail")}
+                </h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("reports:pipeline.number")}</TableHead>
+                      <TableHead>{t("reports:pipeline.client")}</TableHead>
+                      <TableHead>{t("reports:pipeline.dueDate")}</TableHead>
+                      <TableHead className="text-right text-end">
+                        {t("reports:pipeline.remaining")}
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {progress?.awaiting_payment.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell className="font-mono">{row.number}</TableCell>
+                        <TableCell>{row.client || "-"}</TableCell>
+                        <TableCell>
+                          {row.due_date ? formatDate(row.due_date) : "-"}
+                          {row.overdue && (
+                            <Badge variant="danger" className="ml-2">
+                              {t("common:status.overdue")}
+                            </Badge>
+                          )}
+                        </TableCell>
+                        <TableNumericCell>
+                          {formatCurrency(row.remaining)}
+                        </TableNumericCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+
+            {(progress?.awaiting_invoice.length ?? 0) > 0 && (
+              <div className="space-y-2">
+                <h3 className="text-sm font-medium text-(--color-text-secondary)">
+                  {t("reports:pipeline.awaitingInvoiceDetail")}
+                </h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("reports:pipeline.number")}</TableHead>
+                      <TableHead>{t("reports:pipeline.client")}</TableHead>
+                      <TableHead>{t("reports:pipeline.date")}</TableHead>
+                      <TableHead className="text-right text-end">{t("reports:pipeline.amount")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {progress?.awaiting_invoice.map((row) => (
+                      <TableRow key={row.id}>
+                        <TableCell className="font-mono">{row.number}</TableCell>
+                        <TableCell>{row.client || "-"}</TableCell>
+                        <TableCell>{formatDate(row.date)}</TableCell>
+                        <TableNumericCell>{formatCurrency(row.amount)}</TableNumericCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        );
+      }
+
       case "revenue":
         if (isLoadingRevenue) return <LoadingSpinner />;
         return (
@@ -368,8 +575,8 @@ export function ReportsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("reports:revenueByPeriod.period")}</TableHead>
-                  <TableHead className="text-right">{t("reports:revenueByPeriod.revenueHt")}</TableHead>
-                  <TableHead className="text-right">{t("reports:revenueByPeriod.revenueTtc")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:revenueByPeriod.revenueHt")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:revenueByPeriod.revenueTtc")}</TableHead>
                   <TableHead className="text-right">{t("reports:revenueByPeriod.invoiceCount")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -378,12 +585,12 @@ export function ReportsPage() {
                   revenueData.map((row) => (
                     <TableRow key={row.period}>
                       <TableCell className="font-medium">{row.period}</TableCell>
-                      <TableCell className="text-right">
+                      <TableNumericCell>
                         {formatCurrency(row.revenue_before_tax)}
-                      </TableCell>
-                      <TableCell className="text-right">
+                      </TableNumericCell>
+                      <TableNumericCell>
                         {formatCurrency(row.revenue_total)}
-                      </TableCell>
+                      </TableNumericCell>
                       <TableCell className="text-right">{row.invoice_count}</TableCell>
                     </TableRow>
                   ))
@@ -397,10 +604,10 @@ export function ReportsPage() {
               </TableBody>
             </Table>
             {revenueData && revenueData.length > 0 && (
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t border-(--color-border)">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-(--color-border-primary)">
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:totalHt")}</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-lg sm:text-2xl font-bold">
                     {formatCurrency(
                       revenueData.reduce((sum, r) => sum + r.revenue_before_tax, 0)
                     )}
@@ -408,7 +615,7 @@ export function ReportsPage() {
                 </div>
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:totalTtc")}</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-lg sm:text-2xl font-bold">
                     {formatCurrency(
                       revenueData.reduce((sum, r) => sum + r.revenue_total, 0)
                     )}
@@ -448,8 +655,8 @@ export function ReportsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("reports:revenueByClient.client")}</TableHead>
-                  <TableHead className="text-right">{t("reports:revenueByClient.revenueHt")}</TableHead>
-                  <TableHead className="text-right">{t("reports:revenueByClient.revenueTtc")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:revenueByClient.revenueHt")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:revenueByClient.revenueTtc")}</TableHead>
                   <TableHead className="text-right">{t("reports:revenueByClient.invoiceCount")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -458,12 +665,12 @@ export function ReportsPage() {
                   clientData.map((row) => (
                     <TableRow key={row.client_id}>
                       <TableCell className="font-medium">{row.client_name}</TableCell>
-                      <TableCell className="text-right">
+                      <TableNumericCell>
                         {formatCurrency(row.revenue_before_tax)}
-                      </TableCell>
-                      <TableCell className="text-right">
+                      </TableNumericCell>
+                      <TableNumericCell>
                         {formatCurrency(row.revenue_total)}
-                      </TableCell>
+                      </TableNumericCell>
                       <TableCell className="text-right">{row.invoice_count}</TableCell>
                     </TableRow>
                   ))
@@ -519,8 +726,8 @@ export function ReportsPage() {
                 <TableRow>
                   <TableHead>{t("reports:productSales.product")}</TableHead>
                   <TableHead className="text-right">{t("reports:productSales.quantitySold")}</TableHead>
-                  <TableHead className="text-right">{t("reports:productSales.revenueHt")}</TableHead>
-                  <TableHead className="text-right">{t("reports:productSales.revenueTtc")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:productSales.revenueHt")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:productSales.revenueTtc")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -531,12 +738,12 @@ export function ReportsPage() {
                       <TableCell className="text-right">
                         {row.quantity_sold.toFixed(2)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableNumericCell>
                         {formatCurrency(row.revenue_before_tax)}
-                      </TableCell>
-                      <TableCell className="text-right">
+                      </TableNumericCell>
+                      <TableNumericCell>
                         {formatCurrency(row.revenue_total)}
-                      </TableCell>
+                      </TableNumericCell>
                     </TableRow>
                   ))
                 ) : (
@@ -605,9 +812,9 @@ export function ReportsPage() {
                 <TableRow>
                   <TableHead>{t("reports:profitMargin.product")}</TableHead>
                   <TableHead className="text-right">{t("reports:profitMargin.quantity")}</TableHead>
-                  <TableHead className="text-right">{t("reports:profitMargin.revenue")}</TableHead>
-                  <TableHead className="text-right">{t("reports:profitMargin.cost")}</TableHead>
-                  <TableHead className="text-right">{t("reports:profitMargin.margin")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:profitMargin.revenue")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:profitMargin.cost")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:profitMargin.margin")}</TableHead>
                   <TableHead className="text-right">{t("reports:profitMargin.marginPercent")}</TableHead>
                 </TableRow>
               </TableHeader>
@@ -617,9 +824,9 @@ export function ReportsPage() {
                     <TableRow key={row.product_id}>
                       <TableCell className="font-medium">{row.product_name}</TableCell>
                       <TableCell className="text-right">{row.quantity_sold.toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(row.revenue)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(row.cost)}</TableCell>
-                      <TableCell
+                      <TableNumericCell>{formatCurrency(row.revenue)}</TableNumericCell>
+                      <TableNumericCell>{formatCurrency(row.cost)}</TableNumericCell>
+                      <TableNumericCell
                         className={
                           row.margin >= 0
                             ? "text-right font-medium text-green-600 dark:text-green-400"
@@ -627,7 +834,7 @@ export function ReportsPage() {
                         }
                       >
                         {formatCurrency(row.margin)}
-                      </TableCell>
+                      </TableNumericCell>
                       <TableCell className="text-right">{row.margin_percent.toFixed(1)}%</TableCell>
                     </TableRow>
                   ))
@@ -641,24 +848,24 @@ export function ReportsPage() {
               </TableBody>
             </Table>
             {profitData && profitData.length > 0 && (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-(--color-border)">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-(--color-border-primary)">
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:profitMargin.revenue")}</p>
-                  <p className="text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
                 </div>
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:profitMargin.cost")}</p>
-                  <p className="text-2xl font-bold">{formatCurrency(totalCost)}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{formatCurrency(totalCost)}</p>
                 </div>
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <p className="text-sm text-green-600 dark:text-green-400">{t("reports:profitMargin.margin")}</p>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  <p className="text-lg sm:text-2xl font-bold text-green-700 dark:text-green-300">
                     {formatCurrency(totalMargin)}
                   </p>
                 </div>
                 <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
                   <p className="text-sm text-primary-600 dark:text-primary-400">{t("reports:profitMargin.marginPercent")}</p>
-                  <p className="text-2xl font-bold text-primary-700 dark:text-primary-300">
+                  <p className="text-lg sm:text-2xl font-bold text-primary-700 dark:text-primary-300">
                     {totalMarginPct.toFixed(1)}%
                   </p>
                 </div>
@@ -708,7 +915,7 @@ export function ReportsPage() {
                 <TableRow>
                   <TableHead>{t("reports:supplierSpend.supplier")}</TableHead>
                   <TableHead className="text-right">{t("reports:supplierSpend.orderCount")}</TableHead>
-                  <TableHead className="text-right">{t("reports:supplierSpend.totalSpend")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:supplierSpend.totalSpend")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -717,9 +924,9 @@ export function ReportsPage() {
                     <TableRow key={row.supplier_id}>
                       <TableCell className="font-medium">{row.supplier_name}</TableCell>
                       <TableCell className="text-right">{row.order_count}</TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableNumericCell className="font-medium">
                         {formatCurrency(row.total_spend)}
-                      </TableCell>
+                      </TableNumericCell>
                     </TableRow>
                   ))
                 ) : (
@@ -732,10 +939,10 @@ export function ReportsPage() {
               </TableBody>
             </Table>
             {supplierSpendData && supplierSpendData.length > 0 && (
-              <div className="pt-4 border-t border-(--color-border)">
+              <div className="pt-4 border-t border-(--color-border-primary)">
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:supplierSpend.total")}</p>
-                  <p className="text-2xl font-bold">{formatCurrency(totalSpend)}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{formatCurrency(totalSpend)}</p>
                 </div>
               </div>
             )}
@@ -786,7 +993,7 @@ export function ReportsPage() {
                   <TableHead>{t("reports:outstanding.issueDate")}</TableHead>
                   <TableHead>{t("reports:outstanding.dueDate")}</TableHead>
                   <TableHead>{t("reports:outstanding.status")}</TableHead>
-                  <TableHead className="text-right">{t("reports:outstanding.amount")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:outstanding.amount")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -808,9 +1015,9 @@ export function ReportsPage() {
                           <Badge variant="warning">{t("reports:dueNow")}</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-right font-medium">
+                      <TableNumericCell className="font-medium">
                         {formatCurrency(row.total)}
-                      </TableCell>
+                      </TableNumericCell>
                     </TableRow>
                   ))
                 ) : (
@@ -825,7 +1032,7 @@ export function ReportsPage() {
             {outstandingData && outstandingData.length > 0 && (
               <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-100 dark:border-red-800">
                 <p className="text-sm text-red-600 dark:text-red-400">{t("reports:totalUnpaid")}</p>
-                <p className="text-2xl font-bold text-red-700 dark:text-red-300">
+                <p className="text-lg sm:text-2xl font-bold text-red-700 dark:text-red-300">
                   {formatCurrency(
                     outstandingData.reduce((sum, r) => sum + r.total, 0)
                   )}
@@ -868,26 +1075,26 @@ export function ReportsPage() {
               </div>
             )}
             {conversionData && (
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:quoteConversion.totalQuotes")}</p>
-                  <p className="text-2xl font-bold">{conversionData.total_quotes}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{conversionData.total_quotes}</p>
                 </div>
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <p className="text-sm text-green-600 dark:text-green-400">{t("reports:acceptedQuotes")}</p>
-                  <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  <p className="text-lg sm:text-2xl font-bold text-green-700 dark:text-green-300">
                     {conversionData.converted_quotes}
                   </p>
                 </div>
                 <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
                   <p className="text-sm text-blue-600 dark:text-blue-400">{t("reports:quoteConversion.conversionRate")}</p>
-                  <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                  <p className="text-lg sm:text-2xl font-bold text-blue-700 dark:text-blue-300">
                     {conversionData.conversion_rate.toFixed(1)}%
                   </p>
                 </div>
                 <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
                   <p className="text-sm text-primary-600 dark:text-primary-400">{t("reports:quoteConversion.convertedAmount")}</p>
-                  <p className="text-2xl font-bold text-primary-700 dark:text-primary-300">
+                  <p className="text-lg sm:text-2xl font-bold text-primary-700 dark:text-primary-300">
                     {formatCurrency(conversionData.converted_amount)}
                   </p>
                 </div>
@@ -945,8 +1152,12 @@ export function ReportsPage() {
           { label: t("reports:posDaily.totalSales"), value: posDailyData.total_sales, highlight: true },
           { label: t("reports:posDaily.subtotal"), value: posDailyData.subtotal },
           { label: t("reports:posDaily.taxAmount"), value: posDailyData.tax_amount },
-          { label: t("reports:posDaily.cashSales"), value: posDailyData.cash_sales },
-          { label: t("reports:posDaily.cardSales"), value: posDailyData.card_sales },
+          // One line per method actually used, so cheques and transfers show up
+          // instead of silently swelling the difference with total sales.
+          ...(posDailyData.sales_by_method ?? []).map((row) => ({
+            label: t(`pos:${row.method.toLowerCase()}`, { defaultValue: row.method }),
+            value: row.amount,
+          })),
           { label: t("reports:posDaily.cancelledCount"), value: posDailyData.cancelled_count },
           { label: t("reports:posDaily.cancelledTotal"), value: posDailyData.cancelled_total },
         ];
@@ -995,8 +1206,8 @@ export function ReportsPage() {
                   <p
                     className={
                       stat.highlight
-                        ? "text-2xl font-bold text-primary-700 dark:text-primary-300"
-                        : "text-2xl font-bold"
+                        ? "text-lg sm:text-2xl font-bold text-primary-700 dark:text-primary-300"
+                        : "text-lg sm:text-2xl font-bold"
                     }
                   >
                     {isCount(stat.label) ? stat.value : formatCurrency(stat.value)}
@@ -1054,7 +1265,7 @@ export function ReportsPage() {
                 <TableRow>
                   <TableHead>{t("reports:expenses.period")}</TableHead>
                   <TableHead className="text-right">{t("reports:expenses.expenseCount")}</TableHead>
-                  <TableHead className="text-right">{t("reports:expenses.totalAmount")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:expenses.totalAmount")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1063,9 +1274,9 @@ export function ReportsPage() {
                     <TableRow key={row.period}>
                       <TableCell className="font-medium">{row.period}</TableCell>
                       <TableCell className="text-right">{row.expense_count}</TableCell>
-                      <TableCell className="text-right">
+                      <TableNumericCell>
                         {formatCurrency(row.total_amount)}
-                      </TableCell>
+                      </TableNumericCell>
                     </TableRow>
                   ))
                 ) : (
@@ -1078,10 +1289,10 @@ export function ReportsPage() {
               </TableBody>
             </Table>
             {expensesData && expensesData.length > 0 && (
-              <div className="pt-4 border-t border-(--color-border)">
+              <div className="pt-4 border-t border-(--color-border-primary)">
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:expenses.total")}</p>
-                  <p className="text-2xl font-bold">
+                  <p className="text-lg sm:text-2xl font-bold">
                     {formatCurrency(
                       expensesData.reduce((sum, r) => sum + r.total_amount, 0)
                     )}
@@ -1191,8 +1402,8 @@ export function ReportsPage() {
                 <TableRow>
                   <TableHead>{t("reports:inventoryValuation.product")}</TableHead>
                   <TableHead className="text-right">{t("reports:inventoryValuation.quantity")}</TableHead>
-                  <TableHead className="text-right">{t("reports:inventoryValuation.purchasePrice")}</TableHead>
-                  <TableHead className="text-right">{t("reports:inventoryValuation.stockValue")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:inventoryValuation.purchasePrice")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:inventoryValuation.stockValue")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1201,12 +1412,12 @@ export function ReportsPage() {
                     <TableRow key={row.product_id}>
                       <TableCell className="font-medium">{row.designation}</TableCell>
                       <TableCell className="text-right">{row.quantity}</TableCell>
-                      <TableCell className="text-right">
+                      <TableNumericCell>
                         {formatCurrency(row.purchase_price)}
-                      </TableCell>
-                      <TableCell className="text-right font-medium">
+                      </TableNumericCell>
+                      <TableNumericCell className="font-medium">
                         {formatCurrency(row.stock_value)}
-                      </TableCell>
+                      </TableNumericCell>
                     </TableRow>
                   ))
                 ) : (
@@ -1219,10 +1430,101 @@ export function ReportsPage() {
               </TableBody>
             </Table>
             {valuationData && valuationData.length > 0 && (
-              <div className="pt-4 border-t border-(--color-border)">
+              <div className="pt-4 border-t border-(--color-border-primary)">
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:inventoryValuation.totalValue")}</p>
-                  <p className="text-2xl font-bold">{formatCurrency(totalValue)}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{formatCurrency(totalValue)}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      case "expensesByCategory": {
+        if (isLoadingExpensesByCategory) return <LoadingSpinner />;
+        const report = expensesByCategoryData;
+        const rows = report?.categories ?? [];
+        // Unfiled spending is a real row, not a gap: the parts must add up to
+        // the total shown at the bottom.
+        const labelOf = (name: string | null) => name ?? t("reports:expensesByCategory.uncategorized");
+        const exportRows = rows.map((r) => ({
+          category: labelOf(r.category_name),
+          expense_count: r.expense_count,
+          total_amount: r.total_amount,
+          share: Math.round(r.share * 10) / 10,
+        }));
+        return (
+          <div className="space-y-4">
+            <ExportBar
+              onCsv={() => exportToCSV(exportRows, "depenses_par_poste")}
+              onPdf={() =>
+                exportToPDF(
+                  t("reports:expensesByCategory.title"),
+                  [
+                    { header: t("reports:expensesByCategory.category"), flex: 2 },
+                    { header: t("reports:expensesByCategory.expenseCount"), align: "right" },
+                    { header: t("reports:expensesByCategory.totalAmount"), align: "right" },
+                    { header: t("reports:expensesByCategory.share"), align: "right" },
+                  ],
+                  rows.map((r) => [
+                    labelOf(r.category_name),
+                    String(r.expense_count),
+                    formatCurrency(r.total_amount),
+                    `${r.share.toFixed(1)}%`,
+                  ]),
+                  "depenses_par_poste",
+                  [
+                    {
+                      label: t("reports:expensesByCategory.total"),
+                      value: formatCurrency(report?.total ?? 0),
+                    },
+                  ]
+                )
+              }
+            />
+            {rows.length > 0 && (
+              <SimpleBarChart
+                caption={t("reports:expensesByCategory.totalAmount")}
+                data={rows.map((r) => ({ label: labelOf(r.category_name), value: r.total_amount }))}
+                formatValue={formatCurrency}
+              />
+            )}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("reports:expensesByCategory.category")}</TableHead>
+                  <TableHead className="text-right">{t("reports:expensesByCategory.expenseCount")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:expensesByCategory.totalAmount")}</TableHead>
+                  <TableHead className="text-right">{t("reports:expensesByCategory.share")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.length > 0 ? (
+                  rows.map((r) => (
+                    <TableRow key={r.category_id ?? "uncategorized"}>
+                      <TableCell className="font-medium">{labelOf(r.category_name)}</TableCell>
+                      <TableCell className="text-right">{r.expense_count}</TableCell>
+                      <TableNumericCell>{formatCurrency(r.total_amount)}</TableNumericCell>
+                      <TableCell className="text-right">{r.share.toFixed(1)}%</TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center text-(--color-text-secondary) py-8">
+                      {t("reports:noData")}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            {rows.length > 0 && (
+              <div className="pt-4 border-t border-(--color-border-primary)">
+                <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
+                  <p className="text-sm text-(--color-text-secondary)">
+                    {t("reports:expensesByCategory.total")}
+                  </p>
+                  <p className="text-lg sm:text-2xl font-bold">{formatCurrency(report?.total ?? 0)}</p>
                 </div>
               </div>
             )}
@@ -1257,7 +1559,18 @@ export function ReportsPage() {
             ttc: r.total_ttc,
           })),
         ];
+        // A commercial discount lowers the declared base without appearing on any
+        // line, so state it: gross − discount = base. Hidden when there is none,
+        // to keep the ordinary declaration uncluttered.
+        const hasSalesDiscount = ts.sales.discount_ht > 0;
         const taxTotals = [
+          ...(hasSalesDiscount
+            ? [
+                { label: t("reports:taxSummary.grossHt"), value: formatCurrency(ts.sales.gross_ht) },
+                { label: t("reports:taxSummary.discountHt"), value: `-${formatCurrency(ts.sales.discount_ht)}` },
+                { label: t("reports:taxSummary.taxableHt"), value: formatCurrency(ts.sales.total_ht) },
+              ]
+            : []),
           { label: t("reports:taxSummary.salesVat"), value: formatCurrency(ts.sales.total_vat) },
           { label: t("reports:taxSummary.purchasesVat"), value: formatCurrency(ts.purchases.total_vat) },
           { label: t("reports:taxSummary.netVat"), value: formatCurrency(ts.net_vat) },
@@ -1291,14 +1604,14 @@ export function ReportsPage() {
                 )
               }
             />
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                 <p className="text-sm text-(--color-text-secondary)">{t("reports:taxSummary.salesVat")}</p>
-                <p className="text-2xl font-bold">{formatCurrency(ts.sales.total_vat)}</p>
+                <p className="text-lg sm:text-2xl font-bold">{formatCurrency(ts.sales.total_vat)}</p>
               </div>
               <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                 <p className="text-sm text-(--color-text-secondary)">{t("reports:taxSummary.purchasesVat")}</p>
-                <p className="text-2xl font-bold">{formatCurrency(ts.purchases.total_vat)}</p>
+                <p className="text-lg sm:text-2xl font-bold">{formatCurrency(ts.purchases.total_vat)}</p>
               </div>
               <div
                 className={
@@ -1308,14 +1621,14 @@ export function ReportsPage() {
                 }
               >
                 <p className="text-sm text-primary-600 dark:text-primary-400">{t("reports:taxSummary.netVat")}</p>
-                <p className="text-2xl font-bold text-primary-700 dark:text-primary-300">
+                <p className="text-lg sm:text-2xl font-bold text-primary-700 dark:text-primary-300">
                   {formatCurrency(ts.net_vat)}
                 </p>
               </div>
               {ts.stamp_duty.enabled && (
                 <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
                   <p className="text-sm text-amber-600 dark:text-amber-400">{t("reports:taxSummary.stampDutyDue")}</p>
-                  <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                  <p className="text-lg sm:text-2xl font-bold text-amber-700 dark:text-amber-300">
                     {formatCurrency(ts.stamp_duty.amount_due)}
                   </p>
                 </div>
@@ -1326,9 +1639,9 @@ export function ReportsPage() {
                 <TableRow>
                   <TableHead>{t("reports:taxSummary.type")}</TableHead>
                   <TableHead className="text-right">{t("reports:taxSummary.rate")}</TableHead>
-                  <TableHead className="text-right">{t("reports:taxSummary.ht")}</TableHead>
-                  <TableHead className="text-right">{t("reports:taxSummary.vat")}</TableHead>
-                  <TableHead className="text-right">{t("reports:taxSummary.ttc")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:taxSummary.ht")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:taxSummary.vat")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:taxSummary.ttc")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1337,9 +1650,9 @@ export function ReportsPage() {
                     <TableRow key={`${r.type}-${r.tax_rate}-${i}`}>
                       <TableCell className="font-medium">{r.type}</TableCell>
                       <TableCell className="text-right">{r.tax_rate}%</TableCell>
-                      <TableCell className="text-right">{formatCurrency(r.ht)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(r.vat)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(r.ttc)}</TableCell>
+                      <TableNumericCell>{formatCurrency(r.ht)}</TableNumericCell>
+                      <TableNumericCell>{formatCurrency(r.vat)}</TableNumericCell>
+                      <TableNumericCell>{formatCurrency(r.ttc)}</TableNumericCell>
                     </TableRow>
                   ))
                 ) : (
@@ -1351,6 +1664,15 @@ export function ReportsPage() {
                 )}
               </TableBody>
             </Table>
+            {hasSalesDiscount && (
+              <p className="text-xs text-(--color-text-secondary)">
+                {t("reports:taxSummary.discountNote", {
+                  gross: formatCurrency(ts.sales.gross_ht),
+                  discount: formatCurrency(ts.sales.discount_ht),
+                  base: formatCurrency(ts.sales.total_ht),
+                })}
+              </p>
+            )}
             {ts.stamp_duty.enabled && (
               <p className="text-xs text-(--color-text-secondary)">
                 {t("reports:taxSummary.stampDutyNote", {
@@ -1373,6 +1695,9 @@ export function ReportsPage() {
           );
         }
         const ae = accountingData;
+        // The CSV always carries gross and discount; on screen the column only
+        // earns its width when the period actually granted one.
+        const hasDiscountRow = ae.journal.some((r) => r.discount > 0);
         const counts: { label: string; value: number; data: unknown[]; filename: string }[] = [
           { label: t("reports:accountingExport.sales"), value: ae.sales.length, data: ae.sales, filename: "ventes" },
           { label: t("reports:accountingExport.purchases"), value: ae.purchases.length, data: ae.purchases, filename: "achats" },
@@ -1406,11 +1731,11 @@ export function ReportsPage() {
                 </Button>
               ))}
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {counts.map((c) => (
                 <div key={c.filename} className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{c.label}</p>
-                  <p className="text-2xl font-bold">{c.value}</p>
+                  <p className="text-lg sm:text-2xl font-bold">{c.value}</p>
                 </div>
               ))}
             </div>
@@ -1421,9 +1746,12 @@ export function ReportsPage() {
                   <TableHead>{t("reports:accountingExport.entryType")}</TableHead>
                   <TableHead>{t("reports:accountingExport.document")}</TableHead>
                   <TableHead>{t("reports:accountingExport.party")}</TableHead>
-                  <TableHead className="text-right">{t("reports:accountingExport.ht")}</TableHead>
-                  <TableHead className="text-right">{t("reports:accountingExport.vat")}</TableHead>
-                  <TableHead className="text-right">{t("reports:accountingExport.ttc")}</TableHead>
+                  {hasDiscountRow && (
+                    <TableHead className="text-right text-end">{t("reports:accountingExport.discount")}</TableHead>
+                  )}
+                  <TableHead className="text-right text-end">{t("reports:accountingExport.ht")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:accountingExport.vat")}</TableHead>
+                  <TableHead className="text-right text-end">{t("reports:accountingExport.ttc")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1434,14 +1762,19 @@ export function ReportsPage() {
                       <TableCell>{t(`reports:accountingExport.types.${row.type}`)}</TableCell>
                       <TableCell className="font-mono">{row.document || "-"}</TableCell>
                       <TableCell>{row.party || "-"}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(row.ht)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(row.vat)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(row.ttc)}</TableCell>
+                      {hasDiscountRow && (
+                        <TableNumericCell>
+                          {row.discount > 0 ? `-${formatCurrency(row.discount)}` : "-"}
+                        </TableNumericCell>
+                      )}
+                      <TableNumericCell>{formatCurrency(row.ht)}</TableNumericCell>
+                      <TableNumericCell>{formatCurrency(row.vat)}</TableNumericCell>
+                      <TableNumericCell>{formatCurrency(row.ttc)}</TableNumericCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-(--color-text-secondary) py-8">
+                    <TableCell colSpan={hasDiscountRow ? 8 : 7} className="text-center text-(--color-text-secondary) py-8">
                       {t("reports:noData")}
                     </TableCell>
                   </TableRow>
@@ -1462,7 +1795,7 @@ export function ReportsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-(--color-text-primary)">{t("reports:title")}</h1>
+        <h1 className="text-lg sm:text-2xl font-bold text-(--color-text-primary)">{t("reports:title")}</h1>
         <p className="text-(--color-text-secondary)">{t("reports:subtitle")}</p>
       </div>
 

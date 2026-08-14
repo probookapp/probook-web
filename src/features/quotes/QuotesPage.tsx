@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { Plus, Eye, Pencil, Trash2, Search, FileText, ArrowRight, Copy, Download } from "lucide-react";
+import { Plus, Eye, Pencil, Trash2, Search, FileText, ArrowRight, Copy, Download, Archive, ArchiveRestore } from "lucide-react";
 import {
   Button,
   Card,
@@ -15,6 +15,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
   Input,
   Badge,
   getQuoteStatusVariant,
@@ -23,8 +24,11 @@ import {
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
+import { StatusFilterChips } from "@/components/shared/StatusFilterChips";
+import { ALL_STATUSES, ARCHIVED_FILTER, chipToQuery, QUOTE_STATUSES } from "@/lib/document-status";
+import { useStatusFilter } from "@/hooks/useStatusFilter";
 import { useSelection } from "@/hooks/useSelection";
-import { useInfiniteQuotes, useDeleteQuote, useConvertQuoteToInvoice, useDuplicateQuote, useBatchDeleteQuotes } from "./hooks/useQuotes";
+import { useInfiniteQuotes, useDeleteQuote, useConvertQuoteToInvoice, useDuplicateQuote, useBatchDeleteQuotes, useArchiveQuote } from "./hooks/useQuotes";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csv-export";
@@ -43,6 +47,7 @@ export function QuotesPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [convertConfirm, setConvertConfirm] = useState<QuoteListItem | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useStatusFilter(QUOTE_STATUSES);
 
   const {
     data: quotePages,
@@ -50,7 +55,7 @@ export function QuotesPage() {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = useInfiniteQuotes();
+  } = useInfiniteQuotes(chipToQuery(statusFilter).status, chipToQuery(statusFilter).archived);
   const quotes = useMemo(
     () => quotePages?.pages.flatMap((page) => page.data),
     [quotePages]
@@ -59,6 +64,7 @@ export function QuotesPage() {
   const convertToInvoice = useConvertQuoteToInvoice();
   const duplicateQuote = useDuplicateQuote();
   const batchDeleteQuotes = useBatchDeleteQuotes();
+  const archiveQuote = useArchiveQuote();
 
   // Search filters client-side within the loaded pages (the route has no
   // server-side search filter).
@@ -72,7 +78,18 @@ export function QuotesPage() {
 
   useEffect(() => {
     selection.clear();
-  }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchQuery, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const statusOptions = [
+    { key: ALL_STATUSES, label: t("common:filters.all") },
+    ...QUOTE_STATUSES.map((s) => ({
+      key: s,
+      label: t(`common:status.${s.toLowerCase()}`),
+    })),
+    // Archiving is a different axis from status: an archived invoice keeps
+    // its own state, it just leaves the working list.
+    { key: ARCHIVED_FILTER, label: t("common:filters.archived") },
+  ];
 
   const handleExportCsv = () => {
     exportToCsv(
@@ -147,6 +164,12 @@ export function QuotesPage() {
               />
             </div>
           </div>
+          <StatusFilterChips
+            options={statusOptions}
+            value={statusFilter}
+            onChange={setStatusFilter}
+            label={t("common:filters.filterByStatus")}
+          />
         </CardHeader>
         <CardContent className="p-0">
           {/* Mobile card view */}
@@ -179,6 +202,7 @@ export function QuotesPage() {
                       {quote.status === "ACCEPTED" && canConvertToInvoice && (
                         <button onClick={() => setConvertConfirm(quote)} className="p-1 text-gray-500 hover:text-green-600" title={t("quotes:actions.convertToInvoice")} aria-label={t("quotes:actions.convertToInvoice")}><ArrowRight className="h-4 w-4" /></button>
                       )}
+                      {canEdit && <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } archiveQuote.mutate({ id: quote.id, archived: !quote.archived_at }); }} className="p-1 text-gray-500 hover:text-amber-600" title={t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")} aria-label={t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")} disabled={archiveQuote.isPending}>{quote.archived_at ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}</button>}
                       {canDelete && <button onClick={() => setDeleteConfirmId(quote.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
                     </div>
                   </div>
@@ -210,7 +234,7 @@ export function QuotesPage() {
                 <TableHead>{t("quotes:fields.issueDate")}</TableHead>
                 <TableHead>{t("quotes:fields.validityDate")}</TableHead>
                 <TableHead>{t("quotes:fields.status")}</TableHead>
-                <TableHead>{t("quotes:fields.totalTtc")}</TableHead>
+                <TableHead className="text-end">{t("quotes:fields.totalTtc")}</TableHead>
                 <TableHead className="w-32">{t("common:buttons.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -237,9 +261,9 @@ export function QuotesPage() {
                         {getStatusLabel(quote.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell className="font-medium">
+                    <TableNumericCell className="font-medium">
                       {formatCurrency(quote.total)}
-                    </TableCell>
+                    </TableNumericCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
                         <button
@@ -269,6 +293,24 @@ export function QuotesPage() {
                           disabled={duplicateQuote.isPending}
                         >
                           <Copy className="h-4 w-4" />
+                        </button>
+                        )}
+                        {canEdit && (
+                        <button
+                          onClick={() => {
+                            if (isDemoMode) { showSubscribePrompt(); return; }
+                            archiveQuote.mutate({ id: quote.id, archived: !quote.archived_at });
+                          }}
+                          className="p-1 text-gray-500 hover:text-amber-600 transition-colors"
+                          title={t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")}
+                          aria-label={t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")}
+                          disabled={archiveQuote.isPending}
+                        >
+                          {quote.archived_at ? (
+                            <ArchiveRestore className="h-4 w-4" />
+                          ) : (
+                            <Archive className="h-4 w-4" />
+                          )}
                         </button>
                         )}
                         {quote.status === "ACCEPTED" && canConvertToInvoice && (

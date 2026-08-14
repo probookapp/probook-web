@@ -3,6 +3,7 @@ import { quoteApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_QUOTES } from "@/lib/demo-data";
 import { LIST_PAGE_SIZE } from "@/lib/pagination";
+import { filterByStatus } from "@/lib/document-status";
 import type { CreateQuoteInput, UpdateQuoteInput, CursorPage, QuoteListItem } from "@/types";
 
 export function useQuotes() {
@@ -15,14 +16,18 @@ export function useQuotes() {
 }
 
 /** Cursor-paginated quotes list (lean rows) for the quotes list page. */
-export function useInfiniteQuotes() {
+/** `status` is a comma-separated list of states, or undefined for every state. */
+export function useInfiniteQuotes(status?: string, archived?: string) {
   const { isDemoMode } = useDemoMode();
   return useInfiniteQuery({
     // Shares the ["quotes"] prefix so existing invalidations refresh it too.
-    queryKey: ["quotes", "infinite", { demo: isDemoMode }],
+    queryKey: ["quotes", "infinite", status ?? null, archived ?? null, { demo: isDemoMode }],
     queryFn: isDemoMode
-      ? (): CursorPage<QuoteListItem> => ({ data: DEMO_QUOTES, next_cursor: null })
-      : ({ pageParam }) => quoteApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam }),
+      ? (): CursorPage<QuoteListItem> => ({
+          data: filterByStatus(DEMO_QUOTES, status),
+          next_cursor: null,
+        })
+      : ({ pageParam }) => quoteApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam, status, archived }),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.next_cursor,
     staleTime: isDemoMode ? Infinity : undefined,
@@ -122,6 +127,24 @@ export function useBatchDeleteQuotes() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["quotes"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    },
+  });
+}
+
+/**
+ * Put a document away, or bring it back.
+ *
+ * Archiving never changes what the document is worth or what it declares —
+ * it only leaves the working list. See src/lib/archive-server.ts.
+ */
+export function useArchiveQuote() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, archived }: { id: string; archived: boolean }) =>
+      archived ? quoteApi.archive(id) : quoteApi.unarchive(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quotes"] });
     },
   });
 }

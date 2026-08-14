@@ -187,7 +187,7 @@ export function QuoteViewPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-(--color-border)">
+                  <tbody className="divide-y divide-(--color-border-primary)">
                     {quote.lines.map((line) => (
                       <tr key={line.id}>
                         <td className="px-3 py-2 text-sm">{line.description}</td>
