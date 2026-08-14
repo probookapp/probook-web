@@ -9,12 +9,23 @@ export function useCompanySettings() {
   });
 }
 
+/**
+ * Saving company settings writes the server's answer straight into the cache.
+ *
+ * Invalidating alone only marks the query stale and schedules a refetch, so for
+ * the length of that round trip every other reader still held the old values —
+ * and the fiscal profile is read all over the app (VAT scales, which company
+ * identifiers a form asks for, stamp duty). Changing regime and immediately
+ * opening a form could show the previous country's fields. The mutation already
+ * returns the updated row, so there is nothing to wait for.
+ */
 export function useUpdateCompanySettings() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: (input: UpdateCompanySettingsInput) => settingsApi.update(input),
-    onSuccess: () => {
+    onSuccess: (settings) => {
+      queryClient.setQueryData(["company-settings"], settings);
       queryClient.invalidateQueries({ queryKey: ["company-settings"] });
     },
   });
@@ -26,7 +37,8 @@ export function useUpdateAppSettings() {
   return useMutation({
     mutationFn: ({ appLanguage, appTheme }: { appLanguage: string; appTheme: string }) =>
       settingsApi.updateAppSettings(appLanguage, appTheme),
-    onSuccess: () => {
+    onSuccess: (settings) => {
+      queryClient.setQueryData(["company-settings"], settings);
       queryClient.invalidateQueries({ queryKey: ["company-settings"] });
     },
   });

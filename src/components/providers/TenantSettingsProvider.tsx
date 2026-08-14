@@ -25,7 +25,7 @@ export function TenantSettingsProvider() {
   useEffect(() => {
     if (settings && !isInitialized) {
       useSettingsStore.setState({
-        currency: settings.currency || 'EUR',
+        currency: settings.currency || 'DZD',
         isInitialized: true,
       });
 

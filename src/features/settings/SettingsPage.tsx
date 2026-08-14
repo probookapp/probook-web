@@ -1,4 +1,4 @@
-import { useForm, type Resolver } from "react-hook-form";
+import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
@@ -34,6 +34,15 @@ import { useSettingsStore } from "@/stores/useSettingsStore";
 import { useTheme, type AppTheme } from "@/components/providers/ThemeContext";
 import { useEffect, useRef, useState } from "react";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import {
+  DEFAULT_FISCAL_PROFILE,
+  FISCAL_PROFILE_IDS,
+  getFiscalProfile,
+  isFiscalProfileId,
+  vatRateOptions,
+} from "@/lib/fiscal-profiles";
+
+const FALLBACK_CURRENCY = getFiscalProfile(DEFAULT_FISCAL_PROFILE).defaultCurrency;
 
 const createSettingsSchema = (t: (key: string) => string) => z.object({
   company_name: z.string().min(1, t("validation.companyNameRequired")),
@@ -54,8 +63,12 @@ const createSettingsSchema = (t: (key: string) => string) => z.object({
       message: t("validation.emailInvalid"),
     }),
   website: z.string().nullable().optional(),
+  // Company identifiers: one storage, labelled per the fiscal regime below.
   siret: z.string().nullable().optional(),
   vat_number: z.string().nullable().optional(),
+  nis: z.string().nullable().optional(),
+  art: z.string().nullable().optional(),
+  fiscal_profile: z.enum(FISCAL_PROFILE_IDS),
   default_tax_rate: z.coerce.number().min(0).max(100),
   default_payment_terms: z.coerce.number().min(0),
   invoice_prefix: z.string().min(1, t("validation.invoicePrefixRequired")),
@@ -80,13 +93,6 @@ const createSettingsSchema = (t: (key: string) => string) => z.object({
 
 type SettingsFormData = z.output<ReturnType<typeof createSettingsSchema>>;
 
-const taxRateOptions = [
-  { value: "0", label: "0%" },
-  { value: "5.5", label: "5.5%" },
-  { value: "10", label: "10%" },
-  { value: "20", label: "20%" },
-];
-
 const currencyOptions = [
   { value: "EUR", label: "EUR - Euro (\u20AC)" },
   { value: "USD", label: "USD - US Dollar ($)" },
@@ -100,6 +106,7 @@ const currencyOptions = [
 
 export function SettingsPage() {
   const { t } = useTranslation("settings");
+  const { t: tCommon } = useTranslation("common");
   const settingsSchema = createSettingsSchema(t);
   const { data: settings, isLoading } = useCompanySettings();
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
@@ -169,6 +176,7 @@ export function SettingsPage() {
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors, isDirty },
   } = useForm<SettingsFormData>({
     resolver: zodResolver(settingsSchema) as Resolver<SettingsFormData>,
@@ -183,6 +191,9 @@ export function SettingsPage() {
       website: "",
       siret: "",
       vat_number: "",
+      nis: "",
+      art: "",
+      fiscal_profile: DEFAULT_FISCAL_PROFILE,
       default_tax_rate: 0,
       default_payment_terms: 30,
       invoice_prefix: "INV-",
@@ -193,7 +204,7 @@ export function SettingsPage() {
       next_delivery_note_number: 1,
       legal_mentions: "",
       bank_details: "",
-      currency: "EUR",
+      currency: FALLBACK_CURRENCY,
       pos_ticket_prefix: "TK-",
       pos_auto_print_receipt: true,
       pos_show_stock_warning: true,
@@ -203,6 +214,19 @@ export function SettingsPage() {
       stamp_duty_threshold: 0,
     },
   });
+
+  // The regime picked in the form (not the saved one) drives the VAT scale, the
+  // identifier inputs and the stamp-duty section, so switching it previews the
+  // change before saving.
+  // useWatch (not watch()) keeps this a real subscription: watch() returns a
+  // function React Compiler cannot memoize, which opts the whole page out.
+  const selectedProfileId = useWatch({ control, name: "fiscal_profile" });
+  const activeProfile = getFiscalProfile(selectedProfileId);
+  const taxRateOptions = vatRateOptions(selectedProfileId, settings?.default_tax_rate);
+  const fiscalProfileOptions = FISCAL_PROFILE_IDS.map((id) => ({
+    value: id,
+    label: tCommon(`fiscalProfiles.${id}`),
+  }));
 
   useEffect(() => {
     if (settings) {
@@ -217,6 +241,11 @@ export function SettingsPage() {
         website: settings.website ?? "",
         siret: settings.siret ?? "",
         vat_number: settings.vat_number ?? "",
+        nis: settings.nis ?? "",
+        art: settings.art ?? "",
+        fiscal_profile: isFiscalProfileId(settings.fiscal_profile)
+          ? settings.fiscal_profile
+          : DEFAULT_FISCAL_PROFILE,
         default_tax_rate: settings.default_tax_rate,
         default_payment_terms: settings.default_payment_terms,
         invoice_prefix: settings.invoice_prefix,
@@ -227,7 +256,7 @@ export function SettingsPage() {
         next_delivery_note_number: settings.next_delivery_note_number ?? 1,
         legal_mentions: settings.legal_mentions ?? "",
         bank_details: settings.bank_details ?? "",
-        currency: settings.currency ?? "EUR",
+        currency: settings.currency ?? FALLBACK_CURRENCY,
         pos_ticket_prefix: settings.pos_ticket_prefix ?? "TK-",
         pos_auto_print_receipt: settings.pos_auto_print_receipt ?? true,
         pos_show_stock_warning: settings.pos_show_stock_warning ?? true,
@@ -501,16 +530,25 @@ export function SettingsPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <Input
-                label={t("company.siret")}
-                {...register("siret")}
-                error={errors.siret?.message}
+              <Select
+                label={tCommon("fiscalProfiles.label")}
+                options={fiscalProfileOptions}
+                {...register("fiscal_profile")}
+                error={errors.fiscal_profile?.message}
               />
-              <Input
-                label={t("company.vatNumber")}
-                {...register("vat_number")}
-                error={errors.vat_number?.message}
-              />
+            </div>
+            <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400">
+              {tCommon("fiscalProfiles.hint")}
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activeProfile.identifiers.map((field) => (
+                <Input
+                  key={field.key}
+                  label={tCommon(field.labelKey)}
+                  {...register(field.key)}
+                  error={errors[field.key]?.message}
+                />
+              ))}
             </div>
             <Textarea
               label={t("legal.legalMentions")}
@@ -541,6 +579,7 @@ export function SettingsPage() {
               <Select
                 label={t("billing.defaultVatRate")}
                 options={taxRateOptions}
+                key={activeProfile.id}
                 {...register("default_tax_rate")}
                 error={errors.default_tax_rate?.message}
               />
@@ -602,6 +641,7 @@ export function SettingsPage() {
               </div>
             </div>
 
+            {activeProfile.hasStampDuty && (
             <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
               <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 {t("taxes.title")}
@@ -633,6 +673,7 @@ export function SettingsPage() {
                 {t("taxes.stampDutyScaleNote")}
               </p>
             </div>
+            )}
           </CardContent>
         </Card>
 

@@ -31,6 +31,9 @@ export const PUT = withAuth(async (req, { tenantId, session }) => {
   if (body.website !== undefined) updateData.website = body.website;
   if (body.siret !== undefined) updateData.siret = body.siret;
   if (body.vat_number !== undefined) updateData.vatNumber = body.vat_number;
+  if (body.nis !== undefined) updateData.nis = body.nis;
+  if (body.art !== undefined) updateData.art = body.art;
+  if (body.fiscal_profile !== undefined) updateData.fiscalProfile = body.fiscal_profile;
   if (body.logo_path !== undefined) updateData.logoPath = body.logo_path;
   if (body.default_tax_rate !== undefined) updateData.defaultTaxRate = body.default_tax_rate;
   if (body.default_payment_terms !== undefined) updateData.defaultPaymentTerms = body.default_payment_terms;

@@ -26,7 +26,7 @@ export function DashboardCustomization() {
         {t("dashboardCustomization.description")}
       </p>
 
-      <ul className="divide-y divide-(--color-border) border border-(--color-border) rounded-lg overflow-hidden">
+      <ul className="divide-y divide-(--color-border-primary) border border-(--color-border-primary) rounded-lg overflow-hidden">
         {order.map((id, index) => {
           const isVisible = !hidden.includes(id);
           return (

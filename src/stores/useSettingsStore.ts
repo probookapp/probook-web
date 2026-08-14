@@ -128,7 +128,7 @@ export const useSettingsStore = create<SettingsState>()((set) => ({
   resolvedLanguage: 'en',
   theme: initialTheme.theme,
   resolvedTheme: initialTheme.resolvedTheme,
-  currency: 'EUR',
+  currency: 'DZD',
   isInitialized: false,
 
   setLanguage: (language) => {
@@ -165,7 +165,7 @@ export const useSettingsStore = create<SettingsState>()((set) => ({
     set({
       language: newLanguage,
       theme: newTheme,
-      currency: currency || 'EUR',
+      currency: currency || 'DZD',
       resolvedLanguage,
       resolvedTheme,
       isInitialized: true,
