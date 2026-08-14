@@ -1,14 +1,52 @@
+import { useEffect } from "react";
 import Link from "next/link";
 import { useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, Clock, FileText, AlertCircle, ChevronRight, X, Bell } from "lucide-react";
+import { AlertTriangle, Clock, FileText, AlertCircle, ChevronRight, X, Bell, Mail, Check } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, Badge } from "@/components/ui";
 import { useAlertsSummary, useMarkQuoteExpired } from "../hooks/useAlerts";
+import {
+  usePendingReminders,
+  useCheckAndCreateReminders,
+  useMarkReminderSent,
+  useSendReminderEmail,
+} from "@/features/reminders/hooks/useReminders";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { formatCurrency } from "@/lib/utils";
-import type { Alert } from "@/types";
+import type { Alert, Reminder } from "@/types";
 
-function AlertItem({ alert, onMarkExpired }: { alert: Alert; onMarkExpired?: (id: string) => void }) {
+/**
+ * One panel, not two.
+ *
+ * The dashboard used to carry an "Alerts" panel and a "Reminders" panel side by
+ * side. They ran the same two queries — issued invoices past their due date,
+ * sent quotes inside their last week — so every overdue invoice was announced
+ * twice, under titles that were anagrams of each other. What differed was only
+ * the verbs: alerts could be opened, reminders could be chased and closed.
+ *
+ * So the events are computed live (a stored list drifts; a query cannot), and
+ * the reminder row behind each event supplies the actions. The reminders table
+ * keeps its job — recording what was sent and what was dealt with — it just
+ * stops being a second list of the same facts.
+ */
+
+function AlertItem({
+  alert,
+  onMarkExpired,
+  reminder,
+  onSend,
+  onDone,
+  busy,
+}: {
+  alert: Alert;
+  onMarkExpired?: (id: string) => void;
+  /** The pending reminder for this document, when the sweep has raised one. */
+  reminder?: Reminder;
+  onSend?: (reminderId: string) => void;
+  onDone?: (reminderId: string) => void;
+  busy?: boolean;
+}) {
+  const { t: tc } = useTranslation("common");
   const { t } = useTranslation("dashboard");
 
   const getAlertMessage = () => {
@@ -91,6 +129,28 @@ function AlertItem({ alert, onMarkExpired }: { alert: Alert; onMarkExpired?: (id
           >
             <ChevronRight className="h-4 w-4" />
           </Link>
+          {reminder && onSend && (
+            <button
+              onClick={() => onSend(reminder.id)}
+              disabled={busy}
+              className="p-1 text-gray-400 hover:text-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={tc("reminders.sendEmail")}
+              aria-label={tc("reminders.sendEmail")}
+            >
+              <Mail className="h-4 w-4" />
+            </button>
+          )}
+          {reminder && onDone && (
+            <button
+              onClick={() => onDone(reminder.id)}
+              disabled={busy}
+              className="p-1 text-gray-400 hover:text-success-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              title={tc("reminders.markAsDone")}
+              aria-label={tc("reminders.markAsDone")}
+            >
+              <Check className="h-4 w-4" />
+            </button>
+          )}
           {alert.alert_type === "EXPIRED_QUOTE" && onMarkExpired && (
             <button
               onClick={() => onMarkExpired(alert.document_id)}
@@ -113,6 +173,38 @@ export function AlertsPanel() {
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { data: alerts, isLoading } = useAlertsSummary();
   const markExpired = useMarkQuoteExpired();
+
+  const { data: reminders } = usePendingReminders();
+  const checkAndCreate = useCheckAndCreateReminders();
+  const markSent = useMarkReminderSent();
+  const sendEmail = useSendReminderEmail();
+
+  // Raise reminders for anything newly due, so the actions below have a row to
+  // act on. The sweep is idempotent, so landing on the dashboard twice is free.
+  useEffect(() => {
+    if (!isDemoMode) checkAndCreate.mutate();
+  }, [isDemoMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // An alert and its reminder describe the same document, which is what lets
+  // one line carry both the fact and the actions.
+  const reminderFor = new Map((reminders ?? []).map((r) => [r.document_id, r]));
+
+  const busy = markSent.isPending || sendEmail.isPending;
+
+  const guard = (run: (id: string) => void) => (id: string) => {
+    if (isDemoMode) {
+      showSubscribePrompt();
+      return;
+    }
+    run(id);
+  };
+
+  const itemProps = (alert: Alert) => ({
+    reminder: reminderFor.get(alert.document_id),
+    onSend: guard((id: string) => sendEmail.mutate(id)),
+    onDone: guard((id: string) => markSent.mutate(id)),
+    busy,
+  });
 
   if (isLoading) {
     return (
@@ -170,7 +262,7 @@ export function AlertsPanel() {
                 </h4>
                 <div className="space-y-2">
                   {alerts.overdue_invoices.slice(0, 3).map((alert) => (
-                    <AlertItem key={alert.id} alert={alert} />
+                    <AlertItem key={alert.id} alert={alert} {...itemProps(alert)} />
                   ))}
                   {alerts.overdue_invoices.length > 3 && (
                     <Link
@@ -194,7 +286,7 @@ export function AlertsPanel() {
                 </h4>
                 <div className="space-y-2">
                   {alerts.due_soon_invoices.slice(0, 3).map((alert) => (
-                    <AlertItem key={alert.id} alert={alert} />
+                    <AlertItem key={alert.id} alert={alert} {...itemProps(alert)} />
                   ))}
                 </div>
               </div>
@@ -209,7 +301,7 @@ export function AlertsPanel() {
                 </h4>
                 <div className="space-y-2">
                   {alerts.expiring_quotes.slice(0, 3).map((alert) => (
-                    <AlertItem key={alert.id} alert={alert} />
+                    <AlertItem key={alert.id} alert={alert} {...itemProps(alert)} />
                   ))}
                 </div>
               </div>
@@ -227,8 +319,8 @@ export function AlertsPanel() {
                     <AlertItem
                       key={alert.id}
                       alert={alert}
-                      onMarkExpired={(id) => { if (isDemoMode) { showSubscribePrompt(); return; } markExpired.mutate(id); }}
-
+                      onMarkExpired={guard((id) => markExpired.mutate(id))}
+                      {...itemProps(alert)}
                     />
                   ))}
                 </div>

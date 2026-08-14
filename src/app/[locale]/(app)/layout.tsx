@@ -1,21 +1,19 @@
 "use client";
 
 import { useAuthStore } from "@/stores/useAuthStore";
-import { useRouter, usePathname } from "@/lib/navigation";
+import { useRouter } from "@/lib/navigation";
 import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { AnnouncementBanner } from "@/components/shared/AnnouncementBanner";
-import { DemoModeProvider, DemoModeBanner, TrialBanner } from "@/components/providers/DemoModeProvider";
-import { EmailVerifyBanner } from "@/components/shared/EmailVerifyBanner";
+import { DemoModeProvider } from "@/components/providers/DemoModeProvider";
+import { NoticeBar } from "@/components/shared/NoticeBar";
 import { ImpersonationBar } from "@/components/shared/ImpersonationBar";
 import { PwaInstallBanner } from "@/components/shared/PwaInstallBanner";
 import { ConflictResolutionModal } from "@/components/shared/ConflictResolutionModal";
 import { tenantSubscriptionApi } from "@/lib/admin-api";
 import { TenantSettingsProvider } from "@/components/providers/TenantSettingsProvider";
-import { AlertTriangle } from "lucide-react";
-import { useTranslation } from "react-i18next";
 
 export default function AuthenticatedLayout({
   children,
@@ -23,9 +21,7 @@ export default function AuthenticatedLayout({
   children: React.ReactNode;
 }) {
   const { isLoading, isAuthenticated } = useAuthStore();
-  const { t } = useTranslation("common");
   const router = useRouter();
-  const pathname = usePathname();
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -83,20 +79,17 @@ export default function AuthenticatedLayout({
 
   return (
     <ErrorBoundary>
-      <DemoModeProvider isDemoMode={isDemoMode} isInTrial={isInTrial} trialDaysLeft={trialDaysLeft}>
+      <DemoModeProvider
+        isDemoMode={isDemoMode}
+        isInTrial={isInTrial}
+        trialDaysLeft={trialDaysLeft}
+        expiryDays={showExpiryWarning ? daysUntilExpiry : null}
+      >
         <TenantSettingsProvider />
         <ImpersonationBar />
-        <Layout topBanner={<><EmailVerifyBanner /><DemoModeBanner /><TrialBanner /></>}>
-          {showExpiryWarning && (
-            <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 px-4 py-2">
-              <div className="flex items-center gap-2 text-sm text-yellow-800 dark:text-yellow-200">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>
-                  {t("subscription.expiryWarning", { days: daysUntilExpiry })}
-                </span>
-              </div>
-            </div>
-          )}
+        {/* One strip, chosen by urgency — see NoticeBar. What it cannot fit is
+            picked up by the dashboard rather than stacked on top of every page. */}
+        <Layout topBanner={<NoticeBar />}>
           <AnnouncementBanner />
           {children}
         </Layout>

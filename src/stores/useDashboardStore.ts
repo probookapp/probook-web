@@ -4,15 +4,30 @@ import { create } from "zustand";
  * Canonical list of dashboard stat-card identifiers, in their default order.
  * Kept in sync with the cards rendered by DashboardPage.
  */
+/**
+ * Both the canonical set of cards and the default order — and the dashboard
+ * now shows the first one large, so this order is a statement about what the
+ * page is for.
+ *
+ * It leads with the month's revenue: the figure that moves every day and the
+ * one an owner opens the application to see. Outstanding payments come second
+ * rather than first, because the alerts panel directly below already carries
+ * what is owed, overdue and by whom — leading with it would say the same thing
+ * twice. Counts come last: they are inventory, not news.
+ *
+ * Existing accounts keep whatever order they saved; only the ids missing from a
+ * stored layout are appended, so reordering here changes the default without
+ * rearranging anyone's dashboard behind their back.
+ */
 export const DASHBOARD_STAT_IDS = [
-  "clients",
-  "quotes",
-  "invoices",
   "monthlyRevenue",
-  "yearlyRevenue",
   "pending",
-  "totalExpenses",
+  "yearlyRevenue",
   "profit",
+  "totalExpenses",
+  "invoices",
+  "quotes",
+  "clients",
 ] as const;
 
 export type DashboardStatId = (typeof DASHBOARD_STAT_IDS)[number];
