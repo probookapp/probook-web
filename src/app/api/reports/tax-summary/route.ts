@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
 import { num } from "@/lib/money";
+import { resolveDocumentDiscount } from "@/lib/document-totals";
 
 /** A payment method counts toward stamp duty (droit de timbre) when it is cash. */
 function isCashMethod(method: string | null | undefined): boolean {
@@ -50,6 +51,11 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
           return { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) };
         })();
 
+  // Read first: the currency decides the rounding step used when re-deriving a
+  // document's discount, and the stamp-duty block below needs the same row.
+  const settings = await prisma.companySettings.findFirst({ where: { tenantId } });
+  const currency = settings?.currency;
+
   // ── Sales VAT (collected) ────────────────────────────────────────────────
   const invoices = await prisma.invoice.findMany({
     where: {
@@ -63,15 +69,41 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   let salesHt = 0;
   let salesVat = 0;
   let salesTtc = 0;
+  // Commercial discounts granted over the period, pre-tax. Not a tax line of
+  // its own, but an accountant reconciling gross sales against the declared
+  // base needs to see where the difference went.
+  let salesDiscount = 0;
   const salesByRate = new Map<number, RateBucket>();
 
   for (const inv of invoices) {
     salesHt += num(inv.subtotal);
     salesVat += num(inv.taxAmount);
     salesTtc += num(inv.total);
+
+    // The document discount is not a line, so scale each line down by the share
+    // it kept. Summing raw line subtotals would report a taxable base higher
+    // than the invoice's own — the VAT return would over-declare.
+    const linesSubtotal = inv.lines.reduce(
+      (s, l) => (l.isSubtotalLine ? s : s + num(l.subtotal)),
+      0
+    );
+    const { amount: discount, keptRatio } = resolveDocumentDiscount(
+      linesSubtotal,
+      inv.discountPercent,
+      num(inv.discountAmount),
+      currency
+    );
+    salesDiscount += discount;
+
     for (const line of inv.lines) {
       if (line.isSubtotalLine) continue;
-      addToRate(salesByRate, num(line.taxRate), num(line.subtotal), num(line.taxAmount), num(line.total));
+      addToRate(
+        salesByRate,
+        num(line.taxRate),
+        num(line.subtotal) * keptRatio,
+        num(line.taxAmount) * keptRatio,
+        num(line.total) * keptRatio
+      );
     }
     // Invoice.subtotal/taxAmount already include shipping, but the line loop
     // above doesn't — add shipping to the per-rate breakdown so it reconciles
@@ -99,6 +131,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     salesHt += num(tx.subtotal) * ratio;
     salesVat += num(tx.taxAmount) * ratio;
     salesTtc += txFinalAmount;
+    salesDiscount += num(tx.subtotal) * (1 - ratio);
     for (const line of tx.lines) {
       addToRate(
         salesByRate,
@@ -152,7 +185,6 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   const netVat = salesVat - purchasesVat;
 
   // ── Stamp duty (droit de timbre) on cash payments ────────────────────────
-  const settings = await prisma.companySettings.findFirst({ where: { tenantId } });
   const stampDutyEnabled = settings?.stampDutyEnabled ?? false;
   const stampDutyRate = num(settings?.stampDutyRate);
 
@@ -176,6 +208,10 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       totalHt: salesHt,
       totalVat: salesVat,
       totalTtc: salesTtc,
+      // Gross, then what was given away, then the declared base: the three
+      // figures an accountant checks against each other.
+      grossHt: salesHt + salesDiscount,
+      discountHt: salesDiscount,
       invoiceCount: invoices.length,
       posTransactionCount: posTransactions.length,
       creditNoteCount: creditNotes.length,

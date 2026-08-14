@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { calculateDocumentTotals, calculateLineTotals } from "@/lib/document-totals";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { updateQuoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
@@ -15,32 +16,9 @@ interface LineInput {
   position?: number;
   group_name?: string | null;
   is_subtotal_line?: boolean;
+  discount_percent?: number | null;
 }
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
-
-function calculateLineTotals(line: LineInput) {
-  const subtotal = round2(line.quantity * line.unit_price);
-  const taxAmount = round2(subtotal * (line.tax_rate / 100));
-  const total = round2(subtotal + taxAmount);
-  return { subtotal, taxAmount, total };
-}
-
-function calculateDocumentTotals(lines: LineInput[], shippingCost = 0, shippingTaxRate = 20) {
-  let subtotal = 0;
-  let taxAmount = 0;
-  for (const line of lines) {
-    if (!line.is_subtotal_line) {
-      const lt = calculateLineTotals(line);
-      subtotal += lt.subtotal;
-      taxAmount += lt.taxAmount;
-    }
-  }
-  subtotal = round2(subtotal + shippingCost);
-  taxAmount = round2(taxAmount + round2(shippingCost * (shippingTaxRate / 100)));
-  const total = round2(subtotal + taxAmount);
-  return { subtotal, taxAmount, total };
-}
 
 export const GET = withAuth(async (req, { tenantId, session, params }) => {
   const denied = await requirePermission(session, "quotes", "view");
@@ -59,7 +37,19 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   const body = await validateBody(req, updateQuoteSchema);
   if (isValidationError(body)) return body;
   const lines = body.lines || [];
-  const totals = calculateDocumentTotals(lines, body.shipping_cost || 0, body.shipping_tax_rate ?? 20);
+  // Rounding follows the tenant's currency (millimes vs centimes).
+  const settings = await prisma.companySettings.findFirst({
+    where: { tenantId },
+    select: { currency: true },
+  });
+  const totals = calculateDocumentTotals({
+    lines,
+    shippingCost: body.shipping_cost || 0,
+    shippingTaxRate: body.shipping_tax_rate ?? 20,
+    discountPercent: body.discount_percent || 0,
+    discountAmount: body.discount_amount || 0,
+    currency: settings?.currency,
+  });
 
   // Tenant-scoped existence check BEFORE any write: without it the old code's
   // unscoped line deleteMany let any tenant wipe another tenant's quote lines
@@ -86,6 +76,8 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
       shippingTaxRate: body.shipping_tax_rate ?? 20,
       downPaymentPercent: body.down_payment_percent || 0,
       downPaymentAmount: body.down_payment_amount || 0,
+      discountPercent: body.discount_percent || 0,
+      discountAmount: body.discount_amount || 0,
       // Nested deleteMany + create in the SAME atomic update: a failure can no
       // longer leave the quote with its lines deleted (audit SALE-3).
       lines: {
@@ -104,6 +96,7 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
             total: lt.total,
             position: line.position ?? idx,
             groupName: line.group_name || null,
+            discountPercent: line.discount_percent || 0,
             isSubtotalLine: line.is_subtotal_line || false,
           };
         }),

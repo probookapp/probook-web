@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
 import { num } from "@/lib/money";
+import { resolveDocumentDiscount } from "@/lib/document-totals";
 
 /**
  * Accountant-friendly dataset for a period: sales, purchases, payments and
@@ -27,10 +28,14 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
           return { gte: new Date(year, 0, 1), lt: new Date(year + 1, 0, 1) };
         })();
 
-  const [invoices, posTransactions, creditNotes, orders, payments, expenses] = await Promise.all([
+  const [settings, invoices, posTransactions, creditNotes, orders, payments, expenses] = await Promise.all([
+    prisma.companySettings.findFirst({ where: { tenantId } }),
     prisma.invoice.findMany({
       where: { tenantId, status: { not: "DRAFT" }, issueDate: range },
-      include: { client: true },
+      // Lines only for their pre-tax value: re-deriving the commercial discount
+      // needs the base it was taken from, and the invoice stores only the base
+      // after it.
+      include: { client: true, lines: { select: { subtotal: true, isSubtotalLine: true } } },
       orderBy: [{ issueDate: "asc" }, { invoiceNumber: "asc" }],
     }),
     prisma.posTransaction.findMany({
@@ -67,25 +72,47 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
 
   const round2 = (n: number) => Math.round(n * 100) / 100;
 
+  // Every sale-shaped row carries its commercial discount explicitly: `gross_ht`
+  // is what the goods were listed at, `discount` what was given away, `ht` the
+  // taxable base actually declared. A ledger that showed only the net would make
+  // a granted discount indistinguishable from a lower price.
   const sales = [
-    ...invoices.map((inv) => ({
-      date: toDay(inv.issueDate),
-      number: inv.invoiceNumber,
-      party: inv.client?.name ?? "",
-      ht: num(inv.subtotal),
-      vat: num(inv.taxAmount),
-      ttc: num(inv.total),
-    })),
+    ...invoices.map((inv) => {
+      const linesSubtotal = inv.lines.reduce(
+        (s, l) => (l.isSubtotalLine ? s : s + num(l.subtotal)),
+        0
+      );
+      const { amount: discount } = resolveDocumentDiscount(
+        linesSubtotal,
+        inv.discountPercent,
+        num(inv.discountAmount),
+        settings?.currency
+      );
+      const ht = num(inv.subtotal);
+      return {
+        date: toDay(inv.issueDate),
+        number: inv.invoiceNumber,
+        party: inv.client?.name ?? "",
+        grossHt: round2(ht + discount),
+        discount: round2(discount),
+        ht,
+        vat: num(inv.taxAmount),
+        ttc: num(inv.total),
+      };
+    }),
     // POS retail sales (scaled by the transaction-level discount ratio).
     ...posTransactions.map((tx) => {
       const txTotal = num(tx.total);
       const txFinalAmount = num(tx.finalAmount);
       const ratio = txTotal > 0 ? txFinalAmount / txTotal : 1;
+      const grossHt = num(tx.subtotal);
       return {
         date: toDay(tx.transactionDate),
         number: tx.ticketNumber,
         party: tx.client?.name ?? "POS",
-        ht: round2(num(tx.subtotal) * ratio),
+        grossHt: round2(grossHt),
+        discount: round2(grossHt * (1 - ratio)),
+        ht: round2(grossHt * ratio),
         vat: round2(num(tx.taxAmount) * ratio),
         ttc: round2(txFinalAmount),
       };
@@ -97,6 +124,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     date: toDay(cn.issueDate),
     number: cn.creditNoteNumber,
     party: cn.client?.name ?? "",
+    grossHt: -num(cn.subtotal),
+    discount: 0,
     ht: -num(cn.subtotal),
     vat: -num(cn.taxAmount),
     ttc: -num(cn.total),
@@ -106,6 +135,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     date: toDay(o.orderDate),
     number: o.orderNumber,
     party: o.supplier?.name ?? "",
+    grossHt: num(o.subtotal),
+    discount: 0,
     ht: num(o.subtotal),
     vat: num(o.taxAmount),
     ttc: num(o.total),
@@ -124,13 +155,15 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     amount: num(e.amount),
   }));
 
-  // Combined journal (columns: date, type, document, party, ht, vat, ttc).
+  // Combined journal (date, type, document, party, gross ht, discount, ht, vat, ttc).
   const journal = [
     ...sales.map((s) => ({
       date: s.date,
       type: "sale",
       document: s.number,
       party: s.party,
+      grossHt: s.grossHt,
+      discount: s.discount,
       ht: s.ht,
       vat: s.vat,
       ttc: s.ttc,
@@ -140,6 +173,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       type: "refund",
       document: r.number,
       party: r.party,
+      grossHt: r.grossHt,
+      discount: 0,
       ht: r.ht,
       vat: r.vat,
       ttc: r.ttc,
@@ -149,6 +184,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       type: "purchase",
       document: p.number,
       party: p.party,
+      grossHt: p.grossHt,
+      discount: 0,
       ht: p.ht,
       vat: p.vat,
       ttc: p.ttc,
@@ -158,6 +195,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       type: "payment",
       document: p.number,
       party: p.method,
+      grossHt: 0,
+      discount: 0,
       ht: 0,
       vat: 0,
       ttc: p.amount,
@@ -167,6 +206,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       type: "expense",
       document: "",
       party: e.name,
+      grossHt: e.amount,
+      discount: 0,
       ht: e.amount,
       vat: 0,
       ttc: e.amount,

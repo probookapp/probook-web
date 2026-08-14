@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase, markOnboardingStep, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
+import { calculateDocumentTotals, calculateLineTotals } from "@/lib/document-totals";
 import { Prisma } from "@/generated/prisma/client";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createQuoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { parseArchivedFilter, parseStatusFilter, QUOTE_STATUSES } from "@/lib/document-status";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
 
 interface LineInput {
@@ -17,32 +19,9 @@ interface LineInput {
   position?: number;
   group_name?: string | null;
   is_subtotal_line?: boolean;
+  discount_percent?: number | null;
 }
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
-
-function calculateLineTotals(line: LineInput) {
-  const subtotal = round2(line.quantity * line.unit_price);
-  const taxAmount = round2(subtotal * (line.tax_rate / 100));
-  const total = round2(subtotal + taxAmount);
-  return { subtotal, taxAmount, total };
-}
-
-function calculateDocumentTotals(lines: LineInput[], shippingCost = 0, shippingTaxRate = 20) {
-  let subtotal = 0;
-  let taxAmount = 0;
-  for (const line of lines) {
-    if (!line.is_subtotal_line) {
-      const lt = calculateLineTotals(line);
-      subtotal += lt.subtotal;
-      taxAmount += lt.taxAmount;
-    }
-  }
-  subtotal = round2(subtotal + shippingCost);
-  taxAmount = round2(taxAmount + round2(shippingCost * (shippingTaxRate / 100)));
-  const total = round2(subtotal + taxAmount);
-  return { subtotal, taxAmount, total };
-}
 
 function isUniqueViolation(err: unknown): boolean {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
@@ -51,6 +30,16 @@ function isUniqueViolation(err: unknown): boolean {
 export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "quotes", "view");
   if (denied) return denied;
+
+  // Filtering by state is a server-side where clause: filtering in the
+  // browser would only ever filter the pages already loaded.
+  const statusFilter = parseStatusFilter(
+    new URL(req.url).searchParams.get("status"),
+    QUOTE_STATUSES
+  );
+  // Archived documents are hidden from the working list by default; the
+  // reports deliberately ignore this filter.
+  const archivedFilter = parseArchivedFilter(new URL(req.url).searchParams.get("archived"));
 
   // Opt-in cursor pagination (audit SALE-23): lean rows — scalars + client
   // name, no line arrays.
@@ -63,7 +52,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
         }))?.id ?? null
       : null;
     const data = await prisma.quote.findMany({
-      where: { tenantId },
+      where: { tenantId, ...statusFilter, ...archivedFilter },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: page.limit,
       ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
@@ -75,7 +64,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   }
 
   const quotes = await prisma.quote.findMany({
-    where: { tenantId },
+    where: { tenantId, ...statusFilter, ...archivedFilter },
     orderBy: { createdAt: "desc" },
     include: { lines: { orderBy: { position: "asc" } }, client: true },
   });
@@ -102,7 +91,15 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   const prefix = settings?.quotePrefix ?? "QT-";
 
   const lines = body.lines || [];
-  const totals = calculateDocumentTotals(lines, body.shipping_cost || 0, body.shipping_tax_rate ?? 20);
+  const totals = calculateDocumentTotals({
+    lines,
+    shippingCost: body.shipping_cost || 0,
+    shippingTaxRate: body.shipping_tax_rate ?? 20,
+    discountPercent: body.discount_percent || 0,
+    discountAmount: body.discount_amount || 0,
+    // Rounding follows the tenant's currency (millimes vs centimes).
+    currency: settings?.currency,
+  });
 
   // Atomic number allocation + create (audit SALE-1); retried on a unique
   // violation (e.g. counter manually rewound in settings).
@@ -130,6 +127,8 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
             shippingTaxRate: body.shipping_tax_rate ?? 20,
             downPaymentPercent: body.down_payment_percent || 0,
             downPaymentAmount: body.down_payment_amount || 0,
+            discountPercent: body.discount_percent || 0,
+            discountAmount: body.discount_amount || 0,
             lines: {
               create: lines.map((line: LineInput, idx: number) => {
                 const lt = calculateLineTotals(line);
@@ -145,6 +144,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
                   total: lt.total,
                   position: line.position ?? idx,
                   groupName: line.group_name || null,
+                  discountPercent: line.discount_percent || 0,
                   isSubtotalLine: line.is_subtotal_line || false,
                 };
               }),
