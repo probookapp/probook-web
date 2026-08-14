@@ -19,6 +19,7 @@ import { ProductSearch } from "./components/ProductSearch";
 import { CartDisplay } from "./components/CartDisplay";
 import { CartTotals } from "./components/CartTotals";
 import { PaymentModal } from "./components/PaymentModal";
+import type { PosPaymentMethod } from "@/lib/pos-payment-methods";
 import { CloseSessionModal } from "./components/CloseSessionModal";
 import { TransactionHistoryDrawer } from "./components/TransactionHistoryDrawer";
 import { CashMovementModal } from "./components/CashMovementModal";
@@ -36,6 +37,7 @@ import { lookupBarcodeOffline } from "@/lib/offline-barcode";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { locationsApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { formatCurrency } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 
 export function POSPage() {
@@ -62,6 +64,7 @@ export function POSPage() {
     addItemWithVariant,
     clearCart,
     getFinalAmount,
+    clientId,
   } = usePosStore();
 
   const queryClient = useQueryClient();
@@ -240,17 +243,19 @@ export function POSPage() {
       discountAmount: store.discountAmount,
       finalAmount: store.getFinalAmount(),
       payments: payments.map((p) => ({
-        method: p.method as "CASH" | "CARD",
+        method: p.method as PosPaymentMethod,
         amount: p.amount,
         cashGiven: p.cashGiven,
         changeGiven: p.cashGiven ? p.cashGiven - store.getFinalAmount() : undefined,
       })),
-      currency: currency || "EUR",
+      currency: currency || "DZD",
       footerText: t("thankYou"),
     };
   };
 
-  const handlePaymentComplete = async (payments: Array<{ method: string; amount: number; cashGiven?: number }>) => {
+  const handlePaymentComplete = async (
+    payments: Array<{ method: string; amount: number; cashGiven?: number; reference?: string }>
+  ) => {
     if (!currentSession || !currentRegister || items.length === 0) return;
     if (isDemoMode) { showSubscribePrompt(); return; }
 
@@ -275,9 +280,12 @@ export function POSPage() {
         discount_percent: item.discountPercent,
       })),
       payments: payments.map((p) => ({
-        payment_method: p.method as "CASH" | "CARD",
+        payment_method: p.method as PosPaymentMethod,
         amount: p.amount,
         cash_given: p.cashGiven,
+        // Cheque number / transfer reference. The column predates those
+        // methods, hence the name. See src/lib/pos-payment-methods.ts.
+        card_reference: p.reference,
       })),
       discount_percent: discountPercent,
       discount_amount: discountAmount,
@@ -624,7 +632,7 @@ export function POSPage() {
                 disabled={items.length === 0}
                 className="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {t("pay")} - {getFinalAmount().toFixed(2)}
+                {t("pay")} - {formatCurrency(getFinalAmount())}
               </button>
             </span>
           </div>
@@ -655,6 +663,7 @@ export function POSPage() {
         onConfirm={handlePaymentComplete}
         totalAmount={getFinalAmount()}
         isLoading={createTransaction.isPending}
+        hasClient={!!clientId}
       />
 
       <CloseSessionModal

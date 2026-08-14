@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Search, Package } from "lucide-react";
+import { Search, Package, LayoutGrid, List } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { productApi } from "@/lib/api";
 import { useProductPhoto } from "@/features/products/hooks/useProducts";
@@ -11,6 +11,7 @@ import { Modal } from "@/components/ui";
 import type { Product, ProductVariant } from "@/types";
 import { VariantPickerModal } from "./VariantPickerModal";
 import { formatCurrency } from "@/lib/utils";
+import { useProductViewMode } from "../hooks/useProductViewMode";
 
 const formatAmount = formatCurrency;
 
@@ -66,6 +67,44 @@ function ProductTile({
   );
 }
 
+/**
+ * A dense, photoless row.
+ *
+ * A trade counter that sells cable and connectors has no photos to show and
+ * needs to see twenty lines at once, not six tiles. This variant also mounts no
+ * <ProductTile>, so it issues no photo requests at all — the list stays quick
+ * on a catalogue where every product would otherwise fetch an image.
+ */
+function ProductRow({ product, onClick }: { product: Product; onClick: () => void }) {
+  const { t } = useTranslation("pos");
+  const outOfStock = product.quantity === 0 && !product.is_service;
+  const lowStock =
+    product.quantity !== null && product.quantity > 0 && product.quantity <= 5 && !product.is_service;
+
+  return (
+    <button
+      onClick={onClick}
+      className="w-full text-left px-3 py-2 border-b border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex items-center gap-3"
+    >
+      <div className="min-w-0 flex-1">
+        <p className="font-medium text-sm truncate">{product.designation}</p>
+        <p className="text-xs text-(--color-text-secondary) truncate">
+          {product.reference || product.barcode || "-"}
+          {outOfStock && <span className="ml-2 text-red-600 dark:text-red-400">{t("outOfStock")}</span>}
+          {lowStock && (
+            <span className="ml-2 text-orange-500 dark:text-orange-400">
+              {t("lowStock", { count: product.quantity ?? 0 })}
+            </span>
+          )}
+        </p>
+      </div>
+      <span className="font-bold text-sm text-primary-600 shrink-0">
+        {formatAmount(product.unit_price * (1 + product.tax_rate / 100))}
+      </span>
+    </button>
+  );
+}
+
 interface PriceTierPickerProps {
   product: Product;
   onSelect: (product: Product, priceTier?: string) => void;
@@ -117,6 +156,7 @@ export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearc
   // settles, instead of firing ~20 photo requests per keystroke.
   const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useProductViewMode();
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearchTerm(searchTerm), 250);
@@ -153,8 +193,10 @@ export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearc
       );
     }
 
-    return result.slice(0, 20);
-  }, [products, debouncedSearchTerm, selectedCategory]);
+    // Rows are cheap and photoless, so the compact view can show far more of
+    // the catalogue before the cashier has to type.
+    return result.slice(0, viewMode === "list" ? 60 : 20);
+  }, [products, debouncedSearchTerm, selectedCategory, viewMode]);
 
   return (
     <div className="flex flex-col h-full">
@@ -170,6 +212,36 @@ export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearc
             className="w-full pl-10 pr-4 py-3 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
             data-barcode-input="true"
           />
+        </div>
+        <div className="flex justify-end gap-1 mt-2">
+          <button
+            type="button"
+            onClick={() => setViewMode("grid")}
+            aria-pressed={viewMode === "grid"}
+            title={t("gridView")}
+            aria-label={t("gridView")}
+            className={`p-1.5 rounded-md transition-colors ${
+              viewMode === "grid"
+                ? "bg-primary-600 text-white"
+                : "text-(--color-text-secondary) hover:bg-(--color-bg-secondary)"
+            }`}
+          >
+            <LayoutGrid className="h-4 w-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => setViewMode("list")}
+            aria-pressed={viewMode === "list"}
+            title={t("compactView")}
+            aria-label={t("compactView")}
+            className={`p-1.5 rounded-md transition-colors ${
+              viewMode === "list"
+                ? "bg-primary-600 text-white"
+                : "text-(--color-text-secondary) hover:bg-(--color-bg-secondary)"
+            }`}
+          >
+            <List className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
@@ -203,23 +275,30 @@ export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearc
       )}
 
       {/* Product grid */}
-      <div className="flex-1 overflow-auto p-4">
-        <div className="grid grid-cols-2 gap-2">
-          {filteredProducts.map((product) => (
-            <ProductTile
-              key={product.id}
-              product={product}
-              onClick={() => {
-                if (product.has_variants && product.variants && product.variants.length > 0) {
-                  setVariantProduct(product);
-                } else if (product.prices && product.prices.length > 0) {
-                  setPriceTierProduct(product);
-                } else {
-                  onProductSelect(product);
-                }
-              }}
-            />
-          ))}
+      <div className={`flex-1 overflow-auto ${viewMode === "list" ? "" : "p-4"}`}>
+        <div
+          className={
+            viewMode === "list"
+              ? "divide-y divide-(--color-border-primary)"
+              : "grid grid-cols-2 gap-2"
+          }
+        >
+          {filteredProducts.map((product) => {
+            const pick = () => {
+              if (product.has_variants && product.variants && product.variants.length > 0) {
+                setVariantProduct(product);
+              } else if (product.prices && product.prices.length > 0) {
+                setPriceTierProduct(product);
+              } else {
+                onProductSelect(product);
+              }
+            };
+            return viewMode === "list" ? (
+              <ProductRow key={product.id} product={product} onClick={pick} />
+            ) : (
+              <ProductTile key={product.id} product={product} onClick={pick} />
+            );
+          })}
         </div>
 
         {filteredProducts.length === 0 && (

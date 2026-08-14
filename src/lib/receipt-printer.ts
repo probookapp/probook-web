@@ -1,5 +1,7 @@
 // ─── Receipt Printer: window.print() + WebUSB ESC/POS ───
 
+import type { PosPaymentMethod } from "./pos-payment-methods";
+
 export interface ReceiptData {
   companyName: string;
   ticketNumber: string;
@@ -19,7 +21,7 @@ export interface ReceiptData {
   discountAmount: number;
   finalAmount: number;
   payments: Array<{
-    method: "CASH" | "CARD";
+    method: PosPaymentMethod;
     amount: number;
     cashGiven?: number;
     changeGiven?: number;

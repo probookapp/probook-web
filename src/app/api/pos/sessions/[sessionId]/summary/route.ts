@@ -30,13 +30,19 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   let taxAmount = 0;
   let totalCash = 0;
   let totalCard = 0;
+  const byMethod = new Map<string, number>();
   for (const tx of completed) {
     totalSales += num(tx.finalAmount);
     subtotal += num(tx.subtotal);
     taxAmount += num(tx.taxAmount);
     for (const p of tx.payments) {
-      if (p.paymentMethod === "CASH") totalCash += num(p.amount);
-      else if (p.paymentMethod === "CARD") totalCard += num(p.amount);
+      // Every method gets its own line: cheques and transfers used to
+      // vanish from the breakdown while still counting in total sales,
+      // so the Z-report could not be reconciled by hand.
+      const method = p.paymentMethod.toUpperCase();
+      byMethod.set(method, (byMethod.get(method) ?? 0) + num(p.amount));
+      if (method === "CASH") totalCash += num(p.amount);
+      else if (method === "CARD") totalCard += num(p.amount);
     }
   }
 
@@ -58,6 +64,10 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
       cancelledCount: cancelled.length,
       totalSales,
       cashSales: totalCash,
+      // Legacy cash/card fields are kept; salesByMethod is the complete picture.
+      // A list, not a map keyed by method: toSnakeCase rewrites object keys,
+      // and it would turn "CASH" into "_c_a_s_h".
+      salesByMethod: Array.from(byMethod, ([method, amount]) => ({ method, amount })),
       cardSales: totalCard,
       subtotal,
       taxAmount,

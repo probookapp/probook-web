@@ -48,14 +48,20 @@ export const GET = withAuth(async (req, { tenantId }) => {
   let taxAmount = 0;
   let cashSales = 0;
   let cardSales = 0;
+  const byMethod = new Map<string, number>();
 
   for (const tx of transactions) {
     totalSales += num(tx.finalAmount);
     subtotal += num(tx.subtotal);
     taxAmount += num(tx.taxAmount);
     for (const p of tx.payments) {
-      if (p.paymentMethod === "CASH") cashSales += num(p.amount);
-      else if (p.paymentMethod === "CARD") cardSales += num(p.amount);
+      // Every method gets its own line: cheques and transfers used to
+      // vanish from the breakdown while still counting in total sales,
+      // so the Z-report could not be reconciled by hand.
+      const method = p.paymentMethod.toUpperCase();
+      byMethod.set(method, (byMethod.get(method) ?? 0) + num(p.amount));
+      if (method === "CASH") cashSales += num(p.amount);
+      else if (method === "CARD") cardSales += num(p.amount);
     }
   }
 
@@ -93,6 +99,10 @@ export const GET = withAuth(async (req, { tenantId }) => {
       // Gross cash collected on sales; cashOutTotal is the day's cash paid back
       // out; netCashSales = cashSales - cashOutTotal ties to the drawer.
       cashSales,
+    // Legacy cash/card fields are kept; salesByMethod is the complete picture.
+    // A list, not a map keyed by method: toSnakeCase rewrites object keys,
+    // and it would turn "CASH" into "_c_a_s_h".
+    salesByMethod: Array.from(byMethod, ([method, amount]) => ({ method, amount })),
       cashOutTotal,
       netCashSales: cashSales - cashOutTotal,
       cardSales,

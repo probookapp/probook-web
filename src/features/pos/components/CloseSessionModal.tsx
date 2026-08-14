@@ -92,22 +92,16 @@ export function CloseSessionModal({
                         {formatAmount(summary.total_sales)}
                       </p>
                     </div>
-                    <div className="p-3 bg-(--color-bg-secondary) rounded-lg">
-                      <p className="text-(--color-text-secondary)">
-                        {t("cashSales")}
-                      </p>
-                      <p className="text-xl font-bold">
-                        {formatAmount(summary.cash_sales)}
-                      </p>
-                    </div>
-                    <div className="p-3 bg-(--color-bg-secondary) rounded-lg">
-                      <p className="text-(--color-text-secondary)">
-                        {t("cardSales")}
-                      </p>
-                      <p className="text-xl font-bold">
-                        {formatAmount(summary.card_sales)}
-                      </p>
-                    </div>
+                    {/* One tile per method actually used: a cheque is revenue
+                        but not cash, and the cashier has to see both. */}
+                    {(summary.sales_by_method ?? []).map((row) => (
+                      <div key={row.method} className="p-3 bg-(--color-bg-secondary) rounded-lg">
+                        <p className="text-(--color-text-secondary)">
+                          {t(row.method.toLowerCase(), { defaultValue: row.method })}
+                        </p>
+                        <p className="text-xl font-bold">{formatAmount(row.amount)}</p>
+                      </div>
+                    ))}
                   </div>
 
                   {/* Expected cash breakdown */}
