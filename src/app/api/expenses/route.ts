@@ -4,6 +4,10 @@ import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { expenseSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { resolveExpenseCategoryId } from "@/lib/expense-category-server";
+
+/** Rows carry their heading's name so lists don't need a second request. */
+const withCategory = { category: { select: { id: true, name: true } } };
 
 export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "expenses", "view");
@@ -20,6 +24,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       : null;
     const data = await prisma.expense.findMany({
       where: { tenantId },
+      include: withCategory,
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: page.limit,
       ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
@@ -31,6 +36,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
 
   const expenses = await prisma.expense.findMany({
     where: { tenantId },
+    include: withCategory,
     orderBy: { createdAt: "desc" },
   });
   return NextResponse.json(toSnakeCase(expenses));
@@ -41,6 +47,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   if (denied) return denied;
   const body = await validateBody(req, expenseSchema);
   if (isValidationError(body)) return body;
+  const categoryId = await resolveExpenseCategoryId(tenantId, body);
   const expense = await prisma.expense.create({
     data: {
       tenantId,
@@ -48,7 +55,9 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       amount: body.amount || 0,
       date: new Date(body.date),
       notes: body.notes || null,
+      categoryId: categoryId ?? null,
     },
+    include: withCategory,
   });
   return NextResponse.json(toSnakeCase(expense));
 });

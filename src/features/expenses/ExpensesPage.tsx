@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Tags } from "lucide-react";
 import {
   Button,
   Card,
@@ -15,9 +15,11 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
   Input,
 } from "@/components/ui";
 import { ExpenseForm } from "./components/ExpenseForm";
+import { ExpenseCategoriesModal } from "./components/ExpenseCategoriesModal";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
@@ -46,6 +48,7 @@ export function ExpensesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [categoriesOpen, setCategoriesOpen] = useState(false);
 
   const {
     data: expensePages,
@@ -73,6 +76,8 @@ export function ExpensesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      // Filing under a brand-new heading creates it server-side.
+      queryClient.invalidateQueries({ queryKey: ["expense-categories"] });
       addToast({ type: "success", message: t("messages.created") });
     },
     onError: () => {
@@ -85,6 +90,7 @@ export function ExpensesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["expense-categories"] });
       addToast({ type: "success", message: t("messages.updated") });
     },
     onError: () => {
@@ -117,10 +123,15 @@ export function ExpensesPage() {
   });
 
   // Search filters client-side within the loaded pages (the route has no
-  // server-side search filter).
-  const filteredExpenses = expenses?.filter((expense) =>
-    expense.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // server-side search filter). The heading is searchable too: "carburant"
+  // should find the fuel expenses whatever each one is called.
+  const filteredExpenses = expenses?.filter((expense) => {
+    const needle = searchQuery.toLowerCase();
+    return (
+      expense.name.toLowerCase().includes(needle) ||
+      (expense.category?.name.toLowerCase().includes(needle) ?? false)
+    );
+  });
 
   const selection = useSelection(filteredExpenses);
 
@@ -175,12 +186,18 @@ export function ExpensesPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
         </div>
-        {canCreate && (
-          <Button onClick={() => handleOpenModal()} size="sm" className="self-start sm:self-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            {t("newExpense")}
+        <div className="flex gap-2 self-start sm:self-auto">
+          <Button variant="secondary" size="sm" onClick={() => setCategoriesOpen(true)}>
+            <Tags className="h-4 w-4 mr-2" />
+            {t("categories.manage")}
           </Button>
-        )}
+          {canCreate && (
+            <Button onClick={() => handleOpenModal()} size="sm">
+              <Plus className="h-4 w-4 mr-2" />
+              {t("newExpense")}
+            </Button>
+          )}
+        </div>
       </div>
 
       <Card>
@@ -218,7 +235,14 @@ export function ExpensesPage() {
                       <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{expense.name}</p>
                       <p className="font-medium text-gray-900 dark:text-gray-100 shrink-0">{formatCurrency(expense.amount)}</p>
                     </div>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(expense.date)}</p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(expense.date)}</p>
+                      {expense.category && (
+                        <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
+                          {expense.category.name}
+                        </span>
+                      )}
+                    </div>
                     {expense.notes && <p className="text-sm text-gray-400 dark:text-gray-500 truncate mt-0.5">{expense.notes}</p>}
                     <div className="flex justify-end gap-1 mt-2">
                       {canEdit && <button onClick={() => handleOpenModal(expense)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={tCommon("buttons.edit")} aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
@@ -246,7 +270,8 @@ export function ExpensesPage() {
                   />
                 </TableHead>
                 <TableHead>{t("fields.name")}</TableHead>
-                <TableHead>{t("fields.amount")}</TableHead>
+                <TableHead>{t("fields.category")}</TableHead>
+                <TableHead className="text-end">{t("fields.amount")}</TableHead>
                 <TableHead>{t("fields.date")}</TableHead>
                 <TableHead>{t("fields.notes")}</TableHead>
                 <TableHead className="w-24">{tCommon("buttons.actions")}</TableHead>
@@ -265,7 +290,16 @@ export function ExpensesPage() {
                       />
                     </TableCell>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">{expense.name}</TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">{formatCurrency(expense.amount)}</TableCell>
+                    <TableCell className="text-gray-600 dark:text-gray-400">
+                      {expense.category ? (
+                        <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs">
+                          {expense.category.name}
+                        </span>
+                      ) : (
+                        "-"
+                      )}
+                    </TableCell>
+                    <TableNumericCell className="text-gray-600 dark:text-gray-400">{formatCurrency(expense.amount)}</TableNumericCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">{formatDate(expense.date)}</TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">{expense.notes || "-"}</TableCell>
                     <TableCell>
@@ -296,7 +330,7 @@ export function ExpensesPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  <TableCell colSpan={7} className="text-center text-gray-500 dark:text-gray-400 py-8">
                     {t("noExpenses")}
                   </TableCell>
                 </TableRow>
@@ -358,6 +392,13 @@ export function ExpensesPage() {
           isDeleting={batchDeleteExpense.isPending}
         />
       )}
+
+      <ExpenseCategoriesModal
+        isOpen={categoriesOpen}
+        onClose={() => setCategoriesOpen(false)}
+        canEdit={canEdit}
+        canDelete={canDelete}
+      />
 
       <BulkDeleteModal
         isOpen={bulkDeleteOpen}
