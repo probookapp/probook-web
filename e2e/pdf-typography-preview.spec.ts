@@ -55,13 +55,14 @@ test.describe("PDF typography preview", () => {
       discount_percent: 5,
     });
 
-    await page.goto(`/fr/invoices/${invoice.body.id}`);
+    const loc = process.env.PDF_PREVIEW_LOCALE || "fr";
+    await page.goto(`/${loc}/invoices/${invoice.body.id}`);
     await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
 
     await page.screenshot({ path: `comparaison-pdf/${NAME}-ecran.png` });
 
     const download = page.waitForEvent("download", { timeout: 120_000 });
-    await page.getByRole("button", { name: "Télécharger PDF" }).click();
+    await page.getByRole("button", { name: /Télécharger PDF|Download PDF|تحميل/ }).click();
     const file = await download;
     await file.saveAs(`comparaison-pdf/${NAME}.pdf`);
 
