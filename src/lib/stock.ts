@@ -21,7 +21,7 @@ export type StockMovementType =
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
-/** Returns the tenant's default location id, creating a "Main" one if absent. */
+/** Returns the tenant's default location id, creating one if absent. */
 export async function getDefaultLocationId(db: Db, tenantId: string): Promise<string> {
   const existing = await db.location.findFirst({
     where: { tenantId, isDefault: true },
@@ -33,8 +33,21 @@ export async function getDefaultLocationId(db: Db, tenantId: string): Promise<st
   const any = await db.location.findFirst({ where: { tenantId }, select: { id: true } });
   if (any) return any.id;
 
+  // Name it after the business rather than a hard-coded "Main": this label is
+  // user-visible (locations list, transfer pickers, stock-by-location, POS
+  // register setup) and the app ships in French and Arabic as well as English.
+  // A company name carries no language of its own.
+  const settings = await db.companySettings.findUnique({
+    where: { tenantId },
+    select: { companyName: true },
+  });
+  const tenant = settings
+    ? null
+    : await db.tenant.findUnique({ where: { id: tenantId }, select: { name: true } });
+  const name = settings?.companyName?.trim() || tenant?.name?.trim() || "Stock";
+
   const created = await db.location.create({
-    data: { tenantId, name: "Main", type: "store", isDefault: true, isActive: true },
+    data: { tenantId, name, type: "store", isDefault: true, isActive: true },
     select: { id: true },
   });
   return created.id;

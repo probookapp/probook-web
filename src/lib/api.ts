@@ -59,6 +59,9 @@ import type {
   OutstandingPayment,
   QuoteConversionStats,
   ExpenseReportEntry,
+  ExpenseCategory,
+  ExpensesByCategoryReport,
+  PipelineReport,
   ProfitMarginRow,
   SupplierSpendRow,
   TaxSummary,
@@ -107,6 +110,8 @@ import type {
 const pageArgs = (p: CursorPageParams): Record<string, unknown> => ({
   limit: p.limit,
   cursor: p.cursor ?? undefined,
+  status: p.status ?? undefined,
+  archived: p.archived ?? undefined,
 });
 
 // Client commands
@@ -201,6 +206,8 @@ export const quoteApi = {
   convertToInvoice: (id: string) => apiCall<Invoice>("convert_quote_to_invoice", { id }),
   convertToDeliveryNote: (id: string) => apiCall<DeliveryNote>("convert_quote_to_delivery_note", { id }),
   duplicate: (id: string) => apiCall<Quote>("duplicate_quote", { id }),
+  archive: (id: string) => apiCall<Quote>("archive_quote", { id }),
+  unarchive: (id: string) => apiCall<Quote>("unarchive_quote", { id }),
 };
 
 // Invoice commands
@@ -214,6 +221,8 @@ export const invoiceApi = {
   delete: (id: string) => apiCall<void>("delete_invoice", { id }),
   batchDelete: (ids: string[]) => apiCall<number>("batch_delete_invoices", { ids }),
   markAsPaid: (id: string) => apiCall<Invoice>("mark_invoice_paid", { id }),
+  archive: (id: string) => apiCall<Invoice>("archive_invoice", { id }),
+  unarchive: (id: string) => apiCall<Invoice>("unarchive_invoice", { id }),
   issue: (id: string) => apiCall<Invoice>("issue_invoice", { id }),
   verifyIntegrity: (id: string) => apiCall<boolean>("verify_invoice_integrity", { id }),
   duplicate: (id: string) => apiCall<Invoice>("duplicate_invoice", { id }),
@@ -276,6 +285,15 @@ export const expenseApi = {
   update: (input: UpdateExpenseInput) => apiCall<Expense>("update_expense", { input }),
   delete: (id: string) => apiCall<void>("delete_expense", { id }),
   batchDelete: (ids: string[]) => apiCall<number>("batch_delete_expenses", { ids }),
+};
+
+// Expense category commands
+export const expenseCategoryApi = {
+  getAll: () => apiCall<ExpenseCategory[]>("get_expense_categories"),
+  create: (name: string) => apiCall<ExpenseCategory>("create_expense_category", { input: { name } }),
+  update: (id: string, name: string) =>
+    apiCall<ExpenseCategory>("update_expense_category", { input: { id, name } }),
+  delete: (id: string) => apiCall<void>("delete_expense_category", { id }),
 };
 
 // Supplier commands
@@ -419,6 +437,10 @@ export const reportApi = {
     apiCall<QuoteConversionStats>("get_quote_conversion_stats", { startDate, endDate }),
   getExpensesReport: (startDate?: string, endDate?: string) =>
     apiCall<ExpenseReportEntry[]>("get_expenses_report", { startDate, endDate }),
+  getExpensesByCategory: (startDate?: string, endDate?: string) =>
+    apiCall<ExpensesByCategoryReport>("get_expenses_by_category", { startDate, endDate }),
+  getPipeline: (startDate?: string, endDate?: string) =>
+    apiCall<PipelineReport>("get_pipeline_report", { startDate, endDate }),
   getProfitMargin: (startDate?: string, endDate?: string) =>
     apiCall<ProfitMarginRow[]>("get_profit_margin", { startDate, endDate }),
   getSupplierSpend: (startDate?: string, endDate?: string) =>

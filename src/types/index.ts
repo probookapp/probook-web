@@ -10,6 +10,8 @@ export interface Client {
   country: string | null;
   siret: string | null;
   vat_number: string | null;
+  nis: string | null;
+  art: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -25,6 +27,8 @@ export interface CreateClientInput {
   country?: string | null;
   siret?: string | null;
   vat_number?: string | null;
+  nis?: string | null;
+  art?: string | null;
   notes?: string | null;
 }
 
@@ -358,6 +362,11 @@ export interface Quote {
   // Phase 2: Down payment
   down_payment_percent: number;
   down_payment_amount: number;
+  /** Commercial discount off the pre-tax base — see src/lib/document-totals.ts. */
+  discount_percent: number;
+  discount_amount: number;
+  /** Set once the document is settled and put away. */
+  archived_at?: string | null;
   lines: QuoteLine[];
   created_at: string;
   updated_at: string;
@@ -392,6 +401,8 @@ export interface CreateQuoteInput {
   shipping_tax_rate?: number;
   down_payment_percent?: number;
   down_payment_amount?: number;
+  discount_percent?: number;
+  discount_amount?: number;
   lines: CreateQuoteLineInput[];
 }
 
@@ -404,6 +415,7 @@ export interface CreateQuoteLineInput {
   tax_rate: number;
   group_name?: string | null;
   is_subtotal_line?: boolean;
+  discount_percent?: number;
 }
 
 export interface UpdateQuoteInput extends CreateQuoteInput {
@@ -442,6 +454,11 @@ export interface Invoice {
   // Phase 2: Down payment
   down_payment_percent: number;
   down_payment_amount: number;
+  /** Commercial discount off the pre-tax base — see src/lib/document-totals.ts. */
+  discount_percent: number;
+  discount_amount: number;
+  /** Set once the document is settled and put away. */
+  archived_at?: string | null;
   is_down_payment_invoice: boolean;
   parent_quote_id: string | null;
   lines: InvoiceLine[];
@@ -480,6 +497,8 @@ export interface CreateInvoiceInput {
   shipping_tax_rate?: number;
   down_payment_percent?: number;
   down_payment_amount?: number;
+  discount_percent?: number;
+  discount_amount?: number;
   is_down_payment_invoice?: boolean;
   is_cash_sale?: boolean;
   stamp_duty_exempt?: boolean;
@@ -496,6 +515,7 @@ export interface CreateInvoiceLineInput {
   tax_rate: number;
   group_name?: string | null;
   is_subtotal_line?: boolean;
+  discount_percent?: number;
 }
 
 export interface UpdateInvoiceInput {
@@ -509,6 +529,8 @@ export interface UpdateInvoiceInput {
   shipping_tax_rate?: number;
   down_payment_percent?: number;
   down_payment_amount?: number;
+  discount_percent?: number;
+  discount_amount?: number;
   lines: CreateInvoiceLineInput[];
 }
 
@@ -546,6 +568,10 @@ export interface CompanySettings {
   website: string | null;
   siret: string | null;
   vat_number: string | null;
+  nis: string | null;
+  art: string | null;
+  /** Country fiscal regime driving VAT scale, identifier labels and stamp duty. */
+  fiscal_profile: string;
   logo_path: string | null;
   default_tax_rate: number;
   default_payment_terms: number;
@@ -588,6 +614,9 @@ export interface UpdateCompanySettingsInput {
   website?: string | null;
   siret?: string | null;
   vat_number?: string | null;
+  nis?: string | null;
+  art?: string | null;
+  fiscal_profile?: string;
   default_tax_rate: number;
   default_payment_terms: number;
   invoice_prefix: string;
@@ -617,12 +646,23 @@ export interface UpdateAppSettingsInput {
 }
 
 // Expense types
+export interface ExpenseCategory {
+  id: string;
+  name: string;
+  /** How many expenses currently sit under this heading. */
+  expense_count: number;
+  created_at?: string;
+  updated_at?: string;
+}
+
 export interface Expense {
   id: string;
   name: string;
   amount: number;
   date: string;
   notes: string | null;
+  category_id: string | null;
+  category: { id: string; name: string } | null;
   created_at: string;
   updated_at: string;
 }
@@ -632,6 +672,9 @@ export interface CreateExpenseInput {
   amount: number;
   date: string;
   notes?: string | null;
+  /** A heading by name: the server creates it if the tenant has no such one. */
+  category_name?: string | null;
+  category_id?: string | null;
 }
 
 export interface UpdateExpenseInput extends CreateExpenseInput {
@@ -904,7 +947,12 @@ export interface TaxSummary {
     total_ht: number;
     total_vat: number;
     total_ttc: number;
+    /** Before commercial discounts; total_ht is the base actually declared. */
+    gross_ht: number;
+    discount_ht: number;
     invoice_count: number;
+    pos_transaction_count: number;
+    credit_note_count: number;
     by_rate: TaxSummaryRateBucket[];
   };
   purchases: {
@@ -927,6 +975,11 @@ export interface AccountingExportSaleRow {
   date: string;
   number: string;
   party: string;
+  /** Listed pre-tax value, before any commercial discount. */
+  gross_ht: number;
+  /** Commercial discount granted on the document. */
+  discount: number;
+  /** Taxable base: gross_ht − discount (+ shipping, which is never discounted). */
   ht: number;
   vat: number;
   ttc: number;
@@ -950,9 +1003,61 @@ export interface AccountingExportJournalRow {
   type: string;
   document: string;
   party: string;
+  gross_ht: number;
+  discount: number;
   ht: number;
   vat: number;
   ttc: number;
+}
+
+export interface ExpensesByCategoryRow {
+  category_id: string | null;
+  /** null is the "no heading" bucket, so the parts add up to the whole. */
+  category_name: string | null;
+  total_amount: number;
+  expense_count: number;
+  share: number;
+}
+
+export interface ExpensesByCategoryReport {
+  total: number;
+  categories: ExpensesByCategoryRow[];
+}
+
+export interface PipelineBucket {
+  status: string;
+  count: number;
+  /** Delivery notes carry no money of their own, so this stays at zero there. */
+  total: number;
+}
+
+export interface PipelineAwaitingInvoiceRow {
+  id: string;
+  number: string;
+  client: string;
+  date: string;
+  amount: number;
+}
+
+export interface PipelineAwaitingPaymentRow extends PipelineAwaitingInvoiceRow {
+  due_date: string | null;
+  paid: number;
+  remaining: number;
+  overdue: boolean;
+}
+
+export interface PipelineReport {
+  quotes: PipelineBucket[];
+  invoices: PipelineBucket[];
+  delivery_notes: PipelineBucket[];
+  in_progress: {
+    awaiting_invoice: PipelineAwaitingInvoiceRow[];
+    awaiting_invoice_total: number;
+    awaiting_payment: PipelineAwaitingPaymentRow[];
+    awaiting_payment_total: number;
+    overdue_count: number;
+    overdue_total: number;
+  };
 }
 
 export interface AccountingExport {
@@ -1193,7 +1298,11 @@ export interface CreateTransactionLineInput {
   discount_percent?: number;
 }
 
-export type PosPaymentMethod = "CASH" | "CARD";
+/**
+ * Kept in step with POS_PAYMENT_METHODS in src/lib/pos-payment-methods.ts,
+ * which is the server-side source of truth.
+ */
+export type PosPaymentMethod = "CASH" | "CARD" | "CHEQUE" | "TRANSFER" | "CREDIT";
 
 export interface PosPayment {
   id: string;
@@ -1289,6 +1398,8 @@ export interface SessionSummary {
   tax_amount: number;
   cash_sales: number;
   card_sales: number;
+  /** Every method that was actually used, in the order it first appeared. */
+  sales_by_method: { method: string; amount: number }[];
   cancelled_count: number;
   cancelled_total: number;
   cash_movements: PosCashMovement[];
@@ -1306,6 +1417,8 @@ export interface DailyPosReport {
   tax_amount: number;
   cash_sales: number;
   card_sales: number;
+  /** Every method that was actually used, in the order it first appeared. */
+  sales_by_method: { method: string; amount: number }[];
   cancelled_count: number;
   cancelled_total: number;
 }
@@ -1396,6 +1509,10 @@ export interface CursorPage<T> {
 export interface CursorPageParams {
   limit: number;
   cursor?: string | null;
+  /** Document state(s) to keep, comma-separated. Omitted means every state. */
+  status?: string | null;
+  /** "true" for archived only, "all" for both. Omitted hides archived. */
+  archived?: string | null;
 }
 
 /**

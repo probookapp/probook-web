@@ -21,7 +21,7 @@ function getLocale(): string {
 
 export function formatCurrency(amount: number | null | undefined): string {
   const safeAmount = typeof amount === "number" && !Number.isNaN(amount) ? amount : 0;
-  const currency = useSettingsStore.getState().currency || "EUR";
+  const currency = useSettingsStore.getState().currency || "DZD";
   return new Intl.NumberFormat(getLocale(), {
     style: "currency",
     currency,
@@ -137,13 +137,23 @@ function convertThousands(n: number): string {
 
   let result = '';
 
+  // Billions. Amounts in dinars are two orders of magnitude larger than in
+  // euros, so without this branch convertHundreds() was fed a value above 999
+  // and indexed past UNITS, printing "undefined" on the invoice.
+  const billions = Math.floor(n / 1000000000);
+  if (billions > 0) {
+    result += billions === 1 ? 'un milliard' : convertThousands(billions) + ' milliards';
+    n %= 1000000000;
+    if (n > 0) result += ' ';
+  }
+
   // Millions
   const millions = Math.floor(n / 1000000);
   if (millions > 0) {
     if (millions === 1) {
       result += 'un million';
     } else {
-      result += convertHundreds(millions) + ' millions';
+      result += convertThousands(millions) + ' millions';
     }
     n %= 1000000;
     if (n > 0) result += ' ';
@@ -185,8 +195,13 @@ export function numberToFrenchWords(
   mainUnit: string = "euro",
   subUnit: string = "centime"
 ): string {
-  const whole = Math.floor(amount);
-  const fractional = Math.round((amount - whole) * 100);
+  // Round to cents FIRST, then split. Rounding the fraction on its own lets
+  // 1.995 produce 100 cents, which printed as "un euro et cent centimes"
+  // instead of rolling over into "deux euros" — on a legal amount-in-words.
+  const totalCents = Math.round(Math.abs(amount) * 100);
+  const whole = Math.floor(totalCents / 100);
+  const fractional = totalCents % 100;
+  const negative = amount < 0 && totalCents > 0;
 
   let result = '';
 
@@ -206,6 +221,8 @@ export function numberToFrenchWords(
       result += convertThousands(fractional) + ' ' + subUnit + 's';
     }
   }
+
+  if (negative) result = 'moins ' + result;
 
   // Capitalize first letter
   return result.charAt(0).toUpperCase() + result.slice(1);

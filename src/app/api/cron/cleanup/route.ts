@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 // Daily housekeeping job (vercel.json schedules this at 03:00).
 //
@@ -16,17 +17,8 @@ import { prisma } from "@/lib/db";
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 const RATE_LIMIT_LOG_RETENTION_DAYS = 30;
 
-// Vercel Cron invokes this with "Authorization: Bearer ${CRON_SECRET}" when
-// CRON_SECRET is set. Outside production the check is skipped so the job can
-// be exercised locally.
-function isAuthorized(req: NextRequest): boolean {
-  if (process.env.NODE_ENV !== "production") return true;
-  const secret = process.env.CRON_SECRET;
-  return !!secret && req.headers.get("authorization") === `Bearer ${secret}`;
-}
-
 export const GET = async (req: NextRequest) => {
-  if (!isAuthorized(req)) {
+  if (!isCronAuthorized(req, "cleanup")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

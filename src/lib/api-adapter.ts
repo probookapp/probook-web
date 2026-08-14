@@ -59,6 +59,9 @@ function listQuery(
     const q: Record<string, string> = extra ? extra(a) : {};
     if (a.limit !== undefined && a.limit !== null) q.limit = String(a.limit);
     if (a.cursor) q.cursor = String(a.cursor);
+    // Filtering by state is a server concern: see src/lib/document-status.ts.
+    if (a.status) q.status = String(a.status);
+    if (a.archived) q.archived = String(a.archived);
     return q;
   };
 }
@@ -197,6 +200,14 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     method: "POST",
     path: (a) => `/api/quotes/${a.id}/convert-to-delivery-note`,
   },
+  archive_quote: {
+    method: "POST",
+    path: (a) => `/api/quotes/${a.id}/archive`,
+  },
+  unarchive_quote: {
+    method: "DELETE",
+    path: (a) => `/api/quotes/${a.id}/archive`,
+  },
   duplicate_quote: {
     method: "POST",
     path: (a) => `/api/quotes/${a.id}/duplicate`,
@@ -220,6 +231,14 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     method: "POST",
     path: "/api/invoices/batch-delete",
     body: (a) => a.ids,
+  },
+  archive_invoice: {
+    method: "POST",
+    path: (a) => `/api/invoices/${a.id}/archive`,
+  },
+  unarchive_invoice: {
+    method: "DELETE",
+    path: (a) => `/api/invoices/${a.id}/archive`,
   },
   mark_invoice_paid: {
     method: "POST",
@@ -315,6 +334,23 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     method: "POST",
     path: "/api/expenses/batch-delete",
     body: (a) => a.ids,
+  },
+
+  // Expense categories
+  get_expense_categories: { method: "GET", path: "/api/expense-categories" },
+  create_expense_category: {
+    method: "POST",
+    path: "/api/expense-categories",
+    body: (a) => a.input,
+  },
+  update_expense_category: {
+    method: "PUT",
+    path: (a) => `/api/expense-categories/${(a.input as Record<string, unknown>).id}`,
+    body: (a) => a.input,
+  },
+  delete_expense_category: {
+    method: "DELETE",
+    path: (a) => `/api/expense-categories/${a.id}`,
   },
 
   // Suppliers
@@ -564,6 +600,26 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   get_expenses_report: {
     method: "GET",
     path: "/api/reports/expenses",
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.startDate) q.startDate = String(a.startDate);
+      if (a.endDate) q.endDate = String(a.endDate);
+      return q;
+    },
+  },
+  get_expenses_by_category: {
+    method: "GET",
+    path: "/api/reports/expenses-by-category",
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.startDate) q.startDate = String(a.startDate);
+      if (a.endDate) q.endDate = String(a.endDate);
+      return q;
+    },
+  },
+  get_pipeline_report: {
+    method: "GET",
+    path: "/api/reports/pipeline",
     query: (a) => {
       const q: Record<string, string> = {};
       if (a.startDate) q.startDate = String(a.startDate);

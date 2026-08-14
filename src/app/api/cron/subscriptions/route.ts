@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 // Daily job (vercel.json schedules this at 02:00): flip active subscriptions
 // whose paid period has ended to "expired". The client already treats a
@@ -8,14 +9,8 @@ import { prisma } from "@/lib/db";
 // this only keeps the DB and admin views consistent. Tenants are left as-is
 // (not suspended), so an expired tenant falls back to demo mode and can renew.
 
-function isAuthorized(req: NextRequest): boolean {
-  if (process.env.NODE_ENV !== "production") return true;
-  const secret = process.env.CRON_SECRET;
-  return !!secret && req.headers.get("authorization") === `Bearer ${secret}`;
-}
-
 export const GET = async (req: NextRequest) => {
-  if (!isAuthorized(req)) {
+  if (!isCronAuthorized(req, "subscriptions")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

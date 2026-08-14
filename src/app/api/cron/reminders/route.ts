@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
 import { sweepTenantReminders, markExpiredQuotes } from "@/lib/reminder-sweep";
+import { isCronAuthorized } from "@/lib/cron-auth";
 
 // Daily reminders job (vercel.json schedules this at 08:00). Sweeps EVERY
 // tenant with the same logic as the dashboard-triggered
@@ -18,17 +19,8 @@ import { sweepTenantReminders, markExpiredQuotes } from "@/lib/reminder-sweep";
 // back to a mailto: draft when Resend is not configured — neither of which is
 // possible from a session-less cron.
 
-// Vercel Cron invokes this with "Authorization: Bearer ${CRON_SECRET}" when
-// CRON_SECRET is set. Outside production the check is skipped so the job can
-// be exercised locally.
-function isAuthorized(req: NextRequest): boolean {
-  if (process.env.NODE_ENV !== "production") return true;
-  const secret = process.env.CRON_SECRET;
-  return !!secret && req.headers.get("authorization") === `Bearer ${secret}`;
-}
-
 export const GET = async (req: NextRequest) => {
-  if (!isAuthorized(req)) {
+  if (!isCronAuthorized(req, "reminders")) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 

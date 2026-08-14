@@ -177,22 +177,43 @@ export const clientColumns: ImportColumn[] = [
       ar: "البلد",
     },
   },
+  // Identifier columns are shared across fiscal profiles: `siret` carries the
+  // RC under the Algerian regime, `vat_number` the NIF. The import route also
+  // accepts the Algerian column names (rc, nif) as aliases.
   {
     key: "siret",
     required: false,
     labels: {
-      en: "SIRET Number",
-      fr: "Numero SIRET",
-      ar: "رقم SIRET",
+      en: "Trade register / SIRET",
+      fr: "RC / SIRET",
+      ar: "السجل التجاري / SIRET",
     },
   },
   {
     key: "vat_number",
     required: false,
     labels: {
-      en: "VAT Number",
-      fr: "Numero TVA",
-      ar: "رقم الضريبة",
+      en: "NIF / VAT Number",
+      fr: "NIF / Numero TVA",
+      ar: "NIF / رقم الضريبة",
+    },
+  },
+  {
+    key: "nis",
+    required: false,
+    labels: {
+      en: "NIS",
+      fr: "NIS",
+      ar: "NIS",
+    },
+  },
+  {
+    key: "art",
+    required: false,
+    labels: {
+      en: "Tax article number",
+      fr: "Article d'imposition",
+      ar: "رقم المادة الجبائية",
     },
   },
   {

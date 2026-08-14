@@ -14,22 +14,17 @@ export async function setupPlatformAdmin(page: Page) {
   const email = `testadmin_${id}@test.local`;
   const password = "AdminPass123!";
 
-  // Create the admin user by calling our bootstrap endpoint
-  // We'll create it via a helper API we add
-  const res = await page.evaluate(
-    async ([u, e, p]) => {
-      const r = await fetch("/api/test/create-admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: u, email: e, password: p }),
-      });
-      return { status: r.status, body: await r.json().catch(() => ({})) };
-    },
-    [username, email, password]
-  );
+  // Through api(), not a raw page.evaluate: the helper retries when an
+  // in-flight navigation tears the execution context down mid-call, which is
+  // what "Failed to fetch" here used to mean.
+  const res = await api(page, "POST", "/api/test/create-admin", {
+    username,
+    email,
+    password,
+  });
 
   if (res.status !== 200) {
-    throw new Error(`Failed to create test admin: ${JSON.stringify(res.body)}`);
+    throw new Error(`Failed to create test admin (${res.status}): ${JSON.stringify(res.body)}`);
   }
 
   // Log in as admin
@@ -39,7 +34,7 @@ export async function setupPlatformAdmin(page: Page) {
   });
 
   if (login.status !== 200) {
-    throw new Error(`Admin login failed: ${JSON.stringify(login.body)}`);
+    throw new Error(`Admin login failed (${login.status}): ${JSON.stringify(login.body)}`);
   }
 
   return { username, email, password, adminId: login.body.id as string };

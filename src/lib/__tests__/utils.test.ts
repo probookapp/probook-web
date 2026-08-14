@@ -161,6 +161,30 @@ describe("numberToFrenchWords", () => {
     const result = numberToFrenchWords(1000000, "euro", "centime");
     expect(result).toBe("Un million euros");
   });
+
+  it("rolls 100 rounded centimes into the main unit", () => {
+    // Rounding the fraction on its own used to yield "un euro et cent centimes"
+    expect(numberToFrenchWords(1.995, "euro", "centime")).toBe("Deux euros");
+    expect(numberToFrenchWords(0.999, "dinar", "centime")).toBe("Un dinar");
+  });
+
+  it("keeps a legal amount readable past a billion", () => {
+    // Dinar amounts reach these magnitudes; convertHundreds used to be fed a
+    // value above 999 here and printed "undefined".
+    const result = numberToFrenchWords(2_000_000_000, "dinar", "centime");
+    expect(result).toBe("Deux milliards dinars");
+    expect(result).not.toContain("undefined");
+  });
+
+  it("keeps millions readable past 999 millions", () => {
+    const result = numberToFrenchWords(999_000_000, "dinar", "centime");
+    expect(result).not.toContain("undefined");
+    expect(result.toLowerCase()).toContain("millions");
+  });
+
+  it("states negative amounts (credit notes)", () => {
+    expect(numberToFrenchWords(-5, "dinar", "centime")).toBe("Moins cinq dinars");
+  });
 });
 
 // ─── CURRENCY_WORDS ────────────────────────────────────────────────────────

@@ -9,7 +9,17 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "suppliers", "create");
   if (denied) return denied;
 
-  const formData = await req.formData();
+  // A request that is not multipart makes formData() throw, which surfaced as
+  // a 500 instead of telling the caller what was wrong with the request.
+  let formData: FormData;
+  try {
+    formData = await req.formData();
+  } catch {
+    return NextResponse.json(
+      { error: "Expected a multipart/form-data upload" },
+      { status: 400 }
+    );
+  }
   const file = formData.get("file") as File | null;
   if (!file) {
     return NextResponse.json({ error: "No file provided" }, { status: 400 });

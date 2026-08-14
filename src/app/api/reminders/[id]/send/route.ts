@@ -38,7 +38,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
     where: { tenantId },
   });
   const companyName = settings?.companyName || "My Company";
-  const currency = settings?.currency || "EUR";
+  const currency = settings?.currency || "DZD";
 
   let clientEmail: string | null = null;
   let emailContent: { subject: string; html: string };

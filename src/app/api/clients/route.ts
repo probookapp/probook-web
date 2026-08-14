@@ -55,6 +55,8 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       country: body.country || null,
       siret: body.siret || null,
       vatNumber: body.vat_number || null,
+      nis: body.nis || null,
+      art: body.art || null,
       notes: body.notes || null,
     } satisfies Prisma.ClientUncheckedCreateInput,
   });
