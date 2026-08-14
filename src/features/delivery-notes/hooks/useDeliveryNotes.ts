@@ -3,6 +3,7 @@ import { deliveryNoteApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_DELIVERY_NOTES } from "@/lib/demo-data";
 import { LIST_PAGE_SIZE } from "@/lib/pagination";
+import { filterByStatus } from "@/lib/document-status";
 import type {
   CreateDeliveryNoteInput,
   UpdateDeliveryNoteInput,
@@ -20,14 +21,18 @@ export function useDeliveryNotes() {
 }
 
 /** Cursor-paginated delivery notes list (lean rows) for the list page. */
-export function useInfiniteDeliveryNotes() {
+/** `status` is a comma-separated list of states, or undefined for every state. */
+export function useInfiniteDeliveryNotes(status?: string) {
   const { isDemoMode } = useDemoMode();
   return useInfiniteQuery({
     // Shares the ["deliveryNotes"] prefix so existing invalidations refresh it too.
-    queryKey: ["deliveryNotes", "infinite", { demo: isDemoMode }],
+    queryKey: ["deliveryNotes", "infinite", status ?? null, { demo: isDemoMode }],
     queryFn: isDemoMode
-      ? (): CursorPage<DeliveryNoteListItem> => ({ data: DEMO_DELIVERY_NOTES, next_cursor: null })
-      : ({ pageParam }) => deliveryNoteApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam }),
+      ? (): CursorPage<DeliveryNoteListItem> => ({
+          data: filterByStatus(DEMO_DELIVERY_NOTES, status),
+          next_cursor: null,
+        })
+      : ({ pageParam }) => deliveryNoteApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam, status }),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.next_cursor,
     staleTime: isDemoMode ? Infinity : undefined,

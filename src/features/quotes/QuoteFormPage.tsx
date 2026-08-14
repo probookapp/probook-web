@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useForm, useFieldArray, useWatch, Controller, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Plus, Trash2, ArrowLeft, FileText } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, FileText, List, Rows3 } from "lucide-react";
 import {
   Button,
   Card,
@@ -23,6 +23,10 @@ import { useProducts } from "@/features/products";
 import { formatCurrency, formatDateISO, calculateLineTotal } from "@/lib/utils";
 import type { QuoteStatus } from "@/types";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
+import { useDocumentTotals } from "@/hooks/useDocumentTotals";
+import { useLocalPreference } from "@/hooks/useLocalPreference";
+import { useIsNarrow } from "@/hooks/useIsNarrow";
+import { DocumentLinesMobile } from "@/components/documents/DocumentLinesMobile";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { toast } from "@/stores/useToastStore";
@@ -50,6 +54,8 @@ const createQuoteFormSchema = (t: (key: string) => string) => z.object({
   shipping_tax_rate: z.coerce.number().min(0).max(100).optional(),
   down_payment_percent: z.coerce.number().min(0).max(100).optional(),
   down_payment_amount: z.coerce.number().min(0).optional(),
+  discount_percent: z.coerce.number().min(0).max(100).optional(),
+  discount_amount: z.coerce.number().min(0).optional(),
   lines: z.array(createLineSchema(t)).min(1, t("validation:quote.linesRequired")),
 });
 
@@ -95,6 +101,8 @@ export function QuoteFormPage() {
       shipping_tax_rate: defaultTaxRate,
       down_payment_percent: 0,
       down_payment_amount: 0,
+      discount_percent: 0,
+      discount_amount: 0,
       lines: [{ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate }],
     },
   });
@@ -120,6 +128,18 @@ export function QuoteFormPage() {
   const watchedShippingTaxRate = useWatch({
     control,
     name: "shipping_tax_rate",
+    defaultValue: 0,
+  });
+
+  const watchedDiscountPercent = useWatch({
+    control,
+    name: "discount_percent",
+    defaultValue: 0,
+  });
+
+  const watchedDiscountAmount = useWatch({
+    control,
+    name: "discount_amount",
     defaultValue: 0,
   });
 
@@ -165,73 +185,25 @@ export function QuoteFormPage() {
     setNotesHtml(quote.notes_html || "");
   }
 
-  // Calculate totals reactively based on watched lines and shipping
-  const { totals, groupSubtotals } = useMemo(() => {
-    if (!watchedLines) return {
-      totals: { beforeTax: 0, vat: 0, total: 0, shippingCost: 0, shippingVat: 0, shippingTotal: 0, downPayment: 0 },
-      groupSubtotals: {} as Record<string, { beforeTax: number; vat: number; total: number }>
-    };
-
-    const groups: Record<string, { beforeTax: number; vat: number; total: number }> = {};
-
-    const lineTotals = watchedLines.reduce(
-      (acc, line) => {
-        // Skip subtotal lines - they don't contribute to totals
-        if (line?.is_subtotal_line) return acc;
-
-        const { subtotal, taxAmount, total } = calculateLineTotal(
-          parseFloat(String(line?.quantity)) || 0,
-          parseFloat(String(line?.unit_price)) || 0,
-          parseFloat(String(line?.tax_rate)) || 0
-        );
-
-        // Track group subtotals
-        const groupName = line?.group_name || "";
-        if (groupName) {
-          if (!groups[groupName]) {
-            groups[groupName] = { beforeTax: 0, vat: 0, total: 0 };
-          }
-          groups[groupName].beforeTax += subtotal;
-          groups[groupName].vat += taxAmount;
-          groups[groupName].total += total;
-        }
-
-        return {
-          beforeTax: acc.beforeTax + subtotal,
-          vat: acc.vat + taxAmount,
-          total: acc.total + total,
-        };
-      },
-      { beforeTax: 0, vat: 0, total: 0 }
-    );
-
-    // Calculate shipping (parseFloat to handle string values from form inputs)
-    const shippingCost = parseFloat(String(watchedShippingCost)) || 0;
-    const shippingTaxRate = parseFloat(String(watchedShippingTaxRate)) || 0;
-    const shippingVat = shippingCost * (shippingTaxRate / 100);
-    const shippingTotal = shippingCost + shippingVat;
-
-    // Calculate down payment (use fixed amount if set, otherwise calculate from percentage)
-    const grandTotal = lineTotals.total + shippingTotal;
-    const dpAmount = parseFloat(String(watchedDownPaymentAmount)) || 0;
-    const dpPercent = parseFloat(String(watchedDownPaymentPercent)) || 0;
-    const downPayment = dpAmount > 0
-      ? dpAmount
-      : (dpPercent > 0 ? grandTotal * (dpPercent / 100) : 0);
-
-    return {
-      totals: {
-        beforeTax: lineTotals.beforeTax,
-        vat: lineTotals.vat,
-        total: lineTotals.total,
-        shippingCost,
-        shippingVat,
-        shippingTotal,
-        downPayment,
-      },
-      groupSubtotals: groups,
-    };
-  }, [watchedLines, watchedShippingCost, watchedShippingTaxRate, watchedDownPaymentPercent, watchedDownPaymentAmount]);
+  // Same engine the server persists with, plus the margin — see
+  // src/hooks/useDocumentTotals.ts.
+  // Dense mode is a per-browser habit, not per-document.
+  const [denseLines, setDenseLines] = useLocalPreference("probook.lines.dense");
+  // Below lg the grid editor becomes a four-row column per line; the phone
+  // editor replaces it entirely rather than sitting beside it, so the same
+  // field names are never registered twice.
+  const isNarrow = useIsNarrow();
+  const totals = useDocumentTotals({
+    lines: watchedLines,
+    shippingCost: watchedShippingCost,
+    shippingTaxRate: watchedShippingTaxRate,
+    discountPercent: watchedDiscountPercent,
+    discountAmount: watchedDiscountAmount,
+    downPaymentPercent: watchedDownPaymentPercent,
+    downPaymentAmount: watchedDownPaymentAmount,
+    products,
+  });
+  const groupSubtotals = totals.groupSubtotals;
 
   const getStockError = (index: number): string | null => {
     const line = watchedLines[index];
@@ -394,22 +366,66 @@ export function QuoteFormPage() {
 
         <Card>
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-2">
               <CardTitle>{t("quotes:lines.title")}</CardTitle>
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={() =>
-                  append({ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate })
-                }
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                {t("quotes:lines.addLine")}
-              </Button>
+              <div className="flex items-center gap-2">
+                {/* Dense mode compresses the wide grid; the phone editor has no
+                    labels to drop, so the control only belongs on a wide screen. */}
+                {!isNarrow && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDenseLines(!denseLines)}
+                  aria-pressed={denseLines}
+                  title={t(denseLines ? "quotes:lines.detailedView" : "quotes:lines.denseView")}
+                >
+                  {denseLines ? (
+                    <Rows3 className="h-4 w-4 sm:mr-2" />
+                  ) : (
+                    <List className="h-4 w-4 sm:mr-2" />
+                  )}
+                  <span className="hidden sm:inline">
+                    {t(denseLines ? "quotes:lines.detailedView" : "quotes:lines.denseView")}
+                  </span>
+                </Button>
+                )}
+                {/* The phone editor carries its own add button, right under the
+                    list where the new line will appear. Two of them on one screen
+                    is one too many. */}
+                {!isNarrow && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() =>
+                    append({ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate })
+                  }
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  {t("quotes:lines.addLine")}
+                </Button>
+                )}
+              </div>
             </div>
           </CardHeader>
           <CardContent>
+            {isNarrow ? (
+              <DocumentLinesMobile
+                ns="quotes"
+                fields={fields}
+                lines={watchedLines}
+                register={register}
+                errors={errors}
+                productOptions={productOptions}
+                onSelectProduct={handleProductSelect}
+                onAdd={() =>
+                  append({ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate })
+                }
+                onRemove={remove}
+                stockError={getStockError}
+              />
+            ) : (
             <div className="space-y-4">
               {fields.map((field, index) => {
                 const line = watchedLines[index];
@@ -483,12 +499,18 @@ export function QuoteFormPage() {
                 return (
                   <div
                     key={field.id}
-                    className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg space-y-3"
+                    className={`bg-gray-50 dark:bg-gray-800 rounded-lg ${
+                      denseLines ? "p-2 space-y-1" : "p-4 space-y-3"
+                    }`}
                   >
-                    <div className="grid grid-cols-12 gap-3 items-start">
+                    <div
+                      className={`grid grid-cols-12 items-start ${
+                        denseLines ? "gap-2" : "gap-3"
+                      }`}
+                    >
                       <div className="col-span-12 md:col-span-6 lg:col-span-3">
                         <SearchableSelect
-                          label={t("quotes:lines.product")}
+                          label={denseLines ? "" : t("quotes:lines.product")}
                           options={productOptions}
                           value={line?.product_id || ""}
                           onChange={(val) => handleProductSelect(index, val)}
@@ -499,7 +521,9 @@ export function QuoteFormPage() {
                         <div className="flex items-end gap-1">
                           <div className="flex-1">
                             <Input
-                              label={t("quotes:lines.description") + " *"}
+                              label={denseLines ? "" : t("quotes:lines.description") + " *"}
+                              aria-label={t("quotes:lines.description")}
+                              placeholder={denseLines ? t("quotes:lines.description") : undefined}
                               {...register(`lines.${index}.description`)}
                               error={errors.lines?.[index]?.description?.message}
                             />
@@ -520,7 +544,9 @@ export function QuoteFormPage() {
                       </div>
                       <div className="col-span-4 md:col-span-3 lg:col-span-1">
                         <Input
-                          label={t("quotes:lines.quantity") + " *"}
+                          label={denseLines ? "" : t("quotes:lines.quantity") + " *"}
+                          aria-label={t("quotes:lines.quantity")}
+                          placeholder={denseLines ? t("quotes:lines.quantity") : undefined}
                           type="number"
                           step="0.01"
                           {...register(`lines.${index}.quantity`)}
@@ -529,7 +555,9 @@ export function QuoteFormPage() {
                       </div>
                       <div className="col-span-4 md:col-span-3 lg:col-span-2">
                         <Input
-                          label={t("quotes:lines.unitPriceHt") + " *"}
+                          label={denseLines ? "" : t("quotes:lines.unitPriceHt") + " *"}
+                          aria-label={t("quotes:lines.unitPriceHt")}
+                          placeholder={denseLines ? t("quotes:lines.unitPriceHt") : undefined}
                           type="number"
                           step="0.01"
                           {...register(`lines.${index}.unit_price`)}
@@ -538,14 +566,20 @@ export function QuoteFormPage() {
                       </div>
                       <div className="col-span-4 md:col-span-3 lg:col-span-1">
                         <Input
-                          label={t("quotes:lines.vatRate")}
+                          label={denseLines ? "" : t("quotes:lines.vatRate")}
+                          aria-label={t("quotes:lines.vatRate")}
+                          placeholder={denseLines ? t("quotes:lines.vatRate") : undefined}
                           type="number"
                           step="0.1"
                           {...register(`lines.${index}.tax_rate`)}
                         />
                       </div>
                       <div className="col-span-6 md:col-span-2 lg:col-span-1 flex flex-col">
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">{t("quotes:lines.totalTtc")}</span>
+                        {!denseLines && (
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                            {t("quotes:lines.totalTtc")}
+                          </span>
+                        )}
                         <span className="py-2 font-medium">{formatCurrency(lineTotal.total)}</span>
                       </div>
                       <div className="col-span-6 md:col-span-1 lg:col-span-1 flex items-end pb-2 justify-end md:justify-start">
@@ -580,11 +614,20 @@ export function QuoteFormPage() {
                         />
                       </div>
                     )}
-                    <div className="flex items-center gap-4">
+                    {/* Grouping is occasional: in dense mode it only shows on the
+                        lines that already use it, so an ordinary line is one row. */}
+                    <div
+                      className={`items-center gap-4 ${
+                        denseLines && !line?.group_name && !line?.is_subtotal_line
+                          ? "hidden"
+                          : "flex"
+                      }`}
+                    >
                       <div className="flex-1">
                         <Input
                           label=""
                           placeholder={t("quotes:lines.groupPlaceholder")}
+                          aria-label={t("quotes:lines.groupPlaceholder")}
                           {...register(`lines.${index}.group_name`)}
                           className="text-sm"
                         />
@@ -611,6 +654,7 @@ export function QuoteFormPage() {
                 <p className="text-sm text-red-600">{errors.lines.message}</p>
               )}
             </div>
+            )}
 
             <div className="mt-6 flex justify-end">
               <div className="w-full sm:w-72 md:w-80 lg:w-96 space-y-2">
@@ -630,27 +674,31 @@ export function QuoteFormPage() {
                 )}
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">{t("quotes:totals.subtotalHt")}</span>
-                  <span className="font-medium">{formatCurrency(totals.beforeTax)}</span>
+                  <span className="font-medium">{formatCurrency(totals.linesSubtotal)}</span>
+                </div>
+                {totals.documentDiscount > 0 && (
+                  <div className="flex justify-between text-sm text-amber-700 dark:text-amber-400">
+                    <span>{t("quotes:discount.label")}</span>
+                    <span className="font-medium">-{formatCurrency(totals.documentDiscount)}</span>
+                  </div>
+                )}
+                {totals.shippingCost > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">{t("quotes:totals.shippingHt")}</span>
+                    <span className="font-medium">{formatCurrency(totals.shippingCost)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm border-t pt-2">
+                  <span className="text-gray-500">{t("quotes:totals.taxableBase")}</span>
+                  <span className="font-medium">{formatCurrency(totals.subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">{t("quotes:totals.vatProducts")}</span>
                   <span className="font-medium">{formatCurrency(totals.vat)}</span>
                 </div>
-                {totals.shippingCost > 0 && (
-                  <>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{t("quotes:totals.shippingHt")}</span>
-                      <span className="font-medium">{formatCurrency(totals.shippingCost)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">{t("quotes:totals.shippingVat")}</span>
-                      <span className="font-medium">{formatCurrency(totals.shippingVat)}</span>
-                    </div>
-                  </>
-                )}
                 <div className="flex justify-between text-lg font-bold border-t pt-2">
                   <span>{t("quotes:totals.totalTtc")}</span>
-                  <span>{formatCurrency(totals.total + totals.shippingTotal)}</span>
+                  <span>{formatCurrency(totals.total)}</span>
                 </div>
                 {totals.downPayment > 0 && (
                   <>
@@ -660,9 +708,33 @@ export function QuoteFormPage() {
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-gray-500">{t("quotes:downPayment.remaining")}</span>
-                      <span className="font-medium">{formatCurrency(totals.total + totals.shippingTotal - totals.downPayment)}</span>
+                      <span className="font-medium">{formatCurrency(totals.remaining)}</span>
                     </div>
                   </>
+                )}
+                {/* Margin turns a discount into a decision. Never printed. */}
+                {totals.cost > 0 && (
+                  <div className="mt-3 pt-3 border-t border-dashed border-gray-300 dark:border-gray-600 space-y-1">
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>{t("quotes:margin.cost")}</span>
+                      <span>{formatCurrency(totals.cost)}</span>
+                    </div>
+                    <div
+                      className={`flex justify-between text-sm font-semibold ${
+                        totals.margin >= 0
+                          ? "text-emerald-700 dark:text-emerald-400"
+                          : "text-red-600 dark:text-red-400"
+                      }`}
+                    >
+                      <span>{t("quotes:margin.label")}</span>
+                      <span>
+                        {formatCurrency(totals.margin)} ({totals.marginPercent.toFixed(1)} %)
+                      </span>
+                    </div>
+                    {totals.costIncomplete && (
+                      <p className="text-xs text-gray-400">{t("quotes:margin.partial")}</p>
+                    )}
+                  </div>
                 )}
               </div>
             </div>
@@ -701,7 +773,22 @@ export function QuoteFormPage() {
                 {...register("down_payment_amount")}
                 placeholder={t("quotes:downPayment.amountPlaceholder")}
               />
+              <Input
+                label={t("quotes:discount.percent")}
+                type="number"
+                step="0.1"
+                {...register("discount_percent")}
+                error={errors.discount_percent?.message}
+              />
+              <Input
+                label={t("quotes:discount.amount")}
+                type="number"
+                step="0.01"
+                {...register("discount_amount")}
+                error={errors.discount_amount?.message}
+              />
             </div>
+            <p className="text-sm text-gray-500 mt-2">{t("quotes:discount.hint")}</p>
             <p className="text-sm text-gray-500 mt-2">
               {t("quotes:downPaymentHint")}
             </p>

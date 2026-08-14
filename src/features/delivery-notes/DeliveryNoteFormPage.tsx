@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
+import { useIsNarrow } from "@/hooks/useIsNarrow";
+import { DocumentLinesMobile } from "@/components/documents/DocumentLinesMobile";
 import { useRouter, useParams } from "@/lib/navigation";
 import { useForm, useFieldArray, useWatch, Controller, type Resolver } from "react-hook-form";
 import { toast } from "@/stores/useToastStore";
@@ -192,6 +194,10 @@ export function DeliveryNoteFormPage() {
     ...(clients?.map((c) => ({ value: c.id, label: c.name })) || []),
   ];
 
+  // Below lg the four-column grid stacks into a column per line; the phone
+  // editor replaces it rather than sitting beside it.
+  const isNarrow = useIsNarrow();
+
   const productOptions = [
     { value: "", label: t("delivery:selectProduct") },
     ...(products?.filter((p) => p.is_service || (p.quantity ?? 0) > 0).map((p) => ({ value: p.id, label: `${p.designation}${p.reference ? ` [${p.reference}]` : ""}${p.barcode ? ` - ${p.barcode}` : ""}${!p.is_service ? ` (${p.quantity ?? 0})` : ""}` })) || []),
@@ -297,6 +303,28 @@ export function DeliveryNoteFormPage() {
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
+            {isNarrow ? (
+              <DocumentLinesMobile
+                ns="delivery"
+                fields={fields}
+                lines={watchedLines}
+                register={register}
+                errors={errors}
+                productOptions={productOptions}
+                onSelectProduct={(index, productId) => {
+                  setValue(`lines.${index}.product_id`, productId || null);
+                  if (productId) handleProductSelect(index, productId);
+                }}
+                onAdd={() =>
+                  append({ description: "", quantity: 1, unit: "unit", product_id: null })
+                }
+                onRemove={remove}
+                stockError={getStockError}
+                // A delivery note states what left the shelf, not what it costs.
+                withPricing={false}
+              />
+            ) : (
+              <>
             {fields.map((field, index) => (
               <div key={field.id} className="p-4 border rounded-lg bg-(--color-bg-secondary) space-y-4">
                 <div className="flex items-center justify-between">
@@ -352,6 +380,8 @@ export function DeliveryNoteFormPage() {
             ))}
             {errors.lines?.message && (
               <p className="text-sm text-red-500">{errors.lines.message}</p>
+            )}
+              </>
             )}
           </CardContent>
         </Card>

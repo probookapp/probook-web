@@ -5,6 +5,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createDeliveryNoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { parseStatusFilter, DELIVERY_NOTE_STATUSES } from "@/lib/document-status";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
 
 function isUniqueViolation(err: unknown): boolean {
@@ -24,6 +25,13 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "delivery_notes", "view");
   if (denied) return denied;
 
+  // Filtering by state is a server-side where clause: filtering in the
+  // browser would only ever filter the pages already loaded.
+  const statusFilter = parseStatusFilter(
+    new URL(req.url).searchParams.get("status"),
+    DELIVERY_NOTE_STATUSES
+  );
+
   // Opt-in cursor pagination (audit SALE-23): lean rows — scalars + client
   // name, no line arrays.
   const page = parseListPagination(req);
@@ -35,7 +43,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
         }))?.id ?? null
       : null;
     const data = await prisma.deliveryNote.findMany({
-      where: { tenantId },
+      where: { tenantId, ...statusFilter },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: page.limit,
       ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
@@ -47,7 +55,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   }
 
   const notes = await prisma.deliveryNote.findMany({
-    where: { tenantId },
+    where: { tenantId, ...statusFilter },
     orderBy: { createdAt: "desc" },
     include: { lines: { orderBy: { position: "asc" } }, client: true },
   });

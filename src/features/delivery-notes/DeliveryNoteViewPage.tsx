@@ -266,7 +266,7 @@ export function DeliveryNoteViewPage() {
                 {deliveryNote.delivery_address}
               </p>
             ) : (
-              <p className="text-sm text-(--color-text-muted)">{t("delivery:clientAddress")}</p>
+              <p className="text-sm text-(--color-text-tertiary)">{t("delivery:clientAddress")}</p>
             )}
           </CardContent>
         </Card>
@@ -279,7 +279,7 @@ export function DeliveryNoteViewPage() {
         </CardHeader>
         <CardContent className="p-0">
           {/* Mobile line items */}
-          <div className="md:hidden divide-y divide-(--color-border)">
+          <div className="md:hidden divide-y divide-(--color-border-primary)">
             {deliveryNote.lines.map((line) => (
               <div key={line.id} className="px-4 py-3">
                 <p className="text-sm font-medium">{line.description}</p>
@@ -293,7 +293,7 @@ export function DeliveryNoteViewPage() {
           {/* Desktop line items table */}
           <div className="hidden md:block overflow-x-auto">
           <table className="w-full min-w-80">
-            <thead className="bg-(--color-bg-secondary) border-b border-(--color-border)">
+            <thead className="bg-(--color-bg-secondary) border-b border-(--color-border-primary)">
               <tr>
                 <th className="text-left py-2 px-3 text-sm font-medium text-(--color-text-secondary)">
                   {t("delivery:lines.description")}

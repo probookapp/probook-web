@@ -40,6 +40,9 @@ import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
+import { StatusFilterChips, statusQuery } from "@/components/shared/StatusFilterChips";
+import { ALL_STATUSES, DELIVERY_NOTE_STATUSES } from "@/lib/document-status";
+import { useStatusFilter } from "@/hooks/useStatusFilter";
 import { useSelection } from "@/hooks/useSelection";
 import type { DeliveryNoteListItem, DeliveryNoteStatus } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -56,6 +59,7 @@ export function DeliveryNotesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useStatusFilter(DELIVERY_NOTE_STATUSES);
 
   const statusConfig: Record<
     DeliveryNoteStatus,
@@ -72,7 +76,7 @@ export function DeliveryNotesPage() {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = useInfiniteDeliveryNotes();
+  } = useInfiniteDeliveryNotes(statusQuery(statusFilter));
   const deliveryNotes = useMemo(
     () => deliveryNotePages?.pages.flatMap((page) => page.data),
     [deliveryNotePages]
@@ -93,7 +97,15 @@ export function DeliveryNotesPage() {
   const selection = useSelection(filteredDeliveryNotes);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { selection.clear(); }, [searchQuery]);
+  useEffect(() => { selection.clear(); }, [searchQuery, statusFilter]);
+
+  const statusOptions = [
+    { key: ALL_STATUSES, label: t("common:filters.all") },
+    ...DELIVERY_NOTE_STATUSES.map((s) => ({
+      key: s,
+      label: t(`common:status.${s.toLowerCase()}`),
+    })),
+  ];
 
   const canCreateInvoiceFromSelection = useMemo(() => {
     if (selection.selectedCount === 0) return false;
@@ -180,6 +192,12 @@ export function DeliveryNotesPage() {
               />
             </div>
           </div>
+          <StatusFilterChips
+            options={statusOptions}
+            value={statusFilter}
+            onChange={setStatusFilter}
+            label={t("common:filters.filterByStatus")}
+          />
         </CardHeader>
         <CardContent className="p-0">
           {/* Mobile card view */}
