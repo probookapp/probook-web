@@ -115,7 +115,10 @@ export const styles = StyleSheet.create({
     marginTop: 20,
   },
   totalsBox: {
-    width: 200,
+    // 230, not 200: Arabic says "المجموع (شامل الضريبة)" where French says
+    // "Total TTC", and a box sized to the shorter language pushes the longer
+    // one straight through the figure beside it.
+    width: 230,
   },
   totalRow: {
     flexDirection: "row",
@@ -127,7 +130,7 @@ export const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 10,
     color: "#4a4640",
-    flexShrink: 1,
+    flex: 1,
     paddingRight: 8,
   },
   totalValue: {
@@ -147,7 +150,7 @@ export const styles = StyleSheet.create({
   totalLabelFinal: {
     fontSize: 12,
     fontWeight: "bold",
-    flexShrink: 1,
+    flex: 1,
     paddingRight: 8,
   },
   totalValueFinal: {
