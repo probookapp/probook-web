@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync } from "fs";
 import { join } from "path";
-import { pdfSafe, pdfCurrency } from "@/features/pdf/text";
+import { pdfSafe, pdfCurrency, DOCUMENT_LOCALES } from "@/features/pdf/text";
 
 /**
  * PDFs are set in Helvetica, whose WinAnsi encoding stops at 0xFF — and pdfkit
@@ -55,5 +55,32 @@ describe("PDF text", () => {
       if (/\bformatCurrency\s*\(/.test(source)) offenders.push(file);
     }
     expect(offenders, "PDF components must use pdfCurrency, not formatCurrency").toEqual([]);
+  });
+  it("only offers document languages Helvetica can actually print", () => {
+    // The slash in "42/000,00" was the small version of this. The large one is
+    // an Arabic invoice: every label truncated to its low byte, so "الوصف"
+    // printed as "A5HD'". Amounts were guarded; the labels were not, and the
+    // labels are most of the document.
+    //
+    // A language belongs in DOCUMENT_LOCALES only once its bundle is printable
+    // — which today means an embedded font, not one of the base fourteen.
+    for (const locale of DOCUMENT_LOCALES) {
+      const bundle = JSON.parse(
+        readFileSync(join(__dirname, "..", "..", "i18n", "locales", locale, "pdf.json"), "utf8")
+      );
+      const bad: string[] = [];
+      const walk = (node: unknown, path: string) => {
+        if (typeof node === "string") {
+          const out = unencodable(node);
+          if (out.length) bad.push(`${path}: ${JSON.stringify(node)}`);
+          return;
+        }
+        if (node && typeof node === "object") {
+          for (const [k, v] of Object.entries(node)) walk(v, path ? `${path}.${k}` : k);
+        }
+      };
+      walk(bundle, "");
+      expect(bad, `${locale}/pdf.json carries text Helvetica cannot encode`).toEqual([]);
+    }
   });
 });

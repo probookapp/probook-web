@@ -9,30 +9,33 @@ import { styles } from "./styles";
 import { numberToFrenchWords, CURRENCY_WORDS } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 import { renderHtmlToPdf } from "./htmlToPdf";
-import i18n from "@/i18n";
 import { renderIdentifiers, identifierSummary } from "./identifiers";
 import type { Quote, CompanySettings } from "@/types";
-import { pdfCurrency } from "./text";
+import { pdfCurrency, documentLocale } from "./text";
+import { pdfString } from "./strings";
 
-// Helper to get PDF translations
-const t = (key: string) => i18n.t(`pdf:${key}`);
 
 interface QuotePDFProps {
+  /** Interface language; the document falls back to a printable one. */
+  locale?: string;
   quote: Quote;
   company: CompanySettings;
   logoBase64?: string | null;
 }
 
 
-const formatDate = (date: string): string => {
-  return new Intl.DateTimeFormat(i18n.language, {
+const formatDate = (date: string, locale: string): string => {
+  return new Intl.DateTimeFormat(documentLocale(locale), {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   }).format(new Date(date));
 };
 
-export function QuotePDF({ quote, company, logoBase64 }: QuotePDFProps) {
+export function QuotePDF({ quote, company, logoBase64, locale = "fr" }: QuotePDFProps) {
+  // Words resolved here, not at module scope: the server has no
+  // react-i18next to import (see strings.ts).
+  const t = (key: string) => pdfString(key, locale);
   const getStatusStyle = () => {
     switch (quote.status) {
       case "ACCEPTED":
@@ -111,10 +114,10 @@ export function QuotePDF({ quote, company, logoBase64 }: QuotePDFProps) {
             <Text style={styles.infoValue}>{quote.quote_number}</Text>
 
             <Text style={styles.infoLabel}>{t("quote.issueDate")}</Text>
-            <Text style={styles.infoValue}>{formatDate(quote.issue_date)}</Text>
+            <Text style={styles.infoValue}>{formatDate(quote.issue_date, locale)}</Text>
 
             <Text style={styles.infoLabel}>{t("quote.validityDate")}</Text>
-            <Text style={styles.infoValue}>{formatDate(quote.validity_date)}</Text>
+            <Text style={styles.infoValue}>{formatDate(quote.validity_date, locale)}</Text>
           </View>
 
           <View style={[styles.infoBlock, styles.clientBox]}>
@@ -192,9 +195,9 @@ export function QuotePDF({ quote, company, logoBase64 }: QuotePDFProps) {
                       {richTextContent || <Text>{line.description}</Text>}
                     </View>
                     <Text style={styles.colQuantity}>{line.quantity}</Text>
-                    <Text style={styles.colUnitPrice}>{pdfCurrency(line.unit_price)}</Text>
+                    <Text style={styles.colUnitPrice}>{pdfCurrency(line.unit_price, locale)}</Text>
                     <Text style={styles.colVat}>{line.tax_rate}%</Text>
-                    <Text style={styles.colTotal}>{pdfCurrency(line.total)}</Text>
+                    <Text style={styles.colTotal}>{pdfCurrency(line.total, locale)}</Text>
                   </View>
                 );
                 rowIndex++;
@@ -206,7 +209,7 @@ export function QuotePDF({ quote, company, logoBase64 }: QuotePDFProps) {
               elements.push(
                 <View key={`subtotal-${groupName}`} style={{ backgroundColor: "#f2f0ed", padding: 6, flexDirection: "row", justifyContent: "flex-end" }}>
                   <Text style={{ fontSize: 8, fontWeight: "bold", color: "#635e56", marginRight: 10 }}>
-                    {i18n.t("pdf:quote.groupSubtotal", { group: groupName })}: {pdfCurrency(groupTotalHt)} {i18n.t("pdf:common.labelHt")} / {pdfCurrency(groupTotalTtc)} {i18n.t("pdf:common.labelTtc")}
+                    {pdfString("quote.groupSubtotal", locale, { group: groupName })}: {pdfCurrency(groupTotalHt, locale)} {t("common.labelHt")} / {pdfCurrency(groupTotalTtc, locale)} {t("common.labelTtc")}
                   </Text>
                 </View>
               );
@@ -225,9 +228,9 @@ export function QuotePDF({ quote, company, logoBase64 }: QuotePDFProps) {
                     {richTextContent || <Text>{line.description}</Text>}
                   </View>
                   <Text style={styles.colQuantity}>{line.quantity}</Text>
-                  <Text style={styles.colUnitPrice}>{pdfCurrency(line.unit_price)}</Text>
+                  <Text style={styles.colUnitPrice}>{pdfCurrency(line.unit_price, locale)}</Text>
                   <Text style={styles.colVat}>{line.tax_rate}%</Text>
-                  <Text style={styles.colTotal}>{pdfCurrency(line.total)}</Text>
+                  <Text style={styles.colTotal}>{pdfCurrency(line.total, locale)}</Text>
                 </View>
               );
               rowIndex++;
@@ -246,27 +249,27 @@ export function QuotePDF({ quote, company, logoBase64 }: QuotePDFProps) {
               <>
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>{t("quote.totals.linesSubtotal")}</Text>
-                  <Text style={styles.totalValue}>{pdfCurrency(linesSubtotal)}</Text>
+                  <Text style={styles.totalValue}>{pdfCurrency(linesSubtotal, locale)}</Text>
                 </View>
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>
                     {t("quote.totals.discount")}
                     {quote.discount_percent > 0 ? ` (${quote.discount_percent}%)` : ""}
                   </Text>
-                  <Text style={styles.totalValue}>-{pdfCurrency(documentDiscount)}</Text>
+                  <Text style={styles.totalValue}>-{pdfCurrency(documentDiscount, locale)}</Text>
                 </View>
               </>
             )}
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>{t("quote.totals.subtotalHt")}</Text>
               <Text style={styles.totalValue}>
-                {pdfCurrency(quote.subtotal)}
+                {pdfCurrency(quote.subtotal, locale)}
               </Text>
             </View>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>{t("quote.totals.vatProducts")}</Text>
               <Text style={styles.totalValue}>
-                {pdfCurrency(quote.tax_amount)}
+                {pdfCurrency(quote.tax_amount, locale)}
               </Text>
             </View>
             {quote.shipping_cost > 0 && (
@@ -274,7 +277,7 @@ export function QuotePDF({ quote, company, logoBase64 }: QuotePDFProps) {
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>{t("quote.totals.shippingHt")}</Text>
                   <Text style={styles.totalValue}>
-                    {pdfCurrency(quote.shipping_cost)}
+                    {pdfCurrency(quote.shipping_cost, locale)}
                   </Text>
                 </View>
                 <View style={styles.totalRow}>
@@ -311,13 +314,13 @@ export function QuotePDF({ quote, company, logoBase64 }: QuotePDFProps) {
                       {t("quote.totals.downPayment")} {quote.down_payment_percent > 0 && quote.down_payment_amount === 0 ? `(${quote.down_payment_percent}%)` : ''}
                     </Text>
                     <Text style={[styles.totalValue, { color: "#1c5f68" }]}>
-                      {pdfCurrency(downPaymentValue)}
+                      {pdfCurrency(downPaymentValue, locale)}
                     </Text>
                   </View>
                   <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>{t("quote.totals.remaining")}</Text>
                     <Text style={styles.totalValue}>
-                      {pdfCurrency(totalWithShipping - downPaymentValue)}
+                      {pdfCurrency(totalWithShipping - downPaymentValue, locale)}
                     </Text>
                   </View>
                 </>
@@ -353,7 +356,7 @@ export function QuotePDF({ quote, company, logoBase64 }: QuotePDFProps) {
         {/* Validity Notice */}
         <View style={[styles.notes, { backgroundColor: "#d3e9e9", marginTop: 15 }]}>
           <Text style={[styles.notesText, { color: "#174c55" }]}>
-            {i18n.t("pdf:quote.validityNotice", { date: formatDate(quote.validity_date) })}
+            {pdfString("quote.validityNotice", locale, { date: formatDate(quote.validity_date, locale) })}
           </Text>
         </View>
 

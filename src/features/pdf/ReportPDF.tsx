@@ -1,6 +1,6 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
 import i18n from "@/i18n";
-import { pdfSafe } from "./text";
+import { pdfSafe, documentLocale } from "./text";
 
 export interface ReportPDFColumn {
   header: string;
@@ -67,7 +67,7 @@ const s = StyleSheet.create({
 });
 
 export function ReportPDF({ title, subtitle, columns, rows, totals }: ReportPDFProps) {
-  const generatedAt = new Intl.DateTimeFormat(i18n.language, {
+  const generatedAt = new Intl.DateTimeFormat(documentLocale(i18n.language), {
     dateStyle: "long",
     timeStyle: "short",
   }).format(new Date());

@@ -9,6 +9,7 @@ import { QuotePDF } from "./QuotePDF";
 import { DeliveryNotePDF } from "./DeliveryNotePDF";
 import { useLogoBase64 } from "@/features/settings";
 import type { Invoice, Quote, DeliveryNote, CompanySettings } from "@/types";
+import i18n from "@/i18n";
 
 interface InvoicePDFViewerProps {
   type: "invoice";
@@ -79,11 +80,11 @@ export function PDFViewer(props: PDFViewerProps) {
   // Memoize the PDF document
   const PDFDocument = useMemo(() => {
     if (type === "invoice") {
-      return <InvoicePDF invoice={doc as Invoice} company={company} logoBase64={logoToUse} />;
+      return <InvoicePDF invoice={doc as Invoice} company={company} logoBase64={logoToUse} locale={i18n.language} />;
     } else if (type === "quote") {
-      return <QuotePDF quote={doc as Quote} company={company} logoBase64={logoToUse} />;
+      return <QuotePDF quote={doc as Quote} company={company} logoBase64={logoToUse} locale={i18n.language} />;
     } else {
-      return <DeliveryNotePDF deliveryNote={doc as DeliveryNote} company={company} logoBase64={logoToUse} />;
+      return <DeliveryNotePDF deliveryNote={doc as DeliveryNote} company={company} logoBase64={logoToUse} locale={i18n.language} />;
     }
   }, [type, doc, company, logoToUse]);
 

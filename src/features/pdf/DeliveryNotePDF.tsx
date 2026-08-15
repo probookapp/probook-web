@@ -6,28 +6,32 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { styles } from "./styles";
-import i18n from "@/i18n";
 import { renderIdentifiers, identifierSummary } from "./identifiers";
 import type { DeliveryNote, CompanySettings } from "@/types";
+import { documentLocale } from "./text";
+import { pdfString } from "./strings";
 
-// Helper to get PDF translations
-const t = (key: string) => i18n.t(`pdf:${key}`);
 
 interface DeliveryNotePDFProps {
+  /** Interface language; the document falls back to a printable one. */
+  locale?: string;
   deliveryNote: DeliveryNote;
   company: CompanySettings;
   logoBase64?: string | null;
 }
 
-const formatDate = (date: string): string => {
-  return new Intl.DateTimeFormat(i18n.language, {
+const formatDate = (date: string, locale: string): string => {
+  return new Intl.DateTimeFormat(documentLocale(locale), {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   }).format(new Date(date));
 };
 
-export function DeliveryNotePDF({ deliveryNote, company, logoBase64 }: DeliveryNotePDFProps) {
+export function DeliveryNotePDF({ deliveryNote, company, logoBase64, locale = "fr" }: DeliveryNotePDFProps) {
+  // Words resolved here, not at module scope: the server has no
+  // react-i18next to import (see strings.ts).
+  const t = (key: string) => pdfString(key, locale);
   const getStatusStyle = () => {
     switch (deliveryNote.status) {
       case "DELIVERED":
@@ -95,12 +99,12 @@ export function DeliveryNotePDF({ deliveryNote, company, logoBase64 }: DeliveryN
             <Text style={styles.infoValue}>{deliveryNote.delivery_note_number}</Text>
 
             <Text style={styles.infoLabel}>{t("deliveryNote.issueDate")}</Text>
-            <Text style={styles.infoValue}>{formatDate(deliveryNote.issue_date)}</Text>
+            <Text style={styles.infoValue}>{formatDate(deliveryNote.issue_date, locale)}</Text>
 
             {deliveryNote.delivery_date && (
               <>
                 <Text style={styles.infoLabel}>{t("deliveryNote.deliveryDate")}</Text>
-                <Text style={styles.infoValue}>{formatDate(deliveryNote.delivery_date)}</Text>
+                <Text style={styles.infoValue}>{formatDate(deliveryNote.delivery_date, locale)}</Text>
               </>
             )}
           </View>
