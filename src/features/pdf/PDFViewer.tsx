@@ -10,7 +10,8 @@ import { DeliveryNotePDF } from "./DeliveryNotePDF";
 import { useLogoBase64 } from "@/features/settings";
 import type { Invoice, Quote, DeliveryNote, CompanySettings } from "@/types";
 import i18n from "@/i18n";
-import { documentLocale } from "./text";
+import { documentLocale, SERVER_DOCUMENT_LOCALES } from "./text";
+import { registerClientFonts } from "./register-client-fonts";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 
 interface InvoicePDFViewerProps {
@@ -80,15 +81,22 @@ export function PDFViewer(props: PDFViewerProps) {
   }, [type, doc, currentLogo, props]);
 
   // Memoize the PDF document
+  // Registered before the first document is built; a missing face makes the
+  // render hang rather than fail.
+  registerClientFonts();
+
   const PDFDocument = useMemo(() => {
     if (type === "invoice") {
-      return <InvoicePDF invoice={doc as Invoice} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language)}
+      return <InvoicePDF invoice={doc as Invoice} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES)}
+          fontFamily={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES) === "ar" ? "IBM Plex Sans Arabic" : "IBM Plex Sans"}
           currency={useSettingsStore.getState().currency || "DZD"} />;
     } else if (type === "quote") {
-      return <QuotePDF quote={doc as Quote} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language)}
+      return <QuotePDF quote={doc as Quote} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES)}
+          fontFamily={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES) === "ar" ? "IBM Plex Sans Arabic" : "IBM Plex Sans"}
           currency={useSettingsStore.getState().currency || "DZD"} />;
     } else {
-      return <DeliveryNotePDF deliveryNote={doc as DeliveryNote} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language)} />;
+      return <DeliveryNotePDF deliveryNote={doc as DeliveryNote} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES)}
+          fontFamily={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES) === "ar" ? "IBM Plex Sans Arabic" : "IBM Plex Sans"} />;
     }
   }, [type, doc, company, logoToUse]);
 

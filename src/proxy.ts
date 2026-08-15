@@ -74,7 +74,7 @@ function generateNonce(): string {
 function buildCsp(nonce: string): string {
   const scriptSrc =
     process.env.NODE_ENV === "production"
-      ? `'self' 'nonce-${nonce}' 'strict-dynamic' https://connect.facebook.net`
+      ? `'self' 'nonce-${nonce}' 'strict-dynamic' 'wasm-unsafe-eval' https://connect.facebook.net`
       : "'self' 'unsafe-inline' 'unsafe-eval' https://connect.facebook.net";
   return [
     "default-src 'self'",
@@ -82,7 +82,7 @@ function buildCsp(nonce: string): string {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    "connect-src 'self' https://*.supabase.co https://*.sentry.io https://*.ingest.de.sentry.io https://connect.facebook.net https://www.facebook.com",
+    "connect-src 'self' data: https://*.supabase.co https://*.sentry.io https://*.ingest.de.sentry.io https://connect.facebook.net https://www.facebook.com",
     "worker-src 'self' blob:",
     "frame-src 'self' https://www.facebook.com",
     "frame-ancestors 'none'",

@@ -55,39 +55,32 @@ export function pdfCurrency(
 /**
  * Languages a document may be printed in.
  *
- * Arabic is missing on purpose. Helvetica has no Arabic glyphs, and pdfkit
- * prints a truncated byte rather than refusing: an Arabic invoice came out with
- * every label replaced by Latin nonsense — "الوصف" as "A5HD'". Adding "ar" here
- * without an embedded Arabic face puts an unreadable document in a client's
- * hands, so the barrier in pdf-text.test.ts checks each entry can actually be
- * encoded.
+ * All three, now that the faces are embedded rather than borrowed from the
+ * reader. Before that, Arabic was impossible: Helvetica — one of the fourteen
+ * every PDF reader carries — has no Arabic glyphs, and pdfkit prints a
+ * truncated byte instead of refusing, so an invoice came out reading "A5HD'"
+ * where "الوصف" belonged.
+ *
+ * Adding a language here means adding its face to public/fonts and registering
+ * it on both sides; the barrier in pdf-text.test.ts checks the files exist,
+ * because a face registered without its files does not fall back — the render
+ * simply never finishes.
  */
-export const DOCUMENT_LOCALES = ["fr", "en"] as const;
+export const DOCUMENT_LOCALES = ["fr", "en", "ar"] as const;
 export type DocumentLocale = (typeof DOCUMENT_LOCALES)[number];
 
 /**
- * The language a document prints in, given the language of the interface.
- *
- * An Arabic interface prints French documents. In Algeria that is the ordinary
- * case rather than a compromise: invoices are commonly issued in French, which
- * is the language of commerce and of the tax administration. The alternative,
- * today, is an unreadable invoice.
+ * Kept as an alias while both hosts exist. The browser renders what the
+ * interface shows; the route under app/api renders documents the server
+ * originates. Same components, same faces — one definition, two hosts.
  */
+export const SERVER_DOCUMENT_LOCALES = DOCUMENT_LOCALES;
+export type AnyDocumentLocale = DocumentLocale;
+
 export function documentLocale(
   uiLanguage: string,
   allowed: readonly string[] = DOCUMENT_LOCALES
-): AnyDocumentLocale {
+): DocumentLocale {
   const lang = (uiLanguage || "fr").split("-")[0];
-  return allowed.includes(lang) ? (lang as AnyDocumentLocale) : "fr";
+  return allowed.includes(lang) ? (lang as DocumentLocale) : "fr";
 }
-
-/**
- * What the **server** can print, which is more than the browser can.
- *
- * Arabic belongs here and not in DOCUMENT_LOCALES: rendering it needs an
- * embedded face, and only Node can embed one (see render-server.ts). Were it in
- * the browser list, the in-app preview would go straight back to printing
- * "A5HD'" where "الوصف" belongs.
- */
-export const SERVER_DOCUMENT_LOCALES = ["fr", "en", "ar"] as const;
-export type AnyDocumentLocale = (typeof SERVER_DOCUMENT_LOCALES)[number];
