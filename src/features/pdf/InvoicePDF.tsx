@@ -20,9 +20,9 @@ interface InvoicePDFProps {
   /** The tenant's currency; passed in so no store import is needed. */
   currency?: string;
   /**
-   * Typeface for this render. Only a server render can supply one other than
-   * the base fourteen — the browser cannot embed a face here (see
-   * render-server.ts) — so the default keeps the preview working.
+   * Typeface for this render. Left unset, the document falls back to
+   * Helvetica, which has no Arabic glyphs — the viewer always passes one
+   * (see register-client-fonts.ts).
    */
   fontFamily?: string;
   invoice: Invoice;

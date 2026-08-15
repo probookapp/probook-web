@@ -17,7 +17,7 @@ import { pdfString } from "./strings";
 interface QuotePDFProps {
   /** Already-resolved document language (see text.ts), not the interface's. */
   locale?: string;
-  /** Only a server render can supply a face beyond the base fourteen. */
+  /** Left unset, the document falls back to Helvetica (no Arabic glyphs). */
   fontFamily?: string;
   /** The tenant's currency; passed in so no store import is needed. */
   currency?: string;
