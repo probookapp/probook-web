@@ -127,10 +127,13 @@ export const styles = StyleSheet.create({
   totalLabel: {
     fontSize: 10,
     color: "#4a4640",
+    flexShrink: 1,
+    paddingRight: 8,
   },
   totalValue: {
     fontSize: 10,
     fontWeight: "bold",
+    flexShrink: 0,
   },
   totalRowFinal: {
     flexDirection: "row",
@@ -144,10 +147,13 @@ export const styles = StyleSheet.create({
   totalLabelFinal: {
     fontSize: 12,
     fontWeight: "bold",
+    flexShrink: 1,
+    paddingRight: 8,
   },
   totalValueFinal: {
     fontSize: 12,
     fontWeight: "bold",
+    flexShrink: 0,
   },
   notes: {
     marginTop: 30,

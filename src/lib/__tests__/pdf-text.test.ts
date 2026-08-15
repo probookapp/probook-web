@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync, readdirSync } from "fs";
+import { readFileSync, readdirSync, existsSync } from "fs";
 import { join } from "path";
-import { pdfSafe, pdfCurrency, DOCUMENT_LOCALES } from "@/features/pdf/text";
+import {
+  pdfSafe,
+  pdfCurrency,
+  DOCUMENT_LOCALES,
+  SERVER_DOCUMENT_LOCALES,
+} from "@/features/pdf/text";
 
 /**
  * PDFs are set in Helvetica, whose WinAnsi encoding stops at 0xFF — and pdfkit
@@ -82,5 +87,22 @@ describe("PDF text", () => {
       walk(bundle, "");
       expect(bad, `${locale}/pdf.json carries text Helvetica cannot encode`).toEqual([]);
     }
+  });
+  it("only prints a language the server has a face for", () => {
+    // The other half of the rule. A locale the browser cannot print may still
+    // be offered by the server route — but only if the face it needs is
+    // actually on disk. Registered without its files, react-pdf does not fall
+    // back: it throws, and the document is never produced.
+    const FACES: Record<string, string[]> = {
+      ar: ["plex-arabic-400.ttf", "plex-arabic-600.ttf"],
+    };
+    const missing: string[] = [];
+    for (const locale of SERVER_DOCUMENT_LOCALES) {
+      for (const file of FACES[locale] ?? []) {
+        const face = join(__dirname, "..", "..", "..", "public", "fonts", file);
+        if (!existsSync(face)) missing.push(`${locale}: ${file}`);
+      }
+    }
+    expect(missing, "server document locales missing their embedded face").toEqual([]);
   });
 });

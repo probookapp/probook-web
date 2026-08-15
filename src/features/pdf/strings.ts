@@ -1,6 +1,10 @@
 import fr from "@/i18n/locales/fr/pdf.json";
 import en from "@/i18n/locales/en/pdf.json";
-import { documentLocale, type DocumentLocale } from "./text";
+import ar from "@/i18n/locales/ar/pdf.json";
+import frCommon from "@/i18n/locales/fr/common.json";
+import enCommon from "@/i18n/locales/en/common.json";
+import arCommon from "@/i18n/locales/ar/common.json";
+
 
 /**
  * The words printed on a document, read straight from the bundles.
@@ -15,14 +19,26 @@ import { documentLocale, type DocumentLocale } from "./text";
  * is the same list the barrier guards: Helvetica has no Arabic glyphs, and
  * pdfkit prints a truncated byte instead of refusing.
  */
-const BUNDLES: Record<DocumentLocale, unknown> = { fr, en };
+// Arabic is loaded too: the server route can print it, even though the
+// browser preview cannot (see SERVER_DOCUMENT_LOCALES).
+const BUNDLES: Record<string, unknown> = { fr, en, ar };
 
+/** The shared namespace, for the few document labels that live there. */
+const COMMON: Record<string, unknown> = { fr: frCommon, en: enCommon, ar: arCommon };
+
+/**
+ * `locale` is an already-resolved document language, never an interface one.
+ *
+ * Resolving it here would have to pick a set — what the browser can print, or
+ * what the server can — and picking the wrong one is how an Arabic preview
+ * would go back to printing nonsense. The caller knows which side it is on.
+ */
 export function pdfString(
   key: string,
   locale: string,
   values?: Record<string, string | number>
 ): string {
-  const lang = documentLocale(locale);
+  const lang = locale in BUNDLES ? locale : "fr";
   let node: unknown = BUNDLES[lang];
   for (const part of key.split(".")) {
     if (typeof node !== "object" || node === null) return key;
@@ -34,4 +50,15 @@ export function pdfString(
   return node.replace(/\{\{(\w+)\}\}/g, (whole, name: string) =>
     name in values ? String(values[name]) : whole
   );
+}
+
+/** A `common:` key, same rules as pdfString. */
+export function commonString(key: string, locale: string): string {
+  const lang = locale in COMMON ? locale : "fr";
+  let node: unknown = COMMON[lang];
+  for (const part of key.split(".")) {
+    if (typeof node !== "object" || node === null) return key;
+    node = (node as Record<string, unknown>)[part];
+  }
+  return typeof node === "string" ? node : key;
 }

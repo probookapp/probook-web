@@ -10,6 +10,8 @@ import { DeliveryNotePDF } from "./DeliveryNotePDF";
 import { useLogoBase64 } from "@/features/settings";
 import type { Invoice, Quote, DeliveryNote, CompanySettings } from "@/types";
 import i18n from "@/i18n";
+import { documentLocale } from "./text";
+import { useSettingsStore } from "@/stores/useSettingsStore";
 
 interface InvoicePDFViewerProps {
   type: "invoice";
@@ -80,11 +82,13 @@ export function PDFViewer(props: PDFViewerProps) {
   // Memoize the PDF document
   const PDFDocument = useMemo(() => {
     if (type === "invoice") {
-      return <InvoicePDF invoice={doc as Invoice} company={company} logoBase64={logoToUse} locale={i18n.language} />;
+      return <InvoicePDF invoice={doc as Invoice} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language)}
+          currency={useSettingsStore.getState().currency || "DZD"} />;
     } else if (type === "quote") {
-      return <QuotePDF quote={doc as Quote} company={company} logoBase64={logoToUse} locale={i18n.language} />;
+      return <QuotePDF quote={doc as Quote} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language)}
+          currency={useSettingsStore.getState().currency || "DZD"} />;
     } else {
-      return <DeliveryNotePDF deliveryNote={doc as DeliveryNote} company={company} logoBase64={logoToUse} locale={i18n.language} />;
+      return <DeliveryNotePDF deliveryNote={doc as DeliveryNote} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language)} />;
     }
   }, [type, doc, company, logoToUse]);
 

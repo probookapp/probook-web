@@ -1,4 +1,3 @@
-import { useSettingsStore } from "@/stores/useSettingsStore";
 
 /**
  * Text on its way into a PDF.
@@ -39,11 +38,15 @@ export function pdfSafe(text: string): string {
  */
 export function pdfCurrency(
   amount: number | null | undefined,
-  uiLanguage = "fr"
+  documentLanguage = "fr",
+  currency = "DZD"
 ): string {
   const safe = typeof amount === "number" && !Number.isNaN(amount) ? amount : 0;
-  const currency = useSettingsStore.getState().currency || "DZD";
-  const locale = documentLocale(uiLanguage) === "en" ? "en-US" : "fr-FR";
+  // Passed in, not read from the settings store: that store imports the client
+  // i18n instance, and anything importing it cannot be rendered on the server.
+  // It also means a server render uses the tenant's currency rather than a
+  // default that happens to be right most of the time.
+  const locale = documentLanguage === "en" ? "en-US" : "fr-FR";
   return pdfSafe(
     new Intl.NumberFormat(locale, { style: "currency", currency }).format(safe)
   );
@@ -70,9 +73,21 @@ export type DocumentLocale = (typeof DOCUMENT_LOCALES)[number];
  * is the language of commerce and of the tax administration. The alternative,
  * today, is an unreadable invoice.
  */
-export function documentLocale(uiLanguage: string): DocumentLocale {
+export function documentLocale(
+  uiLanguage: string,
+  allowed: readonly string[] = DOCUMENT_LOCALES
+): AnyDocumentLocale {
   const lang = (uiLanguage || "fr").split("-")[0];
-  return (DOCUMENT_LOCALES as readonly string[]).includes(lang)
-    ? (lang as DocumentLocale)
-    : "fr";
+  return allowed.includes(lang) ? (lang as AnyDocumentLocale) : "fr";
 }
+
+/**
+ * What the **server** can print, which is more than the browser can.
+ *
+ * Arabic belongs here and not in DOCUMENT_LOCALES: rendering it needs an
+ * embedded face, and only Node can embed one (see render-server.ts). Were it in
+ * the browser list, the in-app preview would go straight back to printing
+ * "A5HD'" where "الوصف" belongs.
+ */
+export const SERVER_DOCUMENT_LOCALES = ["fr", "en", "ar"] as const;
+export type AnyDocumentLocale = (typeof SERVER_DOCUMENT_LOCALES)[number];

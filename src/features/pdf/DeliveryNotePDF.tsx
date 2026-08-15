@@ -8,27 +8,34 @@ import {
 import { styles } from "./styles";
 import { renderIdentifiers, identifierSummary } from "./identifiers";
 import type { DeliveryNote, CompanySettings } from "@/types";
-import { documentLocale } from "./text";
 import { pdfString } from "./strings";
 
 
 interface DeliveryNotePDFProps {
-  /** Interface language; the document falls back to a printable one. */
+  /** Already-resolved document language (see text.ts), not the interface's. */
   locale?: string;
+  /** Only a server render can supply a face beyond the base fourteen. */
+  fontFamily?: string;
   deliveryNote: DeliveryNote;
   company: CompanySettings;
   logoBase64?: string | null;
 }
 
 const formatDate = (date: string, locale: string): string => {
-  return new Intl.DateTimeFormat(documentLocale(locale), {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "fr-FR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   }).format(new Date(date));
 };
 
-export function DeliveryNotePDF({ deliveryNote, company, logoBase64, locale = "fr" }: DeliveryNotePDFProps) {
+export function DeliveryNotePDF({
+  deliveryNote,
+  company,
+  logoBase64,
+  locale = "fr",
+  fontFamily,
+}: DeliveryNotePDFProps) {
   // Words resolved here, not at module scope: the server has no
   // react-i18next to import (see strings.ts).
   const t = (key: string) => pdfString(key, locale);
@@ -49,7 +56,7 @@ export function DeliveryNotePDF({ deliveryNote, company, logoBase64, locale = "f
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" style={fontFamily ? [styles.page, { fontFamily }] : styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 15 }}>

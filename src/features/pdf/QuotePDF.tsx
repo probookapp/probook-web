@@ -6,18 +6,21 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { styles } from "./styles";
-import { numberToFrenchWords, CURRENCY_WORDS } from "@/lib/utils";
-import { useSettingsStore } from "@/stores/useSettingsStore";
+import { numberToFrenchWords, CURRENCY_WORDS } from "@/lib/number-words";
 import { renderHtmlToPdf } from "./htmlToPdf";
 import { renderIdentifiers, identifierSummary } from "./identifiers";
 import type { Quote, CompanySettings } from "@/types";
-import { pdfCurrency, documentLocale } from "./text";
+import { pdfCurrency } from "./text";
 import { pdfString } from "./strings";
 
 
 interface QuotePDFProps {
-  /** Interface language; the document falls back to a printable one. */
+  /** Already-resolved document language (see text.ts), not the interface's. */
   locale?: string;
+  /** Only a server render can supply a face beyond the base fourteen. */
+  fontFamily?: string;
+  /** The tenant's currency; passed in so no store import is needed. */
+  currency?: string;
   quote: Quote;
   company: CompanySettings;
   logoBase64?: string | null;
@@ -25,14 +28,21 @@ interface QuotePDFProps {
 
 
 const formatDate = (date: string, locale: string): string => {
-  return new Intl.DateTimeFormat(documentLocale(locale), {
+  return new Intl.DateTimeFormat(locale === "en" ? "en-US" : "fr-FR", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
   }).format(new Date(date));
 };
 
-export function QuotePDF({ quote, company, logoBase64, locale = "fr" }: QuotePDFProps) {
+export function QuotePDF({
+  quote,
+  company,
+  logoBase64,
+  locale = "fr",
+  currency = "DZD",
+  fontFamily,
+}: QuotePDFProps) {
   // Words resolved here, not at module scope: the server has no
   // react-i18next to import (see strings.ts).
   const t = (key: string) => pdfString(key, locale);
@@ -64,7 +74,7 @@ export function QuotePDF({ quote, company, logoBase64, locale = "fr" }: QuotePDF
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page size="A4" style={fontFamily ? [styles.page, { fontFamily }] : styles.page}>
         {/* Header */}
         <View style={styles.header}>
           <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 15 }}>
@@ -195,9 +205,9 @@ export function QuotePDF({ quote, company, logoBase64, locale = "fr" }: QuotePDF
                       {richTextContent || <Text>{line.description}</Text>}
                     </View>
                     <Text style={styles.colQuantity}>{line.quantity}</Text>
-                    <Text style={styles.colUnitPrice}>{pdfCurrency(line.unit_price, locale)}</Text>
+                    <Text style={styles.colUnitPrice}>{pdfCurrency(line.unit_price, locale, currency)}</Text>
                     <Text style={styles.colVat}>{line.tax_rate}%</Text>
-                    <Text style={styles.colTotal}>{pdfCurrency(line.total, locale)}</Text>
+                    <Text style={styles.colTotal}>{pdfCurrency(line.total, locale, currency)}</Text>
                   </View>
                 );
                 rowIndex++;
@@ -209,7 +219,7 @@ export function QuotePDF({ quote, company, logoBase64, locale = "fr" }: QuotePDF
               elements.push(
                 <View key={`subtotal-${groupName}`} style={{ backgroundColor: "#f2f0ed", padding: 6, flexDirection: "row", justifyContent: "flex-end" }}>
                   <Text style={{ fontSize: 8, fontWeight: "bold", color: "#635e56", marginRight: 10 }}>
-                    {pdfString("quote.groupSubtotal", locale, { group: groupName })}: {pdfCurrency(groupTotalHt, locale)} {t("common.labelHt")} / {pdfCurrency(groupTotalTtc, locale)} {t("common.labelTtc")}
+                    {pdfString("quote.groupSubtotal", locale, { group: groupName })}: {pdfCurrency(groupTotalHt, locale, currency)} {t("common.labelHt")} / {pdfCurrency(groupTotalTtc, locale, currency)} {t("common.labelTtc")}
                   </Text>
                 </View>
               );
@@ -228,9 +238,9 @@ export function QuotePDF({ quote, company, logoBase64, locale = "fr" }: QuotePDF
                     {richTextContent || <Text>{line.description}</Text>}
                   </View>
                   <Text style={styles.colQuantity}>{line.quantity}</Text>
-                  <Text style={styles.colUnitPrice}>{pdfCurrency(line.unit_price, locale)}</Text>
+                  <Text style={styles.colUnitPrice}>{pdfCurrency(line.unit_price, locale, currency)}</Text>
                   <Text style={styles.colVat}>{line.tax_rate}%</Text>
-                  <Text style={styles.colTotal}>{pdfCurrency(line.total, locale)}</Text>
+                  <Text style={styles.colTotal}>{pdfCurrency(line.total, locale, currency)}</Text>
                 </View>
               );
               rowIndex++;
@@ -249,27 +259,27 @@ export function QuotePDF({ quote, company, logoBase64, locale = "fr" }: QuotePDF
               <>
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>{t("quote.totals.linesSubtotal")}</Text>
-                  <Text style={styles.totalValue}>{pdfCurrency(linesSubtotal, locale)}</Text>
+                  <Text style={styles.totalValue}>{pdfCurrency(linesSubtotal, locale, currency)}</Text>
                 </View>
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>
                     {t("quote.totals.discount")}
                     {quote.discount_percent > 0 ? ` (${quote.discount_percent}%)` : ""}
                   </Text>
-                  <Text style={styles.totalValue}>-{pdfCurrency(documentDiscount, locale)}</Text>
+                  <Text style={styles.totalValue}>-{pdfCurrency(documentDiscount, locale, currency)}</Text>
                 </View>
               </>
             )}
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>{t("quote.totals.subtotalHt")}</Text>
               <Text style={styles.totalValue}>
-                {pdfCurrency(quote.subtotal, locale)}
+                {pdfCurrency(quote.subtotal, locale, currency)}
               </Text>
             </View>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>{t("quote.totals.vatProducts")}</Text>
               <Text style={styles.totalValue}>
-                {pdfCurrency(quote.tax_amount, locale)}
+                {pdfCurrency(quote.tax_amount, locale, currency)}
               </Text>
             </View>
             {quote.shipping_cost > 0 && (
@@ -277,7 +287,7 @@ export function QuotePDF({ quote, company, logoBase64, locale = "fr" }: QuotePDF
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>{t("quote.totals.shippingHt")}</Text>
                   <Text style={styles.totalValue}>
-                    {pdfCurrency(quote.shipping_cost, locale)}
+                    {pdfCurrency(quote.shipping_cost, locale, currency)}
                   </Text>
                 </View>
                 <View style={styles.totalRow}>
@@ -314,13 +324,13 @@ export function QuotePDF({ quote, company, logoBase64, locale = "fr" }: QuotePDF
                       {t("quote.totals.downPayment")} {quote.down_payment_percent > 0 && quote.down_payment_amount === 0 ? `(${quote.down_payment_percent}%)` : ''}
                     </Text>
                     <Text style={[styles.totalValue, { color: "#1c5f68" }]}>
-                      {pdfCurrency(downPaymentValue, locale)}
+                      {pdfCurrency(downPaymentValue, locale, currency)}
                     </Text>
                   </View>
                   <View style={styles.totalRow}>
                     <Text style={styles.totalLabel}>{t("quote.totals.remaining")}</Text>
                     <Text style={styles.totalValue}>
-                      {pdfCurrency(totalWithShipping - downPaymentValue, locale)}
+                      {pdfCurrency(totalWithShipping - downPaymentValue, locale, currency)}
                     </Text>
                   </View>
                 </>
@@ -329,7 +339,7 @@ export function QuotePDF({ quote, company, logoBase64, locale = "fr" }: QuotePDF
             <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#e5e2dc" }}>
               <Text style={{ fontSize: 8, color: "#837d73", fontStyle: "italic" }}>
                 {t("quote.amountInWords")}: {(() => {
-                  const curr = useSettingsStore.getState().currency || "DZD";
+                  const curr = currency;
                   const words = CURRENCY_WORDS[curr] || { main: curr.toLowerCase(), sub: "centime" };
                   return numberToFrenchWords(
                     quote.total +
