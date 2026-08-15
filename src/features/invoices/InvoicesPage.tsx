@@ -7,7 +7,6 @@ import {
   Pencil,
   Trash2,
   Search,
-  Receipt,
   CheckCircle,
   FileDown,
   Copy,
@@ -236,8 +235,12 @@ export function InvoicesPage() {
               ))
             ) : (
               <div className="py-8 text-center text-gray-500">
-                <Receipt className="h-12 w-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                 {t("invoices:noInvoices")}
+                <div className="mt-3">
+                  <Button size="sm" onClick={() => router.push("/invoices/new")}>
+                    {t("invoices:newInvoice")}
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -382,8 +385,12 @@ export function InvoicesPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-gray-500 py-8">
-                    <Receipt className="h-12 w-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                     {t("invoices:noInvoices")}
+                    <div className="mt-3">
+                      <Button size="sm" onClick={() => router.push("/invoices/new")}>
+                        {t("invoices:newInvoice")}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}

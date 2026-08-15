@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Eye, Trash2, Search, Undo2 } from "lucide-react";
+import { ArrowLeft, Eye, Trash2, Search } from "lucide-react";
 import {
   Button,
   Card,
@@ -159,7 +159,6 @@ export function CreditNotesPage() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="text-center text-gray-500 py-8">
-                      <Undo2 className="h-12 w-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                       {t("invoices:creditNotes.noCreditNotes")}
                     </TableCell>
                   </TableRow>

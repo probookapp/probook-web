@@ -1,7 +1,18 @@
 import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { Plus, Eye, Pencil, Trash2, Search, FileText, ArrowRight, Copy, Download, Archive, ArchiveRestore } from "lucide-react";
+import {
+  Plus,
+  Eye,
+  Pencil,
+  Trash2,
+  Search,
+  ArrowRight,
+  Copy,
+  Download,
+  Archive,
+  ArchiveRestore,
+} from "lucide-react";
 import {
   Button,
   Card,
@@ -210,8 +221,12 @@ export function QuotesPage() {
               ))
             ) : (
               <div className="py-8 text-center text-gray-500">
-                <FileText className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                 {t("quotes:noQuotes")}
+                <div className="mt-3">
+                  <Button size="sm" onClick={() => router.push("/quotes/new")}>
+                    {t("quotes:newQuote")}
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -340,8 +355,12 @@ export function QuotesPage() {
               ) : (
                 <TableRow>
                   <TableCell colSpan={8} className="text-center text-gray-500 py-8">
-                    <FileText className="h-12 w-12 mx-auto mb-2 text-gray-300" />
                     {t("quotes:noQuotes")}
+                    <div className="mt-3">
+                      <Button size="sm" onClick={() => router.push("/quotes/new")}>
+                        {t("quotes:newQuote")}
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               )}

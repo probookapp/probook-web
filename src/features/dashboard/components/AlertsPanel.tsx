@@ -247,7 +247,6 @@ export function AlertsPanel() {
       <CardContent>
         {!hasAlerts ? (
           <div className="flex flex-col items-center justify-center py-8 text-gray-500 dark:text-gray-400">
-            <Bell className="h-12 w-12 text-gray-300 dark:text-gray-600 mb-3" />
             <p className="text-sm">{t("alerts.noAlerts")}</p>
             <p className="text-xs text-gray-400 dark:text-gray-500">{t("alerts.allGood")}</p>
           </div>
