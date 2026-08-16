@@ -61,3 +61,20 @@ export async function adminDelete(page: Page, path: string) {
     return { status: r.status, body: json };
   }, path);
 }
+
+/**
+ * Create a plan the way the product expects one: carrying entitlements.
+ *
+ * An active offer that links no feature is refused (PLAN_HAS_NO_FEATURES),
+ * because in production it means a paying customer who silently receives
+ * nothing. Tests that only need "a plan to bill against" still need one that
+ * contains something, so this fills in every feature unless told otherwise.
+ */
+export async function createTestPlan(page: Page, body: Record<string, unknown>) {
+  if (!("feature_ids" in body)) {
+    const features = await adminGet(page, "/api/admin/features");
+    const ids = (features.body as unknown as { id: string }[]).map((f) => f.id);
+    body = { ...body, feature_ids: ids };
+  }
+  return adminPost(page, "/api/admin/plans", body);
+}

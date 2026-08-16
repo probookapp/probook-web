@@ -1,7 +1,7 @@
 import { type Page, expect } from "@playwright/test";
 import { signUp } from "./helpers";
 import { apiPost } from "./api-helpers";
-import { setupPlatformAdmin, adminPost } from "./admin-helpers";
+import { setupPlatformAdmin, adminPost, adminGet } from "./admin-helpers";
 
 /**
  * Sign up a fresh tenant AND give it an active subscription so the app is no
@@ -60,15 +60,25 @@ export async function seedSubscription(page: Page) {
   // Platform admin session (separate cookie — tenant session still valid).
   await setupPlatformAdmin(page);
 
-  // Create an active plan to subscribe to.
+  // Create an active plan to subscribe to — carrying every entitlement.
+  //
+  // It used to carry none, which made the tenant a paying customer on an offer
+  // that included nothing: once the gate went in, eleven suites failed because
+  // their tenant had genuinely bought a plan with no modules in it. The API now
+  // refuses to create such a plan at all; what the suites want is a customer on
+  // the full offer, so say so.
+  const features = await adminGet(page, "/api/admin/features");
+  const featureIds = (features.body as unknown as { id: string }[]).map((f) => f.id);
+
   const plan = await adminPost(page, "/api/admin/plans", {
     slug: `sub-plan-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     name: "E2E Subscription Plan",
     monthly_price: 100000,
     yearly_price: 1000000,
     currency: "DZD",
+    feature_ids: featureIds,
   });
-  expect(plan.status).toBe(201);
+  expect(plan.status, JSON.stringify(plan.body)).toBe(201);
   const planId = plan.body.id as string;
 
   // Submitting a subscription request now requires a verified email — mark the

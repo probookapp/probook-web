@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 import { Pool } from "pg";
 import { signUp } from "./helpers";
 import { apiGet, apiPost } from "./api-helpers";
-import { setupPlatformAdmin, adminGet, adminPost } from "./admin-helpers";
+import { setupPlatformAdmin, adminGet, adminPost, adminDelete, createTestPlan } from "./admin-helpers";
 
 /**
  * One-off end-to-end verification of the trial + email-verification onboarding
@@ -15,6 +15,23 @@ const DB_URL = process.env.DATABASE_URL || "";
 if (!DB_URL.includes("probook_test")) {
   throw new Error(`Refusing to run: DATABASE_URL is not the test DB (${DB_URL.slice(0, 40)}...)`);
 }
+
+/**
+ * Plans are global, not tenant-scoped, so they outlive the tenants these tests
+ * create. Six runs left six of them active, and the public pricing page — which
+ * quite correctly lists every active plan — offered visitors "Verify Plan" and
+ * "Grant Plan" at 1 000 DZD. It showed up in a recording of the guide.
+ *
+ * Deleting a plan retires it (is_active = false), which is exactly what a
+ * finished test wants.
+ */
+const createdPlans: string[] = [];
+
+test.afterEach(async ({ page }) => {
+  while (createdPlans.length) {
+    await adminDelete(page, `/api/admin/plans/${createdPlans.pop()}`).catch(() => {});
+  }
+});
 const pool = new Pool({ connectionString: DB_URL });
 
 test.afterAll(async () => {
@@ -108,7 +125,7 @@ test("1+2: signup requires email, starts a 10-day trial with real (non-demo) acc
 test("3: subscription request is blocked until email is verified", async ({ page }) => {
   await signUp(page);
   await setupPlatformAdmin(page);
-  const plan = await adminPost(page, "/api/admin/plans", {
+  const plan = await createTestPlan(page, {
     slug: `verify-plan-${Date.now()}`,
     name: "Verify Plan",
     monthly_price: 100000,
@@ -117,6 +134,7 @@ test("3: subscription request is blocked until email is verified", async ({ page
   });
   expect(plan.status).toBe(201);
   const planId = plan.body.id as string;
+  createdPlans.push(planId);
 
   // Unverified email → gate refuses with EMAIL_NOT_VERIFIED.
   const blocked = await apiPost(page, "/api/subscription/request", {
@@ -143,7 +161,7 @@ test("3: subscription request is blocked until email is verified", async ({ page
 test("4: admin grant-trial converts an active subscription into a trial", async ({ page }) => {
   await signUp(page);
   await setupPlatformAdmin(page);
-  const plan = await adminPost(page, "/api/admin/plans", {
+  const plan = await createTestPlan(page, {
     slug: `grant-plan-${Date.now()}`,
     name: "Grant Plan",
     monthly_price: 100000,
@@ -151,6 +169,7 @@ test("4: admin grant-trial converts an active subscription into a trial", async 
     currency: "DZD",
   });
   const planId = plan.body.id as string;
+  createdPlans.push(planId);
   await apiPost(page, "/api/test/verify-email");
   const reqRes = await apiPost(page, "/api/subscription/request", {
     plan_id: planId, billing_cycle: "monthly", request_type: "new", currency: "DZD",
@@ -188,7 +207,7 @@ test("4: admin grant-trial converts an active subscription into a trial", async 
 test("6: a pending request is surfaced during trial; resubmit returns PENDING_REQUEST_EXISTS", async ({ page }) => {
   await signUp(page);
   await setupPlatformAdmin(page);
-  const plan = await adminPost(page, "/api/admin/plans", {
+  const plan = await createTestPlan(page, {
     slug: `p6-plan-${Date.now()}`, name: "P6 Plan",
     monthly_price: 100000, yearly_price: 1000000, currency: "DZD",
   });
@@ -217,7 +236,7 @@ test("6: a pending request is surfaced during trial; resubmit returns PENDING_RE
 test("7: a rejected request is surfaced with its reason after the trial lapses", async ({ page }) => {
   const creds = await signUp(page);
   await setupPlatformAdmin(page);
-  const plan = await adminPost(page, "/api/admin/plans", {
+  const plan = await createTestPlan(page, {
     slug: `p7-plan-${Date.now()}`, name: "P7 Plan",
     monthly_price: 100000, yearly_price: 1000000, currency: "DZD",
   });
@@ -266,7 +285,7 @@ test("8: unverified users see a verify-email banner; /me exposes verification st
 async function seedActive(page: Page, tag: string) {
   await signUp(page);
   await setupPlatformAdmin(page);
-  const plan = await adminPost(page, "/api/admin/plans", {
+  const plan = await createTestPlan(page, {
     slug: `${tag}-plan-${Date.now()}`, name: `${tag} Plan`,
     monthly_price: 100000, yearly_price: 1000000, currency: "DZD",
   });

@@ -1,4 +1,5 @@
 import { request } from "@playwright/test";
+import { tidyGlobalRows } from "./tidy-global-rows";
 
 /**
  * Warm the dev server before the suite starts.
@@ -31,6 +32,10 @@ const ROUTES = [
 
 export default async function globalSetup() {
   if (process.env.CI) return;
+
+  // Before, not after: a run that crashes still gets tidied by the next one,
+  // and the guide always films a landing page free of earlier runs' debris.
+  await tidyGlobalRows();
 
   // Set by every Playwright config, so this cannot drift onto another port.
   const baseURL = process.env.E2E_BASE_URL;

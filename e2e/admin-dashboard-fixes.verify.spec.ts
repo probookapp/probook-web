@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { signUp } from "./helpers";
 import { apiGet } from "./api-helpers";
-import { setupPlatformAdmin, adminGet, adminPost, adminPut } from "./admin-helpers";
+import { setupPlatformAdmin, adminGet, adminPost, adminPut, createTestPlan } from "./admin-helpers";
 
 /**
  * Verification of the admin-dashboard remediation batch: plan archive/restore,
@@ -21,7 +21,7 @@ async function tenantByName(page: Page, name: string) {
 }
 
 async function createPlan(page: Page, tag: string, extra: AnyRecord = {}) {
-  const res = await adminPost(page, "/api/admin/plans", {
+  const res = await createTestPlan(page, {
     slug: `${tag}-${Date.now()}`,
     // Unique per run: the shared test database is full of same-named plans.
     name: `${tag} Plan ${Date.now()}`,
@@ -227,6 +227,15 @@ test("dashboard: attention counters and trial metrics are reported", async ({ pa
 test("GUI: plan editor exposes archive and the feature checklist", async ({ page }) => {
   await signUp(page);
   await setupPlatformAdmin(page);
+  // The plan first, the feature after it.
+  //
+  // A test plan is created carrying every feature that exists at the time — an
+  // active plan with none is refused, since in production that is a paying
+  // customer who receives nothing. Creating the feature first would therefore
+  // have it already ticked, and the click below would untick it: the test would
+  // be asserting that saving *added* what saving had just removed.
+  const plan = await createPlan(page, "ui-plan");
+
   // Unique name: earlier runs leave same-named features in the shared test DB.
   const featureName = `UI Feature ${Date.now()}`;
   const feature = await adminPost(page, "/api/admin/features", {
@@ -234,7 +243,6 @@ test("GUI: plan editor exposes archive and the feature checklist", async ({ page
     name: featureName,
     is_global: false,
   });
-  const plan = await createPlan(page, "ui-plan");
 
   await page.goto("/en/admin/plans");
   await expect(page.getByRole("heading", { name: "Plans" })).toBeVisible({ timeout: 30_000 });
@@ -264,6 +272,11 @@ test("GUI: a failed admin write surfaces as a toast", async ({ page }) => {
   await signUp(page);
   await setupPlatformAdmin(page);
   const plan = await createPlan(page, "dup-slug-plan");
+  const feature = await adminPost(page, "/api/admin/features", {
+    key: `toast_feature_${Date.now()}`,
+    name: `Toast Feature ${Date.now()}`,
+    is_global: false,
+  });
 
   await page.goto("/en/admin/plans");
   await expect(page.getByRole("heading", { name: "Plans" })).toBeVisible({ timeout: 30_000 });
@@ -274,6 +287,12 @@ test("GUI: a failed admin write surfaces as a toast", async ({ page }) => {
   await dialog.locator('input[name="plan-name"]').fill("Duplicate");
   await dialog.locator('input[name="price-monthly-0"]').fill("100");
   await dialog.locator('input[name="price-yearly-0"]').fill("1000");
+
+  // Tick a feature, or the form is refused for being an empty offer before it
+  // ever reaches the duplicate slug — and this test would be checking the wrong
+  // failure. An active plan that includes nothing is a paying customer who
+  // receives nothing, so the server declines it.
+  await dialog.getByRole("button", { name: String(feature.body.name) }).click();
   await dialog.getByRole("button", { name: "Create Plan" }).click();
 
   // Queried by CSS, not by role: Radix marks everything outside an open dialog

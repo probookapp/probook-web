@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { signUp, stubServiceWorker } from "./helpers";
-import { setupPlatformAdmin, adminGet, adminPost } from "./admin-helpers";
+import { setupPlatformAdmin, adminGet, adminPost, createTestPlan } from "./admin-helpers";
 
 /**
  * The last batch of admin work: bulk queue actions, the tenant invoices tab,
@@ -18,7 +18,7 @@ async function tenantByName(page: Page, name: string) {
 }
 
 async function createPlan(page: Page, tag: string) {
-  const res = await adminPost(page, "/api/admin/plans", {
+  const res = await createTestPlan(page, {
     slug: `${tag}-${Date.now()}`,
     name: `${tag} Plan ${Date.now()}`,
     monthly_price: 100000,

@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { signUp } from "./helpers";
 import { apiGet } from "./api-helpers";
-import { setupPlatformAdmin, adminGet, adminPost, adminDelete } from "./admin-helpers";
+import { setupPlatformAdmin, adminGet, adminPost, adminDelete, createTestPlan } from "./admin-helpers";
 
 /**
  * One-off verification of the two new admin controls:
@@ -21,7 +21,7 @@ async function tenantByName(page: Page, name: string) {
 }
 
 async function createPlan(page: Page, tag: string) {
-  const res = await adminPost(page, "/api/admin/plans", {
+  const res = await createTestPlan(page, {
     slug: `${tag}-plan-${Date.now()}`,
     name: `${tag} Plan`,
     monthly_price: 100000,

@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { signUp, stubServiceWorker } from "./helpers";
-import { setupPlatformAdmin, adminGet, adminPost, adminPut, adminDelete } from "./admin-helpers";
+import { setupPlatformAdmin, adminGet, adminPost, adminPut, adminDelete, createTestPlan } from "./admin-helpers";
 
 test.describe("Admin panel", () => {
   test.beforeEach(async ({ page }) => {
@@ -130,7 +130,7 @@ test.describe("Admin: plans", () => {
     await setupPlatformAdmin(page);
 
     // Create
-    const plan = await adminPost(page, "/api/admin/plans", {
+    const plan = await createTestPlan(page, {
       slug: `test-plan-${Date.now()}`,
       name: "Test Plan",
       description: "A test plan",
@@ -170,7 +170,7 @@ test.describe("Admin: plans", () => {
   test("create plan with quotas", async ({ page }) => {
     await setupPlatformAdmin(page);
 
-    const plan = await adminPost(page, "/api/admin/plans", {
+    const plan = await createTestPlan(page, {
       slug: `quota-plan-${Date.now()}`,
       name: "Quota Plan",
       monthly_price: 500,
@@ -410,7 +410,7 @@ test.describe("Admin: analytics & system", () => {
     await setupPlatformAdmin(page);
 
     // Do an action that creates an audit log (create a plan)
-    await adminPost(page, "/api/admin/plans", {
+    await createTestPlan(page, {
       slug: `audit-plan-${Date.now()}`,
       name: "Audit Plan",
       monthly_price: 100,

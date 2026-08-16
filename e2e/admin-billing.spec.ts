@@ -1,7 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { signUp } from "./helpers";
 import { apiPost } from "./api-helpers";
-import { setupPlatformAdmin, adminGet, adminPost, adminPut, adminDelete } from "./admin-helpers";
+import { setupPlatformAdmin, adminGet, adminPost, adminPut, adminDelete, createTestPlan } from "./admin-helpers";
 
 /**
  * Navigate to the login page with the PWA service worker disabled.
@@ -58,7 +58,7 @@ async function seedSubscription(page: import("@playwright/test").Page) {
   await setupPlatformAdmin(page);
 
   // 3. Create an active plan to subscribe to.
-  const plan = await adminPost(page, "/api/admin/plans", {
+  const plan = await createTestPlan(page, {
     slug: `bill-plan-${Date.now()}`,
     name: "Billing Test Plan",
     monthly_price: 100000,
@@ -102,7 +102,7 @@ test.describe("Admin billing: plans", () => {
   test("delete plan soft-deactivates it", async ({ page }) => {
     await setupPlatformAdmin(page);
 
-    const plan = await adminPost(page, "/api/admin/plans", {
+    const plan = await createTestPlan(page, {
       slug: `del-plan-${Date.now()}`,
       name: "Deletable Plan",
       monthly_price: 500,
