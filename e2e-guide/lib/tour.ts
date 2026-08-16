@@ -1,5 +1,6 @@
 import { type Page, type Locator, expect } from "@playwright/test";
 import { LOCALE, narrate } from "./locale";
+import { Inspector } from "./inspector";
 
 export { LOCALE } from "./locale";
 
@@ -10,6 +11,13 @@ export { LOCALE } from "./locale";
  * single frame is filmed.
  */
 export const FAST = process.env.GUIDE_FAST === "1";
+
+/** Lets the shared afterEach give the closing caption its reading time. */
+const OPEN_TOURS = new WeakMap<Page, Tour>();
+
+export function tourFor(page: Page): Tour | undefined {
+  return OPEN_TOURS.get(page);
+}
 
 /** Reading pace for the on-screen caption bar (ms). */
 function readingTime(text: string): number {
@@ -90,37 +98,42 @@ export async function installTourRuntime(page: Page) {
         nextjs-portal, [data-nextjs-dev-tools-button], #__next-dev-tools-indicator,
         [data-nextjs-toast], nextjs-dev-tools-indicator {display:none !important}
         #__tour_cursor{position:fixed;width:26px;height:26px;border-radius:50%;
-          background:radial-gradient(circle at 34% 34%,rgba(255,255,255,.95),rgba(56,132,255,.6) 62%,rgba(56,132,255,.12));
+          background:radial-gradient(circle at 34% 34%,rgba(255,255,255,.95),rgba(70,147,154,.6) 62%,rgba(70,147,154,.12));
           border:2px solid rgba(255,255,255,.92);box-shadow:0 2px 12px rgba(0,0,0,.4);
           transform:translate(-50%,-50%);pointer-events:none;z-index:2147483647;opacity:0;transition:opacity .25s}
         #__tour_cursor.on{opacity:1}
         .__tour_ripple{position:fixed;width:28px;height:28px;border-radius:50%;
-          border:3px solid rgba(56,132,255,.95);transform:translate(-50%,-50%);
+          border:3px solid rgba(42,118,126,.95);transform:translate(-50%,-50%);
           pointer-events:none;z-index:2147483646;animation:__tourRipple .6s ease-out forwards}
         @keyframes __tourRipple{to{transform:translate(-50%,-50%) scale(3.2);opacity:0}}
         #__tour_spot{position:fixed;pointer-events:none;z-index:2147483644;border-radius:10px;
-          box-shadow:0 0 0 3px rgba(37,99,235,.95),0 0 22px rgba(37,99,235,.55);
+          box-shadow:0 0 0 3px rgba(42,118,126,.95),0 0 22px rgba(42,118,126,.5);
           opacity:0;transition:opacity .2s,top .18s,left .18s,width .18s,height .18s}
         #__tour_spot.on{opacity:1}
         #__tour_caption{position:fixed;left:0;right:0;z-index:2147483645;pointer-events:none;
           display:flex;align-items:center;gap:16px;padding:18px 34px;color:#fff;
-          font:500 22px/1.35 "Segoe UI",system-ui,-apple-system,sans-serif;
+          font:500 22px/1.35 var(--font-plex-sans),"Segoe UI",system-ui,sans-serif;
           opacity:0;transition:opacity .3s;text-shadow:0 1px 3px rgba(0,0,0,.6)}
         #__tour_caption.on{opacity:1}
-        #__tour_caption.bottom{bottom:0;background:linear-gradient(to top,rgba(2,6,23,.95),rgba(2,6,23,.45))}
-        #__tour_caption.top{top:0;background:linear-gradient(to bottom,rgba(2,6,23,.95),rgba(2,6,23,.45))}
-        #__tour_chip{flex:none;background:#2563eb;border-radius:999px;padding:6px 15px;
+        #__tour_caption.bottom{bottom:0;background:linear-gradient(to top,rgba(19,18,17,.95),rgba(19,18,17,.45))}
+        #__tour_caption.top{top:0;background:linear-gradient(to bottom,rgba(19,18,17,.95),rgba(19,18,17,.45))}
+        #__tour_chip{flex:none;background:#1c5f68;border-radius:999px;padding:6px 15px;
           font-size:15px;font-weight:600;letter-spacing:.3px;text-shadow:none}
         #__tour_text{flex:1}
+        /* Same brand as the product on screen behind it: petrol on warm stone,
+           set in the interface face. It used to be royal blue and Segoe UI —
+           left over from the palette the application no longer wears. */
         #__tour_card{position:fixed;inset:0;z-index:2147483647;pointer-events:none;
           display:flex;align-items:center;justify-content:center;text-align:center;
-          background:radial-gradient(circle at 50% 40%,#1e3a8a,#020617 70%);
+          background:radial-gradient(circle at 50% 40%,#1c5f68,#131211 72%);
           opacity:0;transition:opacity .6s ease}
         #__tour_card.on{opacity:1}
         #__tour_card_in{transform:translateY(14px);transition:transform .7s ease}
         #__tour_card.on #__tour_card_in{transform:translateY(0)}
-        #__tour_card_t{color:#fff;font:700 68px/1.15 "Segoe UI",system-ui,sans-serif;letter-spacing:-1px}
-        #__tour_card_s{color:#93c5fd;font:400 28px/1.4 "Segoe UI",system-ui,sans-serif;margin-top:18px}
+        #__tour_card_t{color:#faf9f7;letter-spacing:-1.5px;
+          font:700 68px/1.15 var(--font-plex-sans),"Segoe UI",system-ui,sans-serif}
+        #__tour_card_s{color:#a8d3d5;margin-top:18px;
+          font:400 28px/1.4 var(--font-plex-sans),"Segoe UI",system-ui,sans-serif}
 
         /* Phone-shaped recordings: the overlay is sized for 1080p, and at
            390px the caption would eat half the screen and the title card
@@ -233,12 +246,25 @@ export class Tour {
     private readonly chip: string
   ) {}
 
+  /**
+   * Watches the whole walk. The chapters touch every feature; this is what
+   * makes them *notice* a failure that breaks no assertion — see inspector.ts.
+   */
+  readonly inspector!: Inspector;
+
   static async open(page: Page, chip: string): Promise<Tour> {
+    const inspector = Inspector.attach(page);
     await installTourRuntime(page);
-    return new Tour(page, narrate(chip));
+    const tour = new Tour(page, narrate(chip));
+    (tour as { inspector: Inspector }).inspector = inspector;
+    OPEN_TOURS.set(page, tour);
+    return tour;
   }
 
   // ─── narration ───
+
+  /** When the caption now on screen has been readable long enough. */
+  private captionUntil = 0;
 
   private async runtime(): Promise<boolean> {
     return this.page
@@ -252,7 +278,12 @@ export class Tour {
     // fails on a missing caption in seconds instead of surfacing it halfway
     // through a recording.
     const line = narrate(text);
+    // Whatever went wrong belongs to the step the viewer was just shown, and
+    // an error notice raised by the previous one is still on screen now.
+    this.inspector?.atStep(text);
+    await this.inspector?.sweepToasts();
     if (FAST) return;
+    await this.holdCaption();
     if (await this.runtime()) {
       await this.page.evaluate(
         ([t, c]) => {
@@ -265,7 +296,23 @@ export class Tour {
     // Timed on the line that is actually shown: the same sentence is a
     // different length in each language, and pacing on the French would rush
     // the others off screen.
-    await this.page.waitForTimeout(holdMs ?? readingTime(line));
+    //
+    // Only a lead-in is held here. The rest of the reading time is owed to the
+    // *next* caption, which waits for it before replacing this one — so the
+    // actions a line describes play while that line is on screen, instead of
+    // after it. Holding the full time here made every caption run a beat ahead
+    // of the thing it was describing.
+    const total = holdMs ?? readingTime(line);
+    const lead = Math.min(900, Math.round(total * 0.35));
+    await this.page.waitForTimeout(lead);
+    this.captionUntil = Date.now() + (total - lead);
+  }
+
+  /** Let the caption on screen finish its reading time before anything replaces it. */
+  async holdCaption() {
+    const remaining = this.captionUntil - Date.now();
+    if (remaining > 0) await this.page.waitForTimeout(remaining);
+    this.captionUntil = 0;
   }
 
   /**
@@ -275,6 +322,7 @@ export class Tour {
   async titleCard(title: string, subtitle: string, holdMs = 2600) {
     const card = [narrate(title), narrate(subtitle)] as const;
     if (FAST) return;
+    await this.holdCaption();
     if (!(await this.runtime())) return;
     await this.page.evaluate(([t, s]) => window.__tour?.card(t, s), card);
     await this.page.waitForTimeout(holdMs);

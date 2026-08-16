@@ -16,9 +16,8 @@
   "Le compte est confirmé.": "تم تأكيد الحساب.",
   "Le tableau de bord affiche d'un coup d'œil le chiffre d'affaires, les factures en attente et les alertes.": "لوحة القيادة تعرض بنظرة واحدة رقم الأعمال والفواتير المعلّقة والتنبيهات.",
   "À gauche, le menu regroupe tous les modules : clients, produits, devis, factures, achats, stock et rapports.": "القائمة الجانبية تجمع كل الأقسام: الزبائن، المنتجات، عروض الأسعار، الفواتير، المشتريات، المخزون والتقارير.",
-  "Et en bas, le bouton vert bascule l'application en mode caisse, pour la vente au comptoir.": "وفي الأسفل، زرّ يحوّل التطبيق إلى وضع الصندوق، للبيع عند المنضدة.",
+  "Et en bas, le bouton Mode caisse bascule l'application vers la vente au comptoir.": "وفي الأسفل، زر وضع الصندوق يحوّل التطبيق إلى البيع المباشر.",
   "Dans les prochains chapitres, nous allons remplir ce compte pas à pas.": "في الفصول القادمة، سنملأ هذا الحساب خطوة بخطوة.",
-
   "2 · Clients": "٢ · الزبائن",
   "Les clients": "الزبائن",
   "Chapitre 2 — fiche client, contacts, recherche": "الفصل الثاني — بطاقة الزبون، جهات الاتصال، البحث",
@@ -36,7 +35,6 @@
   "Un nom, un email, un numéro : on cherche sans savoir chez quel client il travaille.": "اسم أو بريد أو رقم: تبحث دون أن تعرف عند أي زبون يعمل صاحبه.",
   "Et toute la liste s'exporte en CSV, par exemple pour votre comptable.": "والقائمة كلها تُصدَّر بصيغة CSV، لمحاسبك مثلاً.",
   "Le fichier est téléchargé, prêt à être ouvert dans Excel.": "نُزّل الملف، جاهزاً للفتح في إكسل.",
-
   "3 · Produits": "٣ · المنتجات",
   "Le catalogue": "الكتالوج",
   "Chapitre 3 — catégories, produits, services, stock": "الفصل الثالث — الأصناف، المنتجات، الخدمات، المخزون",
@@ -54,7 +52,6 @@
   "Le stock est passé de 12 à 15 unités.": "انتقل المخزون من ١٢ إلى ١٥ وحدة.",
   "Chaque mouvement est tracé, avec son motif et son solde après opération.": "كل حركة مُسجّلة، بسببها وبالرصيد الذي تركته.",
   "Le catalogue est prêt : nous pouvons commencer à vendre.": "الكتالوج جاهز: يمكننا البدء في البيع.",
-
   "4 · Devis": "٤ · عروض الأسعار",
   "Les devis": "عروض الأسعار",
   "Chapitre 4 — chiffrer, envoyer, convertir": "الفصل الرابع — التسعير، الإرسال، التحويل",
@@ -75,7 +72,6 @@
   "Le bouton de conversion apparaît alors sur le devis accepté.": "عندها يظهر زرّ التحويل على العرض المقبول.",
   "Une confirmation, et le devis devient une facture — sans ressaisie.": "تأكيد واحد، ويصير العرض فاتورة — دون إعادة إدخال.",
   "La facture est créée, reprenant lignes, quantités et montants du devis.": "أُنشئت الفاتورة، بأسطر العرض وكمياته ومبالغه.",
-
   "5 · Factures": "٥ · الفواتير",
   "Les factures": "الفواتير",
   "Chapitre 5 — émission, paiements, avoir": "الفصل الخامس — الإصدار، الدفعات، إشعار الدائن",
@@ -99,7 +95,6 @@
   "Et on la ressort quand on veut : archiver, ce n'est pas supprimer.": "ونُخرجها متى شئنا: الأرشفة ليست حذفاً.",
   "Côté client, tout cela se retrouve dans le relevé de compte.": "من جهة الزبون، كل هذا يظهر في كشف الحساب.",
   "Factures, règlements et avoirs, avec le solde dû en bas — prêt à être envoyé au client.": "الفواتير والدفعات وإشعارات الدائن، مع الرصيد المستحق في الأسفل — جاهز للإرسال إلى الزبون.",
-
   "6 · Caisse": "٦ · الصندوق",
   "La caisse": "الصندوق",
   "Chapitre 6 — session, encaissement, rapport Z": "الفصل السادس — الجلسة، التحصيل، تقرير Z",
@@ -126,7 +121,6 @@
   "On saisit les espèces réellement comptées.": "نُدخل النقد المعدود فعلاً.",
   "L'écart éventuel est signalé immédiatement.": "أي فارق يُنبَّه إليه فوراً.",
   "Session clôturée. Le rapport reste consultable dans les rapports.": "أُغلقت الجلسة. ويبقى التقرير متاحاً ضمن التقارير.",
-
   "7 · Achats": "٧ · المشتريات",
   "Les achats": "المشتريات",
   "Chapitre 7 — fournisseurs, commandes, réception": "الفصل السابع — الموردون، الطلبيات، الاستلام",
@@ -143,11 +137,10 @@
   "Vérifions : le stock du téléviseur a bien augmenté de 8 unités.": "لنتحقق: مخزون التلفزيون ارتفع فعلاً بثماني وحدات.",
   "Reste à suivre ce que l'on doit au fournisseur.": "يبقى تتبّع ما ندين به للمورد.",
   "Total dû, total payé et solde, avec le détail des commandes impayées.": "إجمالي المستحق، وإجمالي المدفوع، والرصيد، مع تفصيل الطلبيات غير المسدّدة.",
-
   "8 · Stock": "٨ · المخزون",
   "Le stock multi-sites": "المخزون عبر المواقع",
   "Chapitre 8 — emplacements et transferts": "الفصل الثامن — المواقع والتحويلات",
-  "Quand l'activité grandit, le stock se répartit entre le magasin et le dépôt. Probook suit les quantités emplacement par emplacement.": "حين يكبر النشاط، يتوزّع المخزون بين المحل والمستودع. بروبوك يتابع الكميات موقعاً بموقع.",
+  "Quand l'activité grandit, le stock se répartit entre le magasin et le dépôt. Probook suit les quantités emplacement par emplacement — une fonction réservée aux offres qui incluent le multi-sites.": "مع نمو النشاط، يتوزّع المخزون بين المحل والمستودع. يتابع بروبوك الكميات موقعًا بموقع — وهي ميزة مخصّصة للعروض التي تشمل تعدّد المواقع.",
   "Probook a déjà créé un emplacement par défaut au nom de votre entreprise : c'est là que se trouve tout le stock saisi jusqu'ici. Renommons-le.": "أنشأ بروبوك مسبقاً موقعاً افتراضياً باسم مؤسستك: فيه كل المخزون المُدخل حتى الآن. لنُعد تسميته.",
   "Ajoutons maintenant le dépôt.": "لنضف الآن المستودع.",
   "On transfère maintenant des articles du magasin vers le dépôt.": "ننقل الآن مواد من المحل إلى المستودع.",
@@ -156,7 +149,6 @@
   "Le transfert est tracé : rien ne se perd entre deux sites.": "التحويل مُسجَّل: لا شيء يضيع بين موقعين.",
   "Sur la fiche produit, le stock se lit désormais emplacement par emplacement.": "في بطاقة المنتج، يُقرأ المخزون الآن موقعاً بموقع.",
   "Enfin, Probook signale les articles en stock faible pour éviter la rupture.": "وأخيراً، ينبّه بروبوك إلى المواد التي شحّ مخزونها تفادياً للانقطاع.",
-
   "9 · Livraisons & dépenses": "٩ · التسليمات والمصاريف",
   "Livraisons & dépenses": "التسليمات والمصاريف",
   "Chapitre 9 — bons de livraison, charges": "الفصل التاسع — سندات التسليم، الأعباء",
@@ -169,7 +161,6 @@
   "Chaque dépense se range sous un poste. On en choisit un dans la liste ou on en saisit un nouveau : il est créé à l'enregistrement.": "كل مصروف يُصنَّف تحت بند. نختار واحداً من القائمة أو نُدخل بنداً جديداً: يُنشأ عند الحفظ.",
   "Les postes se gèrent à part : on peut en renommer un, ou en supprimer un devenu inutile.": "البنود تُسيَّر على حدة: يمكن إعادة تسمية أحدها، أو حذف بند لم يعد نافعاً.",
   "Ces dépenses viennent en déduction dans le rapport de résultat et l'export comptable, et le rapport « dépenses par poste » montre où part l'argent.": "هذه المصاريف تُحسم في تقرير النتيجة وفي التصدير المحاسبي، وتقرير «المصاريف حسب البند» يبيّن أين يذهب المال.",
-
   "10 · Rapports": "١٠ · التقارير",
   "Les rapports": "التقارير",
   "Chapitre 10 — chiffre d'affaires, marge, TVA, comptabilité": "الفصل العاشر — رقم الأعمال، الهامش، الرسم، المحاسبة",
@@ -188,7 +179,6 @@
   "Le récapitulatif de TVA : TVA collectée sur les ventes, TVA déductible sur les achats, et le net à payer.": "ملخّص الرسم على القيمة المضافة: الرسم المحصَّل على المبيعات، والرسم القابل للحسم على المشتريات، والصافي الواجب دفعه.",
   "Et l'export comptable : le journal complet à remettre à votre comptable, en un fichier.": "والتصدير المحاسبي: اليومية الكاملة لتسليمها إلى محاسبك، في ملف واحد.",
   "Chaque rapport s'exporte en CSV, et la plupart en PDF.": "كل تقرير يُصدَّر بصيغة CSV، ومعظمها بصيغة PDF.",
-
   "11 · Paramètres": "١١ · الإعدادات",
   "Les paramètres": "الإعدادات",
   "Chapitre 11 — entreprise, fiscalité, équipe": "الفصل الحادي عشر — المؤسسة، النظام الجبائي، الفريق",
@@ -202,13 +192,14 @@
   "Les préfixes et les compteurs pilotent la numérotation de vos documents.": "البادئات والعدّادات تتحكّم في ترقيم وثائقك.",
   "Le droit de timbre s'active ici. Il s'applique aux règlements en espèces, selon le barème progressif officiel.": "حق الطابع يُفعَّل هنا. ويُطبَّق على التسديدات النقدية، وفق السلّم التصاعدي الرسمي.",
   "On enregistre.": "نحفظ.",
-  "Le droit de timbre apparaît désormais sur les factures réglées en espèces.": "صار حق الطابع يظهر على الفواتير المسدّدة نقداً.",
+  "Le réglage vaut pour les factures émises à partir de maintenant. Émettons-en une.": "يسري الإعداد على الفواتير الصادرة ابتداءً من الآن. لنُصدر واحدة.",
+  "La case « vente au comptant » est cochée par défaut : c'est elle qui déclenche le timbre.": "خانة «بيع نقدي» مؤشَّرة افتراضيًا، وهي التي تُفعّل حق الطابع.",
+  "Le droit de timbre s'ajoute au total à payer, sans entrer dans le chiffre d'affaires ni dans la TVA.": "يُضاف حق الطابع إلى المبلغ الواجب دفعه، دون أن يدخل في رقم الأعمال ولا في الرسم على القيمة المضافة.",
   "Enfin, l'équipe : chaque employé a son compte et ses permissions.": "وأخيراً الفريق: لكل موظف حسابه وصلاحياته.",
   "En choisissant le rôle « employé », on coche précisément les modules auxquels la personne accède.": "باختيار دور «موظف»، نؤشّر بدقة على الأقسام التي يصل إليها الشخص.",
   "Voilà : de la création du compte à la clôture de caisse, vous avez fait le tour de Probook.": "وهكذا: من إنشاء الحساب إلى إغلاق الصندوق، تكون قد درت على بروبوك كاملاً.",
   "Merci": "شكراً",
-  "probook.dz — votre gestion commerciale, simplement": "probook.dz — تسيير نشاطك التجاري، ببساطة",
-
+  "Probook — votre gestion commerciale, simplement": "Probook — تسيير تجارتك ببساطة",
   "1 · Devis sur le terrain": "١ · عرض سعر في الميدان",
   "Un devis sur place": "عرض سعر في عين المكان",
   "Depuis le téléphone, chez le client": "من الهاتف، عند الزبون",
@@ -224,7 +215,6 @@
   "Plus bas, la marge s'affiche pendant qu'on saisit : on sait ce qu'on peut lâcher avant de le dire.": "في الأسفل، يظهر الهامش أثناء الإدخال: نعرف إلى أي حدّ يمكن النزول قبل أن نقوله.",
   "Le client négocie : 5 % de remise, la marge se recalcule aussitôt.": "الزبون يفاوض: ٥٪ تخفيضاً، ويُعاد احتساب الهامش فوراً.",
   "Le devis est numéroté et enregistré. Le client repart avec un chiffrage, vous avec une affaire en cours.": "رُقّم العرض وحُفظ. الزبون يغادر بتسعيرة، وأنت بصفقة جارية.",
-
   "2 · Encaisser": "٢ · التحصيل",
   "Encaisser": "التحصيل",
   "Le client paie, vous êtes en déplacement": "الزبون يدفع وأنت في الطريق",
@@ -234,7 +224,6 @@
   "Le client règle : on enregistre le versement.": "الزبون يسدّد: نُسجّل الدفعة.",
   "Le montant proposé est le solde restant. Espèces, chèque, virement, carte.": "المبلغ المقترح هو الرصيد المتبقي. نقداً، بشيك، بتحويل، بالبطاقة.",
   "La facture passe en « Payée » toute seule, et le tableau de bord se met à jour derrière.": "تتحوّل الفاتورة إلى «مدفوعة» وحدها، وتتحدّث لوحة القيادة خلفها.",
-
   "3 · Comptoir": "٣ · المنضدة",
   "Le comptoir": "المنضدة",
   "La caisse tient dans une main": "صندوق يسع كفّ اليد",
@@ -246,7 +235,6 @@
   "Espèces, carte, chèque, virement, ou sur le compte du client. Seules les espèces bougent le tiroir.": "نقداً، بالبطاقة، بشيك، بتحويل، أو على حساب الزبون. النقد وحده يحرّك الدرج.",
   "Le rendu de monnaie se calcule tout seul.": "الصرف يُحتسب وحده.",
   "Vente enregistrée, stock décrémenté, panier vidé pour le client suivant.": "سُجّل البيع، ونقص المخزون، وأُفرغت السلة للزبون التالي.",
-
   "4 · Pilotage": "٤ · المتابعة",
   "Suivre l'activité": "متابعة النشاط",
   "Une dépense, un coup d'œil, en deux minutes": "مصروف، ونظرة، في دقيقتين",

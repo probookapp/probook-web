@@ -16,9 +16,8 @@
   "Le compte est confirmé.": "The account is confirmed.",
   "Le tableau de bord affiche d'un coup d'œil le chiffre d'affaires, les factures en attente et les alertes.": "The dashboard shows revenue, outstanding invoices and alerts at a glance.",
   "À gauche, le menu regroupe tous les modules : clients, produits, devis, factures, achats, stock et rapports.": "On the left, the menu holds every module: clients, products, quotes, invoices, purchases, stock and reports.",
-  "Et en bas, le bouton vert bascule l'application en mode caisse, pour la vente au comptoir.": "And at the bottom, one button switches the application into point-of-sale mode, for counter sales.",
+  "Et en bas, le bouton Mode caisse bascule l'application vers la vente au comptoir.": "And at the bottom, the POS Mode button switches the application over to counter sales.",
   "Dans les prochains chapitres, nous allons remplir ce compte pas à pas.": "Over the next chapters, we'll fill this account in step by step.",
-
   "2 · Clients": "2 · Clients",
   "Les clients": "Clients",
   "Chapitre 2 — fiche client, contacts, recherche": "Chapter 2 — client records, contacts, search",
@@ -36,7 +35,6 @@
   "Un nom, un email, un numéro : on cherche sans savoir chez quel client il travaille.": "A name, an email, a number: you can find someone without knowing which client they work for.",
   "Et toute la liste s'exporte en CSV, par exemple pour votre comptable.": "And the whole list exports to CSV, for your accountant for instance.",
   "Le fichier est téléchargé, prêt à être ouvert dans Excel.": "The file is downloaded, ready to open in Excel.",
-
   "3 · Produits": "3 · Products",
   "Le catalogue": "The catalogue",
   "Chapitre 3 — catégories, produits, services, stock": "Chapter 3 — categories, products, services, stock",
@@ -54,7 +52,6 @@
   "Le stock est passé de 12 à 15 unités.": "Stock has gone from 12 to 15 units.",
   "Chaque mouvement est tracé, avec son motif et son solde après opération.": "Every movement is recorded, with its reason and the balance it left behind.",
   "Le catalogue est prêt : nous pouvons commencer à vendre.": "The catalogue is ready: we can start selling.",
-
   "4 · Devis": "4 · Quotes",
   "Les devis": "Quotes",
   "Chapitre 4 — chiffrer, envoyer, convertir": "Chapter 4 — pricing, sending, converting",
@@ -75,7 +72,6 @@
   "Le bouton de conversion apparaît alors sur le devis accepté.": "The convert button then appears on the accepted quote.",
   "Une confirmation, et le devis devient une facture — sans ressaisie.": "One confirmation, and the quote becomes an invoice — nothing retyped.",
   "La facture est créée, reprenant lignes, quantités et montants du devis.": "The invoice is created, carrying over the lines, quantities and amounts from the quote.",
-
   "5 · Factures": "5 · Invoices",
   "Les factures": "Invoices",
   "Chapitre 5 — émission, paiements, avoir": "Chapter 5 — issuing, payments, credit notes",
@@ -99,7 +95,6 @@
   "Et on la ressort quand on veut : archiver, ce n'est pas supprimer.": "And you can bring it back whenever you like: archiving is not deleting.",
   "Côté client, tout cela se retrouve dans le relevé de compte.": "On the client's side, all of this appears in the account statement.",
   "Factures, règlements et avoirs, avec le solde dû en bas — prêt à être envoyé au client.": "Invoices, payments and credit notes, with the balance due at the bottom — ready to send to the client.",
-
   "6 · Caisse": "6 · Till",
   "La caisse": "The till",
   "Chapitre 6 — session, encaissement, rapport Z": "Chapter 6 — sessions, taking payment, the Z report",
@@ -126,7 +121,6 @@
   "On saisit les espèces réellement comptées.": "Enter the cash actually counted.",
   "L'écart éventuel est signalé immédiatement.": "Any discrepancy is flagged straight away.",
   "Session clôturée. Le rapport reste consultable dans les rapports.": "Session closed. The report stays available under Reports.",
-
   "7 · Achats": "7 · Purchases",
   "Les achats": "Purchases",
   "Chapitre 7 — fournisseurs, commandes, réception": "Chapter 7 — suppliers, orders, goods received",
@@ -143,11 +137,10 @@
   "Vérifions : le stock du téléviseur a bien augmenté de 8 unités.": "Let's check: the television's stock has indeed gone up by 8 units.",
   "Reste à suivre ce que l'on doit au fournisseur.": "What remains is to track what you owe the supplier.",
   "Total dû, total payé et solde, avec le détail des commandes impayées.": "Total owed, total paid and the balance, with the unpaid orders itemised.",
-
   "8 · Stock": "8 · Stock",
   "Le stock multi-sites": "Stock across sites",
   "Chapitre 8 — emplacements et transferts": "Chapter 8 — locations and transfers",
-  "Quand l'activité grandit, le stock se répartit entre le magasin et le dépôt. Probook suit les quantités emplacement par emplacement.": "As the business grows, stock is split between the shop and the warehouse. Probook tracks quantities location by location.",
+  "Quand l'activité grandit, le stock se répartit entre le magasin et le dépôt. Probook suit les quantités emplacement par emplacement — une fonction réservée aux offres qui incluent le multi-sites.": "As the business grows, stock is split between the shop and the warehouse. Probook tracks quantities location by location — a feature reserved for the plans that include multi-site stock.",
   "Probook a déjà créé un emplacement par défaut au nom de votre entreprise : c'est là que se trouve tout le stock saisi jusqu'ici. Renommons-le.": "Probook has already created a default location named after your company: that is where all the stock entered so far sits. Let's rename it.",
   "Ajoutons maintenant le dépôt.": "Now let's add the warehouse.",
   "On transfère maintenant des articles du magasin vers le dépôt.": "Now we move items from the shop to the warehouse.",
@@ -156,7 +149,6 @@
   "Le transfert est tracé : rien ne se perd entre deux sites.": "The transfer is recorded: nothing goes missing between two sites.",
   "Sur la fiche produit, le stock se lit désormais emplacement par emplacement.": "On the product record, stock now reads location by location.",
   "Enfin, Probook signale les articles en stock faible pour éviter la rupture.": "Finally, Probook flags items running low so you don't run out.",
-
   "9 · Livraisons & dépenses": "9 · Deliveries & expenses",
   "Livraisons & dépenses": "Deliveries & expenses",
   "Chapitre 9 — bons de livraison, charges": "Chapter 9 — delivery notes, running costs",
@@ -169,7 +161,6 @@
   "Chaque dépense se range sous un poste. On en choisit un dans la liste ou on en saisit un nouveau : il est créé à l'enregistrement.": "Every expense sits under a category. Pick one from the list or type a new one: it is created when you save.",
   "Les postes se gèrent à part : on peut en renommer un, ou en supprimer un devenu inutile.": "Categories are managed separately: you can rename one, or remove one you no longer need.",
   "Ces dépenses viennent en déduction dans le rapport de résultat et l'export comptable, et le rapport « dépenses par poste » montre où part l'argent.": "These expenses are deducted in the profit report and the accounting export, and the \"expenses by category\" report shows where the money goes.",
-
   "10 · Rapports": "10 · Reports",
   "Les rapports": "Reports",
   "Chapitre 10 — chiffre d'affaires, marge, TVA, comptabilité": "Chapter 10 — revenue, margin, VAT, accounting",
@@ -188,7 +179,6 @@
   "Le récapitulatif de TVA : TVA collectée sur les ventes, TVA déductible sur les achats, et le net à payer.": "The VAT summary: VAT charged on sales, VAT reclaimable on purchases, and the net due.",
   "Et l'export comptable : le journal complet à remettre à votre comptable, en un fichier.": "And the accounting export: the full ledger to hand to your accountant, in a single file.",
   "Chaque rapport s'exporte en CSV, et la plupart en PDF.": "Every report exports to CSV, and most of them to PDF.",
-
   "11 · Paramètres": "11 · Settings",
   "Les paramètres": "Settings",
   "Chapitre 11 — entreprise, fiscalité, équipe": "Chapter 11 — company, tax regime, team",
@@ -202,13 +192,14 @@
   "Les préfixes et les compteurs pilotent la numérotation de vos documents.": "Prefixes and counters drive the numbering of your documents.",
   "Le droit de timbre s'active ici. Il s'applique aux règlements en espèces, selon le barème progressif officiel.": "Stamp duty is switched on here. It applies to cash settlements, on the official progressive scale.",
   "On enregistre.": "Save.",
-  "Le droit de timbre apparaît désormais sur les factures réglées en espèces.": "Stamp duty now appears on invoices settled in cash.",
+  "Le réglage vaut pour les factures émises à partir de maintenant. Émettons-en une.": "The setting applies to invoices issued from now on. Let's issue one.",
+  "La case « vente au comptant » est cochée par défaut : c'est elle qui déclenche le timbre.": "The “cash sale” box is ticked by default — that is what triggers the stamp duty.",
+  "Le droit de timbre s'ajoute au total à payer, sans entrer dans le chiffre d'affaires ni dans la TVA.": "The stamp duty is added to the amount due, without counting toward revenue or VAT.",
   "Enfin, l'équipe : chaque employé a son compte et ses permissions.": "Finally, the team: every employee has their own account and their own permissions.",
   "En choisissant le rôle « employé », on coche précisément les modules auxquels la personne accède.": "Choosing the \"employee\" role lets you tick exactly which modules that person can reach.",
   "Voilà : de la création du compte à la clôture de caisse, vous avez fait le tour de Probook.": "That's it: from creating the account to closing the till, you have been right round Probook.",
   "Merci": "Thank you",
-  "probook.dz — votre gestion commerciale, simplement": "probook.dz — your business management, made simple",
-
+  "Probook — votre gestion commerciale, simplement": "Probook — business management, made simple",
   "1 · Devis sur le terrain": "1 · Quoting on site",
   "Un devis sur place": "A quote on the spot",
   "Depuis le téléphone, chez le client": "From your phone, at the client's",
@@ -224,7 +215,6 @@
   "Plus bas, la marge s'affiche pendant qu'on saisit : on sait ce qu'on peut lâcher avant de le dire.": "Further down, the margin shows as you type: you know how far you can go before you say it.",
   "Le client négocie : 5 % de remise, la marge se recalcule aussitôt.": "The client negotiates: 5% off, and the margin recalculates at once.",
   "Le devis est numéroté et enregistré. Le client repart avec un chiffrage, vous avec une affaire en cours.": "The quote is numbered and saved. The client leaves with a price, you leave with a deal in progress.",
-
   "2 · Encaisser": "2 · Getting paid",
   "Encaisser": "Getting paid",
   "Le client paie, vous êtes en déplacement": "The client pays while you're on the road",
@@ -234,7 +224,6 @@
   "Le client règle : on enregistre le versement.": "The client pays: record the payment.",
   "Le montant proposé est le solde restant. Espèces, chèque, virement, carte.": "The amount offered is the remaining balance. Cash, cheque, transfer, card.",
   "La facture passe en « Payée » toute seule, et le tableau de bord se met à jour derrière.": "The invoice moves to \"Paid\" by itself, and the dashboard updates behind it.",
-
   "3 · Comptoir": "3 · At the counter",
   "Le comptoir": "The counter",
   "La caisse tient dans une main": "A till that fits in one hand",
@@ -246,7 +235,6 @@
   "Espèces, carte, chèque, virement, ou sur le compte du client. Seules les espèces bougent le tiroir.": "Cash, card, cheque, transfer, or on the client's account. Only cash moves the drawer.",
   "Le rendu de monnaie se calcule tout seul.": "The change works itself out.",
   "Vente enregistrée, stock décrémenté, panier vidé pour le client suivant.": "Sale recorded, stock reduced, basket cleared for the next customer.",
-
   "4 · Pilotage": "4 · Keeping track",
   "Suivre l'activité": "Keeping track",
   "Une dépense, un coup d'œil, en deux minutes": "One expense, one glance, in two minutes",

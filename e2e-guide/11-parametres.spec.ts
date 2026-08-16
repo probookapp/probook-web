@@ -1,8 +1,8 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./lib/test";
 import { Tour } from "./lib/tour";
 import { resume } from "./lib/session";
 import { t } from "./lib/i18n";
-import { BIZ, CLIENT } from "./lib/data";
+import { BIZ, CLIENT, PRODUCTS } from "./lib/data";
 
 /** A tiny opaque PNG, used as the company logo in the branding demo. */
 const LOGO_PNG = Buffer.from(
@@ -73,7 +73,11 @@ test("Chapitre 11 — Paramétrer son entreprise", async ({ page }) => {
   await tour.say(
     "Le droit de timbre s'active ici. Il s'applique aux règlements en espèces, selon le barème progressif officiel."
   );
-  await tour.click(page.locator('input[name="stamp_duty_enabled"]'));
+  // Aim at a state, not at a click: replayed on a tenant that already has the
+  // setting on, a blind click turned it back off and the rest of the chapter
+  // then filmed an invoice with no timbre on it.
+  const stampToggle = page.locator('input[name="stamp_duty_enabled"]');
+  if (!(await stampToggle.isChecked())) await tour.click(stampToggle);
   await tour.set(page.locator('input[name="stamp_duty_threshold"]'), "0");
   await tour.pause(1800);
 
@@ -83,10 +87,36 @@ test("Chapitre 11 — Paramétrer son entreprise", async ({ page }) => {
   });
 
   // ─── vérification sur une facture ───
-  await tour.say("Le droit de timbre apparaît désormais sur les factures réglées en espèces.");
+  // The timbre is snapshotted when an invoice is issued, so an invoice issued
+  // earlier in the guide legitimately carries none — the narration used to open
+  // one anyway and promise a line that was not there. A new cash invoice is
+  // issued here instead, which is what actually demonstrates the setting.
+  await tour.say("Le réglage vaut pour les factures émises à partir de maintenant. Émettons-en une.");
   await tour.nav("/invoices");
-  await tour.click(tour.rowAction(CLIENT.name, t("common:buttons.view")), { settleMs: 2200 });
-  await tour.pause(2000);
+  await tour.click(tour.button(t("invoices:newInvoice")), { settleMs: 1400 });
+
+  await tour.pick(tour.fieldByLabel(`${t("invoices:fields.client")} *`), CLIENT.name, {
+    search: "Atlas",
+  });
+  await tour.pick(tour.fieldByLabel(t("invoices:lines.product")), PRODUCTS.cable.designation, {
+    search: PRODUCTS.cable.search,
+  });
+  await tour.set(page.locator('input[name="lines.0.quantity"]'), "4");
+
+  await tour.say("La case « vente au comptant » est cochée par défaut : c'est elle qui déclenche le timbre.");
+  await tour.point(page.getByText(t("invoices:stampDuty.cashSale")));
+  await tour.pause(1600);
+
+  await tour.click(tour.button(t("invoices:createInvoice")), { settleMs: 2600 });
+  // Saving returns to the list; the new invoice is the first row for the client.
+  await tour.click(tour.rowAction(CLIENT.name, t("common:buttons.view")), { settleMs: 2000 });
+  await tour.click(tour.button(t("invoices:actions.markAsIssued")), { settleMs: 2500 });
+
+  await tour.say("Le droit de timbre s'ajoute au total à payer, sans entrer dans le chiffre d'affaires ni dans la TVA.");
+  const stampLine = page.getByText(t("invoices:fields.stampDuty")).first();
+  await expect(stampLine).toBeVisible();
+  await tour.point(stampLine);
+  await tour.pause(2200);
 
   // ─── équipe ───
   await tour.nav("/settings");
@@ -115,5 +145,5 @@ test("Chapitre 11 — Paramétrer son entreprise", async ({ page }) => {
   );
   await tour.goto("dashboard");
   await tour.pause(1500);
-  await tour.titleCard("Merci", "probook.dz — votre gestion commerciale, simplement");
+  await tour.titleCard("Merci", "Probook — votre gestion commerciale, simplement");
 });

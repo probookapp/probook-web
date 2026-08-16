@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./lib/test";
 import { Tour } from "./lib/tour";
 import { resume } from "./lib/session";
 import { t } from "./lib/i18n";

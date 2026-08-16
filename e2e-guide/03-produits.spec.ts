@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./lib/test";
 import { Tour } from "./lib/tour";
 import { resume } from "./lib/session";
 import { t } from "./lib/i18n";
@@ -37,6 +37,10 @@ test("Chapitre 3 — Construire son catalogue produits", async ({ page }) => {
   await tour.say("On saisit le prix de vente hors taxe, le prix d'achat — qui servira à calculer la marge — et la TVA.");
   await tour.set(form.locator('input[name="unit_price"]'), PRODUCTS.tv.salePrice);
   await tour.set(form.locator('input[name="purchase_price"]'), PRODUCTS.tv.purchasePrice);
+  // The field opens on the rate configured for the account — it used to open on
+  // 0 %, and an invoice line takes its rate from the product, so anything sold
+  // before someone noticed went out with no VAT on it.
+  await expect(form.locator('select[name="tax_rate"]')).toHaveValue("19");
   await tour.choose(form.locator('select[name="tax_rate"]'), "19");
 
   await tour.say("On rattache l'article à sa catégorie et on saisit le stock de départ.");

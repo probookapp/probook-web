@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./lib/test";
 import { Tour } from "./lib/tour";
 import { resume } from "./lib/session";
 import { t } from "./lib/i18n";
@@ -6,11 +6,13 @@ import { BIZ, LOCATIONS, PRODUCTS } from "./lib/data";
 
 test("Chapitre 8 — Plusieurs points de vente et transferts de stock", async ({ page }) => {
   const tour = await Tour.open(page, "8 · Stock");
+  // No staging needed: the account is inside its trial, which carries every
+  // module. That is what a prospect evaluating Probook actually sees.
   await resume(page, "locations");
   await tour.titleCard("Le stock multi-sites", "Chapitre 8 — emplacements et transferts");
 
   await tour.say(
-    "Quand l'activité grandit, le stock se répartit entre le magasin et le dépôt. Probook suit les quantités emplacement par emplacement."
+    "Quand l'activité grandit, le stock se répartit entre le magasin et le dépôt. Probook suit les quantités emplacement par emplacement — une fonction réservée aux offres qui incluent le multi-sites."
   );
 
   // ─── emplacements ───

@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "../e2e-guide/lib/test";
 import { Tour, LOCALE } from "../e2e-guide/lib/tour";
 import { resume } from "../e2e-guide/lib/session";
 import { t } from "../e2e-guide/lib/i18n";

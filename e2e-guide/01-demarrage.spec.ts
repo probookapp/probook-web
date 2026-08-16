@@ -1,17 +1,17 @@
-import { test, expect } from "@playwright/test";
+import { test, expect } from "./lib/test";
 import { Tour, LOCALE } from "./lib/tour";
 import { saveSession } from "./lib/session";
+import { releaseDemoAccount } from "./lib/reset";
 import { t } from "./lib/i18n";
 import { BIZ } from "./lib/data";
 
 test("Chapitre 1 — Créer son compte et découvrir Probook", async ({ page }) => {
   const tour = await Tour.open(page, "1 · Démarrage");
 
-  // Unique credentials per recording so the script can be re-run without
-  // colliding with the tenant left behind by the previous take.
-  const stamp = Date.now().toString(36).slice(-5);
-  const username = `${BIZ.username}${stamp}`;
-  const email = BIZ.email.replace("@", `+${stamp}@`);
+  // The address and the login are typed on camera, so they have to read like a
+  // real shop's. The previous take is removed rather than dodged with a stamp.
+  const { username, email } = BIZ;
+  await releaseDemoAccount({ email, username });
 
   await page.goto(`/${LOCALE}`);
   await page.waitForLoadState("domcontentloaded");
@@ -20,10 +20,13 @@ test("Chapitre 1 — Créer son compte et découvrir Probook", async ({ page }) 
   await tour.say(
     "Probook est le logiciel de gestion commerciale pensé pour les commerces algériens : facturation, stock, caisse et comptabilité au même endroit."
   );
-  await page.mouse.wheel(0, 700);
-  await tour.pause(1200);
-  await page.mouse.wheel(0, 700);
-  await tour.pause(1200);
+  // Scroll to the feature list and stop there. Blind pixel scrolls used to
+  // carry on into the pricing section, which is data: the film would have to
+  // be reshot every time an offer changes, and it showed whatever plans the
+  // database happened to hold.
+  const features = page.getByText(t("common:landing.features.title")).first();
+  await features.scrollIntoViewIfNeeded();
+  await tour.pause(1800);
 
   // ─── inscription ───
   await tour.say("Commençons par créer un compte. L'inscription prend moins d'une minute.");
@@ -105,7 +108,7 @@ test("Chapitre 1 — Créer son compte et découvrir Probook", async ({ page }) 
     await tour.pause(500);
   }
 
-  await tour.say("Et en bas, le bouton vert bascule l'application en mode caisse, pour la vente au comptoir.");
+  await tour.say("Et en bas, le bouton Mode caisse bascule l'application vers la vente au comptoir.");
   await tour.point(
     page.locator("aside button").filter({ hasText: t("navigation:posMode") }).first()
   );
