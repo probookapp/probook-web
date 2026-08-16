@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { useTheme } from "@/components/providers/ThemeContext";
 import { Navbar } from "./Navbar";
 import { Footer } from "./Footer";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
@@ -15,13 +14,16 @@ interface PublicLayoutProps {
 export function PublicLayout({ children }: PublicLayoutProps) {
   const { t, ready } = useTranslation("common");
   const locale = useLocale();
-  const { resolvedTheme } = useTheme();
-  const isDark = resolvedTheme === "dark";
 
   if (!ready) return null;
 
+  // No local .dark scope here. The root element already carries the theme,
+  // stamped before the first paint, and duplicating it from React state made
+  // this subtree's markup depend on a value the server cannot know — which is
+  // the hydration mismatch that made React throw away the whole page and
+  // rebuild it on every load where the stored theme differed from the cookie.
   return (
-    <div className={isDark ? "dark" : ""}>
+    <>
       <MetaPixel />
       <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors flex flex-col">
         <Navbar
@@ -45,6 +47,6 @@ export function PublicLayout({ children }: PublicLayoutProps) {
         <main className="flex-1 pt-16">{children}</main>
         <Footer />
       </div>
-    </div>
+    </>
   );
 }

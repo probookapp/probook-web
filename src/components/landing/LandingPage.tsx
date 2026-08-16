@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useRouter, useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { useTheme } from "@/components/providers/ThemeContext";
 import { Navbar } from "@/components/public/Navbar";
 import { Footer } from "@/components/public/Footer";
 import { WhatsAppCta } from "@/components/landing/WhatsAppCta";
@@ -88,7 +87,6 @@ export function LandingPage() {
   const { t, ready } = useTranslation("common");
   const router = useRouter();
   const locale = useLocale();
-  const { resolvedTheme } = useTheme();
 
   const { data: plansData, isLoading: plansLoading } = useQuery<PlansResponse>({
     queryKey: ["public-plans"],
@@ -102,14 +100,18 @@ export function LandingPage() {
 
   const plans = plansData?.plans;
 
-  const isDark = resolvedTheme === "dark";
   const isRtl = locale === "ar";
   const textDir = isRtl ? "rtl" : undefined;
 
   if (!ready) return null;
 
+  // No local .dark scope here. The root element already carries the theme,
+  // stamped before the first paint, and duplicating it from React state made
+  // this subtree's markup depend on a value the server cannot know — which is
+  // the hydration mismatch that made React throw away the whole page and
+  // rebuild it on every load where the stored theme differed from the cookie.
   return (
-    <div className={isDark ? "dark" : ""}>
+    <>
       <MetaPixel />
       <div className="min-h-screen bg-white dark:bg-gray-950 transition-colors">
         <Navbar
@@ -305,6 +307,6 @@ export function LandingPage() {
         {/* Persistent WhatsApp bubble */}
         <WhatsAppCta variant="float" />
       </div>
-    </div>
+    </>
   );
 }

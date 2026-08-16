@@ -63,7 +63,7 @@ export function WhatsAppCta({ variant }: Props) {
         rel="noopener noreferrer"
         onClick={() => trackMetaEvent("Contact", { content_name: "whatsapp_cta", locale })}
         aria-label={label}
-        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-white shadow-lg transition-transform hover:scale-105"
+        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-[#0b2e1a] shadow-lg transition-transform hover:scale-105"
       >
         {icon}
       </a>
@@ -76,7 +76,10 @@ export function WhatsAppCta({ variant }: Props) {
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => trackMetaEvent("Contact", { content_name: "whatsapp_cta", locale })}
-      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-white text-lg font-semibold px-8 py-3.5 rounded-xl shadow-lg transition-all bg-[#25D366] hover:bg-[#1eb455] hover:-translate-y-0.5"
+      // WhatsApp green with dark ink rather than white: white on #25D366 is
+      // 1.98:1, which almost nobody can read. Keeping the green keeps the
+      // button recognisable as WhatsApp, which is the whole point of it.
+      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 text-[#0b2e1a] text-lg font-semibold px-8 py-3.5 rounded-xl shadow-lg transition-all bg-[#25D366] hover:bg-[#1eb455] hover:-translate-y-0.5"
     >
       {icon}
       {label}

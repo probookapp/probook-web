@@ -22,6 +22,8 @@ export default async function LocaleLayout({
 
   const cookieStore = await cookies();
   const themeCookie = cookieStore.get("NEXT_THEME")?.value;
+  // Only what the first paint needs. A visitor with no cookie is resolved by
+  // the bootstrap script in the root layout, from their own setting.
   const serverTheme = (themeCookie === "dark" ? "dark" : "light") as "light" | "dark";
 
   return <Providers locale={locale} theme={serverTheme}>{children}</Providers>;

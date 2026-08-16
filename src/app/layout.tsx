@@ -61,7 +61,13 @@ export default async function RootLayout({
 }) {
   const cookieStore = await cookies();
   const themeCookie = cookieStore.get("NEXT_THEME")?.value;
-  const serverTheme = themeCookie === "dark" ? "dark" : "light";
+  // Absent means "follow the system", which is what the stylesheet already
+  // assumes: its dark tokens apply under prefers-color-scheme unless :root is
+  // explicitly .light. Resolving absent to "light" here made the two disagree —
+  // a visitor on a dark machine who had never chosen got the dark surfaces from
+  // the media query and the light utilities, because Tailwind's dark: variant
+  // is class-based. Dark text on a dark ground, until hydration corrected it.
+  const serverTheme = themeCookie === "dark" ? "dark" : themeCookie === "light" ? "light" : "system";
   const locale = cookieStore.get("NEXT_LOCALE")?.value || "en";
   // CSP nonce generated per-request in src/proxy.ts; required for the inline
   // theme-bootstrap script below under the strict production policy.
@@ -70,7 +76,11 @@ export default async function RootLayout({
   return (
     <html
       lang={locale}
-      className={`${plexSans.variable} ${plexMono.variable} ${serverTheme === "dark" ? "dark" : ""}`}
+      // No class when the preference is unknown: the bootstrap script below
+      // stamps one before first paint, from the machine's own setting.
+      className={`${plexSans.variable} ${plexMono.variable} ${
+        serverTheme === "dark" ? "dark" : serverTheme === "light" ? "light" : ""
+      }`}
       suppressHydrationWarning
     >
       <head>
@@ -87,7 +97,7 @@ export default async function RootLayout({
           nonce={nonce}
           suppressHydrationWarning
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var d=document.documentElement;var t=localStorage.getItem('probook_theme');if(t==='dark')d.classList.add('dark');else if(t==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches)d.classList.add('dark')}catch(e){}})()`,
+            __html: `(function(){try{var d=document.documentElement;var t=localStorage.getItem('probook_theme');var dark=t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme:dark)').matches);d.classList.remove('light','dark');d.classList.add(dark?'dark':'light')}catch(e){}})()`,
           }}
         />
         <link rel="manifest" href="/manifest.json" />

@@ -55,8 +55,12 @@ export function ThemeProvider({ children, serverTheme }: ThemeProviderProps) {
         }
       } catch {}
     }
-    // No localStorage value — use the server theme as a concrete value
-    return serverTheme;
+    // Nothing stored means the machine decides. Falling back to the cookie's
+    // resolved value (light, when there is no cookie) contradicted the
+    // stylesheet, whose dark tokens apply under prefers-color-scheme — so a
+    // visitor on a dark machine got dark surfaces and light text until this
+    // provider mounted and stamped .light over it.
+    return "system";
   });
 
   const [resolvedTheme, setResolvedTheme] = useState<ResolvedTheme>(() => {
@@ -68,7 +72,7 @@ export function ThemeProvider({ children, serverTheme }: ThemeProviderProps) {
         const s = localStorage.getItem(THEME_STORAGE_KEY);
         if (s === "light" || s === "dark" || s === "system") return s as AppTheme;
       } catch {}
-      return serverTheme as AppTheme;
+      return "system" as AppTheme;
     })();
     return resolveTheme(stored);
   });
@@ -83,6 +87,19 @@ export function ThemeProvider({ children, serverTheme }: ThemeProviderProps) {
       localStorage.setItem(THEME_STORAGE_KEY, newTheme);
     } catch {}
   }, []);
+
+  // Put the class back after hydration.
+  //
+  // The inline script in the root layout stamps .dark or .light on <html>
+  // before the first paint, from the machine's own setting. React then
+  // reconciles <html> against what the server sent — which carries no class
+  // when the visitor has no cookie — and removes it again. On the authenticated
+  // pages another provider happened to re-apply it a moment later; on the
+  // public pages nothing did, so a visitor on a dark machine watched the site
+  // load correctly and then turn inside out.
+  useEffect(() => {
+    applyThemeToDOM(resolvedTheme);
+  }, [resolvedTheme]);
 
   // Listen for system theme changes when theme is "system"
   useEffect(() => {

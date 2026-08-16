@@ -71,7 +71,11 @@ export function Navbar({ actions }: NavbarProps) {
             className="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             aria-label="Toggle dark mode"
           >
-            {isDark ? <Sun className="h-4.5 w-4.5" /> : <Moon className="h-4.5 w-4.5" />}
+            {/* Both are rendered; the stylesheet shows one. Choosing in JavaScript
+                made this button's markup differ between the server and the
+                browser, which is enough to fail hydration for the whole page. */}
+            <Moon className="h-4.5 w-4.5 dark:hidden" />
+            <Sun className="hidden h-4.5 w-4.5 dark:block" />
           </button>
           {/* Language switcher */}
           <div ref={langRef} className="relative">
@@ -94,7 +98,7 @@ export function Navbar({ actions }: NavbarProps) {
                         window.location.href = `/${l.code}`;
                       }
                     }}
-                    className={`w-full text-left px-3 py-2 text-sm transition-colors ${
+                    className={`w-full text-start px-3 py-2 text-sm transition-colors ${
                       l.code === locale
                         ? "text-primary-600 dark:text-primary-400 bg-primary-50 dark:bg-primary-950"
                         : "text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800"
