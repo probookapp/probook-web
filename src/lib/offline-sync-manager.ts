@@ -100,11 +100,9 @@ async function markHttpFailure(
   await updateMutation(item);
 }
 
-async function runSync(): Promise<SyncResult> {
+async function runSync(pending: QueuedMutation[]): Promise<SyncResult> {
   const result: SyncResult = { synced: 0, failed: 0, conflicts: 0 };
   if (!isOnline()) return result;
-
-  const pending = await getSyncableMutations();
 
   // Replay FIFO; conflicts never block the run.
   for (const item of pending) {
@@ -171,12 +169,25 @@ async function runSync(): Promise<SyncResult> {
 export function syncNow(): Promise<SyncResult> {
   if (inFlight) return inFlight;
 
-  dispatchSyncState(true);
-  inFlight = runSync()
+  inFlight = (async (): Promise<SyncResult> => {
+    // An empty queue is not an event. This used to announce a run every thirty
+    // seconds whatever the queue held, so the indicator flashed "syncing" and
+    // then "all changes are synced" on a heartbeat, having synced nothing —
+    // a confirmation that fires when nothing happened teaches people to ignore
+    // it, and it is the one message that has to be believed when it matters.
+    const pending = await getSyncableMutations();
+    if (pending.length === 0) return { synced: 0, failed: 0, conflicts: 0 };
+
+    dispatchSyncState(true);
+    try {
+      return await runSync(pending);
+    } finally {
+      dispatchSyncState(false);
+    }
+  })()
     .catch((): SyncResult => ({ synced: 0, failed: 0, conflicts: 0 }))
     .finally(() => {
       inFlight = null;
-      dispatchSyncState(false);
     });
   return inFlight;
 }
