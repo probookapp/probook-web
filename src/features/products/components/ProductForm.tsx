@@ -5,6 +5,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
 import { Button, Input, Textarea, Select, SearchableSelect } from "@/components/ui";
 import { useVatRateOptions } from "@/hooks/useFiscalProfile";
+import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { createProductSchema, type ProductFormData } from "../schemas/productSchema";
 import { useProductCategories } from "../hooks/useProductCategories";
 import { ProductPhotoUpload } from "./ProductPhotoUpload";
@@ -22,6 +23,11 @@ interface ProductFormProps {
 export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductFormProps) {
   const { t } = useTranslation(["products", "common"]);
   const { data: categories } = useProductCategories();
+  // A new product inherits the tenant's usual rate. It used to open at 0 %,
+  // and since an invoice line takes its rate from the product, anything sold
+  // before someone noticed was invoiced with no VAT at all.
+  const { data: settings } = useCompanySettings();
+  const defaultTaxRate = settings?.default_tax_rate ?? 0;
 
   const productSchema = useMemo(() => createProductSchema(t), [t]);
 
@@ -61,7 +67,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
       designation: product?.designation ?? "",
       description: product?.description ?? "",
       unit_price: product?.unit_price ?? 0,
-      tax_rate: product?.tax_rate ?? 0,
+      tax_rate: product?.tax_rate ?? defaultTaxRate,
       unit: product?.unit ?? "unit",
       reference: product?.reference ?? "",
       barcode: product?.barcode ?? "",

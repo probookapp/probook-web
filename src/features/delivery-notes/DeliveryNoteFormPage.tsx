@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useIsNarrow } from "@/hooks/useIsNarrow";
 import { DocumentLinesMobile } from "@/components/documents/DocumentLinesMobile";
 import { useRouter, useParams } from "@/lib/navigation";
@@ -123,27 +123,30 @@ export function DeliveryNoteFormPage() {
   const submittedRef = useRef(false);
   const blocker = useUnsavedChangesGuard(() => isDirty && !submittedRef.current);
 
-  // Load existing delivery note data when editing
-  useEffect(() => {
-    if (existingNote && isEdit) {
-      reset({
-        client_id: existingNote.client_id,
-        quote_id: existingNote.quote_id,
-        invoice_id: existingNote.invoice_id,
-        issue_date: existingNote.issue_date,
-        delivery_date: existingNote.delivery_date || "",
-        delivery_address: existingNote.delivery_address || "",
-        notes: existingNote.notes || "",
-        status: existingNote.status,
-        lines: existingNote.lines.map((line) => ({
-          product_id: line.product_id,
-          description: line.description,
-          quantity: line.quantity,
-          unit: line.unit || "unit",
-        })),
-      });
-    }
-  }, [existingNote, isEdit, reset]);
+  // Seed the form from the note being edited — once per note, the way the
+  // invoice and quote forms do it. As an effect keyed on the note itself it
+  // re-ran on every refetch and overwrote whatever was being typed.
+  const [lastResetNoteId, setLastResetNoteId] = useState<string | null>(null);
+
+  if (existingNote && isEdit && existingNote.id !== lastResetNoteId) {
+    setLastResetNoteId(existingNote.id);
+    reset({
+      client_id: existingNote.client_id,
+      quote_id: existingNote.quote_id,
+      invoice_id: existingNote.invoice_id,
+      issue_date: existingNote.issue_date,
+      delivery_date: existingNote.delivery_date || "",
+      delivery_address: existingNote.delivery_address || "",
+      notes: existingNote.notes || "",
+      status: existingNote.status,
+      lines: existingNote.lines.map((line) => ({
+        product_id: line.product_id,
+        description: line.description,
+        quantity: line.quantity,
+        unit: line.unit || "unit",
+      })),
+    });
+  }
 
   const handleProductSelect = (index: number, productId: string) => {
     const product = products?.find((p) => p.id === productId);

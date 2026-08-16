@@ -229,7 +229,7 @@ export function SettingsPage() {
   }));
 
   useEffect(() => {
-    if (settings) {
+    if (settings && !isDirty) {
       reset({
         company_name: settings.company_name,
         address: settings.address ?? "",
@@ -266,11 +266,18 @@ export function SettingsPage() {
         stamp_duty_threshold: settings.stamp_duty_threshold ?? 0,
       });
     }
-  }, [settings, reset]);
+    // Only when the form holds nothing of the user's: every refetch of the
+    // settings — uploading the logo invalidates them, so does regaining window
+    // focus — used to run this and overwrite whatever was being typed. Filling
+    // in the address and then choosing a logo lost the address.
+  }, [settings, isDirty, reset]);
 
   const onSubmit = async (data: SettingsFormData) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
     await updateSettings.mutateAsync(data);
+    // What was just saved is the new baseline, so the form stops reading as
+    // dirty and can be re-seeded from the server again.
+    reset(data);
     if (data.currency) {
       setCurrency(data.currency);
     }

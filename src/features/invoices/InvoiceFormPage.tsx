@@ -92,6 +92,7 @@ export function InvoiceFormPage() {
     control,
     handleSubmit,
     setValue,
+    getValues,
     reset,
     formState: { errors, isDirty },
   } = useForm<InvoiceFormData>({
@@ -179,6 +180,21 @@ export function InvoiceFormPage() {
   }, [canManage, router]);
 
   const blocker = useUnsavedChangesGuard(() => isDirty && !submittedRef.current);
+  // react-hook-form freezes defaultValues at mount, and the company settings can
+  // land a beat later — a hard reload straight onto this page is enough. The
+  // form then keeps the 0 % it was born with and the document goes out with no
+  // VAT on it, silently. Seed the rate once, and never over work already typed.
+  const seededRate = useRef(false);
+  useEffect(() => {
+    if (seededRate.current || !settings || isEditing) return;
+    seededRate.current = true;
+    if (isDirty || !defaultTaxRate) return;
+    setValue("shipping_tax_rate", defaultTaxRate);
+    (getValues("lines") ?? []).forEach((_, i) =>
+      setValue(`lines.${i}.tax_rate`, defaultTaxRate)
+    );
+  }, [settings, isEditing, isDirty, defaultTaxRate, setValue, getValues]);
+
 
   const [lastResetInvoiceId, setLastResetInvoiceId] = useState<string | null>(null);
 
@@ -519,7 +535,7 @@ export function InvoiceFormPage() {
                             </Button>
                           )}
                         </div>
-                        <div className="text-right">
+                        <div className="text-end">
                           <span className="text-sm text-blue-600 dark:text-blue-400">{t("invoices:lines.groupTotal")}:</span>
                           <span className="ml-2 font-bold text-blue-800 dark:text-blue-200">
                             {formatCurrency(groupSubtotals[groupName]?.total || 0)} {t("invoices:totals.labelTtc")}
