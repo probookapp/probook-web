@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { num } from "@/lib/money";
+import { PAYABLE_PURCHASE_STATUSES } from "@/lib/purchase-status";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const supplier = await prisma.supplier.findFirst({
@@ -9,12 +10,13 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   });
   if (!supplier) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // All confirmed orders (regardless of payment status) = total ever owed
+  // Every order whose goods have arrived, whatever its payment status = the
+  // total ever owed. Part-delivered orders count: the stock is on the shelf.
   const allConfirmedOrders = await prisma.purchaseOrder.findMany({
     where: {
       tenantId,
       supplierId: params?.id,
-      status: "CONFIRMED",
+      status: { in: [...PAYABLE_PURCHASE_STATUSES] },
     },
     include: { lines: { include: { product: true, variant: true } } },
   });

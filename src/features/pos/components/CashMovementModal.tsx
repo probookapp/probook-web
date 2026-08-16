@@ -27,7 +27,7 @@ export function CashMovementModal({
   const { t } = useTranslation("pos");
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const currency = useSettingsStore((state) => state.currency);
-  const [movementType, setMovementType] = useState<CashMovementType>("CASH_IN");
+  const [movementType, setMovementType] = useState<CashMovementType>("IN");
   const [amount, setAmount] = useState("");
   const [reason, setReason] = useState("");
 
@@ -59,12 +59,12 @@ export function CashMovementModal({
 
   const totalIn =
     movements
-      ?.filter((m) => m.movement_type === "CASH_IN")
+      ?.filter((m) => m.movement_type === "IN")
       .reduce((sum, m) => sum + m.amount, 0) ?? 0;
 
   const totalOut =
     movements
-      ?.filter((m) => m.movement_type !== "CASH_IN")
+      ?.filter((m) => m.movement_type !== "IN")
       .reduce((sum, m) => sum + m.amount, 0) ?? 0;
 
   return (
@@ -86,16 +86,16 @@ export function CashMovementModal({
           {/* Movement type */}
           <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => setMovementType("CASH_IN")}
+              onClick={() => setMovementType("IN")}
               className={`p-3 rounded-lg border-2 flex items-center gap-2 transition-colors ${
-                movementType === "CASH_IN"
+                movementType === "IN"
                   ? "border-green-500 bg-green-50 dark:bg-green-900/20"
                   : "border-(--color-border-primary) hover:border-(--color-border-secondary)"
               }`}
             >
               <ArrowDownCircle
                 className={`h-5 w-5 ${
-                  movementType === "CASH_IN"
+                  movementType === "IN"
                     ? "text-green-600"
                     : "text-(--color-text-secondary)"
                 }`}
@@ -103,16 +103,16 @@ export function CashMovementModal({
               <span className="font-medium text-sm">{t("cashIn")}</span>
             </button>
             <button
-              onClick={() => setMovementType("CASH_OUT")}
+              onClick={() => setMovementType("OUT")}
               className={`p-3 rounded-lg border-2 flex items-center gap-2 transition-colors ${
-                movementType === "CASH_OUT"
+                movementType === "OUT"
                   ? "border-red-500 bg-red-50 dark:bg-red-900/20"
                   : "border-(--color-border-primary) hover:border-(--color-border-secondary)"
               }`}
             >
               <ArrowUpCircle
                 className={`h-5 w-5 ${
-                  movementType === "CASH_OUT"
+                  movementType === "OUT"
                     ? "text-red-600"
                     : "text-(--color-text-secondary)"
                 }`}
@@ -163,14 +163,14 @@ export function CashMovementModal({
               createMovement.isPending
             }
             className={`w-full px-4 py-3 rounded-lg font-bold text-white disabled:opacity-50 transition-colors ${
-              movementType === "CASH_IN"
+              movementType === "IN"
                 ? "bg-green-600 hover:bg-green-700"
                 : "bg-red-600 hover:bg-red-700"
             }`}
           >
             {createMovement.isPending
               ? t("loading")
-              : movementType === "CASH_IN"
+              : movementType === "IN"
                 ? t("addCashIn")
                 : t("addCashOut")}
           </button>
@@ -187,7 +187,7 @@ export function CashMovementModal({
               </div>
               <div className="space-y-1 max-h-40 overflow-auto">
                 {movements.map((m) => {
-                  const isIn = m.movement_type === "CASH_IN";
+                  const isIn = m.movement_type === "IN";
                   const time = new Date(m.created_at).toLocaleTimeString([], {
                     hour: "2-digit",
                     minute: "2-digit",

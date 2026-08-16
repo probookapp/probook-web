@@ -5,6 +5,7 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { posSessionCloseSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 import { num } from "@/lib/money";
+import { addsToDrawer } from "@/lib/pos-cash-movements";
 
 export const POST = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "pos", "create");
@@ -37,7 +38,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
     }
   }
   for (const mv of cashMovements) {
-    if (mv.movementType === "IN") expectedCash += num(mv.amount);
+    if (addsToDrawer(mv.movementType)) expectedCash += num(mv.amount);
     else expectedCash -= num(mv.amount);
   }
 

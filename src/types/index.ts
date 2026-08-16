@@ -171,7 +171,7 @@ export interface UpdateProductInput extends CreateProductInput {
 }
 
 // Purchase Order types
-export type PurchaseOrderStatus = "PENDING" | "PARTIALLY_RECEIVED" | "CONFIRMED" | "CANCELLED";
+export type { PurchaseOrderStatus };
 export type PurchasePaymentStatus = "UNPAID" | "PARTIAL" | "PAID";
 
 export interface PurchaseOrder {
@@ -1338,7 +1338,9 @@ export interface CreatePosTransactionInput {
   notes?: string | null;
 }
 
-export type CashMovementType = "CASH_IN" | "CASH_OUT" | "PETTY_CASH";
+import type { PurchaseOrderStatus } from "@/lib/purchase-status";
+import type { CashMovementType } from "@/lib/pos-cash-movements";
+export type { CashMovementType };
 
 export interface PosCashMovement {
   id: string;

@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
 import { num } from "@/lib/money";
 import { resolveDocumentDiscount } from "@/lib/document-totals";
+import { PAYABLE_PURCHASE_STATUSES } from "@/lib/purchase-status";
 
 /** A payment method counts toward stamp duty (droit de timbre) when it is cash. */
 function isCashMethod(method: string | null | undefined): boolean {
@@ -162,7 +163,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     where: {
       tenantId,
       orderDate: range,
-      status: { in: ["CONFIRMED", "PARTIALLY_RECEIVED"] },
+      status: { in: [...PAYABLE_PURCHASE_STATUSES] },
     },
     include: { lines: true },
   });

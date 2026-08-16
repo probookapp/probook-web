@@ -118,4 +118,32 @@ test.describe("Purchase order workflow", () => {
     expect(confirmed.body.payment_status).toBe("PAID");
     expect(confirmed.body.paid_from_register).toBe(true);
   });
+
+  test("a partially received order still counts as owed to the supplier", async ({ page }) => {
+    const supplier = await setupSupplier(page, "Partial Credit Supplier");
+    const product = await setupProduct(page, "Partial Credit Product", 100, { quantity: 0 });
+
+    const po = await apiPost(page, "/api/purchases", {
+      supplier_id: supplier.id,
+      lines: [{ product_id: product.id, quantity: 10, unit_price: 100, tax_rate: 19 }],
+    });
+    const lineId = (po.body.lines as Array<{ id: string }>)[0].id;
+
+    // Only 8 of the 10 arrive: goods on the shelf, invoice still to pay.
+    const received = await apiPost(page, `/api/purchases/${po.body.id}/confirm`, {
+      paid_from_register: false,
+      lines: [{ line_id: lineId, received_quantity: 8 }],
+    });
+    expect(received.status).toBe(200);
+    expect(received.body.status).toBe("PARTIALLY_RECEIVED");
+
+    // The credit view used to look only at CONFIRMED orders, so it answered
+    // "nothing owed" while the stock was already in the warehouse.
+    const credits = await apiGet(page, `/api/suppliers/${supplier.id}/credits`);
+    expect(credits.status).toBe(200);
+    expect(credits.body.total_owed).toBe(1190);
+    expect(credits.body.total_paid).toBe(0);
+    expect(credits.body.balance).toBe(1190);
+    expect(credits.body.unpaid_orders).toHaveLength(1);
+  });
 });

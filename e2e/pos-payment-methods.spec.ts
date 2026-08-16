@@ -143,4 +143,36 @@ test.describe("POS payment methods", () => {
     });
     expect(sale.status).toBe(400);
   });
+
+  test("a cash movement is accepted and lands on the right side of the drawer", async ({ page }) => {
+    const { session } = await till(page, "Drawer Register", 5000);
+
+    // The till used to send "CASH_IN" while the schema accepted only "IN", so
+    // every movement was refused outright. Worse if one had got through: the
+    // Z-report counts an entry with movementType === "IN" and puts everything
+    // else on the other side, so a stored "CASH_IN" would have been subtracted.
+    const paidIn = await apiPost(page, "/api/pos/cash-movements", {
+      session_id: session.id,
+      movement_type: "IN",
+      amount: 3000,
+      reason: "Apport de fond",
+    });
+    expect(paidIn.status).toBe(200);
+
+    const takenOut = await apiPost(page, "/api/pos/cash-movements", {
+      session_id: session.id,
+      movement_type: "OUT",
+      amount: 2000,
+      reason: "Achat de fournitures",
+    });
+    expect(takenOut.status).toBe(200);
+
+    const summary = await apiGet(page, `/api/pos/sessions/${session.id}/summary`);
+    // The direction is what the bug got wrong, so the sign is what is asserted:
+    // 3000 in and 2000 out must net to +1000, not to -5000.
+    expect(summary.body.net_cash_movement).toBeCloseTo(1000, 2);
+
+    // Float + in - out, with no sales: the arithmetic a cashier checks by hand.
+    expect(summary.body.expected_cash).toBeCloseTo(5000 + 3000 - 2000, 2);
+  });
 });

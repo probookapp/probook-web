@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { num } from "@/lib/money";
+import { addsToDrawer } from "@/lib/pos-cash-movements";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const sessionId = params?.sessionId;
@@ -49,7 +50,7 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   let cashIn = 0;
   let cashOut = 0;
   for (const mv of cashMovements) {
-    if (mv.movementType === "IN") cashIn += num(mv.amount);
+    if (addsToDrawer(mv.movementType)) cashIn += num(mv.amount);
     else cashOut += num(mv.amount);
   }
 

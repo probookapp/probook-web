@@ -4,6 +4,7 @@ import { requirePermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/db";
 import { num } from "@/lib/money";
 import { resolveDocumentDiscount } from "@/lib/document-totals";
+import { PAYABLE_PURCHASE_STATUSES } from "@/lib/purchase-status";
 
 /**
  * Accountant-friendly dataset for a period: sales, purchases, payments and
@@ -52,7 +53,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       where: {
         tenantId,
         orderDate: range,
-        status: { in: ["CONFIRMED", "PARTIALLY_RECEIVED"] },
+        status: { in: [...PAYABLE_PURCHASE_STATUSES] },
       },
       include: { supplier: true },
       orderBy: [{ orderDate: "asc" }, { orderNumber: "asc" }],

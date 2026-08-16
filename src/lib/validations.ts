@@ -2,6 +2,7 @@ import { z } from "zod";
 import { FISCAL_PROFILE_IDS } from "./fiscal-profiles";
 import { EXPENSE_CATEGORY_MAX_LENGTH } from "./expense-categories";
 import { POS_PAYMENT_METHODS } from "./pos-payment-methods";
+import { CASH_MOVEMENT_TYPES } from "./pos-cash-movements";
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────
 
@@ -433,7 +434,7 @@ export const posSessionCloseSchema = z.object({
 
 export const posCashMovementSchema = z.object({
   session_id: requiredString("Session ID"),
-  movement_type: z.enum(["IN", "OUT"], { message: "Must be IN or OUT" }),
+  movement_type: z.enum(CASH_MOVEMENT_TYPES, { message: "Must be IN or OUT" }),
   amount: z.coerce.number().min(0.01, "Amount must be positive"),
   reason: requiredString("Reason"),
   reference: optionalString,
