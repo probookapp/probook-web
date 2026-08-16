@@ -29,7 +29,7 @@ function FaqItem({ questionKey }: { questionKey: string }) {
     <div className="border-b border-gray-200 dark:border-gray-800">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-5 text-left"
+        className="w-full flex items-center justify-between py-5 text-start"
       >
         <span dir={textDir} className="text-base font-medium text-gray-900 dark:text-white">
           {t(`faq.items.${questionKey}.q`)}

@@ -270,7 +270,7 @@ export function RichTextEditor({
                     setShowFontPicker(false);
                   }}
                   className={cn(
-                    "w-full px-3 py-1.5 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-100",
+                    "w-full px-3 py-1.5 text-start text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-100",
                     currentFont === font.value && "bg-primary-50 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300"
                   )}
                   style={{ fontFamily: font.value || "inherit" }}

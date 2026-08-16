@@ -11,6 +11,7 @@ import {
 } from "@/components/ui";
 import { useCreditNote } from "./hooks/useCreditNotes";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { NUMERIC_CELL } from "@/components/ui";
 
 export function CreditNoteViewPage() {
   const { t } = useTranslation(["invoices", "common"]);
@@ -72,19 +73,19 @@ export function CreditNoteViewPage() {
                 <table className="w-full min-w-125">
                   <thead className="bg-(--color-bg-secondary)">
                     <tr>
-                      <th className="px-3 py-2 text-left text-sm font-medium text-(--color-text-secondary)">
+                      <th className="px-3 py-2 text-start text-sm font-medium text-(--color-text-secondary)">
                         {t("invoices:lines.description")}
                       </th>
                       <th className="px-3 py-2 text-center text-sm font-medium text-(--color-text-secondary) w-16">
                         {t("invoices:lines.quantity")}
                       </th>
-                      <th className="px-3 py-2 text-right text-sm font-medium text-(--color-text-secondary) w-24">
+                      <th className="px-3 py-2 text-end text-sm font-medium text-(--color-text-secondary) w-24">
                         {t("invoices:lines.unitPriceHt")}
                       </th>
                       <th className="px-3 py-2 text-center text-sm font-medium text-(--color-text-secondary) w-16">
                         {t("common:labels.vat")}
                       </th>
-                      <th className="px-3 py-2 text-right text-sm font-medium text-(--color-text-secondary) w-24">
+                      <th className="px-3 py-2 text-end text-sm font-medium text-(--color-text-secondary) w-24">
                         {t("invoices:lines.totalTtc")}
                       </th>
                     </tr>
@@ -93,10 +94,10 @@ export function CreditNoteViewPage() {
                     {creditNote.lines.map((line) => (
                       <tr key={line.id}>
                         <td className="px-3 py-2 text-sm">{line.description}</td>
-                        <td className="px-3 py-2 text-center text-sm">{line.quantity}</td>
-                        <td className="px-3 py-2 text-right text-sm">{formatCurrency(line.unit_price)}</td>
-                        <td className="px-3 py-2 text-center text-sm">{line.tax_rate}%</td>
-                        <td className="px-3 py-2 text-right text-sm font-medium">{formatCurrency(line.total)}</td>
+                        <td className="px-3 py-2 text-center text-sm tabular-nums">{line.quantity}</td>
+                        <td className={`px-3 py-2 text-sm ${NUMERIC_CELL}`}>{formatCurrency(line.unit_price)}</td>
+                        <td className="px-3 py-2 text-center text-sm tabular-nums">{line.tax_rate}%</td>
+                        <td className={`px-3 py-2 text-sm font-medium ${NUMERIC_CELL}`}>{formatCurrency(line.total)}</td>
                       </tr>
                     ))}
                   </tbody>

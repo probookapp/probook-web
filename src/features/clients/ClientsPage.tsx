@@ -268,7 +268,7 @@ export function ClientsPage() {
                 <TableHead>{t("fields.email")}</TableHead>
                 <TableHead>{t("fields.phone")}</TableHead>
                 <TableHead>{t("fields.city")}</TableHead>
-                <TableHead className="text-right text-end">{t("statement.outstanding")}</TableHead>
+                <TableHead className="text-end">{t("statement.outstanding")}</TableHead>
                 <TableHead className="w-24">{tCommon("buttons.actions")}</TableHead>
               </TableRow>
             </TableHeader>

@@ -196,7 +196,7 @@ export function ReferralsPage() {
                   <TableHead>{t("referrals.active")}</TableHead>
                   <TableHead>{t("referrals.referrals_count")}</TableHead>
                   <TableHead>{t("referrals.converted_count")}</TableHead>
-                  <TableHead className="text-right">{t("referrals.actions")}</TableHead>
+                  <TableHead className="text-end">{t("referrals.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -221,7 +221,7 @@ export function ReferralsPage() {
                       <TableCell className="text-gray-900 dark:text-gray-100">
                         {String(rc.converted_count ?? 0)}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <Button
                           variant={rc.is_active ? "ghost" : "secondary"}
                           size="sm"

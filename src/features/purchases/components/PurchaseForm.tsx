@@ -413,7 +413,7 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
                   </label>
                 )}
 
-                <div className="text-right text-sm text-gray-600 dark:text-gray-400">
+                <div className="text-end text-sm text-gray-600 dark:text-gray-400">
                   {t("fields.lineTotal")}:{" "}
                   <span className="font-medium text-gray-900 dark:text-gray-100">
                     {formatCurrency(lineSubtotals[index]?.total ?? 0)}

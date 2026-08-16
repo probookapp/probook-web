@@ -389,19 +389,19 @@ export function UserManagement() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-gray-200 dark:border-gray-700">
-              <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
+              <th className="text-start py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
                 {t('userManagement.displayName')}
               </th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
+              <th className="text-start py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
                 {t('userManagement.username')}
               </th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
+              <th className="text-start py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
                 {t('userManagement.role')}
               </th>
-              <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
+              <th className="text-start py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
                 {t('userManagement.status')}
               </th>
-              <th className="text-right py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
+              <th className="text-end py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
                 {t('userManagement.actions')}
               </th>
             </tr>

@@ -200,7 +200,7 @@ export function AdminUsersPage() {
                   <TableHead>{t("users.role")}</TableHead>
                   <TableHead>{t("users.active")}</TableHead>
                   <TableHead>{t("users.created")}</TableHead>
-                  <TableHead className="text-right">{t("users.actions")}</TableHead>
+                  <TableHead className="text-end">{t("users.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -232,7 +232,7 @@ export function AdminUsersPage() {
                           ? new Date(String(user.created_at)).toLocaleDateString()
                           : "-"}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <div className="flex justify-end gap-2">
                           <Button
                             {...superOnly.button}

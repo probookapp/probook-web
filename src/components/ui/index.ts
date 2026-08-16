@@ -14,6 +14,7 @@ export {
   TableHead,
   TableCell,
   TableNumericCell,
+  NUMERIC_CELL,
 } from "./Table";
 export { fieldBase, fieldLabel, fieldError, FIELD_HEIGHT } from "./field";
 export {

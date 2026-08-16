@@ -73,7 +73,7 @@ export function SessionControls({
                 setShowMenu(false);
                 onTransactionHistory();
               }}
-              className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-left text-sm transition-colors"
+              className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-start text-sm transition-colors"
             >
               <History className="h-4 w-4 text-(--color-text-secondary)" />
               {t("transactionHistory")}
@@ -84,7 +84,7 @@ export function SessionControls({
                 setShowMenu(false);
                 onCashMovement();
               }}
-              className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-left text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-start text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <DollarSign className="h-4 w-4 text-(--color-text-secondary)" />
               {t("cashMovement")}
@@ -92,7 +92,7 @@ export function SessionControls({
             )}
             <button
               onClick={toggleTheme}
-              className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-left text-sm transition-colors"
+              className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-start text-sm transition-colors"
             >
               {resolvedTheme === "dark" ? (
                 <Sun className="h-4 w-4 text-(--color-text-secondary)" />
@@ -107,7 +107,7 @@ export function SessionControls({
                 setShowMenu(false);
                 router.push("/dashboard");
               }}
-              className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-left text-sm transition-colors"
+              className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-start text-sm transition-colors"
             >
               <Briefcase className="h-4 w-4 text-(--color-text-secondary)" />
               {t("backToOffice")}
@@ -118,7 +118,7 @@ export function SessionControls({
                 setShowMenu(false);
                 onCloseSession();
               }}
-              className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-left text-sm text-red-600 dark:text-red-400 transition-colors"
+              className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-start text-sm text-red-600 dark:text-red-400 transition-colors"
             >
               <LogOut className="h-4 w-4" />
               {t("closeSession")}

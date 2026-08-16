@@ -79,7 +79,7 @@ export function StockMovementsModal({ isOpen, onClose, product }: StockMovements
                     {m.quantity_change}
                   </span>
                 </div>
-                <div className="w-16 text-right shrink-0">
+                <div className="w-16 text-end shrink-0">
                   <span className="text-sm text-gray-900 dark:text-gray-100">{m.balance_after}</span>
                   <p className="text-[10px] text-gray-400 dark:text-gray-500">
                     {t("movements.balance")}

@@ -56,14 +56,21 @@ export function TableCell({ className, ...props }: TdHTMLAttributes<HTMLTableCel
 }
 
 /**
- * For money and quantities: right-aligned and monospaced, so decimal points
- * stack and a wrong order of magnitude is visible without reading the digits.
+ * How a figure is set, wherever it appears.
+ *
+ * `text-end` and not `text-end`: in Arabic the row runs the other way, and a
+ * physically-right-aligned column of numbers lands on the wrong side of its own
+ * heading. `tabular-nums` keeps the decimal points stacked, so a wrong order of
+ * magnitude is visible without reading the digits. `whitespace-nowrap` stops an
+ * amount breaking across two lines mid-number.
+ *
+ * Exported because not every table is built from these primitives — the
+ * document line tables and the till are laid out by hand and still owe the
+ * reader the same figures.
  */
+export const NUMERIC_CELL = "text-end font-mono tabular-nums whitespace-nowrap";
+
+/** For money and quantities, in tables built from these primitives. */
 export function TableNumericCell({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
-  return (
-    <td
-      className={cn("px-4 py-3 align-middle text-end font-mono tabular-nums", className)}
-      {...props}
-    />
-  );
+  return <td className={cn("px-4 py-3 align-middle", NUMERIC_CELL, className)} {...props} />;
 }

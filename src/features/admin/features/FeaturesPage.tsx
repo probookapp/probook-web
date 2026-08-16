@@ -292,7 +292,7 @@ export function FeaturesPage() {
                   <TableHead className="hidden md:table-cell">{t("features.description")}</TableHead>
                   <TableHead>{t("features.global")}</TableHead>
                   <TableHead className="hidden lg:table-cell">{t("features.plans")}</TableHead>
-                  <TableHead className="text-right">{t("features.actions")}</TableHead>
+                  <TableHead className="text-end">{t("features.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -343,7 +343,7 @@ export function FeaturesPage() {
                             : <span className="text-gray-400 dark:text-gray-500">-</span>}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <div className="flex items-center justify-end gap-2">
                           <Button
                             variant="secondary"

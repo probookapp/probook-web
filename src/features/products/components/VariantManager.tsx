@@ -8,6 +8,7 @@ import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { toast } from "@/stores/useToastStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { ProductVariant, CreateProductVariantInput } from "@/types";
+import { NUMERIC_CELL } from "@/components/ui";
 
 const PRESET_ATTRIBUTES = ["size", "color", "material"];
 const SIZE_OPTIONS = ["S", "M", "L", "XL", "XXL", "2XL", "3XL"];
@@ -174,10 +175,10 @@ export function VariantManager({ productId }: VariantManagerProps) {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
-                <th className="px-3 py-2 text-left font-medium">{t("variants.name")}</th>
-                <th className="px-3 py-2 text-left font-medium">{t("variants.attributes")}</th>
-                <th className="px-3 py-2 text-right font-medium">{t("variants.quantity")}</th>
-                <th className="px-3 py-2 text-right font-medium">{t("variants.barcode")}</th>
+                <th className="px-3 py-2 text-start font-medium">{t("variants.name")}</th>
+                <th className="px-3 py-2 text-start font-medium">{t("variants.attributes")}</th>
+                <th className={`px-3 py-2 font-medium ${NUMERIC_CELL}`}>{t("variants.quantity")}</th>
+                <th className={`px-3 py-2 font-medium ${NUMERIC_CELL}`}>{t("variants.barcode")}</th>
                 <th className="px-3 py-2 w-20"></th>
               </tr>
             </thead>
@@ -194,12 +195,12 @@ export function VariantManager({ productId }: VariantManagerProps) {
                       ))}
                     </div>
                   </td>
-                  <td className="px-3 py-2 text-right">
+                  <td className={`px-3 py-2 ${NUMERIC_CELL}`}>
                     <span className={v.quantity === 0 ? "text-red-600 dark:text-red-400 font-medium" : ""}>
                       {v.quantity}
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-right text-xs text-gray-500">
+                  <td className={`px-3 py-2 text-xs text-gray-500 ${NUMERIC_CELL}`}>
                     {v.barcode || "-"}
                   </td>
                   <td className="px-3 py-2">

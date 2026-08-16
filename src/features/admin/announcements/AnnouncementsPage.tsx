@@ -257,7 +257,7 @@ export function AnnouncementsPage() {
                   <TableHead>{t("announcements.published")}</TableHead>
                   <TableHead>{t("announcements.expires")}</TableHead>
                   <TableHead>{t("announcements.dismissals")}</TableHead>
-                  <TableHead className="text-right">{t("announcements.actions")}</TableHead>
+                  <TableHead className="text-end">{t("announcements.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -289,7 +289,7 @@ export function AnnouncementsPage() {
                     <TableCell className="text-gray-600 dark:text-gray-400">
                       <Badge variant="default">{String(a.dismissal_count ?? 0)}</Badge>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       <div className="flex justify-end gap-2">
                         <Button
                           variant="secondary"

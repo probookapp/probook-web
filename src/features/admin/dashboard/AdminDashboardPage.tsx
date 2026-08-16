@@ -163,7 +163,7 @@ function AttentionTile({
   return (
     <button
       onClick={() => onNavigate(href)}
-      className={`flex items-center gap-3 rounded-lg border p-4 text-left transition-colors ${
+      className={`flex items-center gap-3 rounded-lg border p-4 text-start transition-colors ${
         empty
           ? "border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
           : "border-amber-300 bg-amber-50 hover:bg-amber-100 dark:border-amber-700 dark:bg-amber-900/20 dark:hover:bg-amber-900/30"

@@ -28,7 +28,7 @@ function ProductTile({
   return (
     <button
       onClick={onClick}
-      className="text-left border border-(--color-border-primary) rounded-lg hover:bg-(--color-bg-secondary) transition-colors overflow-hidden flex flex-col"
+      className="text-start border border-(--color-border-primary) rounded-lg hover:bg-(--color-bg-secondary) transition-colors overflow-hidden flex flex-col"
     >
       {photoBase64 ? (
         <img
@@ -84,7 +84,7 @@ function ProductRow({ product, onClick }: { product: Product; onClick: () => voi
   return (
     <button
       onClick={onClick}
-      className="w-full text-left px-3 py-2 border-b border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex items-center gap-3"
+      className="w-full text-start px-3 py-2 border-b border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex items-center gap-3"
     >
       <div className="min-w-0 flex-1">
         <p className="font-medium text-sm truncate">{product.designation}</p>
@@ -121,7 +121,7 @@ function PriceTierPicker({ product, onSelect, onClose }: PriceTierPickerProps) {
       <div className="space-y-2">
         <button
           onClick={() => onSelect(product)}
-          className="w-full text-left px-3 py-2 rounded-lg border border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex justify-between items-center"
+          className="w-full text-start px-3 py-2 rounded-lg border border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex justify-between items-center"
         >
           <span className="text-sm font-medium">{t("pos:defaultPrice")}</span>
           <span className="text-sm font-bold text-primary-600">{formatAmount(product.unit_price * (1 + product.tax_rate / 100))}</span>
@@ -130,7 +130,7 @@ function PriceTierPicker({ product, onSelect, onClose }: PriceTierPickerProps) {
           <button
             key={p.id}
             onClick={() => onSelect(product, p.label)}
-            className="w-full text-left px-3 py-2 rounded-lg border border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex justify-between items-center"
+            className="w-full text-start px-3 py-2 rounded-lg border border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex justify-between items-center"
           >
             <span className="text-sm font-medium">
               {t(`products:pricing.labels.${p.label}`, { defaultValue: p.label })}

@@ -382,7 +382,7 @@ export function POSPage() {
                 <button
                   key={register.id}
                   onClick={() => setSession(null, register)}
-                  className="w-full flex items-center gap-4 p-4 bg-(--color-bg-secondary) hover:bg-(--color-bg-tertiary) border border-(--color-border-primary) rounded-xl transition-colors text-left"
+                  className="w-full flex items-center gap-4 p-4 bg-(--color-bg-secondary) hover:bg-(--color-bg-tertiary) border border-(--color-border-primary) rounded-xl transition-colors text-start"
                 >
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary-50 dark:bg-primary-900/20 text-primary-600 shrink-0">
                     <Monitor className="h-5 w-5" />
@@ -516,7 +516,7 @@ export function POSPage() {
             <p className="text-(--color-text-secondary) mb-8">{t("sessionClosed")}</p>
 
             {/* Inline opening float form */}
-            <div className="bg-(--color-bg-secondary) rounded-xl border border-(--color-border-primary) p-5 text-left space-y-4">
+            <div className="bg-(--color-bg-secondary) rounded-xl border border-(--color-border-primary) p-5 text-start space-y-4">
               <p className="text-sm text-(--color-text-secondary)">
                 {t("openingFloatDescription")}
               </p>

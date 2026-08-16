@@ -282,7 +282,7 @@ export function DataRequestsPage() {
                   <TableHead>{t("data_requests.requested_by")}</TableHead>
                   <TableHead>{t("data_requests.created")}</TableHead>
                   <TableHead>{t("data_requests.completed")}</TableHead>
-                  <TableHead className="text-right">{t("data_requests.actions")}</TableHead>
+                  <TableHead className="text-end">{t("data_requests.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -316,7 +316,7 @@ export function DataRequestsPage() {
                           ? new Date(String(dr.completed_at)).toLocaleDateString()
                           : "-"}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <div className="flex items-center justify-end gap-2">
                           {dr.status === "completed" && dr.request_type === "export" && (
                             <Button

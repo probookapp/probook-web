@@ -7,6 +7,7 @@ import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useRouter } from "@/lib/navigation";
 import type { Invoice } from "@/types";
 import { useCreateCreditNote } from "../hooks/useCreditNotes";
+import { NUMERIC_CELL } from "@/components/ui";
 
 interface CreateCreditNoteModalProps {
   invoice: Invoice;
@@ -125,16 +126,16 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
           <table className="w-full min-w-125">
             <thead className="bg-(--color-bg-secondary)">
               <tr>
-                <th className="px-3 py-2 text-left text-sm font-medium text-(--color-text-secondary)">
+                <th className="px-3 py-2 text-start text-sm font-medium text-(--color-text-secondary)">
                   {t("invoices:lines.description")}
                 </th>
-                <th className="px-3 py-2 text-right text-sm font-medium text-(--color-text-secondary) w-24">
+                <th className="px-3 py-2 text-end text-sm font-medium text-(--color-text-secondary) w-24">
                   {t("invoices:lines.unitPriceHt")}
                 </th>
                 <th className="px-3 py-2 text-center text-sm font-medium text-(--color-text-secondary) w-28">
                   {t("invoices:creditNotes.quantityToRefund")}
                 </th>
-                <th className="px-3 py-2 text-right text-sm font-medium text-(--color-text-secondary) w-24">
+                <th className="px-3 py-2 text-end text-sm font-medium text-(--color-text-secondary) w-24">
                   {t("invoices:lines.totalTtc")}
                 </th>
               </tr>
@@ -147,7 +148,7 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
                 return (
                   <tr key={line.id}>
                     <td className="px-3 py-2 text-sm">{line.description}</td>
-                    <td className="px-3 py-2 text-right text-sm">{formatCurrency(line.unit_price)}</td>
+                    <td className={`px-3 py-2 text-sm ${NUMERIC_CELL}`}>{formatCurrency(line.unit_price)}</td>
                     <td className="px-3 py-2">
                       <input
                         type="number"
@@ -162,7 +163,7 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
                         / {line.quantity}
                       </p>
                     </td>
-                    <td className="px-3 py-2 text-right text-sm font-medium">{formatCurrency(lineTotal)}</td>
+                    <td className={`px-3 py-2 text-sm font-medium ${NUMERIC_CELL}`}>{formatCurrency(lineTotal)}</td>
                   </tr>
                 );
               })}

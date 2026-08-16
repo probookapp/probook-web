@@ -182,7 +182,7 @@ export function PrinterManagement() {
               <TableHead>{t("printers.register")}</TableHead>
               <TableHead>{t("printers.paperWidth")}</TableHead>
               <TableHead>{t("printers.status")}</TableHead>
-              <TableHead className="text-right">{t("printers.actions")}</TableHead>
+              <TableHead className="text-end">{t("printers.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -209,7 +209,7 @@ export function PrinterManagement() {
                     <Badge variant="default">{t("printers.inactive")}</Badge>
                   )}
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell className="text-end">
                   <div className="flex justify-end gap-1">
                     {!printer.is_default && (
                       <Button

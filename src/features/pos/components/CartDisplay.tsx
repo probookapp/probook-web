@@ -61,7 +61,7 @@ function EditableCell({
           if (e.key === "Enter") commit();
           if (e.key === "Escape") setEditing(false);
         }}
-        className="w-full bg-(--color-bg-input) border border-primary-500 rounded px-1.5 py-0.5 text-sm text-right focus:outline-none focus:ring-1 focus:ring-primary-500"
+        className="w-full bg-(--color-bg-input) border border-primary-500 rounded px-1.5 py-0.5 text-sm text-end font-mono tabular-nums focus:outline-none focus:ring-1 focus:ring-primary-500"
       />
     );
   }
@@ -94,13 +94,16 @@ export function CartDisplay() {
   return (
     <div className="flex-1 overflow-auto p-2 sm:p-4">
       <div className="overflow-x-auto">
-      <table className="w-full min-w-120">
+      {/* The money columns size to their content: a fixed w-24 was narrower
+          than a dinar amount, so the price and the line total ran into each
+          other with no gap at all. */}
+      <table className="w-full min-w-140">
         <thead className="sticky top-0 bg-(--color-bg-primary)">
-          <tr className="text-left text-sm text-(--color-text-secondary) border-b border-(--color-border-primary)">
+          <tr className="text-start text-sm text-(--color-text-secondary) border-b border-(--color-border-primary)">
             <th className="pb-2 font-medium">{t("product")}</th>
             <th className="pb-2 font-medium text-center w-28 sm:w-32">{t("quantity")}</th>
-            <th className="pb-2 font-medium text-right w-20 sm:w-24">{t("unitPrice")}</th>
-            <th className="pb-2 font-medium text-right w-20 sm:w-24">{t("total")}</th>
+            <th className="pb-2 ps-4 font-medium text-end whitespace-nowrap">{t("unitPrice")}</th>
+            <th className="pb-2 ps-4 font-medium text-end whitespace-nowrap">{t("total")}</th>
             <th className="pb-2 w-10"></th>
           </tr>
         </thead>
@@ -151,7 +154,7 @@ export function CartDisplay() {
                       formatDisplay={(val) => decimal ? val.toFixed(2) : String(val)}
                       step={decimal ? "0.01" : "1"}
                       min={decimal ? "0.01" : "1"}
-                      className="w-12 text-center font-medium"
+                      className="w-12 text-center font-medium font-mono tabular-nums"
                     />
                     <button
                       onClick={() => updateQuantity(item.id, Math.round((item.quantity + qtyStep) * 100) / 100)}
@@ -161,16 +164,17 @@ export function CartDisplay() {
                     </button>
                   </div>
                 </td>
-                <td className="py-3 text-right">
+                <td className="py-3 ps-4 text-end">
                   <EditableCell
                     value={item.unitPrice}
                     onCommit={(val) => updateItemPrice(item.id, val)}
                     formatDisplay={(val) => formatAmount(val * (1 + item.taxRate / 100))}
                     step="0.01"
                     min="0"
+                    className="font-mono tabular-nums whitespace-nowrap"
                   />
                 </td>
-                <td className="py-3 text-right font-medium">
+                <td className="py-3 ps-4 text-end font-medium font-mono tabular-nums whitespace-nowrap">
                   {formatAmount(lineTotal)}
                 </td>
                 <td className="py-3">

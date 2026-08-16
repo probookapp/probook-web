@@ -434,8 +434,8 @@ export function ReportsPage() {
                 <TableRow>
                   <TableHead>{t("reports:pipeline.document")}</TableHead>
                   <TableHead>{t("reports:pipeline.status")}</TableHead>
-                  <TableHead className="text-right">{t("reports:pipeline.count")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:pipeline.amount")}</TableHead>
+                  <TableHead className="text-end">{t("reports:pipeline.count")}</TableHead>
+                  <TableHead className="text-end">{t("reports:pipeline.amount")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -443,7 +443,7 @@ export function ReportsPage() {
                   <TableRow key={`${r.kind}-${r.status}-${i}`}>
                     <TableCell className="font-medium">{r.kind}</TableCell>
                     <TableCell>{r.status}</TableCell>
-                    <TableCell className="text-right">{r.count}</TableCell>
+                    <TableCell className="text-end">{r.count}</TableCell>
                     <TableNumericCell>
                       {r.total > 0 ? formatCurrency(r.total) : "-"}
                     </TableNumericCell>
@@ -463,7 +463,7 @@ export function ReportsPage() {
                       <TableHead>{t("reports:pipeline.number")}</TableHead>
                       <TableHead>{t("reports:pipeline.client")}</TableHead>
                       <TableHead>{t("reports:pipeline.dueDate")}</TableHead>
-                      <TableHead className="text-right text-end">
+                      <TableHead className="text-end">
                         {t("reports:pipeline.remaining")}
                       </TableHead>
                     </TableRow>
@@ -502,7 +502,7 @@ export function ReportsPage() {
                       <TableHead>{t("reports:pipeline.number")}</TableHead>
                       <TableHead>{t("reports:pipeline.client")}</TableHead>
                       <TableHead>{t("reports:pipeline.date")}</TableHead>
-                      <TableHead className="text-right text-end">{t("reports:pipeline.amount")}</TableHead>
+                      <TableHead className="text-end">{t("reports:pipeline.amount")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -575,9 +575,9 @@ export function ReportsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("reports:revenueByPeriod.period")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:revenueByPeriod.revenueHt")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:revenueByPeriod.revenueTtc")}</TableHead>
-                  <TableHead className="text-right">{t("reports:revenueByPeriod.invoiceCount")}</TableHead>
+                  <TableHead className="text-end">{t("reports:revenueByPeriod.revenueHt")}</TableHead>
+                  <TableHead className="text-end">{t("reports:revenueByPeriod.revenueTtc")}</TableHead>
+                  <TableHead className="text-end">{t("reports:revenueByPeriod.invoiceCount")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -591,7 +591,7 @@ export function ReportsPage() {
                       <TableNumericCell>
                         {formatCurrency(row.revenue_total)}
                       </TableNumericCell>
-                      <TableCell className="text-right">{row.invoice_count}</TableCell>
+                      <TableCell className="text-end">{row.invoice_count}</TableCell>
                     </TableRow>
                   ))
                 ) : (
@@ -655,9 +655,9 @@ export function ReportsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("reports:revenueByClient.client")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:revenueByClient.revenueHt")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:revenueByClient.revenueTtc")}</TableHead>
-                  <TableHead className="text-right">{t("reports:revenueByClient.invoiceCount")}</TableHead>
+                  <TableHead className="text-end">{t("reports:revenueByClient.revenueHt")}</TableHead>
+                  <TableHead className="text-end">{t("reports:revenueByClient.revenueTtc")}</TableHead>
+                  <TableHead className="text-end">{t("reports:revenueByClient.invoiceCount")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -671,7 +671,7 @@ export function ReportsPage() {
                       <TableNumericCell>
                         {formatCurrency(row.revenue_total)}
                       </TableNumericCell>
-                      <TableCell className="text-right">{row.invoice_count}</TableCell>
+                      <TableCell className="text-end">{row.invoice_count}</TableCell>
                     </TableRow>
                   ))
                 ) : (
@@ -725,9 +725,9 @@ export function ReportsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("reports:productSales.product")}</TableHead>
-                  <TableHead className="text-right">{t("reports:productSales.quantitySold")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:productSales.revenueHt")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:productSales.revenueTtc")}</TableHead>
+                  <TableHead className="text-end">{t("reports:productSales.quantitySold")}</TableHead>
+                  <TableHead className="text-end">{t("reports:productSales.revenueHt")}</TableHead>
+                  <TableHead className="text-end">{t("reports:productSales.revenueTtc")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -735,7 +735,7 @@ export function ReportsPage() {
                   productData.map((row) => (
                     <TableRow key={row.product_id}>
                       <TableCell className="font-medium">{row.product_name}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         {row.quantity_sold.toFixed(2)}
                       </TableCell>
                       <TableNumericCell>
@@ -811,11 +811,11 @@ export function ReportsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("reports:profitMargin.product")}</TableHead>
-                  <TableHead className="text-right">{t("reports:profitMargin.quantity")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:profitMargin.revenue")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:profitMargin.cost")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:profitMargin.margin")}</TableHead>
-                  <TableHead className="text-right">{t("reports:profitMargin.marginPercent")}</TableHead>
+                  <TableHead className="text-end">{t("reports:profitMargin.quantity")}</TableHead>
+                  <TableHead className="text-end">{t("reports:profitMargin.revenue")}</TableHead>
+                  <TableHead className="text-end">{t("reports:profitMargin.cost")}</TableHead>
+                  <TableHead className="text-end">{t("reports:profitMargin.margin")}</TableHead>
+                  <TableHead className="text-end">{t("reports:profitMargin.marginPercent")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -823,19 +823,19 @@ export function ReportsPage() {
                   profitData.map((row) => (
                     <TableRow key={row.product_id}>
                       <TableCell className="font-medium">{row.product_name}</TableCell>
-                      <TableCell className="text-right">{row.quantity_sold.toFixed(2)}</TableCell>
+                      <TableCell className="text-end">{row.quantity_sold.toFixed(2)}</TableCell>
                       <TableNumericCell>{formatCurrency(row.revenue)}</TableNumericCell>
                       <TableNumericCell>{formatCurrency(row.cost)}</TableNumericCell>
                       <TableNumericCell
                         className={
                           row.margin >= 0
-                            ? "text-right font-medium text-green-600 dark:text-green-400"
-                            : "text-right font-medium text-red-600 dark:text-red-400"
+                            ? "text-end font-medium text-green-600 dark:text-green-400"
+                            : "text-end font-medium text-red-600 dark:text-red-400"
                         }
                       >
                         {formatCurrency(row.margin)}
                       </TableNumericCell>
-                      <TableCell className="text-right">{row.margin_percent.toFixed(1)}%</TableCell>
+                      <TableCell className="text-end">{row.margin_percent.toFixed(1)}%</TableCell>
                     </TableRow>
                   ))
                 ) : (
@@ -914,8 +914,8 @@ export function ReportsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("reports:supplierSpend.supplier")}</TableHead>
-                  <TableHead className="text-right">{t("reports:supplierSpend.orderCount")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:supplierSpend.totalSpend")}</TableHead>
+                  <TableHead className="text-end">{t("reports:supplierSpend.orderCount")}</TableHead>
+                  <TableHead className="text-end">{t("reports:supplierSpend.totalSpend")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -923,7 +923,7 @@ export function ReportsPage() {
                   supplierSpendData.map((row) => (
                     <TableRow key={row.supplier_id}>
                       <TableCell className="font-medium">{row.supplier_name}</TableCell>
-                      <TableCell className="text-right">{row.order_count}</TableCell>
+                      <TableCell className="text-end">{row.order_count}</TableCell>
                       <TableNumericCell className="font-medium">
                         {formatCurrency(row.total_spend)}
                       </TableNumericCell>
@@ -993,7 +993,7 @@ export function ReportsPage() {
                   <TableHead>{t("reports:outstanding.issueDate")}</TableHead>
                   <TableHead>{t("reports:outstanding.dueDate")}</TableHead>
                   <TableHead>{t("reports:outstanding.status")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:outstanding.amount")}</TableHead>
+                  <TableHead className="text-end">{t("reports:outstanding.amount")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1264,8 +1264,8 @@ export function ReportsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("reports:expenses.period")}</TableHead>
-                  <TableHead className="text-right">{t("reports:expenses.expenseCount")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:expenses.totalAmount")}</TableHead>
+                  <TableHead className="text-end">{t("reports:expenses.expenseCount")}</TableHead>
+                  <TableHead className="text-end">{t("reports:expenses.totalAmount")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1273,7 +1273,7 @@ export function ReportsPage() {
                   expensesData.map((row) => (
                     <TableRow key={row.period}>
                       <TableCell className="font-medium">{row.period}</TableCell>
-                      <TableCell className="text-right">{row.expense_count}</TableCell>
+                      <TableCell className="text-end">{row.expense_count}</TableCell>
                       <TableNumericCell>
                         {formatCurrency(row.total_amount)}
                       </TableNumericCell>
@@ -1333,8 +1333,8 @@ export function ReportsPage() {
                 <TableRow>
                   <TableHead>{t("reports:lowStock.product")}</TableHead>
                   <TableHead>{t("reports:lowStock.variant")}</TableHead>
-                  <TableHead className="text-right">{t("reports:lowStock.quantity")}</TableHead>
-                  <TableHead className="text-right">{t("reports:lowStock.threshold")}</TableHead>
+                  <TableHead className="text-end">{t("reports:lowStock.quantity")}</TableHead>
+                  <TableHead className="text-end">{t("reports:lowStock.threshold")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1345,12 +1345,12 @@ export function ReportsPage() {
                       <TableCell className="text-(--color-text-secondary)">
                         {row.variant_name ?? "-"}
                       </TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="text-end">
                         <Badge variant={row.quantity > 0 ? "warning" : "danger"}>
                           {row.quantity}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-right">{row.threshold}</TableCell>
+                      <TableCell className="text-end">{row.threshold}</TableCell>
                     </TableRow>
                   ))
                 ) : (
@@ -1401,9 +1401,9 @@ export function ReportsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("reports:inventoryValuation.product")}</TableHead>
-                  <TableHead className="text-right">{t("reports:inventoryValuation.quantity")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:inventoryValuation.purchasePrice")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:inventoryValuation.stockValue")}</TableHead>
+                  <TableHead className="text-end">{t("reports:inventoryValuation.quantity")}</TableHead>
+                  <TableHead className="text-end">{t("reports:inventoryValuation.purchasePrice")}</TableHead>
+                  <TableHead className="text-end">{t("reports:inventoryValuation.stockValue")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1411,7 +1411,7 @@ export function ReportsPage() {
                   valuationData.map((row) => (
                     <TableRow key={row.product_id}>
                       <TableCell className="font-medium">{row.designation}</TableCell>
-                      <TableCell className="text-right">{row.quantity}</TableCell>
+                      <TableCell className="text-end">{row.quantity}</TableCell>
                       <TableNumericCell>
                         {formatCurrency(row.purchase_price)}
                       </TableNumericCell>
@@ -1494,9 +1494,9 @@ export function ReportsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("reports:expensesByCategory.category")}</TableHead>
-                  <TableHead className="text-right">{t("reports:expensesByCategory.expenseCount")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:expensesByCategory.totalAmount")}</TableHead>
-                  <TableHead className="text-right">{t("reports:expensesByCategory.share")}</TableHead>
+                  <TableHead className="text-end">{t("reports:expensesByCategory.expenseCount")}</TableHead>
+                  <TableHead className="text-end">{t("reports:expensesByCategory.totalAmount")}</TableHead>
+                  <TableHead className="text-end">{t("reports:expensesByCategory.share")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1504,9 +1504,9 @@ export function ReportsPage() {
                   rows.map((r) => (
                     <TableRow key={r.category_id ?? "uncategorized"}>
                       <TableCell className="font-medium">{labelOf(r.category_name)}</TableCell>
-                      <TableCell className="text-right">{r.expense_count}</TableCell>
+                      <TableCell className="text-end">{r.expense_count}</TableCell>
                       <TableNumericCell>{formatCurrency(r.total_amount)}</TableNumericCell>
-                      <TableCell className="text-right">{r.share.toFixed(1)}%</TableCell>
+                      <TableCell className="text-end">{r.share.toFixed(1)}%</TableCell>
                     </TableRow>
                   ))
                 ) : (
@@ -1638,10 +1638,10 @@ export function ReportsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("reports:taxSummary.type")}</TableHead>
-                  <TableHead className="text-right">{t("reports:taxSummary.rate")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:taxSummary.ht")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:taxSummary.vat")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:taxSummary.ttc")}</TableHead>
+                  <TableHead className="text-end">{t("reports:taxSummary.rate")}</TableHead>
+                  <TableHead className="text-end">{t("reports:taxSummary.ht")}</TableHead>
+                  <TableHead className="text-end">{t("reports:taxSummary.vat")}</TableHead>
+                  <TableHead className="text-end">{t("reports:taxSummary.ttc")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1649,7 +1649,7 @@ export function ReportsPage() {
                   rateRows.map((r, i) => (
                     <TableRow key={`${r.type}-${r.tax_rate}-${i}`}>
                       <TableCell className="font-medium">{r.type}</TableCell>
-                      <TableCell className="text-right">{r.tax_rate}%</TableCell>
+                      <TableCell className="text-end">{r.tax_rate}%</TableCell>
                       <TableNumericCell>{formatCurrency(r.ht)}</TableNumericCell>
                       <TableNumericCell>{formatCurrency(r.vat)}</TableNumericCell>
                       <TableNumericCell>{formatCurrency(r.ttc)}</TableNumericCell>
@@ -1747,11 +1747,11 @@ export function ReportsPage() {
                   <TableHead>{t("reports:accountingExport.document")}</TableHead>
                   <TableHead>{t("reports:accountingExport.party")}</TableHead>
                   {hasDiscountRow && (
-                    <TableHead className="text-right text-end">{t("reports:accountingExport.discount")}</TableHead>
+                    <TableHead className="text-end">{t("reports:accountingExport.discount")}</TableHead>
                   )}
-                  <TableHead className="text-right text-end">{t("reports:accountingExport.ht")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:accountingExport.vat")}</TableHead>
-                  <TableHead className="text-right text-end">{t("reports:accountingExport.ttc")}</TableHead>
+                  <TableHead className="text-end">{t("reports:accountingExport.ht")}</TableHead>
+                  <TableHead className="text-end">{t("reports:accountingExport.vat")}</TableHead>
+                  <TableHead className="text-end">{t("reports:accountingExport.ttc")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

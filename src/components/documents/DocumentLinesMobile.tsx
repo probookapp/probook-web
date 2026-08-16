@@ -134,7 +134,7 @@ export function DocumentLinesMobile({
                 onClick={() => setEditing(index)}
                 // min-h-13 (52px): 44px is the floor for a touch target, and this row is
                 // tapped constantly. The extra eight pixels cost one line of the six.
-                className={`w-full text-left rounded-lg border px-3 py-3 min-h-13 flex items-center gap-3 transition-colors ${
+                className={`w-full text-start rounded-lg border px-3 py-3 min-h-13 flex items-center gap-3 transition-colors ${
                   problem
                     ? "border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
                     : "border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700"

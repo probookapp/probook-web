@@ -56,7 +56,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               {t("common:errors.unexpectedError")}
             </p>
             {this.state.error && (
-              <details className="mb-6 text-left">
+              <details className="mb-6 text-start">
                 <summary className="cursor-pointer text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
                   {t("common:errors.errorDetails")}
                 </summary>

@@ -42,7 +42,7 @@ export function MobileCard({
           {shown.map((field) => (
             <div key={field.label} className="flex justify-between gap-3">
               <dt className="text-gray-500 dark:text-gray-400 shrink-0">{field.label}</dt>
-              <dd className="text-gray-900 dark:text-gray-100 text-right break-words">
+              <dd className="text-gray-900 dark:text-gray-100 text-end break-words">
                 {field.value}
               </dd>
             </div>

@@ -92,7 +92,7 @@ function TransactionRow({ tx, companyName, currency, sessionId }: { tx: PosTrans
       {/* Summary row */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between p-3 hover:bg-(--color-bg-secondary) transition-colors text-left"
+        className="w-full flex items-center justify-between p-3 hover:bg-(--color-bg-secondary) transition-colors text-start"
       >
         <div className="flex items-center gap-3 min-w-0">
           <div>

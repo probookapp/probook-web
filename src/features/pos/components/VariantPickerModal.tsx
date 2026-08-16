@@ -25,7 +25,7 @@ export function VariantPickerModal({ product, onSelect, onClose }: VariantPicker
               key={v.id}
               onClick={() => !outOfStock && onSelect(product, v)}
               disabled={outOfStock}
-              className={`w-full text-left px-3 py-2.5 rounded-lg border transition-colors ${
+              className={`w-full text-start px-3 py-2.5 rounded-lg border transition-colors ${
                 outOfStock
                   ? "border-gray-200 dark:border-gray-700 opacity-50 cursor-not-allowed"
                   : "border-(--color-border-primary) hover:bg-(--color-bg-secondary)"
@@ -42,7 +42,7 @@ export function VariantPickerModal({ product, onSelect, onClose }: VariantPicker
                     ))}
                   </div>
                 </div>
-                <div className="text-right shrink-0 ml-2">
+                <div className="text-end shrink-0 ml-2">
                   <p className="text-sm font-bold text-primary-600">
                     {formatCurrency(price * (1 + product.tax_rate / 100))}
                   </p>

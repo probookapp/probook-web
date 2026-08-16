@@ -32,6 +32,7 @@ import { PDFViewer } from "../pdf/PDFViewerLazy";
 import { formatDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { DeliveryNoteStatus } from "@/types";
+import { NUMERIC_CELL } from "@/components/ui";
 
 export function DeliveryNoteViewPage() {
   const { t } = useTranslation(["delivery", "common"]);
@@ -295,13 +296,13 @@ export function DeliveryNoteViewPage() {
           <table className="w-full min-w-80">
             <thead className="bg-(--color-bg-secondary) border-b border-(--color-border-primary)">
               <tr>
-                <th className="text-left py-2 px-3 text-sm font-medium text-(--color-text-secondary)">
+                <th className="text-start py-2 px-3 text-sm font-medium text-(--color-text-secondary)">
                   {t("delivery:lines.description")}
                 </th>
-                <th className="text-right py-2 px-3 text-sm font-medium text-(--color-text-secondary) w-20">
+                <th className="text-end py-2 px-3 text-sm font-medium text-(--color-text-secondary) w-20">
                   {t("delivery:lines.quantity")}
                 </th>
-                <th className="text-left py-2 px-3 text-sm font-medium text-(--color-text-secondary) w-20">
+                <th className="text-start py-2 px-3 text-sm font-medium text-(--color-text-secondary) w-20">
                   {t("delivery:lines.unit")}
                 </th>
               </tr>
@@ -310,7 +311,7 @@ export function DeliveryNoteViewPage() {
               {deliveryNote.lines.map((line, index) => (
                 <tr key={line.id} className={index % 2 === 1 ? "bg-(--color-bg-secondary)" : ""}>
                   <td className="py-2 px-3 text-sm">{line.description}</td>
-                  <td className="py-2 px-3 text-sm text-right">{line.quantity}</td>
+                  <td className={`py-2 px-3 text-sm ${NUMERIC_CELL}`}>{line.quantity}</td>
                   <td className="py-2 px-3 text-sm">{line.unit || "-"}</td>
                 </tr>
               ))}

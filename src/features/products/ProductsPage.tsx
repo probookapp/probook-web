@@ -277,7 +277,7 @@ export function ProductsPage() {
           <div className="rounded-lg border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20">
             <button
               onClick={() => setShowLowStock((v) => !v)}
-              className="w-full flex items-center gap-2 px-4 py-3 text-left"
+              className="w-full flex items-center gap-2 px-4 py-3 text-start"
             >
               <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
               <span className="text-sm font-medium text-amber-800 dark:text-amber-300">
