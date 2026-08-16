@@ -19,6 +19,7 @@ import {
   LogOut,
   Shield,
   Store,
+  Lock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -27,6 +28,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { clearAllUserData } from "@/lib/session-cleanup";
 import type { PermissionKey } from "@/types";
 import { Logo } from "@/components/shared/Logo";
+import { useEntitlements } from "@/hooks/useEntitlements";
+import { FEATURE_KEYS, type FeatureKey } from "@/lib/feature-keys";
 
 interface SidebarProps {
   onClose?: () => void;
@@ -38,6 +41,7 @@ export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
   const locale = useLocale();
   const { currentUser, hasPermission, clearUser } = useAuthStore();
+  const { data: entitlements } = useEntitlements();
   const queryClient = useQueryClient();
 
   const handleLogout = async () => {
@@ -46,25 +50,62 @@ export function Sidebar({ onClose }: SidebarProps) {
     clearUser();
   };
 
-  const navigation: { name: string; href: string; icon: React.ElementType; permission?: PermissionKey }[] = [
+  // Two different questions. `permission` is about this person — the cashier
+  // has no business in the reports. `feature` is about the account — the offer
+  // does not include multi-site stock. Failing the first hides the entry;
+  // failing the second shows it unlit, because a customer cannot buy what
+  // they never learn exists.
+  const navigation: {
+    name: string;
+    href: string;
+    icon: React.ElementType;
+    permission?: PermissionKey;
+    feature?: FeatureKey;
+  }[] = [
     { name: t("dashboard"), href: "/dashboard", icon: LayoutDashboard, permission: "dashboard" },
     { name: t("clients"), href: "/clients", icon: Users, permission: "clients" },
     { name: t("products"), href: "/products", icon: Package, permission: "products" },
-    { name: t("suppliers"), href: "/suppliers", icon: Factory, permission: "suppliers" },
-    { name: t("locations"), href: "/locations", icon: Warehouse, permission: "products" },
+    { name: t("suppliers"), href: "/suppliers", icon: Factory, permission: "suppliers", feature: FEATURE_KEYS.PURCHASING },
+    { name: t("locations"), href: "/locations", icon: Warehouse, permission: "products", feature: FEATURE_KEYS.MULTI_LOCATION },
     { name: t("quotes"), href: "/quotes", icon: FileText, permission: "quotes" },
     { name: t("invoices"), href: "/invoices", icon: Receipt, permission: "invoices" },
-    { name: t("deliveryNotes"), href: "/delivery-notes", icon: Truck, permission: "delivery_notes" },
-    { name: t("phonebook"), href: "/phonebook", icon: BookUser, permission: "phonebook" },
+    { name: t("deliveryNotes"), href: "/delivery-notes", icon: Truck, permission: "delivery_notes", feature: FEATURE_KEYS.DELIVERY_NOTES },
+    { name: t("phonebook"), href: "/phonebook", icon: BookUser, permission: "phonebook", feature: FEATURE_KEYS.PHONEBOOK },
     { name: t("reports"), href: "/reports", icon: BarChart3, permission: "reports" },
-    { name: t("expenses"), href: "/expenses", icon: Wallet, permission: "expenses" },
-    { name: t("purchases"), href: "/purchases", icon: ShoppingCart, permission: "purchases" },
+    { name: t("expenses"), href: "/expenses", icon: Wallet, permission: "expenses", feature: FEATURE_KEYS.EXPENSES },
+    { name: t("purchases"), href: "/purchases", icon: ShoppingCart, permission: "purchases", feature: FEATURE_KEYS.PURCHASING },
     { name: t("settings"), href: "/settings", icon: Settings, permission: "settings" },
   ];
 
-  const filteredNavigation = navigation.filter(
+  const allowed = navigation.filter(
     (item) => !item.permission || hasPermission(item.permission)
   );
+
+  // Undefined while the request is in flight: an entry that drops out of the
+  // list and comes back on every page load is worse than one that stays.
+  const standing = (item: { feature?: FeatureKey }) =>
+    item.feature ? entitlements?.[item.feature] ?? { included: true } : { included: true };
+
+  const filteredNavigation = allowed.filter((item) => standing(item).included);
+
+  /**
+   * What the offer does not include, gathered at the foot of the rail under the
+   * offer that would add it — rather than a padlock beside every entry. On the
+   * entry offer that would have been six padlocks against seven live entries,
+   * which reads as a crippled product instead of a smaller one.
+   */
+  const upsell = Object.values(
+    allowed.reduce<Record<string, { name: string; sortOrder: number; items: typeof allowed }>>(
+      (acc, item) => {
+        const offer = standing(item).upgradeTo;
+        if (standing(item).included || !offer) return acc;
+        acc[offer.slug] ??= { name: offer.name, sortOrder: offer.sortOrder, items: [] };
+        acc[offer.slug].items.push(item);
+        return acc;
+      },
+      {}
+    )
+  ).sort((a, b) => a.sortOrder - b.sortOrder);
 
   const initials = currentUser?.display_name
     ? currentUser.display_name
@@ -116,10 +157,30 @@ export function Sidebar({ onClose }: SidebarProps) {
             </Link>
           );
         })}
+
+        {upsell.map((offer) => (
+          <div key={offer.name} className="pt-4 mt-3 border-t border-gray-800">
+            <p className="px-4 pb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
+              {t("availableWith", { offer: offer.name })}
+            </p>
+            {offer.items.map((item) => (
+              <Link
+                key={item.href}
+                href={`/${locale}/pricing`}
+                onClick={onClose}
+                className="flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-gray-500 hover:bg-gray-800/60 hover:text-gray-300 transition-colors"
+              >
+                <item.icon className="h-5 w-5" />
+                <span className="flex-1 truncate">{item.name}</span>
+                <Lock className="h-3.5 w-3.5 shrink-0 opacity-70" />
+              </Link>
+            ))}
+          </div>
+        ))}
       </nav>
       <div className="p-4 border-t border-gray-800 space-y-3">
         {/* POS Mode Button */}
-        {hasPermission("pos") && (
+        {hasPermission("pos") && (entitlements?.[FEATURE_KEYS.POS]?.included ?? true) && (
           <button
             onClick={() => router.push("/pos")}
             // Outlined, not a green slab. Green is the "it worked" colour

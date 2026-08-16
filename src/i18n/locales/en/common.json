@@ -408,8 +408,8 @@
   },
   "subscription": {
     "expiryWarning": "Your subscription expires in {{days}} day(s). Please renew to avoid service interruption.",
-    "trialBanner": "Free trial — {{days}} day(s) left. Subscribe to keep access without interruption.",
-    "trialLastDay": "Last day of your free trial. Subscribe to keep access without interruption.",
+    "trialBanner": "Free trial — every feature of the Entreprise plan, {{days}} day(s) left.",
+    "trialLastDay": "Last day of your trial — every feature of the Entreprise plan. Choose your plan to carry on.",
     "trialSubscribe": "Subscribe"
   },
   "emailVerify": {

@@ -16,7 +16,10 @@ import { prisma } from "./db";
  *   1. No FeatureFlag row with that key  -> ALLOW (nothing configured yet).
  *   2. TenantFeature override            -> its `enabled` value wins.
  *   3. FeatureFlag.isGlobal              -> ALLOW for every tenant.
- *   4. Otherwise plan-gated              -> ALLOW only if the tenant's active
+ *   4. Tenant is inside its trial        -> ALLOW every module. A trial is
+ *      there to be evaluated, and it is a date on the tenant, not a row in
+ *      subscriptions.
+ *   5. Otherwise plan-gated              -> ALLOW only if the tenant's active
  *      subscription's plan links the feature (PlanFeature), else DENY.
  *
  * Because no flags ship seeded and new flags default to isGlobal = true,
@@ -56,7 +59,28 @@ async function resolveFeatureAccess(
     return true;
   }
 
-  // 4) Plan-gated: allowed only if the active subscription's plan links it
+  // 4) A live trial carries every module, whatever the offers say.
+  //
+  //    A trial exists so someone can see what the product does before paying
+  //    for it; a trial that hides the modules they came to evaluate is an
+  //    advertisement for a competitor. It also decides what they buy: you learn
+  //    which modules they actually opened. The usual objection — that dropping
+  //    to a smaller offer afterwards feels like a punishment — is answered in
+  //    the navigation, where a module they lose is not removed but relit under
+  //    the name of the offer that brings it back.
+  //
+  //    It is also not a subscription row. A trial is a date on the tenant, so
+  //    without this every trial would fall through to the check below and be
+  //    refused everything.
+  const tenant = await prisma.tenant.findUnique({
+    where: { id: tenantId },
+    select: { trialEndsAt: true },
+  });
+  if (tenant?.trialEndsAt && tenant.trialEndsAt > new Date()) {
+    return true;
+  }
+
+  // 5) Otherwise: allowed only if the active subscription's plan links it
   const activeSubscription = await prisma.subscription.findFirst({
     where: {
       tenantId,
@@ -126,4 +150,25 @@ export async function requireFeature(
         { error: "This feature is not available on your plan" },
         { status: 403 }
       );
+}
+
+/**
+ * The same answer the enforcement path would give, for the interface to read.
+ *
+ * `hasFeature` is the strict form: an unknown key is false, which suits an
+ * admin screen asking "is this configured AND on". A screen deciding whether to
+ * show a menu entry needs the other reading — the one `requireFeature` uses —
+ * or every module would vanish from the navigation the day this shipped, before
+ * a single flag existed.
+ */
+export async function hasFeatureConfigured(
+  tenantId: string,
+  featureKey: string
+): Promise<boolean> {
+  const feature = await prisma.featureFlag.findUnique({
+    where: { key: featureKey },
+  });
+
+  if (!feature) return true;
+  return resolveFeatureAccess(tenantId, feature);
 }

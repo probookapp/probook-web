@@ -408,8 +408,8 @@
   },
   "subscription": {
     "expiryWarning": "Votre abonnement expire dans {{days}} jour(s). Veuillez renouveler pour éviter une interruption de service.",
-    "trialBanner": "Essai gratuit — il vous reste {{days}} jour(s). Abonnez-vous pour continuer sans interruption.",
-    "trialLastDay": "Dernier jour de votre essai gratuit. Abonnez-vous pour continuer sans interruption.",
+    "trialBanner": "Essai gratuit — toutes les fonctions de l'offre Entreprise, il vous reste {{days}} jour(s).",
+    "trialLastDay": "Dernier jour de votre essai — toutes les fonctions de l'offre Entreprise. Choisissez votre offre pour continuer.",
     "trialSubscribe": "S'abonner"
   },
   "emailVerify": {

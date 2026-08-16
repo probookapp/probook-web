@@ -4,6 +4,8 @@ import { Prisma } from "@/generated/prisma/client";
 import { getSession, getAdminSession, getImpersonationData, getSessionToken, hashToken, SessionPayload } from "./auth";
 import { prisma } from "./db";
 import { checkRateLimit } from "./rate-limiter";
+import { featureForPath } from "./feature-keys";
+import { requireFeature } from "./feature-gate";
 
 // Throttle lastActiveAt updates: only write if >1 hour since last update
 const lastActiveCache = new Map<string, number>();
@@ -89,6 +91,9 @@ export interface AuthContext {
   tenantId: string;
   params?: Record<string, string>;
 }
+
+/** Methods that change something, and so have to be paid for. */
+const WRITE_METHODS = new Set(["POST", "PUT", "PATCH", "DELETE"]);
 
 export function withAuth(
   handler: (req: NextRequest, ctx: AuthContext) => Promise<NextResponse>
@@ -180,6 +185,19 @@ export function withAuth(
           where: { id: tenantId },
           data: { lastActiveAt: new Date() },
         }).catch(() => { /* non-critical */ });
+      }
+
+      // Entitlements, in one place rather than in fifty-five handlers.
+      //
+      // Only writes: a business that moves to a smaller offer keeps every screen
+      // it already filled readable, and simply cannot add to it. Gating reads as
+      // well would strand their own history behind a paywall.
+      if (WRITE_METHODS.has(req.method)) {
+        const feature = featureForPath(endpoint);
+        if (feature) {
+          const featureDenied = await requireFeature(tenantId, feature);
+          if (featureDenied) return featureDenied;
+        }
       }
 
       const params = context?.params ? await context.params : undefined;
