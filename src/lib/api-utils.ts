@@ -5,7 +5,6 @@ import { getSession, getAdminSession, getImpersonationData, getSessionToken, has
 import { prisma } from "./db";
 import { checkRateLimit } from "./rate-limiter";
 import { featureForPath } from "./feature-keys";
-import { requireFeature } from "./feature-gate";
 
 // Throttle lastActiveAt updates: only write if >1 hour since last update
 const lastActiveCache = new Map<string, number>();
@@ -195,6 +194,15 @@ export function withAuth(
       if (WRITE_METHODS.has(req.method)) {
         const feature = featureForPath(endpoint);
         if (feature) {
+          // Imported here, not at the top: feature-gate pulls in Prisma and its
+          // Postgres adapter, and this module is also loaded by unit tests that
+          // have no database. A static import made those tests time out while
+          // the client loaded — and vitest reports a timed-out hook as fourteen
+          // *skipped* tests, which is nearly invisible in a passing run.
+          //
+          // It also skips the cost on the requests that are not gated, which is
+          // most of them. Node caches the module after the first call.
+          const { requireFeature } = await import("./feature-gate");
           const featureDenied = await requireFeature(tenantId, feature);
           if (featureDenied) return featureDenied;
         }
