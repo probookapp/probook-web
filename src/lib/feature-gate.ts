@@ -59,7 +59,16 @@ async function resolveFeatureAccess(
     return true;
   }
 
-  // 4) A live trial carries every module, whatever the offers say.
+  // 4) A paid offer decides, before any trial
+  const activeSubscription = await prisma.subscription.findFirst({
+    where: {
+      tenantId,
+      status: "active",
+    },
+    select: { planId: true },
+  });
+
+  // 5) No offer, but a live trial → every module.
   //
   //    A trial exists so someone can see what the product does before paying
   //    for it; a trial that hides the modules they came to evaluate is an
@@ -69,28 +78,19 @@ async function resolveFeatureAccess(
   //    the navigation, where a module they lose is not removed but relit under
   //    the name of the offer that brings it back.
   //
-  //    It is also not a subscription row. A trial is a date on the tenant, so
-  //    without this every trial would fall through to the check below and be
-  //    refused everything.
-  const tenant = await prisma.tenant.findUnique({
-    where: { id: tenantId },
-    select: { trialEndsAt: true },
-  });
-  if (tenant?.trialEndsAt && tenant.trialEndsAt > new Date()) {
-    return true;
-  }
-
-  // 5) Otherwise: allowed only if the active subscription's plan links it
-  const activeSubscription = await prisma.subscription.findFirst({
-    where: {
-      tenantId,
-      status: "active",
-    },
-    select: { planId: true },
-  });
-
+  //    Checked *after* the subscription, not before, so the two paths agree:
+  //    /api/subscription/current also lets a live subscription outrank a trial.
+  //    The other order let a long courtesy trial silently hand Enterprise to
+  //    someone whose banner said Essential.
+  //
+  //    A trial is a date on the tenant, not a row in subscriptions, so without
+  //    this every trialist would fall through and be refused everything.
   if (!activeSubscription) {
-    return false;
+    const tenant = await prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { trialEndsAt: true },
+    });
+    return !!(tenant?.trialEndsAt && tenant.trialEndsAt > new Date());
   }
 
   const planFeature = await prisma.planFeature.findUnique({

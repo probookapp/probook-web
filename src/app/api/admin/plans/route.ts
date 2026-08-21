@@ -26,28 +26,11 @@ export const POST = withSuperAdmin(async (req, ctx) => {
   const body = await validateBody(req, createPlanSchema);
   if (isValidationError(body)) return body;
 
-  // An offer on sale has to contain something.
-  //
-  // A plan that links no feature refuses every gated module to whoever
-  // subscribes to it, and does so in silence: they pay, sign in, and the till
-  // and the purchasing they were sold are simply not there. Nothing errors,
-  // nothing is logged, and the first anyone hears of it is the customer.
-  //
-  // Refusing here rather than at approval puts the mistake in front of the
-  // person making it, at the moment they make it. A draft can still be written
-  // — it just cannot be active until it says what it includes.
+  // An offer may carry no add-on module at all: the entry offer is the core
+  // product — invoicing, quotes, the catalogue — which is never sold
+  // separately. `feature_ids` lists what an offer adds on top of that.
   const active = body.is_active ?? true;
-  if (active && !(Array.isArray(body.feature_ids) && body.feature_ids.length > 0)) {
-    return NextResponse.json(
-      {
-        error:
-          "An active plan must include at least one feature. Save it as inactive " +
-          "while you decide, or tick what it includes.",
-        code: "PLAN_HAS_NO_FEATURES",
-      },
-      { status: 400 }
-    );
-  }
+
   const plan = await prisma.plan.create({
     data: {
       slug: body.slug,

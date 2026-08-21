@@ -8,6 +8,7 @@ import { Navbar } from "@/components/public/Navbar";
 import { Footer } from "@/components/public/Footer";
 import { WhatsAppCta } from "@/components/landing/WhatsAppCta";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
+import { translatedName, type Translations } from "@/lib/translated-name";
 import {
   Receipt,
   Users,
@@ -37,7 +38,6 @@ const featureKeys = [
   "offline",
 ] as const;
 
-type Translations = Record<string, string> | null;
 
 interface PlanPrice {
   currency: string;
@@ -68,13 +68,6 @@ interface PlansResponse {
 }
 
 /** Pick the translated value for a locale, falling back to the default. */
-function tr(defaultValue: string | null, translations: Translations, locale: string): string {
-  if (locale !== "en" && translations && translations[locale]) {
-    return translations[locale];
-  }
-  return defaultValue || "";
-}
-
 function formatPrice(centimes: number, currency: string): string {
   const amount = centimes / 100;
   if (currency === "DZD") {
@@ -225,7 +218,7 @@ export function LandingPage() {
                   const popularIdx = plans.length <= 2 ? plans.length - 1 : Math.floor(plans.length / 2);
                   const isPopular = idx === popularIdx && plans.length > 1;
                   const featureNames = plan.features
-                    ?.map((f) => f.feature ? tr(f.feature.name, f.feature.name_translations ?? null, locale) : null)
+                    ?.map((f) => f.feature ? translatedName(f.feature.name, f.feature.name_translations ?? null, locale) : null)
                     .filter(Boolean) as string[] || [];
                   const price = { monthly: plan.monthly_price, yearly: plan.yearly_price, currency: plan.currency };
 
@@ -244,11 +237,11 @@ export function LandingPage() {
                         </div>
                       )}
                       <h3 dir={textDir} className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {tr(plan.name, plan.name_translations, locale)}
+                        {translatedName(plan.name, plan.name_translations, locale)}
                       </h3>
                       {(plan.description || plan.description_translations) && (
                         <p dir={textDir} className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                          {tr(plan.description, plan.description_translations, locale)}
+                          {translatedName(plan.description, plan.description_translations, locale)}
                         </p>
                       )}
                       <div className="mt-6 flex items-baseline gap-1">

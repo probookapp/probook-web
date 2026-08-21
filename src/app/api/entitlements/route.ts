@@ -23,7 +23,13 @@ import { ALL_FEATURE_KEYS, type FeatureKey } from "@/lib/feature-keys";
 export interface Entitlement {
   included: boolean;
   /** The cheapest offer that carries it, when this one does not. */
-  upgradeTo?: { name: string; slug: string; sortOrder: number };
+  upgradeTo?: {
+    name: string;
+    /** Per-locale names, so the rail can say it in the reader's language. */
+    nameTranslations: Record<string, string> | null;
+    slug: string;
+    sortOrder: number;
+  };
 }
 
 export const GET = withAuth(async (_req, { tenantId }) => {
@@ -40,10 +46,21 @@ export const GET = withAuth(async (_req, { tenantId }) => {
           features: { some: { feature: { key } } },
         },
         orderBy: [{ sortOrder: "asc" }, { monthlyPrice: "asc" }],
-        select: { name: true, slug: true, sortOrder: true },
+        select: { name: true, nameTranslations: true, slug: true, sortOrder: true },
       });
 
-      return [key, plan ? { included: false, upgradeTo: plan } : { included: false }];
+      return [
+        key,
+        plan
+          ? {
+              included: false,
+              upgradeTo: {
+                ...plan,
+                nameTranslations: (plan.nameTranslations as Record<string, string>) ?? null,
+              },
+            }
+          : { included: false },
+      ];
     })
   );
 

@@ -89,33 +89,21 @@ test.describe("offer entitlements", () => {
     expect(invoices.status, "billing must never depend on an offer").toBe(200);
   });
 
-  test("an active offer cannot be created empty", async ({ page }) => {
+  test("an offer may carry no add-on module", async ({ page }) => {
     await signUp(page);
     await setupPlatformAdmin(page);
 
-    // An offer that links no feature refuses every gated module to whoever
-    // subscribes to it, silently: they pay, sign in, and the modules they were
-    // sold are simply not there. The mistake belongs to the person creating the
-    // offer, so it is refused where they can see it.
-    const empty = await adminPost(page, "/api/admin/plans", {
-      slug: `empty-plan-${Date.now()}`,
-      name: "Offre vide",
+    // The entry offer is the core product — invoicing, quotes, the catalogue —
+    // which is never sold separately, so it links no entitlement at all. An
+    // earlier version of this refused such a plan on the grounds that a paying
+    // customer would receive nothing; they receive the product.
+    const bare = await adminPost(page, "/api/admin/plans", {
+      slug: `bare-plan-${Date.now()}`,
+      name: "Offre socle",
       monthly_price: 100000,
       yearly_price: 1000000,
       currency: "DZD",
     });
-    expect(empty.status).toBe(400);
-    expect(empty.body.code).toBe("PLAN_HAS_NO_FEATURES");
-
-    // A draft can still be written down while the contents are being decided.
-    const draft = await adminPost(page, "/api/admin/plans", {
-      slug: `draft-plan-${Date.now()}`,
-      name: "Brouillon",
-      monthly_price: 100000,
-      yearly_price: 1000000,
-      currency: "DZD",
-      is_active: false,
-    });
-    expect(draft.status, JSON.stringify(draft.body)).toBe(201);
+    expect(bare.status, JSON.stringify(bare.body)).toBe(201);
   });
 });

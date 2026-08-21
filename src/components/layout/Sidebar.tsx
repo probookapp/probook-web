@@ -30,6 +30,7 @@ import type { PermissionKey } from "@/types";
 import { Logo } from "@/components/shared/Logo";
 import { useEntitlements } from "@/hooks/useEntitlements";
 import { FEATURE_KEYS, type FeatureKey } from "@/lib/feature-keys";
+import { translatedName } from "@/lib/translated-name";
 
 interface SidebarProps {
   onClose?: () => void;
@@ -99,7 +100,13 @@ export function Sidebar({ onClose }: SidebarProps) {
       (acc, item) => {
         const offer = standing(item).upgradeTo;
         if (standing(item).included || !offer) return acc;
-        acc[offer.slug] ??= { name: offer.name, sortOrder: offer.sortOrder, items: [] };
+        acc[offer.slug] ??= {
+          // The offer's own name, in the reader's language. Plans are rows an
+          // admin writes, not bundle keys, so they carry their translations.
+          name: translatedName(offer.name, offer.nameTranslations, locale),
+          sortOrder: offer.sortOrder,
+          items: [],
+        };
         acc[offer.slug].items.push(item);
         return acc;
       },
