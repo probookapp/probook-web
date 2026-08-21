@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createUserSchema } from "@/lib/validations";
 import { buildPermissionRows, serializeUser } from "./permissions";
+import { getUserQuotaUsage } from "@/lib/plan-quotas";
 
 // Admin-only: the roster and every user's permission set are management data,
 // consistent with the admin-gated POST/PUT/DELETE on this resource (audit TEN-2).
@@ -29,6 +30,24 @@ export const GET = withAdmin(async (req, { tenantId }) => {
 export const POST = withAdmin(async (req, { tenantId }) => {
   const body = await validateBody(req, createUserSchema);
   if (isValidationError(body)) return body;
+
+  // The offer's ceiling, checked before anything is written. Existing accounts
+  // are never touched when a business moves to a smaller offer — the same rule
+  // the entitlement gate follows: what you already have stays, you cannot add
+  // to it. Deactivated users do not count, so freeing a seat is possible
+  // without deleting anyone's history.
+  const { used, limit } = await getUserQuotaUsage(tenantId);
+  if (limit !== null && used >= limit) {
+    return NextResponse.json(
+      {
+        error: `Your plan covers ${limit} user account(s). Deactivate one, or move to a larger plan.`,
+        code: "USER_QUOTA_REACHED",
+        limit,
+        used,
+      },
+      { status: 403 }
+    );
+  }
   const { username, display_name, password, role, permissions, permission_details } = body;
 
   const passwordHash = await hashPassword(password);

@@ -966,7 +966,6 @@ export interface TaxSummary {
   stamp_duty: {
     enabled: boolean;
     rate: number;
-    cash_payments_total: number;
     amount_due: number;
   };
 }

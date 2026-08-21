@@ -166,7 +166,6 @@ export const DEMO_TAX_SUMMARY: TaxSummary = (() => {
     stamp_duty: {
       enabled: true,
       rate: 1,
-      cash_payments_total: 0,
       amount_due: 0,
     },
   };

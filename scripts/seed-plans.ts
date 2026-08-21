@@ -34,6 +34,8 @@ interface Offer {
   sortOrder: number;
   /** What this offer adds. Each offer also carries everything before it. */
   adds: FeatureKey[];
+  /** How many user accounts it covers. null = no ceiling. */
+  maxUsers: number | null;
 }
 
 const OFFERS: Offer[] = [
@@ -50,6 +52,7 @@ const OFFERS: Offer[] = [
     // the basic reports — none of which is ever sold separately. `adds` lists
     // what an offer puts on top of that.
     adds: [],
+    maxUsers: 1,
   },
   {
     slug: "commerce",
@@ -66,6 +69,7 @@ const OFFERS: Offer[] = [
       FEATURE_KEYS.EXPENSES,
       FEATURE_KEYS.IMPORT_EXPORT,
     ],
+    maxUsers: 3,
   },
   {
     slug: "enterprise",
@@ -81,6 +85,7 @@ const OFFERS: Offer[] = [
       FEATURE_KEYS.REMINDERS,
       FEATURE_KEYS.PHONEBOOK,
     ],
+    maxUsers: null,
   },
 ];
 
@@ -212,9 +217,22 @@ async function main() {
         );
       }
 
+      // Quotas are the other half of an offer: how much, not whether. Rewritten
+      // like the feature links, so lowering a ceiling here actually lowers it.
+      await client.query(`DELETE FROM plan_quotas WHERE plan_id = $1`, [planId]);
+      if (offer.maxUsers !== null) {
+        await client.query(
+          `INSERT INTO plan_quotas (id, plan_id, quota_key, limit_value)
+           VALUES (gen_random_uuid(), $1, 'max_users', $2)
+           ON CONFLICT (plan_id, quota_key) DO UPDATE SET limit_value = EXCLUDED.limit_value`,
+          [planId, offer.maxUsers]
+        );
+      }
+
       console.log(
         `  ${offer.name.padEnd(12)} ${(offer.monthly / 100).toLocaleString("fr-FR")} DZD/mois` +
-          `  —  ${carried.length} module(s)`
+          `  —  ${carried.length} module(s)` +
+          `, ${offer.maxUsers ?? "∞"} utilisateur(s)`
       );
     }
 

@@ -27,10 +27,25 @@ export const GET = async (req: NextRequest) => {
   try {
     const tenants = await prisma.tenant.findMany({ select: { id: true } });
 
+    // One tenant's failure must not cost every later tenant its reminders.
+    //
+    // The loop is ordered by nothing in particular, so an unhandled error threw
+    // away the sweep for whoever happened to come after the failing account —
+    // silently, since the job answered 500 and the next run started from the
+    // same place. Each tenant is now isolated, and the failures are counted and
+    // reported rather than aborting the run.
     let remindersCreated = 0;
+    const failed: string[] = [];
     for (const tenant of tenants) {
-      const created = await sweepTenantReminders(tenant.id);
-      remindersCreated += created.length;
+      try {
+        const created = await sweepTenantReminders(tenant.id);
+        remindersCreated += created.length;
+      } catch (error) {
+        failed.push(tenant.id);
+        Sentry.captureException(error, {
+          tags: { route: "/api/cron/reminders", tenantId: tenant.id },
+        });
+      }
     }
 
     // Tenant-wide in one statement (no per-tenant loop needed).
@@ -38,6 +53,7 @@ export const GET = async (req: NextRequest) => {
 
     return NextResponse.json({
       tenants_swept: tenants.length,
+      tenants_failed: failed.length,
       reminders_created: remindersCreated,
       quotes_expired: quotesExpired,
     });

@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { Pool } from "pg";
 import { signUp } from "./helpers";
 import { apiGet, apiPost } from "./api-helpers";
+import { adminGet } from "./admin-helpers";
 import { assertTestDatabase } from "./assert-test-db";
 import { setupPlatformAdmin, adminPost } from "./admin-helpers";
 
@@ -26,6 +27,17 @@ const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 test.afterAll(async () => {
   await pool.end();
 });
+
+
+/** The tenant behind a signup, for the admin routes that key on tenant id. */
+async function tenantIdOf(username: string): Promise<string> {
+  const r = await pool.query<{ tenant_id: string }>(
+    `SELECT tenant_id FROM users WHERE username = $1 LIMIT 1`,
+    [username]
+  );
+  if (!r.rows[0]) throw new Error(`no tenant for ${username}`);
+  return r.rows[0].tenant_id;
+}
 
 /** Requires the offers to be seeded — scripts/seed-plans.ts. */
 test.describe("offer entitlements", () => {
@@ -105,5 +117,60 @@ test.describe("offer entitlements", () => {
       currency: "DZD",
     });
     expect(bare.status, JSON.stringify(bare.body)).toBe(201);
+  });
+});
+
+test.describe("offer quotas", () => {
+  test("the user ceiling refuses the seat it does not cover", async ({ page }) => {
+    const creds = await signUp(page);
+    await setupPlatformAdmin(page);
+
+    // A trial has no ceiling — metering an evaluation would misrepresent it.
+    const duringTrial = await apiPost(page, "/api/auth/users", {
+      username: `trial_seat_${Date.now()}`,
+      display_name: "Pendant l'essai",
+      password: "Test1234!",
+      role: "employee",
+    });
+    expect(duringTrial.status, "a trial must not be metered").toBe(200);
+
+    // Put the account on a one-seat offer, the way an admin would.
+    const features = await adminGet(page, "/api/admin/features");
+    const featureIds = (features.body as unknown as { id: string }[]).map((f) => f.id);
+    const plan = await adminPost(page, "/api/admin/plans", {
+      slug: `one-seat-${Date.now()}`,
+      name: "One Seat",
+      monthly_price: 100000,
+      yearly_price: 1000000,
+      currency: "DZD",
+      feature_ids: featureIds,
+      quotas: [{ quota_key: "max_users", limit_value: 1 }],
+    });
+    expect(plan.status, JSON.stringify(plan.body)).toBe(201);
+
+    const tenantId = await tenantIdOf(creds.username);
+    const sub = await adminPost(page, "/api/admin/subscriptions", {
+      tenant_id: tenantId,
+      plan_id: plan.body.id,
+      billing_cycle: "yearly",
+      status: "active",
+    });
+    expect(sub.status, JSON.stringify(sub.body)).toBe(201);
+
+    // Already over the ceiling: the accounts that exist are never touched, but
+    // no further seat is granted. A quota nobody enforces is decoration — this
+    // is the half that proves it is not.
+    const refused = await apiPost(page, "/api/auth/users", {
+      username: `over_quota_${Date.now()}`,
+      display_name: "Au-delà du plafond",
+      password: "Test1234!",
+      role: "employee",
+    });
+    expect(refused.status).toBe(403);
+    expect(refused.body.code).toBe("USER_QUOTA_REACHED");
+
+    // And the team they already have is still readable.
+    const roster = await apiGet(page, "/api/auth/users");
+    expect(roster.status).toBe(200);
   });
 });

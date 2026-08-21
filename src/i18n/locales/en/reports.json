@@ -161,7 +161,7 @@
     "discountHt": "Discounts granted",
     "taxableHt": "Taxable base excl. VAT",
     "discountNote": "Taxable base = {{gross}} gross excl. VAT less {{discount}} of commercial discounts, i.e. {{base}}.",
-    "stampDutyNote": "Stamp duty at {{rate}}% on cash payments totalling {{base}}."
+    "stampDutyNote": "Total stamp duty billed on cash sales over the period, as frozen when each invoice was issued."
   },
   "accountingExport": {
     "title": "Accounting Export",

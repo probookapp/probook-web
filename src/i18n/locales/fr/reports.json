@@ -161,7 +161,7 @@
     "discountHt": "Remises accordées",
     "taxableHt": "Base imposable HT",
     "discountNote": "Base imposable = {{gross}} brut HT moins {{discount}} de remises commerciales, soit {{base}}.",
-    "stampDutyNote": "Droit de timbre à {{rate}}% sur les paiements en espèces totalisant {{base}}."
+    "stampDutyNote": "Somme des droits de timbre facturés sur les ventes au comptant de la période, tels que figés à l'émission de chaque facture."
   },
   "accountingExport": {
     "title": "Export comptable",

@@ -7,11 +7,6 @@ import { resolveDocumentDiscount } from "@/lib/document-totals";
 import { PAYABLE_PURCHASE_STATUSES } from "@/lib/purchase-status";
 
 /** A payment method counts toward stamp duty (droit de timbre) when it is cash. */
-function isCashMethod(method: string | null | undefined): boolean {
-  if (!method) return false;
-  const m = method.toLowerCase();
-  return m.includes("cash") || m.includes("espece") || m.includes("espèce");
-}
 
 /** Accumulate HT / VAT / TTC per tax rate into a mutable map. */
 type RateBucket = { taxRate: number; totalHt: number; totalVat: number; totalTtc: number };
@@ -74,12 +69,20 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   // its own, but an accountant reconciling gross sales against the declared
   // base needs to see where the difference went.
   let salesDiscount = 0;
+  // What was actually billed as droit de timbre, taken from each invoice's own
+  // snapshot. Recomputing it from cash payments — as this did — answered a
+  // different question: it ignored the threshold, the legal exemption and the
+  // cash-sale flag, and counted every instalment of a part-paid invoice. The
+  // figure could not be reconciled against the documents it was meant to
+  // summarise, which is the one thing a tax return has to do.
+  let stampDutyBilled = 0;
   const salesByRate = new Map<number, RateBucket>();
 
   for (const inv of invoices) {
     salesHt += num(inv.subtotal);
     salesVat += num(inv.taxAmount);
     salesTtc += num(inv.total);
+    stampDutyBilled += num(inv.stampDuty);
 
     // The document discount is not a line, so scale each line down by the share
     // it kept. Summing raw line subtotals would report a taxable base higher
@@ -185,22 +188,11 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   // ── Net VAT = collected − deductible ─────────────────────────────────────
   const netVat = salesVat - purchasesVat;
 
-  // ── Stamp duty (droit de timbre) on cash payments ────────────────────────
+  // ── Stamp duty (droit de timbre) ─────────────────────────────────────────
+  // Summed from the invoices above, not recomputed. The snapshot is frozen when
+  // the invoice is issued, so this reconciles with the documents by construction.
   const stampDutyEnabled = settings?.stampDutyEnabled ?? false;
   const stampDutyRate = num(settings?.stampDutyRate);
-
-  let cashPaymentsTotal = 0;
-  if (stampDutyEnabled) {
-    const payments = await prisma.payment.findMany({
-      where: { tenantId, paymentDate: range },
-    });
-    for (const p of payments) {
-      if (isCashMethod(p.paymentMethod)) cashPaymentsTotal += num(p.amount);
-    }
-  }
-  const stampDutyAmount = stampDutyEnabled
-    ? (cashPaymentsTotal * stampDutyRate) / 100
-    : 0;
 
   const sortByRate = (a: RateBucket, b: RateBucket) => a.taxRate - b.taxRate;
 
@@ -229,8 +221,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     stampDuty: {
       enabled: stampDutyEnabled,
       rate: stampDutyRate,
-      cashPaymentsTotal,
-      amountDue: stampDutyAmount,
+      amountDue: stampDutyBilled,
     },
   };
 

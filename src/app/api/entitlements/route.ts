@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { withAuth } from "@/lib/api-utils";
 import { hasFeatureConfigured } from "@/lib/feature-gate";
 import { ALL_FEATURE_KEYS, type FeatureKey } from "@/lib/feature-keys";
+import { getUserQuotaUsage } from "@/lib/plan-quotas";
 
 /**
  * What this account's offer includes, and where to find what it does not.
@@ -30,6 +31,13 @@ export interface Entitlement {
     slug: string;
     sortOrder: number;
   };
+}
+
+/** How much of a metered thing the offer covers, and how much is used. */
+export interface QuotaUsage {
+  used: number;
+  /** null = no ceiling: no offer (including during a trial), or none set. */
+  limit: number | null;
 }
 
 export const GET = withAuth(async (_req, { tenantId }) => {
@@ -64,5 +72,13 @@ export const GET = withAuth(async (_req, { tenantId }) => {
     })
   );
 
-  return NextResponse.json(Object.fromEntries(entries));
+  // Quotas ride along: a screen that has to say "your offer covers three
+  // people" before the form is filled needs the same round trip that tells it
+  // which modules exist.
+  const users = await getUserQuotaUsage(tenantId);
+
+  return NextResponse.json({
+    ...Object.fromEntries(entries),
+    quotas: { max_users: users },
+  });
 });

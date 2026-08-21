@@ -1675,10 +1675,7 @@ export function ReportsPage() {
             )}
             {ts.stamp_duty.enabled && (
               <p className="text-xs text-(--color-text-secondary)">
-                {t("reports:taxSummary.stampDutyNote", {
-                  rate: ts.stamp_duty.rate,
-                  base: formatCurrency(ts.stamp_duty.cash_payments_total),
-                })}
+                {t("reports:taxSummary.stampDutyNote")}
               </p>
             )}
           </div>

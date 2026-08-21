@@ -82,11 +82,18 @@ test.describe("Stamp duty & tax reporting", () => {
     const upd = await apiPut(page, "/api/settings", { stamp_duty_enabled: true });
     expect(upd.status).toBe(200);
 
-    // Seed a sale (total 1200 incl. 200 VAT) fully paid in cash.
+    // Seed a cash sale (total 1200 incl. 200 VAT) fully paid in cash.
+    //
+    // `is_cash_sale` matters and is not the default on this route: the timbre is
+    // frozen onto the invoice when it is issued, and the report sums those
+    // snapshots rather than recomputing from payments. An invoice issued as a
+    // non-cash sale carries no timbre even if the client later pays cash — see
+    // the second half of this test.
     const client = await setupClient(page, "Tax Client");
     const inv = await apiPost(page, "/api/invoices", {
       client_id: client.id,
       issue_date: today(),
+      is_cash_sale: true,
       lines: [{ description: "Taxable sale", quantity: 1, unit_price: 1000, tax_rate: 20 }],
     });
     expect(inv.status).toBe(200);
@@ -108,8 +115,12 @@ test.describe("Stamp duty & tax reporting", () => {
     expect((summary.body.sales as Record<string, number>).total_vat).toBe(200);
     const stampDuty = summary.body.stamp_duty as Record<string, number | boolean>;
     expect(stampDuty.enabled).toBe(true);
-    // 1% of the 1200 cash payment.
+    // The legal scale on a 1200 DA total: 12 started hundreds at 1 DA each. The
+    // figure comes from the invoice's own snapshot, so the report and the
+    // document can be reconciled line by line — which is the only thing a tax
+    // return has to do.
     expect(stampDuty.amount_due).toBe(12);
+
 
     // ── UI: open the Tax Summary report tab ──────────────────────────────────
     await page.goto("/en/reports");
@@ -122,5 +133,34 @@ test.describe("Stamp duty & tax reporting", () => {
     // Sales VAT value (200) and stamp duty due value (12) appear.
     await expect(page.getByText(/\b200\b/).first()).toBeVisible();
     await expect(page.getByText(/\b12\b/).first()).toBeVisible();
+  });
+
+  test("a sale not issued as cash carries no timbre, whatever pays it", async ({ page }) => {
+    await apiPut(page, "/api/settings", { stamp_duty_enabled: true });
+    const client = await setupClient(page, "Transfer Client");
+
+    // Issued without is_cash_sale: the snapshot is frozen at 0. Paying it in
+    // cash afterwards does not retroactively bill a timbre, and the report must
+    // not invent one — declaring a tax that was never charged is worse than
+    // declaring none. (Whether the timbre is legally due on a cash settlement of
+    // a non-cash invoice is a question for an accountant, not for this report.)
+    const inv = await apiPost(page, "/api/invoices", {
+      client_id: client.id,
+      issue_date: today(),
+      lines: [{ description: "Bank transfer sale", quantity: 1, unit_price: 1000, tax_rate: 20 }],
+    });
+    await apiPost(page, `/api/invoices/${inv.body.id}/issue`);
+    await apiPost(page, "/api/payments", {
+      invoice_id: inv.body.id,
+      amount: 1200,
+      payment_date: today(),
+      payment_method: "CASH",
+    });
+
+    const summary = await apiGet(
+      page,
+      `/api/reports/tax-summary?startDate=${yearAgo()}&endDate=${today()}`
+    );
+    expect((summary.body.stamp_duty as Record<string, number>).amount_due).toBe(0);
   });
 });

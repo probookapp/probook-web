@@ -40,6 +40,13 @@ test.describe("Scheduled jobs", () => {
     const res = await request.get("/api/cron/reminders");
     expect(res.status()).toBe(200);
 
+    // The sweep isolates each tenant: one account's error used to abort the
+    // loop, so whoever came after it silently got no reminders that day. The
+    // job reports its casualties instead of throwing them away.
+    const summary = (await res.json()) as { tenants_swept: number; tenants_failed: number };
+    expect(summary.tenants_swept).toBeGreaterThan(0);
+    expect(summary.tenants_failed).toBe(0);
+
     const reminders = (await apiGet(page, "/api/reminders")).body as unknown as {
       reminder_type: string;
       document_id: string;

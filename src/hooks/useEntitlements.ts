@@ -2,9 +2,11 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { FEATURE_KEYS, type FeatureKey } from "@/lib/feature-keys";
-import type { Entitlement } from "@/app/api/entitlements/route";
+import type { Entitlement, QuotaUsage } from "@/app/api/entitlements/route";
 
-type Entitlements = Partial<Record<FeatureKey, Entitlement>>;
+type Entitlements = Partial<Record<FeatureKey, Entitlement>> & {
+  quotas?: { max_users: QuotaUsage };
+};
 
 /** Included, until the server says otherwise. */
 const OPEN: Entitlement = { included: true };
@@ -34,8 +36,14 @@ export function useEntitlements() {
  */
 export function useFeature(key: FeatureKey): Entitlement {
   const { data } = useEntitlements();
-  return data?.[key] ?? OPEN;
+  return (data?.[key] as Entitlement | undefined) ?? OPEN;
+}
+
+/** The team ceiling, unlimited until the server says otherwise. */
+export function useUserQuota(): QuotaUsage {
+  const { data } = useEntitlements();
+  return data?.quotas?.max_users ?? { used: 0, limit: null };
 }
 
 export { FEATURE_KEYS };
-export type { Entitlement };
+export type { Entitlement, QuotaUsage };

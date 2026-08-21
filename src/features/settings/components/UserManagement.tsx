@@ -8,6 +8,7 @@ import { useAuthStore } from '@/stores/useAuthStore';
 import { useDemoMode } from '@/components/providers/DemoModeProvider';
 import type { UserInfo, PermissionKey, PermissionAction } from '@/types';
 import { ALL_PERMISSIONS } from '@/types';
+import { useUserQuota } from "@/hooks/useEntitlements";
 
 type PermFlags = {
   canView: boolean;
@@ -32,6 +33,8 @@ const PERM_ACTIONS: { action: PermissionAction; flag: keyof PermFlags; label: st
 
 export function UserManagement() {
   const { t } = useTranslation('auth');
+  const userQuota = useUserQuota();
+  const seatsFull = userQuota.limit !== null && userQuota.used >= userQuota.limit;
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { data: users, isLoading } = useUsers();
   const createUser = useCreateUser();
@@ -378,10 +381,20 @@ export function UserManagement() {
           {t('userManagement.title')}
         </h3>
         {canCreateUser && (
-          <Button onClick={openCreate} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            {t('userManagement.addUser')}
-          </Button>
+          // The ceiling is said before the form, not after it. Letting someone
+          // fill in a colleague's details and then refusing the write reads as
+          // a fault; naming the offer turns it into a choice.
+          <div className="flex items-center gap-3">
+            {seatsFull && (
+              <span className="text-xs text-(--color-text-secondary)">
+                {t('userManagement.seatsUsed', { used: userQuota.used, limit: userQuota.limit })}
+              </span>
+            )}
+            <Button onClick={openCreate} size="sm" disabled={seatsFull}>
+              <Plus className="h-4 w-4 me-2" />
+              {t('userManagement.addUser')}
+            </Button>
+          </div>
         )}
       </div>
 
