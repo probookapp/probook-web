@@ -66,8 +66,8 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
 
   const quantityChange =
     body.quantity_change !== undefined
-      ? Math.round(body.quantity_change)
-      : Math.round((body.new_quantity ?? 0) - current);
+      ? body.quantity_change
+      : (body.new_quantity ?? 0) - current;
 
   if (quantityChange === 0) {
     return NextResponse.json({ error: "No change in quantity" }, { status: 400 });

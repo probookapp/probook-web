@@ -119,7 +119,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       isService: row.is_service === "true" || row.service === "true",
       // Stock columns are Int today — round to avoid a Prisma overflow on a
       // fractional cell. (FIN-3 will move stock to Decimal and drop this.)
-      quantity: Math.round(quantity),
+      quantity,
       purchasePrice,
     });
   });

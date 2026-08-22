@@ -1399,8 +1399,8 @@ model StockMovement {
   productId      String   @map("product_id")
   variantId      String?  @map("variant_id")
   type           String // "initial" | "sale" | "purchase" | "adjustment" | "return"
-  quantityChange Int      @map("quantity_change") // signed: negative = out, positive = in
-  balanceAfter   Int      @map("balance_after")
+  quantityChange Float    @map("quantity_change") // signed: negative = out, positive = in
+  balanceAfter   Float    @map("balance_after")
   reason         String?
   referenceType  String?  @map("reference_type") // "pos_transaction" | "purchase_order" | "credit_note" | "manual"
   referenceId    String?  @map("reference_id")
@@ -1519,7 +1519,7 @@ model StockLevel {
   locationId String   @map("location_id")
   productId  String   @map("product_id")
   variantId  String?  @map("variant_id")
-  quantity   Int      @default(0)
+  quantity   Float    @default(0)
   updatedAt  DateTime @updatedAt @map("updated_at")
 
   tenant   Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1559,7 +1559,7 @@ model StockTransferLine {
   transferId String  @map("transfer_id")
   productId  String  @map("product_id")
   variantId  String? @map("variant_id")
-  quantity   Int
+  quantity   Float
 
   transfer StockTransfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
 

@@ -70,7 +70,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
 
       // Restore stock through the inventory ledger (mirror of the sale decrement).
       for (const line of transaction.lines) {
-        const qty = Math.round(line.quantity);
+        const qty = line.quantity;
         let productId = line.productId;
         if (!productId && line.variantId) {
           const variant = await tx.productVariant.findFirst({

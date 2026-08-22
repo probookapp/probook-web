@@ -117,7 +117,8 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
         tenantId,
         productId: line.productId,
         type: "sale",
-        quantityChange: -Math.round(line.quantity),
+        // No rounding: the ledger carries the quantity the document says.
+        quantityChange: -line.quantity,
         referenceType: "invoice",
         referenceId: inv.id,
         userId: session.userId,

@@ -229,7 +229,7 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
 
           // Update stock for product lines via the inventory ledger (clamps at zero).
           for (const line of lines) {
-            const qty = Math.round(line.quantity);
+            const qty = line.quantity;
             if (line.variant_id) {
               const productId = variantToProduct.get(line.variant_id) ?? line.product_id;
               if (!productId) continue;
