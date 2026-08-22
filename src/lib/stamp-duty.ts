@@ -64,3 +64,20 @@ export function computeStampDuty(ctx: StampDutyContext): number {
   if (ctx.total < (ctx.threshold ?? 0)) return 0;
   return computeTimbreScale(ctx.total);
 }
+
+/**
+ * What a new invoice assumes about how it will be settled.
+ *
+ * Nobody knows at issue time how a client will actually pay, so this is a
+ * declaration the user can change, not a fact. It defaults to a cash sale
+ * because that is the ordinary case in the market this is built for, and
+ * because the two ways of being wrong are not symmetrical: charging a timbre
+ * that was not due is visible on the document and refundable, while omitting
+ * one leaves the business owing a tax it never collected.
+ *
+ * It exists because the form and the API disagreed — the invoice screen
+ * defaulted to true, the API to false. The same shop got a timbre on the
+ * documents it typed and none on the ones its imports, its integrations or its
+ * offline queue replayed, with nothing to show for the difference.
+ */
+export const DEFAULT_IS_CASH_SALE = true;

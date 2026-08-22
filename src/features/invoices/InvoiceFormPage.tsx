@@ -32,6 +32,7 @@ import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { toast } from "@/stores/useToastStore";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
 import { getApiErrorMessage } from "@/lib/api-adapter";
+import { DEFAULT_IS_CASH_SALE } from "@/lib/stamp-duty";
 
 const createLineSchema = (t: (key: string) => string) => z.object({
   product_id: z.string().nullable().optional(),
@@ -111,7 +112,7 @@ export function InvoiceFormPage() {
       discount_amount: 0,
       // Most timbre-enabled businesses are cash-based; default on (only matters
       // when stamp duty is enabled in settings). Uncheck for transfer/cheque.
-      is_cash_sale: true,
+      is_cash_sale: DEFAULT_IS_CASH_SALE,
       stamp_duty_exempt: false,
       lines: [{ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate }],
     },

@@ -5,6 +5,7 @@ import { calculateDocumentTotals, calculateLineTotals } from "@/lib/document-tot
 import { requirePermission } from "@/lib/permissions-server";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { updateInvoiceSchema } from "@/lib/validations";
+import { DEFAULT_IS_CASH_SALE } from "@/lib/stamp-duty";
 
 interface LineInput {
   product_id?: string | null;
@@ -88,7 +89,7 @@ export const PUT = withAuth(async (req, { session, tenantId, params }) => {
       subtotal: totals.subtotal,
       taxAmount: totals.taxAmount,
       total: totals.total,
-      isCashSale: body.is_cash_sale ?? false,
+      isCashSale: body.is_cash_sale ?? DEFAULT_IS_CASH_SALE,
       stampDutyExempt: body.stamp_duty_exempt ?? false,
       stampDuty: 0,
       notes: body.notes || null,

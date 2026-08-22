@@ -139,14 +139,18 @@ test.describe("Stamp duty & tax reporting", () => {
     await apiPut(page, "/api/settings", { stamp_duty_enabled: true });
     const client = await setupClient(page, "Transfer Client");
 
-    // Issued without is_cash_sale: the snapshot is frozen at 0. Paying it in
-    // cash afterwards does not retroactively bill a timbre, and the report must
-    // not invent one — declaring a tax that was never charged is worse than
+    // Declared as not settled in cash, so the snapshot is frozen at 0. Paying it
+    // in cash afterwards does not retroactively bill a timbre, and the report
+    // must not invent one — declaring a tax that was never charged is worse than
     // declaring none. (Whether the timbre is legally due on a cash settlement of
     // a non-cash invoice is a question for an accountant, not for this report.)
+    //
+    // The flag is spelled out: a new invoice assumes a cash sale by default, the
+    // ordinary case in this market. See DEFAULT_IS_CASH_SALE.
     const inv = await apiPost(page, "/api/invoices", {
       client_id: client.id,
       issue_date: today(),
+      is_cash_sale: false,
       lines: [{ description: "Bank transfer sale", quantity: 1, unit_price: 1000, tax_rate: 20 }],
     });
     await apiPost(page, `/api/invoices/${inv.body.id}/issue`);

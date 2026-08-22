@@ -7,7 +7,7 @@ import { requirePermission } from "@/lib/permissions-server";
 import { parseArchivedFilter, parseStatusFilter, INVOICE_STATUSES } from "@/lib/document-status";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createInvoiceSchema } from "@/lib/validations";
-import { computeStampDuty } from "@/lib/stamp-duty";
+import { computeStampDuty, DEFAULT_IS_CASH_SALE } from "@/lib/stamp-duty";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
 import { num } from "@/lib/money";
 
@@ -129,7 +129,7 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
   });
 
   const status = body.status || "DRAFT";
-  const isCashSale = body.is_cash_sale ?? false;
+  const isCashSale = body.is_cash_sale ?? DEFAULT_IS_CASH_SALE;
   const stampDutyExempt = body.stamp_duty_exempt ?? false;
   // Droit de timbre applies only to cash-settled, non-draft, non-exempt invoices
   // at/above the configured threshold. Others carry no timbre (so they can reach PAID).
