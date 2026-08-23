@@ -70,12 +70,19 @@ export function buildPermissionRows(
 }
 
 /** Serialize a user + its permission rows into the API response shape. */
-export function serializeUser(user: UserRecord, perms: PermissionRow[]) {
+export function serializeUser(
+  user: UserRecord,
+  perms: PermissionRow[],
+  /** Set when this account owns the business, so the screen can say so and
+   *  stop offering the actions the server will refuse. */
+  isOwner = false
+) {
   return {
     id: user.id,
     username: user.username,
     display_name: user.displayName,
     role: user.role,
+    is_owner: isOwner,
     is_active: user.isActive,
     // Legacy view-only list (module keys the user can see).
     permissions: perms.filter((p) => p.canView).map((p) => p.permissionKey),

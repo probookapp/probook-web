@@ -6,6 +6,7 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { createUserSchema } from "@/lib/validations";
 import { buildPermissionRows, serializeUser } from "./permissions";
 import { getUserQuotaUsage } from "@/lib/plan-quotas";
+import { getOwnerUserId } from "@/lib/tenant-owner";
 
 // Admin-only: the roster and every user's permission set are management data,
 // consistent with the admin-gated POST/PUT/DELETE on this resource (audit TEN-2).
@@ -14,13 +15,14 @@ export const GET = withAdmin(async (req, { tenantId }) => {
     where: { tenantId },
     orderBy: { createdAt: "asc" },
   });
+  const ownerUserId = await getOwnerUserId(tenantId);
 
   const result = await Promise.all(
     users.map(async (u) => {
       const perms = await prisma.userPermission.findMany({
         where: { userId: u.id },
       });
-      return serializeUser(u, perms);
+      return serializeUser(u, perms, u.id === ownerUserId);
     })
   );
 

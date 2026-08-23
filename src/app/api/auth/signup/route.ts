@@ -111,6 +111,14 @@ export async function POST(req: NextRequest) {
         })),
       });
 
+      // The account that signs up owns the business. Recorded here rather than
+      // inferred later from "the oldest user": that deduction is invisible in
+      // the data and breaks the day the row is removed.
+      await tx.tenant.update({
+        where: { id: tenant.id },
+        data: { ownerUserId: user.id },
+      });
+
       const permissions = await tx.userPermission.findMany({
         where: { userId: user.id, granted: true },
       });

@@ -17,6 +17,11 @@ model Tenant {
   lastActiveAt   DateTime? @map("last_active_at")
   trialStartedAt DateTime? @map("trial_started_at")
   trialEndsAt    DateTime? @map("trial_ends_at")
+  /// The account that created the business: pays, hires, hands out roles.
+  /// Never deletable, never demotable — see lib/tenant-owner.ts. Declared as
+  /// a plain column, not a relation: User already points at Tenant, and a
+  /// second relation between the same two models buys nothing here.
+  ownerUserId    String?   @map("owner_user_id")
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
@@ -886,6 +891,9 @@ model PosTransaction {
   discountPercent Float    @default(0) @map("discount_percent")
   discountAmount  Decimal  @default(0) @map("discount_amount") @db.Decimal(16, 3)
   finalAmount     Decimal  @default(0) @map("final_amount") @db.Decimal(16, 3)
+  /// Droit de timbre on the cash-settled part, frozen at the sale. A
+  /// surcharge on what the customer pays, never part of revenue or VAT.
+  stampDuty       Decimal  @default(0) @map("stamp_duty") @db.Decimal(16, 3)
   status          String   @default("COMPLETED")
   notes           String?
   // Client-minted dedupe key so offline replays / lost-response retries cannot book the sale twice.
