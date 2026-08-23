@@ -14,10 +14,27 @@
 //   30 001 – 100 000 → 1.5% (1.5 DA per 100)
 //   > 100 000        → 2%   (2 DA per 100)
 //
-// NOTE: implements the "bracket rate applied to the whole total" reading. If an
-// accountant confirms the marginal (per-slice) reading, adjust computeTimbreScale.
+// The scale is NOT progressive per slice: the rate of the bracket the total
+// falls into applies to the whole amount. Circular n° 14/MF/DGI/LF.2025 of
+// 5 March 2025 settles it with its own worked example — 35 000 DA gives
+// 350 × 1.5 = 525 DA, not 300 × 1 plus 50 × 1.5. This reading was a guess when
+// it was written; it is now the confirmed one, so do not "fix" it back.
+//
+// The same circular settles what the duty is computed on when a sale is settled
+// partly in cash: the cash-paid sum. The electronically-paid part is exempt
+// (art. 258 quinquies, introduced by art. 47 of the 2025 Finance Act).
+
+import { getFiscalProfile } from "./fiscal-profiles";
 
 export interface StampDutyContext {
+  /**
+   * The tenant's fiscal regime. Required, not optional, so every call site has
+   * to answer it: the droit de timbre is Algerian, and a business that moved to
+   * the French regime would otherwise keep charging its customers a tax that
+   * does not exist there — with the setting hidden from their screen, so they
+   * could not even turn it off.
+   */
+  fiscalProfile?: string | null;
   enabled?: boolean | null;
   /** @deprecated Superseded by the legal progressive scale; ignored. */
   rate?: number | null;
@@ -56,6 +73,9 @@ export function computeTimbreScale(total: number): number {
 
 export function computeStampDuty(ctx: StampDutyContext): number {
   if (ctx.isDraft) return 0;
+  // The regime first: no amount of local configuration makes an Algerian stamp
+  // duty due on a French invoice.
+  if (!getFiscalProfile(ctx.fiscalProfile).hasStampDuty) return 0;
   if (!ctx.enabled) return 0;
   if (ctx.exempt) return 0;
   if (!ctx.isCashSale) return 0;
@@ -81,3 +101,20 @@ export function computeStampDuty(ctx: StampDutyContext): number {
  * offline queue replayed, with nothing to show for the difference.
  */
 export const DEFAULT_IS_CASH_SALE = true;
+
+/**
+ * Whether a droit de timbre can arise for this tenant at all.
+ *
+ * Both halves matter and they answer different questions: the regime says the
+ * tax exists here, the setting says this business charges it. The cheque
+ * mentions of article 258 hang off the same answer — they exist to justify an
+ * exemption, so where no duty can be due, nobody owes that paperwork.
+ */
+export function stampDutyApplies(settings: {
+  fiscalProfile?: string | null;
+  stampDutyEnabled?: boolean | null;
+}): boolean {
+  return (
+    getFiscalProfile(settings.fiscalProfile).hasStampDuty && !!settings.stampDutyEnabled
+  );
+}

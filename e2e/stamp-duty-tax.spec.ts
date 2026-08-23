@@ -1,5 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
-import { apiGet, apiPost, apiPut, setupClient } from "./api-helpers";
+import { apiGet, apiPost, apiPut, setupClient, setupProduct, setupRegister, openSession } from "./api-helpers";
 import { signUpSubscribed } from "./subscription-setup";
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -166,5 +166,50 @@ test.describe("Stamp duty & tax reporting", () => {
       `/api/reports/tax-summary?startDate=${yearAgo()}&endDate=${today()}`
     );
     expect((summary.body.stamp_duty as Record<string, number>).amount_due).toBe(0);
+  });
+});
+
+test.describe("Stamp duty at the till", () => {
+  test("a cash ticket carries the duty; a card ticket carries none", async ({ page }) => {
+    await signUpSubscribed(page);
+    await apiPut(page, "/api/settings", { stamp_duty_enabled: true });
+
+    const product = await setupProduct(page, "Article comptoir", 5000, { quantity: 50 });
+    const register = await setupRegister(page, "Caisse timbre");
+    const session = await openSession(page, String(register.id), 0);
+
+    const sell = async (method: string) =>
+      apiPost(page, "/api/pos/transactions", {
+        register_id: register.id,
+        session_id: session.id,
+        lines: [
+          {
+            product_id: product.id,
+            designation: "Article comptoir",
+            quantity: 1,
+            unit_price: 5000,
+            tax_rate: 0,
+          },
+        ],
+        payments: [{ payment_method: method, amount: 5000 }],
+      });
+
+    // 5 000 DA settled in cash: fifty started hundreds at 1 DA each.
+    const cash = await sell("CASH");
+    expect(cash.status, JSON.stringify(cash.body)).toBe(200);
+    expect(Number(cash.body.stamp_duty)).toBe(50);
+
+    // The same sale paid by card is exempt (art. 258 quinquies). Charging it
+    // would tax exactly what the 2025 Finance Act set out to exempt.
+    const card = await sell("CARD");
+    expect(Number(card.body.stamp_duty)).toBe(0);
+
+    // And the tax return sums what was billed, tickets included — a return that
+    // counted only invoices would under-declare every counter sale.
+    const summary = await apiGet(
+      page,
+      `/api/reports/tax-summary?startDate=${yearAgo()}&endDate=${today()}`
+    );
+    expect((summary.body.stamp_duty as Record<string, number>).amount_due).toBe(50);
   });
 });

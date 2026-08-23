@@ -26,6 +26,7 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
   // surcharge on the TTC total, not part of revenue/VAT. Otherwise stays 0.
   const settings = await prisma.companySettings.findFirst({ where: { tenantId } });
   const stampDuty = computeStampDuty({
+    fiscalProfile: settings?.fiscalProfile,
     enabled: settings?.stampDutyEnabled,
     rate: settings?.stampDutyRate,
     threshold: num(settings?.stampDutyThreshold),

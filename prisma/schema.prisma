@@ -504,6 +504,12 @@ model Payment {
   paymentDate    DateTime @map("payment_date") @db.Date
   paymentMethod  String   @map("payment_method")
   reference      String?
+  /// Article 258 grants the exemption only if the quittance carries the
+  /// cheque's date, its number and the name of the drawee. This is the
+  /// cheque's own date — paymentDate is the day it was banked.
+  chequeDate     DateTime? @map("cheque_date") @db.Date
+  chequeNumber   String?   @map("cheque_number")
+  chequeBank     String?   @map("cheque_bank")
   notes          String?
   // Client-minted dedupe key so offline replays / double-submits cannot record the payment twice.
   idempotencyKey String?  @map("idempotency_key")
@@ -957,6 +963,10 @@ model PosPayment {
   cashGiven     Decimal? @map("cash_given") @db.Decimal(16, 3)
   changeGiven   Decimal? @map("change_given") @db.Decimal(16, 3)
   cardReference String?  @map("card_reference")
+  /// Same mentions as on an invoice receipt — see Payment.chequeDate.
+  chequeDate    DateTime? @map("cheque_date") @db.Date
+  chequeNumber  String?   @map("cheque_number")
+  chequeBank    String?   @map("cheque_bank")
   createdAt     DateTime @default(now()) @map("created_at")
 
   transaction PosTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)

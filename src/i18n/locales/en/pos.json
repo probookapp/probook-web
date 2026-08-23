@@ -21,6 +21,7 @@
   "items": "items",
   "pay": "Pay",
   "payment": "Payment",
+  "stampDutyLine": "including {{duty}} stamp duty, on top of {{goods}}",
   "totalToPay": "Total to pay",
   "cash": "Cash",
   "card": "Card",

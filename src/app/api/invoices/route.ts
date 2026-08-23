@@ -134,6 +134,7 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
   // Droit de timbre applies only to cash-settled, non-draft, non-exempt invoices
   // at/above the configured threshold. Others carry no timbre (so they can reach PAID).
   const stampDuty = computeStampDuty({
+    fiscalProfile: settings?.fiscalProfile,
     enabled: settings?.stampDutyEnabled,
     rate: settings?.stampDutyRate,
     threshold: num(settings?.stampDutyThreshold),

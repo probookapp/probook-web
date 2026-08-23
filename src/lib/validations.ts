@@ -354,6 +354,13 @@ export const paymentSchema = z.object({
   payment_date: requiredString("Payment date"),
   payment_method: requiredString("Payment method"),
   reference: optionalString,
+  // Article 258 of the Algerian Code du timbre exempts a cheque-settled receipt
+  // only if the quittance states the cheque's date, its number and the drawee.
+  // Optional here on purpose: whether they are *required* depends on the
+  // tenant's fiscal regime, which a schema cannot see. The routes enforce it.
+  cheque_date: optionalString,
+  cheque_number: optionalString,
+  cheque_bank: optionalString,
   notes: optionalString,
   // Client-minted dedupe key: replays of the same recorded payment return the
   // existing row instead of double-crediting the invoice.
@@ -412,6 +419,13 @@ const posPaymentSchema = z.object({
   cash_given: z.coerce.number().nullable().optional(),
   change_given: z.coerce.number().nullable().optional(),
   card_reference: optionalString,
+  // Article 258 of the Algerian Code du timbre exempts a cheque-settled receipt
+  // only if the quittance states the cheque's date, its number and the drawee.
+  // Optional here on purpose: whether they are *required* depends on the
+  // tenant's fiscal regime, which a schema cannot see. The routes enforce it.
+  cheque_date: optionalString,
+  cheque_number: optionalString,
+  cheque_bank: optionalString,
 });
 
 export const posTransactionSchema = z.object({

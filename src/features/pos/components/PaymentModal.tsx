@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Banknote, CreditCard, FileCheck, Landmark, UserRound } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
+import { computeStampDuty } from "@/lib/stamp-duty";
+import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import {
   POS_PAYMENT_METHODS,
   methodTakesReference,
@@ -52,6 +54,7 @@ export function PaymentModal({
   hasClient = false,
 }: PaymentModalProps) {
   const { t } = useTranslation("pos");
+  const { data: settings } = useCompanySettings();
   const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>("CASH");
   const [cashGiven, setCashGiven] = useState<string>("");
   const [reference, setReference] = useState<string>("");
@@ -63,7 +66,6 @@ export function PaymentModal({
   const isCredit = paymentMethod === "CREDIT";
 
   const cashAmount = parseFloat(cashGiven) || 0;
-  const change = isCash ? Math.max(0, cashAmount - totalAmount) : 0;
 
   // What the customer is settling now. Cash is driven by the amount handed
   // over; the other methods take an explicit figure so a part-payment can be
@@ -79,10 +81,29 @@ export function PaymentModal({
   const remaining = Math.max(0, Math.round((totalAmount - settledNow) * 1000) / 1000);
   const leavesBalance = remaining > 0;
 
+  // Droit de timbre on the part settled in cash, shown before the money is
+  // taken rather than after. Computed on the goods, then added — the duty is
+  // owed on top of the sale, never carved out of it, and computing it on a
+  // total that already included it would chase its own tail.
+  //
+  // Card, cheque and transfer are exempt (art. 258 quinquies), so switching
+  // method makes the line disappear, which is exactly the behaviour the law is
+  // trying to encourage.
+  const stampDuty = computeStampDuty({
+    fiscalProfile: settings?.fiscal_profile,
+    enabled: settings?.stamp_duty_enabled,
+    threshold: settings?.stamp_duty_threshold ?? 0,
+    isCashSale: isCash,
+    total: settledNow,
+    isDraft: false,
+  });
+  const dueNow = Math.round((totalAmount + stampDuty) * 1000) / 1000;
+  const change = isCash ? Math.max(0, cashAmount - dueNow) : 0;
+
   // Anything left unpaid becomes the client's balance, so there has to be one.
   const isValid =
     (!leavesBalance || hasClient) &&
-    (isCash ? cashAmount >= totalAmount || settledNow > 0 : true) &&
+    (isCash ? cashAmount >= dueNow || settledNow > 0 : true) &&
     (isCredit || settledNow > 0 || hasClient);
 
   const handleConfirm = () => {
@@ -111,11 +132,11 @@ export function PaymentModal({
   };
 
   const quickAmounts = [
-    Math.ceil(totalAmount / 10) * 10,
-    Math.ceil(totalAmount / 50) * 50,
-    Math.ceil(totalAmount / 100) * 100,
-    Math.ceil(totalAmount / 500) * 500,
-  ].filter((v, i, a) => a.indexOf(v) === i && v >= totalAmount);
+    Math.ceil(dueNow / 10) * 10,
+    Math.ceil(dueNow / 50) * 50,
+    Math.ceil(dueNow / 100) * 100,
+    Math.ceil(dueNow / 500) * 500,
+  ].filter((v, i, a) => a.indexOf(v) === i && v >= dueNow);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
@@ -133,7 +154,17 @@ export function PaymentModal({
           {/* Total */}
           <div className="text-center">
             <p className="text-sm text-(--color-text-secondary)">{t("totalToPay")}</p>
-            <p className="text-4xl font-bold">{formatAmount(totalAmount)}</p>
+            <p className="text-4xl font-bold">{formatAmount(dueNow)}</p>
+            {stampDuty > 0 && (
+              // Named and itemised: the customer is paying a tax on top of the
+              // goods, not a higher price for them.
+              <p className="mt-1 text-xs text-(--color-text-secondary)">
+                {t("stampDutyLine", {
+                  goods: formatAmount(totalAmount),
+                  duty: formatAmount(stampDuty),
+                })}
+              </p>
+            )}
           </div>
 
           {/* Payment method selection */}
@@ -192,7 +223,7 @@ export function PaymentModal({
               </div>
 
               {/* Change */}
-              {cashAmount >= totalAmount && (
+              {cashAmount >= dueNow && (
                 <div className="p-4 bg-green-100 dark:bg-green-900/30 rounded-lg text-center">
                   <p className="text-sm text-green-700 dark:text-green-300">{t("change")}</p>
                   <p className="text-3xl font-bold text-green-700 dark:text-green-300">

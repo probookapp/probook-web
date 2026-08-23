@@ -6,12 +6,18 @@ beforeAll(() => {
   vi.stubEnv("DATABASE_URL", "postgresql://fake:fake@localhost:5432/fake");
 });
 
-// Dynamic import after env is set
+// Dynamic import after env is set.
+//
+// 30s, not the default 10: in a full run this import competes with eighteen
+// other files being transformed at once, and on a loaded machine it overran.
+// The failure mode is what makes it worth naming — vitest reports a timed-out
+// hook as fourteen *skipped* tests, and "289 passed | 14 skipped" reads like a
+// success at a glance.
 let toSnakeCase: typeof import("../api-utils").toSnakeCase;
 beforeAll(async () => {
   const mod = await import("../api-utils");
   toSnakeCase = mod.toSnakeCase;
-});
+}, 30_000);
 
 describe("toSnakeCase", () => {
   it("converts camelCase keys to snake_case", () => {

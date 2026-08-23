@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { num } from "@/lib/money";
 import { resolveDocumentDiscount } from "@/lib/document-totals";
 import { PAYABLE_PURCHASE_STATUSES } from "@/lib/purchase-status";
+import { stampDutyApplies } from "@/lib/stamp-duty";
 
 /** A payment method counts toward stamp duty (droit de timbre) when it is cash. */
 
@@ -129,6 +130,9 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     include: { lines: true },
   });
   for (const tx of posTransactions) {
+    // The till carries its own snapshot, computed on the cash it took. A return
+    // that summed only invoices would under-declare every counter sale.
+    stampDutyBilled += num(tx.stampDuty);
     const txTotal = num(tx.total);
     const txFinalAmount = num(tx.finalAmount);
     const ratio = txTotal > 0 ? txFinalAmount / txTotal : 1;
@@ -191,7 +195,9 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   // ── Stamp duty (droit de timbre) ─────────────────────────────────────────
   // Summed from the invoices above, not recomputed. The snapshot is frozen when
   // the invoice is issued, so this reconciles with the documents by construction.
-  const stampDutyEnabled = settings?.stampDutyEnabled ?? false;
+  // The regime as well as the setting: a business that moved to the French
+  // regime has no droit de timbre to declare, whatever its old toggle says.
+  const stampDutyEnabled = settings ? stampDutyApplies(settings) : false;
   const stampDutyRate = num(settings?.stampDutyRate);
 
   const sortByRate = (a: RateBucket, b: RateBucket) => a.taxRate - b.taxRate;

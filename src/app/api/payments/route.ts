@@ -110,6 +110,10 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
           paymentDate: new Date(body.payment_date),
           paymentMethod: body.payment_method,
           reference: body.reference || null,
+          // The three mentions article 258 conditions the exemption on.
+          chequeDate: body.cheque_date ? new Date(body.cheque_date) : null,
+          chequeNumber: body.cheque_number || null,
+          chequeBank: body.cheque_bank || null,
           notes: body.notes || null,
           idempotencyKey,
         },

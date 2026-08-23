@@ -21,6 +21,7 @@
   "items": "عناصر",
   "pay": "الدفع",
   "payment": "الدفع",
+  "stampDutyLine": "منها {{duty}} حق الطابع، إضافة إلى {{goods}}",
   "totalToPay": "المبلغ المستحق",
   "cash": "نقدي",
   "card": "بطاقة",

@@ -21,6 +21,7 @@
   "items": "articles",
   "pay": "Payer",
   "payment": "Paiement",
+  "stampDutyLine": "dont {{duty}} de droit de timbre, en plus de {{goods}}",
   "totalToPay": "Total à payer",
   "cash": "Espèces",
   "card": "Carte",

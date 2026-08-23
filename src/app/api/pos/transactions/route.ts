@@ -7,6 +7,9 @@ import { posTransactionSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 import { num } from "@/lib/money";
 import { Prisma } from "@/generated/prisma/client";
+import { computeStampDuty, stampDutyApplies } from "@/lib/stamp-duty";
+import { movesTheDrawer } from "@/lib/pos-payment-methods";
+import { missingChequeMentions } from "@/lib/cheque-mentions";
 
 interface PosLineInput {
   product_id?: string | null;
@@ -26,6 +29,9 @@ interface PosPaymentInput {
   cash_given?: number | null;
   change_given?: number | null;
   card_reference?: string | null;
+  cheque_date?: string | null;
+  cheque_number?: string | null;
+  cheque_bank?: string | null;
 }
 
 /** Business-rule failure inside the create transaction → mapped to an HTTP error. */
@@ -147,6 +153,56 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
   const discountAmount = body.discount_amount || (total * discountPercent / 100);
   const finalAmount = total - discountAmount;
 
+  // Droit de timbre on the part settled in cash.
+  //
+  // Article 100 of the Code du timbre covers a receipt as much as an invoice,
+  // and circular n° 14/MF/DGI/LF.2025 settles what it is computed on: the sum
+  // paid in cash. The electronically-paid part is exempt (art. 258 quinquies),
+  // so a ticket half paid by card carries half the duty — charging it on the
+  // whole would tax exactly what the law just exempted.
+  //
+  // Recomputed here from the payment lines, never taken from the client: the
+  // till sends what it displayed, and what it displayed is not evidence.
+  const cashSettled = (body.payments || [])
+    .filter((p: PosPaymentInput) => movesTheDrawer(p.payment_method))
+    .reduce((sum: number, p: PosPaymentInput) => sum + (p.amount || 0), 0);
+
+  const settings = await prisma.companySettings.findFirst({
+    where: { tenantId },
+    select: { fiscalProfile: true, stampDutyEnabled: true, stampDutyThreshold: true },
+  });
+
+  // A cheque is exempt, but only on a receipt carrying the cheque's date,
+  // number and drawee (art. 258 of the Algerian Code du timbre). Required only
+  // where a duty could otherwise be due: the mentions exist to justify the
+  // exemption, so a business under a regime with no stamp duty — or one that
+  // has not turned it on — owes nobody this paperwork.
+  if (settings && stampDutyApplies(settings)) {
+    for (const p of body.payments || []) {
+      const missing = missingChequeMentions(p.payment_method, p);
+      if (missing.length) {
+        return NextResponse.json(
+          {
+            error: `A cheque needs its date, number and drawee bank (Code du timbre, art. 258). Missing: ${missing.join(", ")}.`,
+            code: "CHEQUE_MENTIONS_REQUIRED",
+            missing,
+          },
+          { status: 400 }
+        );
+      }
+    }
+  }
+
+  const stampDuty = computeStampDuty({
+    fiscalProfile: settings?.fiscalProfile,
+    enabled: settings?.stampDutyEnabled,
+    threshold: num(settings?.stampDutyThreshold),
+    // The cash portion is cash by definition; there is no declaration to make.
+    isCashSale: true,
+    total: cashSettled,
+    isDraft: false,
+  });
+
   // Resolve the sale's location from its register. Stock is deducted from the
   // register's configured location; when the register has none, applyStockChange
   // falls back to the tenant's default location (null → default).
@@ -191,6 +247,7 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
               discountPercent,
               discountAmount,
               finalAmount,
+              stampDuty,
               status: "COMPLETED",
               notes: body.notes || null,
               lines: {
@@ -221,6 +278,9 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
                   cashGiven: p.cash_given || null,
                   changeGiven: p.change_given || null,
                   cardReference: p.card_reference || null,
+                  chequeDate: p.cheque_date ? new Date(p.cheque_date) : null,
+                  chequeNumber: p.cheque_number || null,
+                  chequeBank: p.cheque_bank || null,
                 })),
               },
             },
