@@ -282,6 +282,7 @@ export class Tour {
     // an error notice raised by the previous one is still on screen now.
     this.inspector?.atStep(text);
     await this.inspector?.sweepToasts();
+    await this.inspector?.sweepMissingKeys();
     if (FAST) return;
     await this.holdCaption();
     if (await this.runtime()) {

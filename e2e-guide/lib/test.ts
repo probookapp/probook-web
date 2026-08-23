@@ -22,6 +22,7 @@ test.afterEach(async ({ page }) => {
 
   // One last look: the closing step's notice has no later caption to catch it.
   await inspector.sweepToasts().catch(() => {});
+  await inspector.sweepMissingKeys().catch(() => {});
 
   expect(
     inspector.anomalies,

@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import { test, expect, type Page } from "@playwright/test";
 import { signUp } from "./helpers";
 import { apiPost, setupClient, setupProduct, setupIssuedInvoice } from "./api-helpers";
@@ -13,9 +15,15 @@ import { apiPost, setupClient, setupProduct, setupIssuedInvoice } from "./api-he
  * at.
  *
  * ─── Raw translation keys ───
- * A missing key does not crash: react-i18next prints the key path itself. The
- * unit test in src/i18n guards parity between locale files; this catches the
- * other half — a key the code asks for that no file defines.
+ * A missing key does not crash: react-i18next prints the key path itself.
+ *
+ * Two unit tests in src/i18n cover most of this ground already — parity between
+ * the locale files, and every literal key in the source resolving to a string.
+ * What is left is the part no static pass can reach: `t(`status:${row.state}`)`
+ * is wrong only for the values that actually occur. So the page is asked
+ * directly, via the list i18next itself fills in (see missingKeyHandler in
+ * src/i18n/index.ts), and the DOM is read as a backstop for the strings that
+ * never go through i18next at all.
  */
 const ROUTES = [
   "dashboard",
@@ -42,25 +50,17 @@ const ROUTES = [
 
 const PHONE = { width: 390, height: 844 };
 
-/** Namespaces the app declares; a raw key always starts with one of them. */
-const NAMESPACES = [
-  "common",
-  "clients",
-  "products",
-  "quotes",
-  "invoices",
-  "delivery",
-  "suppliers",
-  "purchases",
-  "expenses",
-  "reports",
-  "settings",
-  "pos",
-  "dashboard",
-  "auth",
-  "pdf",
-  "phonebook",
-];
+/**
+ * Namespaces the app declares; a raw key always starts with one of them.
+ *
+ * Read from disk rather than written out here. The hand-kept list had drifted
+ * to sixteen entries against the app's twenty — `admin`, the second most used
+ * namespace in the codebase, was among the four it no longer looked for.
+ */
+const NAMESPACES = fs
+  .readdirSync(path.join(process.cwd(), "src/i18n/locales/fr"))
+  .filter((f) => f.endsWith(".json"))
+  .map((f) => f.replace(/\.json$/, ""));
 
 /**
  * Give the account enough content that lists render rows rather than empty
@@ -119,6 +119,22 @@ async function rawKeysOn(page: Page, namespaces: string[]): Promise<string[]> {
 
     return [...found];
   }, namespaces);
+}
+
+/**
+ * What i18next itself could not resolve on this page.
+ *
+ * Exact where the DOM sweep is a guess: it names the namespace, the key and
+ * the language, it sees keys that never reach the screen as text — an
+ * aria-label, a document title, a toast that has already faded — and it cannot
+ * mistake a filename for a key path.
+ */
+async function missingKeysOn(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const found = window.__I18N_MISSING__ ?? [];
+    window.__I18N_MISSING__ = [];
+    return found;
+  });
 }
 
 test.describe("Responsive and translation audit", () => {
@@ -200,19 +216,22 @@ test.describe("Responsive and translation audit", () => {
     await seed(page);
 
     const offenders: string[] = [];
-    // Both languages: a key can be defined in one locale and missing in another,
-    // and only the reader of that language would ever see it.
-    for (const locale of ["fr", "en"]) {
+    // All three languages: a key can be defined in one locale and missing in
+    // another, and only the reader of that language would ever see it.
+    for (const locale of ["fr", "en", "ar"]) {
       for (const route of ROUTES) {
         await page.goto(`/${locale}/${route}`);
         await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
         await page.waitForTimeout(250);
+        for (const key of await missingKeysOn(page)) {
+          offenders.push(`${locale}/${route}: unresolved ${key}`);
+        }
         for (const key of await rawKeysOn(page, NAMESPACES)) {
-          offenders.push(`${locale}/${route}: ${key}`);
+          offenders.push(`${locale}/${route}: on screen ${key}`);
         }
       }
     }
 
-    expect(offenders, `Raw keys on screen:\n${offenders.join("\n")}`).toEqual([]);
+    expect(offenders, `Raw keys:\n${offenders.join("\n")}`).toEqual([]);
   });
 });

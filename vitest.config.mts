@@ -12,7 +12,9 @@ export default defineConfig({
   },
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    // e2e-guide holds no browser test — only the caption check, which reads the
+    // chapters as text and must run with the unit suite, not with Playwright.
+    include: ["src/**/*.test.ts", "e2e-guide/**/*.test.ts"],
     // Modules under src/lib pull in auth.ts, which refuses to load without a
     // signing key. A throwaway value keeps unit tests importable without
     // reaching for a real secret.

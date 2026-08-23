@@ -56,6 +56,10 @@ const FAST = process.env.GUIDE_FAST === "1";
 
 export default defineConfig({
   testDir: "./e2e-guide",
+  // Chapters only. Playwright's default also matches `*.test.ts`, which would
+  // sweep up e2e-guide/__tests__/guide-captions.test.ts — a vitest file, and
+  // importing vitest under Playwright throws before a single chapter opens.
+  testMatch: "**/*.spec.ts",
   // Compile every route before the first chapter. Without it the first run
   // after a cold build pays Next's on-demand compilation inside a chapter —
   // which fails a take, and during filming wastes the whole recording.

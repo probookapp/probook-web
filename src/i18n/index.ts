@@ -136,6 +136,28 @@ const resources = {
   },
 };
 
+/**
+ * Every key i18next could not resolve, in the order it was asked for.
+ *
+ * A miss is silent by construction: i18next returns the key path, so the page
+ * renders "status.partiallyPaid" where a label belongs and nothing throws. The
+ * static test in ./__tests__/key-usage.test.ts catches the literal keys; this
+ * catches the computed ones — `t(`status:${row.state}`)` is only wrong for the
+ * values that actually occur, which no scan of the source can enumerate.
+ *
+ * Left on in every build rather than gated behind a test flag: a detector that
+ * has to be switched on is a detector that is off when it matters, and CI runs
+ * the suite against a production build. The cap keys the cost at nothing —
+ * a missing key inside a list would otherwise push once per row, forever.
+ */
+const MISSING_LIMIT = 50;
+
+declare global {
+  interface Window {
+    __I18N_MISSING__?: string[];
+  }
+}
+
 // i18n initializes with 'en' as default. The Providers component sets the
 // correct language from the URL [locale] segment before any child renders.
 i18n
@@ -145,6 +167,16 @@ i18n
     lng: 'en',
     fallbackLng: 'en',
     defaultNS: 'common',
+    saveMissing: true,
+    missingKeyHandler: (_languages, ns, key) => {
+      if (typeof window === 'undefined') return;
+      const seen = (window.__I18N_MISSING__ ??= []);
+      // The handler is called with the *fallback* language (saveMissingTo
+      // defaults to 'fallback'); what matters for a bug report is the language
+      // the reader had on screen.
+      const entry = `${i18n.resolvedLanguage ?? i18n.language}/${ns}:${key}`;
+      if (seen.length < MISSING_LIMIT && !seen.includes(entry)) seen.push(entry);
+    },
     ns: [
       'common',
       'navigation',

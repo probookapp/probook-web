@@ -16,7 +16,7 @@ import type { Page } from "@playwright/test";
  */
 
 export interface Anomaly {
-  kind: "request" | "console" | "pageerror" | "toast";
+  kind: "request" | "console" | "pageerror" | "toast" | "i18n";
   detail: string;
   /** The narration line showing when it happened — i.e. what the user was doing. */
   step: string;
@@ -131,6 +131,27 @@ export class Inspector {
       if (!/échec|erreur|failed|error|impossible|فشل|خطأ/i.test(text)) continue;
       this.record("toast", text.slice(0, 160));
     }
+  }
+
+  /**
+   * Keys i18next could not resolve since the last sweep.
+   *
+   * The chapters are the only thing that opens every modal, drawer and empty
+   * state in all three languages, which makes them the only place a computed
+   * key like `t(`pos:${method}`)` is ever exercised with real values. The list
+   * is filled by the application itself (src/i18n/index.ts) and drained here,
+   * so a key is attributed to the step that asked for it.
+   */
+  async sweepMissingKeys() {
+    const missing = await this.page
+      .evaluate(() => {
+        const found = window.__I18N_MISSING__ ?? [];
+        window.__I18N_MISSING__ = [];
+        return found;
+      })
+      .catch(() => [] as string[]);
+
+    for (const key of missing) this.record("i18n", `unresolved key ${key}`);
   }
 
   /** A readable account for the test to fail with. */
