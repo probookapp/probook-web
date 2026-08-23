@@ -1,14 +1,14 @@
 import { z } from "zod";
 
 export const createClientSchema = (t: (key: string) => string) => z.object({
-  name: z.string().min(1, t("validation.nameRequired")),
+  name: z.string().min(1, t("validation:client.nameRequired")),
   email: z
     .string()
     .nullable()
     .optional()
     .refine(
       (val) => !val || val.length === 0 || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val),
-      { message: t("validation.emailInvalid") }
+      { message: t("validation:client.emailInvalid") }
     ),
   phone: z.string().nullable().optional(),
   address: z.string().nullable().optional(),
