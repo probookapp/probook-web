@@ -2,6 +2,7 @@ import { type Page, expect } from "@playwright/test";
 import { signUp } from "./helpers";
 import { apiPost } from "./api-helpers";
 import { setupPlatformAdmin, adminPost, adminGet } from "./admin-helpers";
+import { clearPersistedQueryCache } from "./query-cache";
 
 /**
  * Sign up a fresh tenant AND give it an active subscription so the app is no
@@ -103,43 +104,7 @@ export async function seedSubscription(page: Page) {
   );
   expect(approve.status).toBe(200);
 
-  // The app persists its React-Query cache to IndexedDB (idb-keyval:
-  // db "keyval-store", store "keyval", keys "probook-query-cache:<scope>",
-  // one bucket per user) with a 60s staleTime. During signUp it cached
-  // `current-subscription: null`, so the layout would keep computing
-  // isDemoMode=true from that stale value on the next navigation. Drop the
-  // persisted keys so the next page load refetches the now-active
-  // subscription and leaves demo mode.
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) => {
-        const open = indexedDB.open("keyval-store");
-        open.onsuccess = () => {
-          const db = open.result;
-          try {
-            const tx = db.transaction("keyval", "readwrite");
-            const store = tx.objectStore("keyval");
-            const req = store.getAllKeys();
-            req.onsuccess = () => {
-              for (const key of req.result) {
-                if (String(key).startsWith("probook-query-cache")) {
-                  store.delete(key);
-                }
-              }
-            };
-            tx.oncomplete = () => {
-              db.close();
-              resolve();
-            };
-            tx.onerror = () => {
-              db.close();
-              resolve();
-            };
-          } catch {
-            resolve();
-          }
-        };
-        open.onerror = () => resolve();
-      })
-  );
+  // signUp cached `current-subscription: null`, so the layout would keep
+  // computing isDemoMode=true from that stale value on the next navigation.
+  await clearPersistedQueryCache(page);
 }

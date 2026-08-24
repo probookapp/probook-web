@@ -3,6 +3,7 @@ import { Pool } from "pg";
 import { signUp } from "./helpers";
 import { apiGet, apiPost } from "./api-helpers";
 import { setupPlatformAdmin, adminGet, adminPost, adminDelete, createTestPlan } from "./admin-helpers";
+import { clearPersistedQueryCache } from "./query-cache";
 
 /**
  * One-off end-to-end verification of the trial + email-verification onboarding
@@ -61,31 +62,7 @@ function cronGet(page: Page, path: string) {
   );
 }
 
-/** Drop the persisted React-Query cache so the next load refetches subscription. */
-async function clearQueryCache(page: Page) {
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) => {
-        const open = indexedDB.open("keyval-store");
-        open.onsuccess = () => {
-          const db = open.result;
-          try {
-            const tx = db.transaction("keyval", "readwrite");
-            const store = tx.objectStore("keyval");
-            const req = store.getAllKeys();
-            req.onsuccess = () => {
-              for (const key of req.result) {
-                if (String(key).startsWith("probook-query-cache")) store.delete(key);
-              }
-            };
-            tx.oncomplete = () => { db.close(); resolve(); };
-            tx.onerror = () => { db.close(); resolve(); };
-          } catch { resolve(); }
-        };
-        open.onerror = () => resolve();
-      })
-  );
-}
+
 
 
 test("1+2: signup requires email, starts a 10-day trial with real (non-demo) access", async ({ page }) => {
@@ -490,7 +467,7 @@ test("5: an expired trial reverts to demo mode + a 'trial ended' wall", async ({
   expect(cur.body.status).toBe("trial_expired");
 
   // GUI: demo banner returns; opening plans shows the trial-ended message.
-  await clearQueryCache(page);
+  await clearPersistedQueryCache(page);
   await page.goto("/en/dashboard");
   await expect(page.getByText(/exploring a demo/i).first()).toBeVisible({ timeout: 20000 });
   await page.getByRole("button", { name: /view plans/i }).first().click();
