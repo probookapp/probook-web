@@ -64,6 +64,7 @@ const DESKTOP_TITLES = {
   "09": "09-livraisons-et-depenses",
   "10": "10-rapports",
   "11": "11-parametres",
+  "12": "12-abonnement",
 };
 
 const MOBILE_TITLES = {
@@ -137,7 +138,18 @@ fs.mkdirSync(CHAPTERS, { recursive: true });
 
 const produced = [];
 for (const take of ordered) {
-  const name = `${TITLES[take.number] ?? take.dir}.mp4`;
+  // A chapter with no entry here used to fall back to Playwright's directory
+  // name — a deliverable called
+  // "12-abonnement-Chapitre-12--0e316--ou-composer-son-abonnement-guide.mp4",
+  // shipped without anyone noticing. Adding a chapter means naming it.
+  if (!TITLES[take.number]) {
+    console.error(
+      `Chapter ${take.number} has no name in ${MOBILE ? "MOBILE_TITLES" : "DESKTOP_TITLES"}. ` +
+        `Add one — the file name is part of what ships.`
+    );
+    process.exit(1);
+  }
+  const name = `${TITLES[take.number]}.mp4`;
   const out = path.join(CHAPTERS, name);
   console.log(`→ ${name}`);
   ffmpeg([

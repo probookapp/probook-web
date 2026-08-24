@@ -95,6 +95,18 @@ test("Chapitre 1 — Créer son compte et découvrir Probook", async ({ page }) 
     await tour.say("Le compte est confirmé.");
   }
 
+  // Offers, named but never priced. Prices are data — a figure spoken on camera
+  // would date the film the first time the grid moves, and the pricing page
+  // shows the current one anyway.
+  await tour.say(
+    "L'essai donne accès à tout. Ensuite, trois offres : Essentiel pour facturer, Commerce qui ajoute la caisse, les achats et les dépenses, Entreprise qui ouvre le multi-sites et les rapports avancés."
+  );
+  await tour.pause(1500);
+  await tour.say(
+    "Chaque offre couvre un nombre d'utilisateurs, et il est possible de composer son propre abonnement module par module. On y revient au dernier chapitre."
+  );
+  await tour.pause(1500);
+
   await tour.say(
     "Le tableau de bord affiche d'un coup d'œil le chiffre d'affaires, les factures en attente et les alertes."
   );

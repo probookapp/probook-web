@@ -95,6 +95,9 @@ export const GUIDE_TOPICS: GuideTopic[] = [
   { label: "Export comptable", chapter: "10-rapports", evidence: "accountingExport.title" },
   { label: "Régime fiscal", chapter: "11-parametres", evidence: "fiscal_profile" },
   { label: "Comptes employés", chapter: "11-parametres", evidence: "employee" },
+  { label: "Les trois offres", chapter: "12-abonnement", evidence: "landing.pricing.perMonth" },
+  { label: "Composer son abonnement", chapter: "12-abonnement", evidence: "composer.open" },
+  { label: "Places sur l'abonnement", chapter: "12-abonnement", evidence: "composer.seatsLegend" },
 ];
 
 /**
