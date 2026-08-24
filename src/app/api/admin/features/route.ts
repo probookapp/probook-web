@@ -32,6 +32,7 @@ export const POST = withSuperAdmin(async (req, ctx) => {
       nameTranslations: body.name_translations || null,
       descriptionTranslations: body.description_translations || null,
       isGlobal: body.is_global ?? true,
+      unitPrice: body.unit_price ?? null,
     },
   });
 

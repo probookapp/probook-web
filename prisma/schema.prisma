@@ -1116,6 +1116,10 @@ model FeatureFlag {
   nameTranslations        Json?    @map("name_translations") // { "fr": "...", "ar": "..." }
   descriptionTranslations Json?    @map("description_translations") // { "fr": "...", "ar": "..." }
   isGlobal                Boolean  @default(true) @map("is_global")
+  /// What this module costs on its own, per month, in centimes — the à la carte
+  /// price. Null means "not sold separately", which is the honest default: a
+  /// module nobody priced must not silently appear in the composer at zero.
+  unitPrice               Int?     @map("unit_price")
   createdAt               DateTime @default(now()) @map("created_at")
   updatedAt               DateTime @updatedAt @map("updated_at")
 
@@ -1176,6 +1180,11 @@ model Subscription {
   currency           String    @default("DZD")
   couponId           String?   @map("coupon_id")
   discountAmount     Int       @default(0) @map("discount_amount") // centimes
+  /// Seats bought on top of — or instead of — the plan's `max_users` quota.
+  /// Null means "whatever the offer says", which is the ordinary case. Set, it
+  /// wins, so extra seats can be sold against any offer without minting a
+  /// private plan for every hire. See lib/plan-quotas.ts.
+  seats              Int?      @map("seats")
   trialEndsAt        DateTime? @map("trial_ends_at")
   currentPeriodStart DateTime  @map("current_period_start")
   currentPeriodEnd   DateTime  @map("current_period_end")

@@ -62,6 +62,9 @@ export const createSubscriptionSchema = z.object({
   // Optional override of the plan's list price (0 = comped).
   price: z.coerce.number().int().min(0).max(MONEY_MAX).optional(),
   current_period_end: optionalString,
+  // Seats bought on this subscription, overriding the plan's max_users quota.
+  // Omitted, the offer's own figure applies — the ordinary case.
+  seats: z.coerce.number().int().min(1).max(10_000).optional(),
   // Offline sales sometimes need no invoice row (already paid elsewhere).
   create_invoice: z.boolean().optional().default(true),
 });
@@ -563,6 +566,10 @@ export const createFeatureSchema = z.object({
   name_translations: z.any().optional(),
   description_translations: z.any().optional(),
   is_global: z.boolean().default(true),
+  // What this module costs on its own, per month, in centimes. Null keeps it
+  // out of the à la carte composer entirely — a module nobody priced must not
+  // appear there at zero. See src/lib/alacarte.ts.
+  unit_price: z.coerce.number().int().min(0).max(MONEY_MAX).nullable().optional(),
   plan_ids: z.array(z.string()).optional(),
 });
 
@@ -688,13 +695,27 @@ export const subscriptionRequestRejectSchema = z.object({
 
 // ─── Subscription ──────────────────────────────────────────────────────────
 
-export const subscriptionRequestSchema = z.object({
-  plan_id: requiredString("Plan ID"),
-  billing_cycle: requiredString("Billing cycle"),
-  request_type: z.enum(["new", "upgrade", "downgrade", "renewal"], { message: "Invalid request type" }),
-  coupon_code: optionalString,
-  currency: z.string().default("DZD"),
-});
+export const subscriptionRequestSchema = z
+  .object({
+    // Optional because a composed offer has no plan yet: the server mints one
+    // from `custom` below. Exactly one of the two must be present.
+    plan_id: optionalString,
+    billing_cycle: requiredString("Billing cycle"),
+    request_type: z.enum(["new", "upgrade", "downgrade", "renewal"], { message: "Invalid request type" }),
+    coupon_code: optionalString,
+    currency: z.string().default("DZD"),
+    /** An offer composed module by module. See lib/alacarte.ts. */
+    custom: z
+      .object({
+        feature_keys: z.array(z.string().min(1)).max(50),
+        seats: z.coerce.number().int().min(1).max(10_000),
+      })
+      .optional(),
+  })
+  .refine((d) => !!d.plan_id !== !!d.custom, {
+    message: "Provide either a plan to subscribe to or a composition, not both",
+    path: ["plan_id"],
+  });
 
 export const validateCouponSchema = z.object({
   code: requiredString("Coupon code"),

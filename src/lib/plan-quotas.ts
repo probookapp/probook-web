@@ -32,6 +32,11 @@ export const UNLIMITED = null;
  *  - the plan sets no quota for this key;
  *  - anything unexpected. A quota that fails closed would lock a paying
  *    customer out of their own team over a database hiccup.
+ *
+ * Seats sold on the subscription win over the offer's figure. Without that,
+ * selling one extra seat to a business on Commerce means minting a private plan
+ * for that one customer — a row in the offer catalogue per hire — and the à la
+ * carte composer would mint one per combination on top.
  */
 export async function getQuota(
   tenantId: string,
@@ -39,9 +44,15 @@ export async function getQuota(
 ): Promise<number | null> {
   const subscription = await prisma.subscription.findFirst({
     where: { tenantId, status: "active", currentPeriodEnd: { gt: new Date() } },
-    select: { planId: true },
+    select: { planId: true, seats: true },
   });
   if (!subscription) return UNLIMITED;
+
+  // Only seats are sold per subscription; the other quotas stay plan-level, so
+  // this override is scoped to the key it can actually answer.
+  if (key === QUOTA_KEYS.MAX_USERS && subscription.seats != null) {
+    return subscription.seats;
+  }
 
   const quota = await prisma.planQuota.findUnique({
     where: { planId_quotaKey: { planId: subscription.planId, quotaKey: key } },

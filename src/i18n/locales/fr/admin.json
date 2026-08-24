@@ -415,6 +415,9 @@
     "searchPlaceholder": "Rechercher par code..."
   },
   "features": {
+    "unitPrice": "Prix à la carte (DZD / mois)",
+    "unitPricePlaceholder": "700",
+    "unitPriceHelp": "Laissez vide si ce module n'est pas vendu séparément : il n'apparaîtra pas dans le composeur d'offre.",
     "title": "Fonctionnalités",
     "subtitle": "Gérer les indicateurs et les bascules de fonctionnalités",
     "create": "Nouvelle fonctionnalité",

@@ -41,6 +41,8 @@ interface FeatureFormState {
   description_fr: string;
   description_ar: string;
   is_global: boolean;
+  /** À la carte price per month, in DZD. Empty means "not sold separately". */
+  unit_price: string;
   plan_ids: string[];
 }
 
@@ -53,6 +55,7 @@ const emptyForm: FeatureFormState = {
   description_fr: "",
   description_ar: "",
   is_global: true,
+  unit_price: "",
   plan_ids: [],
 };
 
@@ -101,6 +104,8 @@ export function FeaturesPage() {
       description_fr: getTr(feature.description_translations, "fr"),
       description_ar: getTr(feature.description_translations, "ar"),
       is_global: Boolean(feature.is_global),
+      unit_price:
+        feature.unit_price == null ? "" : String(Number(feature.unit_price) / 100),
       plan_ids: planFeatures.map((pf) => String(pf.plan_id || "")),
     });
     setIsModalOpen(true);
@@ -130,6 +135,12 @@ export function FeaturesPage() {
       name_translations: Object.keys(nameTranslations).length > 0 ? nameTranslations : null,
       description_translations: Object.keys(descriptionTranslations).length > 0 ? descriptionTranslations : null,
       is_global: formData.is_global,
+      // Empty stays null rather than becoming zero: a module priced at nothing
+      // would appear in the composer and be given away.
+      unit_price:
+        formData.unit_price.trim() === ""
+          ? null
+          : Math.round(parseFloat(formData.unit_price) * 100),
       plan_ids: formData.plan_ids,
     };
 
@@ -480,6 +491,22 @@ export function FeaturesPage() {
               placeholder="وصف الميزة"
               dir="rtl"
             />
+          </div>
+
+          <div>
+            <Input
+              name="feature-unit-price"
+              type="number"
+              min="0"
+              step="1"
+              label={t("features.unitPrice")}
+              value={formData.unit_price}
+              onChange={(e) => updateField("unit_price", e.target.value)}
+              placeholder={t("features.unitPricePlaceholder")}
+            />
+            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              {t("features.unitPriceHelp")}
+            </p>
           </div>
 
           <div className="flex items-center gap-3">

@@ -415,6 +415,9 @@
     "searchPlaceholder": "Search by code..."
   },
   "features": {
+    "unitPrice": "À la carte price (DZD / month)",
+    "unitPricePlaceholder": "700",
+    "unitPriceHelp": "Leave empty if this module is not sold separately: it will not appear in the offer composer.",
     "title": "Features",
     "subtitle": "Manage feature flags and toggles",
     "create": "New Feature",

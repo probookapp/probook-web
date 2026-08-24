@@ -43,6 +43,7 @@ export const PUT = withSuperAdmin(async (req, ctx) => {
       nameTranslations: body.name_translations !== undefined ? body.name_translations : existing.nameTranslations,
       descriptionTranslations: body.description_translations !== undefined ? body.description_translations : existing.descriptionTranslations,
       isGlobal: body.is_global !== undefined ? body.is_global : existing.isGlobal,
+      unitPrice: body.unit_price !== undefined ? body.unit_price : existing.unitPrice,
     },
   });
 

@@ -4,7 +4,7 @@ import { signUp } from "./helpers";
 import { apiGet, apiPost } from "./api-helpers";
 import { adminGet } from "./admin-helpers";
 import { assertTestDatabase } from "./assert-test-db";
-import { setupPlatformAdmin, adminPost } from "./admin-helpers";
+import { setupPlatformAdmin, adminPost, adminPut } from "./admin-helpers";
 
 /**
  * Proves the offer gate both ways.
@@ -134,17 +134,19 @@ test.describe("offer quotas", () => {
     });
     expect(duringTrial.status, "a trial must not be metered").toBe(200);
 
-    // Put the account on a one-seat offer, the way an admin would.
+    // Two accounts exist, so the offer has to cover two for the move to be
+    // allowed at all — assigning a smaller one is refused outright now
+    // (lib/plan-downgrade.ts), which is a different rule tested elsewhere.
     const features = await adminGet(page, "/api/admin/features");
     const featureIds = (features.body as unknown as { id: string }[]).map((f) => f.id);
     const plan = await adminPost(page, "/api/admin/plans", {
-      slug: `one-seat-${Date.now()}`,
-      name: "One Seat",
+      slug: `two-seats-${Date.now()}`,
+      name: "Two Seats",
       monthly_price: 100000,
       yearly_price: 1000000,
       currency: "DZD",
       feature_ids: featureIds,
-      quotas: [{ quota_key: "max_users", limit_value: 1 }],
+      quotas: [{ quota_key: "max_users", limit_value: 2 }],
     });
     expect(plan.status, JSON.stringify(plan.body)).toBe(201);
 
@@ -157,9 +159,8 @@ test.describe("offer quotas", () => {
     });
     expect(sub.status, JSON.stringify(sub.body)).toBe(201);
 
-    // Already over the ceiling: the accounts that exist are never touched, but
-    // no further seat is granted. A quota nobody enforces is decoration — this
-    // is the half that proves it is not.
+    // At the ceiling: the third seat is refused. A quota nobody enforces is
+    // decoration — this is the half that proves it is not.
     const refused = await apiPost(page, "/api/auth/users", {
       username: `over_quota_${Date.now()}`,
       display_name: "Au-delà du plafond",
@@ -172,5 +173,59 @@ test.describe("offer quotas", () => {
     // And the team they already have is still readable.
     const roster = await apiGet(page, "/api/auth/users");
     expect(roster.status).toBe(200);
+  });
+
+  test("lowering an offer's ceiling never deactivates anyone", async ({ page }) => {
+    const creds = await signUp(page);
+    await setupPlatformAdmin(page);
+
+    await apiPost(page, "/api/auth/users", {
+      username: `garde_${Date.now()}`,
+      display_name: "Deuxième",
+      password: "Test1234!",
+      role: "employee",
+    });
+
+    const features = await adminGet(page, "/api/admin/features");
+    const featureIds = (features.body as unknown as { id: string }[]).map((f) => f.id);
+    const plan = await adminPost(page, "/api/admin/plans", {
+      slug: `shrinking-${Date.now()}`,
+      name: "Shrinking",
+      monthly_price: 100000,
+      yearly_price: 1000000,
+      currency: "DZD",
+      feature_ids: featureIds,
+      quotas: [{ quota_key: "max_users", limit_value: 3 }],
+    });
+    const tenantId = await tenantIdOf(creds.username);
+    await adminPost(page, "/api/admin/subscriptions", {
+      tenant_id: tenantId,
+      plan_id: plan.body.id,
+      billing_cycle: "yearly",
+      status: "active",
+    });
+
+    // The offer's ceiling drops for everyone on it. This is the one case where
+    // a business ends up over the line without having asked for anything, so
+    // nobody is deactivated: they keep what they have and cannot add.
+    const shrunk = await adminPut(page, `/api/admin/plans/${plan.body.id}`, {
+      quotas: [{ quota_key: "max_users", limit_value: 1 }],
+    });
+    expect(shrunk.status, JSON.stringify(shrunk.body).slice(0, 200)).toBe(200);
+
+    const roster = await apiGet(page, "/api/auth/users");
+    const users = roster.body as unknown as { is_active: boolean }[];
+    expect(users.length, "both accounts survive the cut").toBe(2);
+    expect(users.every((u) => u.is_active), "and both are still active").toBe(true);
+
+    // Frozen, not emptied.
+    const refused = await apiPost(page, "/api/auth/users", {
+      username: `apres_${Date.now()}`,
+      display_name: "Après la baisse",
+      password: "Test1234!",
+      role: "employee",
+    });
+    expect(refused.status).toBe(403);
+    expect(refused.body.code).toBe("USER_QUOTA_REACHED");
   });
 });

@@ -111,6 +111,32 @@ const MIGRATE_TO = "commerce";
  * offers are written in — and the rest lives in `nameTranslations`, which is what
  * the pricing page and the navigation read.
  */
+/**
+ * What each module costs on its own, per month, in centimes.
+ *
+ * Calibrated so the tipping point sits at three modules: one or two are cheaper
+ * composed, three or more and the bundle wins. Set them lower and assembling
+ * Commerce à la carte would undercut Commerce; set them higher and nobody
+ * composes. See src/lib/alacarte.ts, where the arithmetic and its tests live.
+ *
+ * Two tiers, matching the offer each module arrives in: 700 for a Commerce
+ * module, 1 400 for an Enterprise one.
+ */
+const COMMERCE_MODULE = 70_000;
+const ENTERPRISE_MODULE = 140_000;
+
+const FEATURE_UNIT_PRICES: Record<FeatureKey, number> = {
+  [FEATURE_KEYS.POS]: COMMERCE_MODULE,
+  [FEATURE_KEYS.PURCHASING]: COMMERCE_MODULE,
+  [FEATURE_KEYS.DELIVERY_NOTES]: COMMERCE_MODULE,
+  [FEATURE_KEYS.EXPENSES]: COMMERCE_MODULE,
+  [FEATURE_KEYS.IMPORT_EXPORT]: COMMERCE_MODULE,
+  [FEATURE_KEYS.MULTI_LOCATION]: ENTERPRISE_MODULE,
+  [FEATURE_KEYS.ADVANCED_REPORTS]: ENTERPRISE_MODULE,
+  [FEATURE_KEYS.REMINDERS]: ENTERPRISE_MODULE,
+  [FEATURE_KEYS.PHONEBOOK]: ENTERPRISE_MODULE,
+};
+
 const FEATURE_NAMES: Record<FeatureKey, { en: string; fr: string; ar: string }> = {
   [FEATURE_KEYS.POS]: { en: "Point of Sale", fr: "Caisse", ar: "الصندوق" },
   [FEATURE_KEYS.PURCHASING]: {
@@ -165,15 +191,17 @@ async function main() {
       { en: string; fr: string; ar: string },
     ][]) {
       const res = await client.query<{ id: string }>(
-        `INSERT INTO feature_flags (id, key, name, name_translations, is_global, created_at, updated_at)
-         VALUES (gen_random_uuid(), $1, $2, $3, false, now(), now())
+        `INSERT INTO feature_flags (id, key, name, name_translations, is_global,
+                                    unit_price, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, $3, false, $4, now(), now())
          ON CONFLICT (key) DO UPDATE SET
            name = EXCLUDED.name,
            name_translations = EXCLUDED.name_translations,
            is_global = false,
+           unit_price = EXCLUDED.unit_price,
            updated_at = now()
          RETURNING id`,
-        [key, label.en, JSON.stringify({ fr: label.fr, ar: label.ar })]
+        [key, label.en, JSON.stringify({ fr: label.fr, ar: label.ar }), FEATURE_UNIT_PRICES[key]]
       );
       flagIds.set(key, res.rows[0].id);
     }

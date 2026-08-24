@@ -52,12 +52,23 @@ export async function GET(req: NextRequest) {
       include: {
         features: { include: { feature: true } },
         prices: true,
+        // The composer needs each offer's seat ceiling to say, honestly, when a
+        // bundle covers the same choice for less — a cheaper bundle that would
+        // not fit the team is not a better deal.
+        quotas: true,
       },
       orderBy: { sortOrder: "asc" },
     });
 
     const result = plans.map((plan) => {
       const snaked = toSnakeCase(plan) as Record<string, unknown>;
+
+      // The currency the catalogue itself is written in, kept even when the
+      // price below is resolved into the visitor's. Module unit prices carry no
+      // currency of their own, so the composer needs this to know whether it can
+      // quote at all — showing dinars under a euro label would be a lie the page
+      // tells confidently.
+      snaked.base_currency = plan.currency;
 
       // If a currency is known (explicit or geo-detected), resolve the price for it
       if (effectiveCurrency) {

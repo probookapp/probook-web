@@ -65,10 +65,13 @@ export async function adminDelete(page: Page, path: string) {
 /**
  * Create a plan the way the product expects one: carrying entitlements.
  *
- * An active offer that links no feature is refused (PLAN_HAS_NO_FEATURES),
- * because in production it means a paying customer who silently receives
- * nothing. Tests that only need "a plan to bill against" still need one that
- * contains something, so this fills in every feature unless told otherwise.
+ * A featureless offer is legal — Essential adds nothing on top of the core
+ * product — so nothing refuses one, and a plan created without features simply
+ * grants no gated module. That is indistinguishable from forgetting to tick
+ * them, and it has already happened here: eight suites turned red because the
+ * plan under test carried no entitlements. Tests that only need "a plan to bill
+ * against" get one that contains something, so this fills in every feature
+ * unless told otherwise.
  */
 export async function createTestPlan(page: Page, body: Record<string, unknown>) {
   if (!("feature_ids" in body)) {

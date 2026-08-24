@@ -9,6 +9,7 @@ import { Check } from "lucide-react";
 import { PublicLayout } from "./PublicLayout";
 import { trackMetaEvent } from "@/components/analytics/MetaPixel";
 import { translatedName, type Translations } from "@/lib/translated-name";
+import { OfferComposer } from "@/components/shared/OfferComposer";
 
 
 interface PublicPlan {
@@ -21,9 +22,19 @@ interface PublicPlan {
   monthly_price: number;
   yearly_price: number;
   currency: string;
+  /** The catalogue's own currency, before per-visitor resolution. */
+  base_currency?: string;
   trial_days: number;
   sort_order: number;
-  features?: { feature?: { name: string; name_translations?: Translations } }[];
+  features?: {
+    feature?: {
+      key: string;
+      name: string;
+      name_translations?: Translations;
+      unit_price?: number | null;
+    };
+  }[];
+  quotas?: { quota_key: string; limit_value: number }[];
 }
 
 interface PlansResponse {
@@ -227,6 +238,27 @@ export function PricingPage() {
                 );
               })}
             </div>
+          )}
+
+          {/* Composing comes after the offers, from a button of its own: mixing
+              tick boxes into the cards makes it unclear whether a click buys or
+              builds. A visitor has no business to attach an offer to, so the
+              step here is signing up. */}
+          {plans && plans.length > 0 && (
+            <OfferComposer
+              plans={plans}
+              billingCycle={billingCycle}
+              currency={plans[0].currency}
+              submitLabel={tc("landing.pricing.getStarted")}
+              footer={
+                <Link
+                  href={`/${locale}/signup`}
+                  className="block w-full text-center py-3 rounded-xl font-semibold text-sm bg-primary-600 hover:bg-primary-700 text-white transition-colors"
+                >
+                  {tc("landing.pricing.getStarted")}
+                </Link>
+              }
+            />
           )}
         </div>
       </section>

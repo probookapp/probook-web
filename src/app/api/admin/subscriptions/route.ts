@@ -9,6 +9,7 @@ import {
 } from "@/lib/admin-api-utils";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createSubscriptionSchema } from "@/lib/validations";
+import { checkSeatCeiling, seatCeilingError } from "@/lib/plan-downgrade";
 
 // Collision-free subscription-invoice numbering (same scheme as the manual
 // create route in /api/admin/subscription-invoices).
@@ -82,6 +83,15 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
     return NextResponse.json({ error: "Plan not found" }, { status: 400 });
   }
 
+  // Assigning an offer the team does not fit into is refused here too, and
+  // `seats` is the way through: an admin who means to keep a nine-person team on
+  // Commerce says so, rather than discovering later that nine people share a
+  // three-seat ceiling nothing enforces retroactively.
+  const seatCheck = await checkSeatCeiling(body.tenant_id, plan.id, body.seats);
+  if (seatCheck) {
+    return NextResponse.json(seatCeilingError(seatCheck), { status: 409 });
+  }
+
   // Resolve the price for the requested currency, falling back to the plan's
   // own currency/prices when there is no per-currency row.
   const priceRow = body.currency
@@ -131,6 +141,7 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
         status: "active",
         billingCycle: body.billing_cycle,
         priceAtPurchase: price,
+        seats: body.seats ?? null,
         currency: resolvedCurrency,
         currentPeriodStart: now,
         currentPeriodEnd: periodEnd,

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { toSnakeCase } from "@/lib/api-utils";
 import { withSuperAdmin, logAuditEvent, getClientIp } from "@/lib/admin-api-utils";
+import { checkSeatCeiling, seatCeilingError } from "@/lib/plan-downgrade";
 
 // Collision-free subscription-invoice numbering (same scheme as the manual
 // create route in /api/admin/subscription-invoices).
@@ -41,6 +42,14 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
 
   if (!plan) {
     return NextResponse.json({ error: "Target plan not found" }, { status: 400 });
+  }
+
+  // Re-checked at approval: the request passed this when it was filed, and the
+  // business may have hired since. Approving anyway would put a paying customer
+  // over a ceiling nothing else would ever bring them back under.
+  const seatCheck = await checkSeatCeiling(request.tenantId, plan.id);
+  if (seatCheck) {
+    return NextResponse.json(seatCeilingError(seatCheck), { status: 409 });
   }
 
   // Resolve price for the requested currency

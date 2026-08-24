@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { tenantSubscriptionApi } from "@/lib/admin-api";
+import { OfferComposer } from "@/components/shared/OfferComposer";
 
 interface PlanPrice {
   currency: string;
@@ -17,7 +18,14 @@ interface PlanPrice {
 }
 
 interface PlanFeatureItem {
-  feature: { name: string; description?: string; name_translations?: Record<string, string> | null };
+  feature: {
+    key: string;
+    name: string;
+    description?: string;
+    name_translations?: Record<string, string> | null;
+    /** À la carte price per month, null when not sold separately. */
+    unit_price?: number | null;
+  };
 }
 
 interface Plan {
@@ -28,10 +36,13 @@ interface Plan {
   monthly_price: number;
   yearly_price: number;
   currency: string;
+  /** The catalogue's own currency, before per-visitor resolution. */
+  base_currency?: string;
   trial_days: number;
   is_active: boolean;
   features: PlanFeatureItem[];
   prices?: PlanPrice[];
+  quotas?: { quota_key: string; limit_value: number }[];
   sort_order: number;
 }
 
@@ -66,6 +77,9 @@ function formatPrice(amount: number, currency: string): string {
 
 export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { subscriptionStatus?: SubscriptionStatus; onRequestSuccess?: () => void }) {
   const { t } = useTranslation("admin");
+  // The composer is shared with the public pricing page, so its wording lives
+  // in `common` rather than being duplicated per namespace.
+  const { t: tCommon } = useTranslation("common");
   const queryClient = useQueryClient();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<"yearly" | "monthly">("yearly");
@@ -106,7 +120,6 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
   useEffect(() => {
     if (plans && plans.length > 0 && !selectedPlanId) {
       // Intentional: default the selection once plans load.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSelectedPlanId(plans[0].id);
     }
   }, [plans, selectedPlanId]);
@@ -175,14 +188,22 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
     }
   };
 
-  const handleSubscribe = async () => {
-    if (!selectedPlanId) return;
+  const handleSubscribe = async (
+    custom?: { feature_keys: string[]; seats: number }
+  ) => {
+    if (!custom && !selectedPlanId) return;
     const input: Record<string, unknown> = {
-      plan_id: selectedPlanId,
       billing_cycle: billingCycle,
       request_type: "new",
       currency: detectedCurrency || "DZD",
     };
+    // Either a listed offer or a composed one, never both: the server mints the
+    // private offer for a composition and refuses a request carrying the two.
+    if (custom) {
+      input.custom = custom;
+    } else {
+      input.plan_id = selectedPlanId;
+    }
     if (appliedCoupon?.valid) {
       input.coupon_code = appliedCoupon.code;
     }
@@ -500,6 +521,18 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
               })}
             </div>
 
+            {/* Composing comes after the offers, from a button of its own. */}
+            {plans && plans.length > 0 && (
+              <OfferComposer
+                plans={plans}
+                billingCycle={billingCycle}
+                currency={detectedCurrency || plans[0].currency}
+                onSubmit={(composition) => handleSubscribe(composition)}
+                isSubmitting={subscribeRequest.isPending}
+                submitLabel={tCommon("composer.submit")}
+              />
+            )}
+
             {/* Coupon Section */}
             <Card className="mb-6">
               <CardContent className="p-4">
@@ -550,7 +583,9 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
             <div className="text-center">
               <Button
                 size="lg"
-                onClick={handleSubscribe}
+                // Wrapped: passing the handler straight to onClick would hand it
+                // the click event as the composition argument.
+                onClick={() => handleSubscribe()}
                 isLoading={subscribeRequest.isPending}
                 disabled={!selectedPlanId}
                 className="px-12"
