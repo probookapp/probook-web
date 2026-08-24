@@ -217,7 +217,17 @@ export function POSPage() {
     }
   };
 
-  const buildReceiptData = (payments: Array<{ method: string; amount: number; cashGiven?: number }>): ReceiptData => {
+  const buildReceiptData = (
+    payments: Array<{
+      method: string;
+      amount: number;
+      cashGiven?: number;
+      chequeDate?: string;
+      chequeNumber?: string;
+      chequeBank?: string;
+    }>,
+    stampDuty: number
+  ): ReceiptData => {
     const store = usePosStore.getState();
     return {
       companyName: companySettings?.company_name || "Probook",
@@ -242,11 +252,19 @@ export function POSPage() {
       discountPercent: store.discountPercent,
       discountAmount: store.discountAmount,
       finalAmount: store.getFinalAmount(),
+      stampDuty,
       payments: payments.map((p) => ({
         method: p.method as PosPaymentMethod,
         amount: p.amount,
         cashGiven: p.cashGiven,
-        changeGiven: p.cashGiven ? p.cashGiven - store.getFinalAmount() : undefined,
+        // Against goods *plus* duty, as the payment screen counted it. Netting
+        // it against the goods alone handed the stamp duty back in change.
+        changeGiven: p.cashGiven
+          ? p.cashGiven - (store.getFinalAmount() + stampDuty)
+          : undefined,
+        chequeDate: p.chequeDate,
+        chequeNumber: p.chequeNumber,
+        chequeBank: p.chequeBank,
       })),
       currency: currency || "DZD",
       footerText: t("thankYou"),
@@ -254,7 +272,16 @@ export function POSPage() {
   };
 
   const handlePaymentComplete = async (
-    payments: Array<{ method: string; amount: number; cashGiven?: number; reference?: string }>
+    payments: Array<{
+      method: string;
+      amount: number;
+      cashGiven?: number;
+      reference?: string;
+      chequeDate?: string;
+      chequeNumber?: string;
+      chequeBank?: string;
+    }>,
+    stampDuty: number
   ) => {
     if (!currentSession || !currentRegister || items.length === 0) return;
     if (isDemoMode) { showSubscribePrompt(); return; }
@@ -286,13 +313,18 @@ export function POSPage() {
         // Cheque number / transfer reference. The column predates those
         // methods, hence the name. See src/lib/pos-payment-methods.ts.
         card_reference: p.reference,
+        // The three mentions article 258 conditions the exemption on. The
+        // server refuses a cheque without them wherever a duty could be due.
+        cheque_date: p.chequeDate,
+        cheque_number: p.chequeNumber,
+        cheque_bank: p.chequeBank,
       })),
       discount_percent: discountPercent,
       discount_amount: discountAmount,
     };
 
     // Build receipt data before clearing the cart
-    const receiptData = buildReceiptData(payments);
+    const receiptData = buildReceiptData(payments, stampDuty);
 
     try {
       // Online or offline, this is the single write path: when the network is

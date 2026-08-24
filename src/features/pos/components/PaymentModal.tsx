@@ -2,7 +2,8 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Banknote, CreditCard, FileCheck, Landmark, UserRound } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
-import { computeStampDuty } from "@/lib/stamp-duty";
+import { computeStampDuty, stampDutyApplies } from "@/lib/stamp-duty";
+import { missingChequeMentions } from "@/lib/cheque-mentions";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import {
   POS_PAYMENT_METHODS,
@@ -21,7 +22,12 @@ interface PaymentModalProps {
       amount: number;
       cashGiven?: number;
       reference?: string;
-    }>
+      chequeDate?: string;
+      chequeNumber?: string;
+      chequeBank?: string;
+    }>,
+    /** The duty the customer was shown and paid, so the ticket prints the same. */
+    stampDuty: number
   ) => void;
   totalAmount: number;
   isLoading: boolean;
@@ -58,12 +64,34 @@ export function PaymentModal({
   const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>("CASH");
   const [cashGiven, setCashGiven] = useState<string>("");
   const [reference, setReference] = useState<string>("");
+  const [chequeDate, setChequeDate] = useState<string>("");
+  const [chequeNumber, setChequeNumber] = useState<string>("");
+  const [chequeBank, setChequeBank] = useState<string>("");
   const [partialAmount, setPartialAmount] = useState<string>("");
 
   if (!open) return null;
 
   const isCash = paymentMethod === "CASH";
   const isCredit = paymentMethod === "CREDIT";
+
+  // A cheque is exempt from the duty, but only on a receipt carrying its date,
+  // number and drawee (art. 258). Asked for exactly where the exemption is
+  // worth something: a business under a regime with no stamp duty — or one that
+  // has not turned it on — is owed none of this paperwork, and the plain
+  // reference box below serves it instead.
+  const chequeMentionsRequired =
+    paymentMethod === "CHEQUE" &&
+    stampDutyApplies({
+      fiscalProfile: settings?.fiscal_profile,
+      stampDutyEnabled: settings?.stamp_duty_enabled,
+    });
+  const missingMentions = chequeMentionsRequired
+    ? missingChequeMentions(paymentMethod, {
+        cheque_date: chequeDate,
+        cheque_number: chequeNumber,
+        cheque_bank: chequeBank,
+      })
+    : [];
 
   const cashAmount = parseFloat(cashGiven) || 0;
 
@@ -102,6 +130,7 @@ export function PaymentModal({
 
   // Anything left unpaid becomes the client's balance, so there has to be one.
   const isValid =
+    missingMentions.length === 0 &&
     (!leavesBalance || hasClient) &&
     (isCash ? cashAmount >= dueNow || settledNow > 0 : true) &&
     (isCredit || settledNow > 0 || hasClient);
@@ -112,6 +141,9 @@ export function PaymentModal({
       amount: number;
       cashGiven?: number;
       reference?: string;
+      chequeDate?: string;
+      chequeNumber?: string;
+      chequeBank?: string;
     }> = [];
 
     if (settledNow > 0) {
@@ -119,7 +151,16 @@ export function PaymentModal({
         method: paymentMethod,
         amount: settledNow,
         cashGiven: isCash ? cashAmount : undefined,
-        reference: methodTakesReference(paymentMethod) ? reference || undefined : undefined,
+        // The cheque number IS the reference for a cheque: asking twice for the
+        // same figure is how the two end up disagreeing on the same receipt.
+        reference: chequeMentionsRequired
+          ? chequeNumber
+          : methodTakesReference(paymentMethod)
+            ? reference || undefined
+            : undefined,
+        chequeDate: chequeMentionsRequired ? chequeDate : undefined,
+        chequeNumber: chequeMentionsRequired ? chequeNumber : undefined,
+        chequeBank: chequeMentionsRequired ? chequeBank : undefined,
       });
     }
     // The unpaid remainder is recorded as its own CREDIT line rather than being
@@ -128,7 +169,7 @@ export function PaymentModal({
       payments.push({ method: "CREDIT", amount: remaining });
     }
 
-    onConfirm(payments);
+    onConfirm(payments, stampDuty);
   };
 
   const quickAmounts = [
@@ -253,8 +294,59 @@ export function PaymentModal({
             </div>
           )}
 
+          {/* The three mentions article 258 conditions the exemption on */}
+          {chequeMentionsRequired && (
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="pos-cheque-date" className="block text-sm font-medium mb-1">
+                    {t("chequeDate")}
+                  </label>
+                  <input
+                    id="pos-cheque-date"
+                    name="pos-cheque-date"
+                    type="date"
+                    value={chequeDate}
+                    onChange={(e) => setChequeDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="pos-cheque-number" className="block text-sm font-medium mb-1">
+                    {t("chequeNumber")}
+                  </label>
+                  <input
+                    id="pos-cheque-number"
+                    name="pos-cheque-number"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="off"
+                    value={chequeNumber}
+                    onChange={(e) => setChequeNumber(e.target.value)}
+                    className="w-full px-3 py-2 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="pos-cheque-bank" className="block text-sm font-medium mb-1">
+                  {t("chequeBank")}
+                </label>
+                <input
+                  id="pos-cheque-bank"
+                  name="pos-cheque-bank"
+                  type="text"
+                  autoComplete="off"
+                  value={chequeBank}
+                  onChange={(e) => setChequeBank(e.target.value)}
+                  className="w-full px-3 py-2 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <p className="text-xs text-(--color-text-secondary)">{t("chequeMentionsHint")}</p>
+            </div>
+          )}
+
           {/* Cheque number / transfer reference */}
-          {methodTakesReference(paymentMethod) && (
+          {!chequeMentionsRequired && methodTakesReference(paymentMethod) && (
             <div>
               <label htmlFor="pos-payment-reference" className="block text-sm font-medium mb-1">
                 {t("paymentReference")}

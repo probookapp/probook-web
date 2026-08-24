@@ -213,3 +213,150 @@ test.describe("Stamp duty at the till", () => {
     expect((summary.body.stamp_duty as Record<string, number>).amount_due).toBe(50);
   });
 });
+
+/**
+ * Article 258 exempts a cheque-settled receipt — but only one that states the
+ * cheque's date, its number and the drawee.
+ *
+ * The guard has to hold on both surfaces and refuse on neither regime: a
+ * business under French rules owes none of this paperwork, and a guard that
+ * asked it anyway would be Algerian law imposed on someone it does not bind.
+ */
+test.describe("The mentions that exempt a cheque", () => {
+  const chequeSale = (
+    register: Record<string, unknown>,
+    session: Record<string, unknown>,
+    product: Record<string, unknown>,
+    mentions: Record<string, string> = {}
+  ) => ({
+    register_id: register.id,
+    session_id: session.id,
+    lines: [
+      {
+        product_id: product.id,
+        designation: "Article chèque",
+        quantity: 1,
+        unit_price: 5000,
+        tax_rate: 0,
+      },
+    ],
+    payments: [{ payment_method: "CHEQUE", amount: 5000, ...mentions }],
+  });
+
+  test("the till refuses a cheque without them, and takes one that carries them", async ({
+    page,
+  }) => {
+    await signUpSubscribed(page);
+    await apiPut(page, "/api/settings", { stamp_duty_enabled: true });
+
+    const product = await setupProduct(page, "Article chèque", 5000, { quantity: 50 });
+    const register = await setupRegister(page, "Caisse chèque");
+    const session = await openSession(page, String(register.id), 0);
+
+    const bare = await apiPost(page, "/api/pos/transactions", chequeSale(register, session, product));
+    expect(bare.status, JSON.stringify(bare.body)).toBe(400);
+    expect(bare.body.code).toBe("CHEQUE_MENTIONS_REQUIRED");
+    expect(bare.body.missing).toEqual(["cheque_date", "cheque_number", "cheque_bank"]);
+
+    // Naming what is missing rather than refusing the sale outright: the cashier
+    // has the cheque in hand and can read all three off it.
+    const partial = await apiPost(
+      page,
+      "/api/pos/transactions",
+      chequeSale(register, session, product, { cheque_number: "1234567" })
+    );
+    expect(partial.status).toBe(400);
+    expect(partial.body.missing).toEqual(["cheque_date", "cheque_bank"]);
+
+    const complete = await apiPost(
+      page,
+      "/api/pos/transactions",
+      chequeSale(register, session, product, {
+        cheque_date: today(),
+        cheque_number: "1234567",
+        cheque_bank: "BNA",
+      })
+    );
+    expect(complete.status, JSON.stringify(complete.body)).toBe(200);
+    // Exempt, which is the entire point of carrying the mentions.
+    expect(Number(complete.body.stamp_duty)).toBe(0);
+  });
+
+  test("recording a cheque against an invoice is held to the same rule", async ({ page }) => {
+    await signUpSubscribed(page);
+    await apiPut(page, "/api/settings", { stamp_duty_enabled: true });
+    const client = await setupClient(page, "Client chèque");
+
+    const inv = await apiPost(page, "/api/invoices", {
+      client_id: client.id,
+      issue_date: today(),
+      is_cash_sale: false,
+      lines: [{ description: "Prestation", quantity: 1, unit_price: 1000, tax_rate: 0 }],
+    });
+    await apiPost(page, `/api/invoices/${inv.body.id}/issue`);
+
+    const bare = await apiPost(page, "/api/payments", {
+      invoice_id: inv.body.id,
+      amount: 1000,
+      payment_date: today(),
+      payment_method: "cheque",
+    });
+    expect(bare.status, JSON.stringify(bare.body)).toBe(400);
+    expect(bare.body.code).toBe("CHEQUE_MENTIONS_REQUIRED");
+
+    const complete = await apiPost(page, "/api/payments", {
+      invoice_id: inv.body.id,
+      amount: 1000,
+      payment_date: today(),
+      payment_method: "cheque",
+      cheque_date: today(),
+      cheque_number: "7654321",
+      cheque_bank: "CPA",
+    });
+    expect(complete.status, JSON.stringify(complete.body)).toBe(200);
+    expect(complete.body.cheque_number).toBe("7654321");
+    expect(complete.body.cheque_bank).toBe("CPA");
+  });
+
+  test("a business the duty does not reach is never asked for them", async ({ page }) => {
+    await signUpSubscribed(page);
+    // France has no droit de timbre, so the mentions have nothing to justify.
+    await apiPut(page, "/api/settings", { fiscal_profile: "FR", stamp_duty_enabled: true });
+    const client = await setupClient(page, "Client français");
+
+    const inv = await apiPost(page, "/api/invoices", {
+      client_id: client.id,
+      issue_date: today(),
+      lines: [{ description: "Prestation", quantity: 1, unit_price: 1000, tax_rate: 20 }],
+    });
+    await apiPost(page, `/api/invoices/${inv.body.id}/issue`);
+
+    const paid = await apiPost(page, "/api/payments", {
+      invoice_id: inv.body.id,
+      amount: 1200,
+      payment_date: today(),
+      payment_method: "cheque",
+    });
+    expect(paid.status, JSON.stringify(paid.body)).toBe(200);
+  });
+
+  test("a business that has not turned the duty on is never asked either", async ({ page }) => {
+    await signUpSubscribed(page);
+    const client = await setupClient(page, "Client sans timbre");
+
+    const inv = await apiPost(page, "/api/invoices", {
+      client_id: client.id,
+      issue_date: today(),
+      lines: [{ description: "Prestation", quantity: 1, unit_price: 1000, tax_rate: 0 }],
+    });
+    await apiPost(page, `/api/invoices/${inv.body.id}/issue`);
+
+    const paid = await apiPost(page, "/api/payments", {
+      invoice_id: inv.body.id,
+      amount: 1000,
+      payment_date: today(),
+      payment_method: "cheque",
+    });
+    expect(paid.status, JSON.stringify(paid.body)).toBe(200);
+  });
+});

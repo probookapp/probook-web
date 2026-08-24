@@ -542,6 +542,13 @@ export interface Payment {
   payment_date: string;
   payment_method: string;
   reference: string | null;
+  /**
+   * The three mentions article 258 of the Code du timbre conditions a
+   * cheque-settled receipt's exemption on. Null wherever no duty can arise.
+   */
+  cheque_date: string | null;
+  cheque_number: string | null;
+  cheque_bank: string | null;
   notes: string | null;
   created_at: string;
 }
@@ -552,6 +559,9 @@ export interface CreatePaymentInput {
   payment_date: string;
   payment_method: string;
   reference?: string | null;
+  cheque_date?: string | null;
+  cheque_number?: string | null;
+  cheque_bank?: string | null;
   notes?: string | null;
 }
 
@@ -1319,6 +1329,13 @@ export interface CreatePosPaymentInput {
   amount: number;
   cash_given?: number;
   card_reference?: string;
+  /**
+   * The three mentions article 258 conditions a cheque's exemption on. The
+   * server refuses a cheque without them wherever a duty could otherwise arise.
+   */
+  cheque_date?: string;
+  cheque_number?: string;
+  cheque_bank?: string;
 }
 
 export interface CreatePosTransactionInput {

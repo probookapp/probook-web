@@ -1,6 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { signUp } from "./helpers";
-import { apiGet, apiPost, setupClient, setupProduct, setupRegister, openSession } from "./api-helpers";
+import { clearPersistedQueryCache } from "./query-cache";
+import { apiGet, apiPost, apiPut, setupClient, setupProduct, setupRegister, openSession } from "./api-helpers";
 
 /**
  * Settling a counter sale by cheque, transfer, or on the client's account.
@@ -174,5 +175,84 @@ test.describe("POS payment methods", () => {
 
     // Float + in - out, with no sales: the arithmetic a cashier checks by hand.
     expect(summary.body.expected_cash).toBeCloseTo(5000 + 3000 - 2000, 2);
+  });
+});
+
+/**
+ * The screen has to offer what the server demands.
+ *
+ * The API guard landed first and every API test passed, because the tenant they
+ * run against has no stamp duty and the guard never fires. Meanwhile a real
+ * Algerian till with the duty on could not record a cheque at all: the server
+ * required three mentions no form asked for. This drives the actual modal, which
+ * is the only place that gap is visible.
+ */
+test.describe("Cheque mentions at the counter", () => {
+  test("the till asks for the three mentions and holds Confirm until it has them", async ({
+    page,
+  }) => {
+    await signUp(page);
+    await apiPut(page, "/api/settings", { stamp_duty_enabled: true });
+
+    const { product } = await till(page, "Caisse chèque écran");
+
+    // Sign-up cached the settings as they were, duty off; without this the page
+    // reads the previous world and the fields correctly stay hidden.
+    await clearPersistedQueryCache(page);
+    await page.goto("/fr/pos");
+    await page.getByPlaceholder(/Rechercher/i).fill(product.designation as string);
+    await page
+      .getByRole("button")
+      .filter({ hasText: product.designation as string })
+      .first()
+      .click();
+
+    await page.getByRole("button").filter({ hasText: /Payer|Encaisser/i }).first().click();
+
+    const modal = page.locator("div.fixed.inset-0").last();
+    await modal.getByRole("button").filter({ hasText: /^Chèque$/i }).first().click();
+
+    // The three boxes article 258 names, each one actually on screen.
+    const chequeDate = modal.locator("#pos-cheque-date");
+    const chequeNumber = modal.locator("#pos-cheque-number");
+    const chequeBank = modal.locator("#pos-cheque-bank");
+    await expect(chequeDate).toBeVisible();
+    await expect(chequeNumber).toBeVisible();
+    await expect(chequeBank).toBeVisible();
+
+    const confirm = modal.getByRole("button", { name: /Confirmer|Valider/i });
+    // Refused here rather than by a 400 after the customer has handed the cheque
+    // over: the cashier can read all three off the paper in front of them.
+    await expect(confirm).toBeDisabled();
+
+    await chequeDate.fill("2026-08-20");
+    await chequeNumber.fill("1234567");
+    await expect(confirm).toBeDisabled();
+
+    await chequeBank.fill("BNA");
+    await expect(confirm).toBeEnabled();
+  });
+
+  test("a till the duty does not reach keeps its plain reference box", async ({ page }) => {
+    await signUp(page);
+    const { product } = await till(page, "Caisse sans timbre");
+
+    await page.goto("/fr/pos");
+    await page.getByPlaceholder(/Rechercher/i).fill(product.designation as string);
+    await page
+      .getByRole("button")
+      .filter({ hasText: product.designation as string })
+      .first()
+      .click();
+    await page.getByRole("button").filter({ hasText: /Payer|Encaisser/i }).first().click();
+
+    const modal = page.locator("div.fixed.inset-0").last();
+    await modal.getByRole("button").filter({ hasText: /^Chèque$/i }).first().click();
+
+    // No duty can arise, so there is no exemption to justify and no paperwork to
+    // impose — the one free-text reference is the whole of it.
+    await expect(modal.locator("#pos-payment-reference")).toBeVisible();
+    await expect(modal.locator("#pos-cheque-date")).toHaveCount(0);
+    await expect(modal.getByRole("button", { name: /Confirmer|Valider/i })).toBeEnabled();
   });
 });

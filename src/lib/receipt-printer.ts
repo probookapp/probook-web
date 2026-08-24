@@ -19,12 +19,30 @@ export interface ReceiptData {
   total: number;
   discountPercent: number;
   discountAmount: number;
+  /** The goods, after discount and before the duty below. */
   finalAmount: number;
+  /**
+   * Droit de timbre on the cash part of the sale (art. 100 of the Code du
+   * timbre), zero everywhere the tax does not arise.
+   *
+   * The article taxes the *document*, so the ticket is the thing it governs and
+   * has to show it. It also has to add it: `finalAmount` is the goods, the
+   * customer handed over goods + duty, and a ticket whose TOTAL was the goods
+   * alone told the cashier to give the duty back in change.
+   */
+  stampDuty?: number;
   payments: Array<{
     method: PosPaymentMethod;
     amount: number;
     cashGiven?: number;
     changeGiven?: number;
+    /**
+     * What article 258 conditions the cheque's exemption on. Absent on a ticket
+     * where no duty could arise, which is why they are optional here.
+     */
+    chequeDate?: string;
+    chequeNumber?: string;
+    chequeBank?: string;
   }>;
   currency: string;
   footerText?: string;
@@ -36,6 +54,31 @@ function fmt(amount: number, currency: string): string {
     currency,
     minimumFractionDigits: 2,
   }).format(amount);
+}
+
+/** The duty, defaulting to none for a receipt built before the field existed. */
+function stampDutyOf(data: ReceiptData): number {
+  return data.stampDuty ?? 0;
+}
+
+/** What the customer actually pays: the goods plus the duty on the document. */
+function grandTotal(data: ReceiptData): number {
+  return data.finalAmount + stampDutyOf(data);
+}
+
+/** The article 258 mentions, on one line, in the order the article names them. */
+function chequeMentions(p: {
+  chequeDate?: string;
+  chequeNumber?: string;
+  chequeBank?: string;
+}): string {
+  return [
+    p.chequeNumber ? `No ${p.chequeNumber}` : "",
+    p.chequeDate || "",
+    p.chequeBank || "",
+  ]
+    .filter(Boolean)
+    .join(" - ");
 }
 
 // ─── Method 1: window.print() ───
@@ -58,6 +101,9 @@ export function printReceiptWindow(data: ReceiptData): void {
   const paymentLines = data.payments
     .map((p) => {
       let line = `<div style="display:flex;justify-content:space-between"><span>${p.method}</span><span>${fmt(p.amount, data.currency)}</span></div>`;
+      if (p.chequeNumber) {
+        line += `<div style="font-size:11px;color:#666;padding-left:8px">${chequeMentions(p)}</div>`;
+      }
       if (p.method === "CASH" && p.cashGiven) {
         line += `<div style="display:flex;justify-content:space-between;font-size:11px;color:#666"><span>Given</span><span>${fmt(p.cashGiven, data.currency)}</span></div>`;
         if (p.changeGiven && p.changeGiven > 0) {
@@ -67,6 +113,11 @@ export function printReceiptWindow(data: ReceiptData): void {
       return line;
     })
     .join("");
+
+  const dutySection =
+    stampDutyOf(data) > 0
+      ? `<div style="display:flex;justify-content:space-between"><span>Stamp duty</span><span>${fmt(stampDutyOf(data), data.currency)}</span></div>`
+      : "";
 
   const discountSection =
     data.discountPercent > 0 || data.discountAmount > 0
@@ -97,8 +148,9 @@ export function printReceiptWindow(data: ReceiptData): void {
   <div style="display:flex;justify-content:space-between"><span>VAT</span><span>${fmt(data.taxAmount, data.currency)}</span></div>
   <div style="display:flex;justify-content:space-between"><span>Total TTC</span><span>${fmt(data.total, data.currency)}</span></div>
   ${discountSection}
+  ${dutySection}
   <div class="sep"></div>
-  <div class="total" style="display:flex;justify-content:space-between"><span>TOTAL</span><span>${fmt(data.finalAmount, data.currency)}</span></div>
+  <div class="total" style="display:flex;justify-content:space-between"><span>TOTAL</span><span>${fmt(grandTotal(data), data.currency)}</span></div>
   <div class="sep"></div>
   ${paymentLines}
   <div class="sep"></div>
@@ -165,7 +217,12 @@ function concat(...arrays: Uint8Array[]): Uint8Array {
   return result;
 }
 
-function buildEscPosReceipt(data: ReceiptData): Uint8Array {
+/**
+ * Exported so the ticket's arithmetic can be asserted without a printer: the
+ * duty, the total that includes it, and the article 258 mentions are legal
+ * content, not formatting.
+ */
+export function buildEscPosReceipt(data: ReceiptData): Uint8Array {
   const f = (n: number) => n.toFixed(2);
   const parts: Uint8Array[] = [];
 
@@ -224,11 +281,15 @@ function buildEscPosReceipt(data: ReceiptData): Uint8Array {
     );
   }
 
+  if (stampDutyOf(data) > 0) {
+    add(textBytes(padLine("Stamp duty", `${f(stampDutyOf(data))} ${data.currency}`)));
+  }
+
   add(textBytes(separator()));
 
   // Grand total - bold, double height
   add(CMD.BOLD_ON, CMD.DOUBLE_HEIGHT);
-  add(textBytes(padLine("TOTAL", `${f(data.finalAmount)} ${data.currency}`)));
+  add(textBytes(padLine("TOTAL", `${f(grandTotal(data))} ${data.currency}`)));
   add(CMD.NORMAL_SIZE, CMD.BOLD_OFF);
 
   add(textBytes(separator()));
@@ -236,6 +297,9 @@ function buildEscPosReceipt(data: ReceiptData): Uint8Array {
   // Payments
   for (const p of data.payments) {
     add(textBytes(padLine(p.method, `${f(p.amount)} ${data.currency}`)));
+    if (p.chequeNumber) {
+      add(textBytes(`  ${chequeMentions(p)}`));
+    }
     if (p.method === "CASH" && p.cashGiven) {
       add(textBytes(padLine("  Given", `${f(p.cashGiven)} ${data.currency}`)));
       if (p.changeGiven && p.changeGiven > 0) {

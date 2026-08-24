@@ -196,6 +196,10 @@
     "method": "Payment method *",
     "reference": "Reference",
     "referencePlaceholder": "Check number, transfer reference...",
+    "chequeDate": "Cheque date",
+    "chequeNumber": "Cheque number",
+    "chequeBank": "Drawee bank",
+    "chequeMentionsHint": "These three mentions are what exempt the receipt from stamp duty (Code du timbre, art. 258).",
     "notesPlaceholder": "Optional notes...",
     "selectMethod": "Select...",
     "methods": {
@@ -209,7 +213,8 @@
     "validation": {
       "amountPositive": "Amount must be positive",
       "dateRequired": "Date is required",
-      "methodRequired": "Payment method is required"
+      "methodRequired": "Payment method is required",
+      "chequeMentionRequired": "This mention is required for a cheque"
     }
   },
   "photos": {
@@ -450,5 +455,20 @@
     "art": "Tax art.",
     "siret": "SIRET",
     "vatNumber": "VAT"
+  },
+  "composer": {
+    "open": "Compose your own offer",
+    "openHint": "Take only what you need, module by module.",
+    "title": "Your custom offer",
+    "subtitle": "The {{base}} core covers invoicing, quotes, credit notes, the catalogue and the basic reports. Add what you need.",
+    "modulesLegend": "Modules",
+    "seatsLegend": "Users",
+    "unlimitedNote": "Unlimited users are reserved for the Enterprise offer.",
+    "totalMonthly": "Total per month",
+    "totalYearly": "Total per year",
+    "bundleBeatsIt": "The {{plan}} offer contains these same modules for {{price}}.",
+    "coreOnly": "Core only, no extra module.",
+    "submitting": "Sending…",
+    "submit": "Request this offer"
   }
 }

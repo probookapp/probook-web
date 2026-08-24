@@ -60,6 +60,10 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
       payment_date: data.payment_date,
       payment_method: data.payment_method,
       reference: data.reference || null,
+      // The three mentions article 258 conditions a cheque's exemption on.
+      cheque_date: data.cheque_date || null,
+      cheque_number: data.cheque_number || null,
+      cheque_bank: data.cheque_bank || null,
       notes: data.notes || null,
       idempotency_key: crypto.randomUUID(),
     };

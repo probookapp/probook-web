@@ -196,6 +196,10 @@
     "method": "Mode de paiement *",
     "reference": "Référence",
     "referencePlaceholder": "Numéro de chèque, référence virement...",
+    "chequeDate": "Date du chèque",
+    "chequeNumber": "Numéro du chèque",
+    "chequeBank": "Banque tirée",
+    "chequeMentionsHint": "Ces trois mentions justifient l'exonération du droit de timbre (art. 258 du Code du timbre).",
     "notesPlaceholder": "Notes optionnelles...",
     "selectMethod": "Sélectionner...",
     "methods": {
@@ -209,7 +213,8 @@
     "validation": {
       "amountPositive": "Le montant doit être positif",
       "dateRequired": "La date est requise",
-      "methodRequired": "Le mode de paiement est requis"
+      "methodRequired": "Le mode de paiement est requis",
+      "chequeMentionRequired": "Cette mention est requise pour un chèque"
     }
   },
   "photos": {
@@ -450,5 +455,20 @@
     "art": "Art. imp.",
     "siret": "SIRET",
     "vatNumber": "TVA"
+  },
+  "composer": {
+    "open": "Composez votre offre",
+    "openHint": "Vous ne prenez que ce dont vous avez besoin, module par module.",
+    "title": "Votre offre sur mesure",
+    "subtitle": "Le socle à {{base}} comprend la facturation, les devis, les avoirs, le catalogue et les rapports de base. Ajoutez ce qu'il vous faut.",
+    "modulesLegend": "Modules",
+    "seatsLegend": "Utilisateurs",
+    "unlimitedNote": "Le nombre illimité d'utilisateurs est réservé à l'offre Entreprise.",
+    "totalMonthly": "Total par mois",
+    "totalYearly": "Total par an",
+    "bundleBeatsIt": "L'offre {{plan}} contient ces mêmes modules pour {{price}}.",
+    "coreOnly": "Socle seul, sans module supplémentaire.",
+    "submitting": "Envoi…",
+    "submit": "Demander cette offre"
   }
 }

@@ -6,6 +6,8 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { paymentSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 import { num } from "@/lib/money";
+import { stampDutyApplies } from "@/lib/stamp-duty";
+import { missingChequeMentions } from "@/lib/cheque-mentions";
 
 const EPSILON = 0.01;
 
@@ -61,6 +63,29 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   if (denied) return denied;
   const body = await validateBody(req, paymentSchema);
   if (isValidationError(body)) return body;
+
+  // A cheque is exempt from the droit de timbre, but article 258 conditions
+  // that exemption on the receipt stating the cheque's date, its number and the
+  // drawee. Checked in exactly the place the till checks it, and on the same
+  // terms: where no duty can arise — another fiscal regime, or a business that
+  // has not turned the duty on — nobody is owed this paperwork.
+  const settings = await prisma.companySettings.findFirst({
+    where: { tenantId },
+    select: { fiscalProfile: true, stampDutyEnabled: true },
+  });
+  if (settings && stampDutyApplies(settings)) {
+    const missing = missingChequeMentions(body.payment_method, body);
+    if (missing.length) {
+      return NextResponse.json(
+        {
+          error: `A cheque needs its date, number and drawee bank (Code du timbre, art. 258). Missing: ${missing.join(", ")}.`,
+          code: "CHEQUE_MENTIONS_REQUIRED",
+          missing,
+        },
+        { status: 400 }
+      );
+    }
+  }
 
   const idempotencyKey = body.idempotency_key || null;
 

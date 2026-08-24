@@ -196,6 +196,10 @@
     "method": "طريقة الدفع *",
     "reference": "المرجع",
     "referencePlaceholder": "رقم الشيك، مرجع التحويل...",
+    "chequeDate": "تاريخ الشيك",
+    "chequeNumber": "رقم الشيك",
+    "chequeBank": "البنك المسحوب عليه",
+    "chequeMentionsHint": "هذه البيانات الثلاثة هي ما يعفي الوصل من حق الطابع (المادة 258 من قانون الطابع).",
     "notesPlaceholder": "ملاحظات اختيارية...",
     "selectMethod": "اختر...",
     "methods": {
@@ -209,7 +213,8 @@
     "validation": {
       "amountPositive": "يجب أن يكون المبلغ موجباً",
       "dateRequired": "التاريخ مطلوب",
-      "methodRequired": "طريقة الدفع مطلوبة"
+      "methodRequired": "طريقة الدفع مطلوبة",
+      "chequeMentionRequired": "هذا البيان مطلوب للشيك"
     }
   },
   "photos": {
@@ -450,5 +455,20 @@
     "art": "المادة",
     "siret": "SIRET",
     "vatNumber": "TVA"
+  },
+  "composer": {
+    "open": "كوّن عرضك الخاص",
+    "openHint": "لا تأخذ إلا ما تحتاجه، وحدةً بوحدة.",
+    "title": "عرضك المخصّص",
+    "subtitle": "الأساس بـ {{base}} يشمل الفوترة والعروض وإشعارات الدائن والكتالوج والتقارير الأساسية. أضف ما تحتاجه.",
+    "modulesLegend": "الوحدات",
+    "seatsLegend": "المستخدمون",
+    "unlimitedNote": "عدد المستخدمين غير المحدود مخصّص لعرض المؤسسة.",
+    "totalMonthly": "المجموع شهريًا",
+    "totalYearly": "المجموع سنويًا",
+    "bundleBeatsIt": "عرض {{plan}} يحتوي على الوحدات نفسها مقابل {{price}}.",
+    "coreOnly": "الأساس وحده، دون وحدات إضافية.",
+    "submitting": "جارٍ الإرسال…",
+    "submit": "اطلب هذا العرض"
   }
 }
