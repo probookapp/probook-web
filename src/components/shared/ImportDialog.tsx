@@ -6,6 +6,7 @@ import { Button, Modal } from "@/components/ui";
 import { importApi } from "@/lib/api";
 import { getColumnsForEntity } from "@/lib/import-columns";
 import type { ImportResult } from "@/types";
+import { useFiscalProfile } from "@/hooks/useFiscalProfile";
 
 interface ImportDialogProps {
   isOpen: boolean;
@@ -27,7 +28,10 @@ export function ImportDialog({
   const [result, setResult] = useState<ImportResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const columns = getColumnsForEntity(entityType);
+  // The template offers the identifiers this regime actually uses: a French
+  // business has no NIS and no article d'imposition to fill in.
+  const profile = useFiscalProfile();
+  const columns = getColumnsForEntity(entityType, profile.id);
   const lang = (i18n.language.startsWith("ar") ? "ar" : i18n.language.startsWith("fr") ? "fr" : "en") as "en" | "fr" | "ar";
   const requiredColumns = columns.filter((c) => c.required).map((c) => c.labels[lang]);
   const optionalColumns = columns.filter((c) => !c.required).map((c) => c.labels[lang]);

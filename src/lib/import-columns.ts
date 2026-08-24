@@ -6,6 +6,8 @@
  *  - Backend: to map any localized header back to the internal key
  */
 
+import { getFiscalProfile } from "./fiscal-profiles";
+
 export interface ImportColumn {
   key: string;
   required: boolean;
@@ -308,15 +310,40 @@ export function resolveHeader(header: string): string | undefined {
   return headerMap.get(header.trim().toLowerCase());
 }
 
+/** The identifier columns, which differ by fiscal regime. */
+const IDENTIFIER_KEYS = ["siret", "vat_number", "nis", "art"];
+
 /**
- * Get columns for an entity type.
+ * Get columns for an entity type, for a given fiscal regime.
+ *
+ * The identifier columns are the only ones that vary. Under the Algerian regime
+ * a client carries a NIF, an RC, a NIS and an article d'imposition; under the
+ * French one, a SIRET and a VAT number — and NIS and "article d'imposition" mean
+ * nothing there. Offering all four to everyone put two meaningless columns in a
+ * French template and labelled the other two with a foreign nomenclature.
+ *
+ * Everything else — name, address, prices — is the same trade whatever the tax
+ * office is called, so only these four are filtered. Parsing is untouched: an
+ * uploaded file keeps being read by every alias, because a spreadsheet written
+ * last year under another regime must still import.
  */
-export function getColumnsForEntity(entityType: "clients" | "products" | "suppliers"): ImportColumn[] {
-  switch (entityType) {
-    case "products": return productColumns;
-    case "clients": return clientColumns;
-    case "suppliers": return supplierColumns;
-  }
+export function getColumnsForEntity(
+  entityType: "clients" | "products" | "suppliers",
+  fiscalProfile?: string | null
+): ImportColumn[] {
+  const all =
+    entityType === "products"
+      ? productColumns
+      : entityType === "clients"
+        ? clientColumns
+        : supplierColumns;
+
+  const applicable = new Set(
+    getFiscalProfile(fiscalProfile).identifiers.map((field) => field.key)
+  );
+  return all.filter(
+    (col) => !IDENTIFIER_KEYS.includes(col.key) || applicable.has(col.key as never)
+  );
 }
 
 /**
@@ -325,7 +352,8 @@ export function getColumnsForEntity(entityType: "clients" | "products" | "suppli
 export function getLocalizedHeaders(
   entityType: "clients" | "products" | "suppliers",
   locale: string,
+  fiscalProfile?: string | null,
 ): string[] {
   const lang = (locale.startsWith("ar") ? "ar" : locale.startsWith("fr") ? "fr" : "en") as "en" | "fr" | "ar";
-  return getColumnsForEntity(entityType).map((col) => col.labels[lang]);
+  return getColumnsForEntity(entityType, fiscalProfile).map((col) => col.labels[lang]);
 }

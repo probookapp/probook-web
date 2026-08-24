@@ -32,7 +32,7 @@ import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { toast } from "@/stores/useToastStore";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
 import { getApiErrorMessage } from "@/lib/api-adapter";
-import { DEFAULT_IS_CASH_SALE } from "@/lib/stamp-duty";
+import { DEFAULT_IS_CASH_SALE, stampDutyApplies } from "@/lib/stamp-duty";
 
 const createLineSchema = (t: (key: string) => string) => z.object({
   product_id: z.string().nullable().optional(),
@@ -848,7 +848,14 @@ export function InvoiceFormPage() {
             <p className="text-sm text-gray-500 mt-2">
               {t("invoices:downPaymentHint")}
             </p>
-            {settings?.stamp_duty_enabled && (
+            {/* Both halves, not just the switch: a business that enabled the
+                duty and later moved to a regime without one would otherwise
+                keep being asked Algerian questions on every invoice, while the
+                server correctly charges nothing. */}
+            {stampDutyApplies({
+              fiscalProfile: settings?.fiscal_profile,
+              stampDutyEnabled: settings?.stamp_duty_enabled,
+            }) && (
               <div className="mt-4 space-y-2">
                 <label className="flex items-center gap-2 text-sm text-gray-700 dark:text-gray-300">
                   <input type="checkbox" {...register("is_cash_sale")} className="rounded" />

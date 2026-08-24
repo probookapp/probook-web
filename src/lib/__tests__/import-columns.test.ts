@@ -66,16 +66,38 @@ describe("resolveHeader", () => {
 // ─── getColumnsForEntity ───────────────────────────────────────────────────
 
 describe("getColumnsForEntity", () => {
+  // Content, not identity: the accessor filters the identifier columns by
+  // regime, so it returns a new array rather than the module's own.
   it("returns product columns", () => {
-    expect(getColumnsForEntity("products")).toBe(productColumns);
+    expect(getColumnsForEntity("products")).toEqual(productColumns);
   });
 
   it("returns client columns", () => {
-    expect(getColumnsForEntity("clients")).toBe(clientColumns);
+    expect(getColumnsForEntity("clients")).toEqual(clientColumns);
   });
 
   it("returns supplier columns", () => {
-    expect(getColumnsForEntity("suppliers")).toBe(supplierColumns);
+    expect(getColumnsForEntity("suppliers")).toEqual(supplierColumns);
+  });
+
+  it("offers only the identifiers the fiscal regime uses", () => {
+    const keys = (profile: string) =>
+      getColumnsForEntity("clients", profile).map((c) => c.key);
+
+    // Algeria: NIF, registre de commerce, NIS and article d'imposition.
+    expect(keys("DZ")).toEqual(expect.arrayContaining(["vat_number", "siret", "nis", "art"]));
+
+    // France: SIRET and VAT number. NIS and "article d'imposition" name nothing
+    // there, and two meaningless columns in a template are two invitations to
+    // fill them in wrongly.
+    expect(keys("FR")).toEqual(expect.arrayContaining(["siret", "vat_number"]));
+    expect(keys("FR")).not.toContain("nis");
+    expect(keys("FR")).not.toContain("art");
+
+    // Everything that is not an identifier is the same trade either way.
+    expect(keys("FR").filter((k) => !["nis", "art"].includes(k))).toEqual(
+      keys("DZ").filter((k) => !["nis", "art"].includes(k))
+    );
   });
 
   it("product columns have designation as required", () => {

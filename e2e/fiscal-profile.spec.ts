@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
 import { signUp, navigateTo } from "./helpers";
 import { apiGet, apiPost, apiPut } from "./api-helpers";
+import { reloadWithFreshCache } from "./query-cache";
 
 /** Save the tenant's fiscal regime, keeping the other required settings valid. */
 async function setProfile(page: Page, fiscal_profile: string, default_tax_rate: number) {
@@ -235,5 +236,55 @@ test.describe("Fiscal profile", () => {
       "20%",
     ]);
     await expect(select).toHaveValue("19");
+  });
+});
+
+/**
+ * A regime change has to take the paperwork with it.
+ *
+ * The stamp duty switch is hidden outside Algeria, so nobody can turn it on
+ * there — but a business that enabled it under the Algerian regime and later
+ * moved keeps the stored flag. Everything downstream must read both halves, or
+ * that business goes on being asked Algerian questions on every invoice while
+ * the server, correctly, charges nothing.
+ */
+test.describe("Algerian rules stay in Algeria", () => {
+  test("a tenant that leaves the regime stops being asked its questions", async ({ page }) => {
+    await signUp(page);
+    const enabled = await apiPut(page, "/api/settings", { stamp_duty_enabled: true });
+    expect(enabled.status, JSON.stringify(enabled.body).slice(0, 200)).toBe(200);
+    const probe = await apiGet(page, "/api/settings");
+    expect(probe.body.stamp_duty_enabled, JSON.stringify(probe.body).slice(0, 200)).toBe(true);
+    expect(probe.body.fiscal_profile).toBe("DZ");
+    await page.goto("/fr/invoices/new");
+    // Sign-up cached the settings as they were; without this the page reads the
+    // previous world and the boxes correctly stay hidden for the wrong reason.
+    await reloadWithFreshCache(page);
+
+    // Under the Algerian regime the two boxes are part of the form.
+    const cashSale = page.getByText(/vente au comptant/i);
+    await expect(cashSale).toBeVisible();
+
+    // The flag stays set; only the regime moves.
+    await setProfile(page, "FR", 20);
+    const after = await apiGet(page, "/api/settings");
+    expect(
+      after.body.stamp_duty_enabled,
+      "the switch is not reset — that is the whole point of the test"
+    ).toBe(true);
+
+    await page.goto("/fr/invoices/new");
+    await reloadWithFreshCache(page);
+    await expect(page.getByText(/désignation|description/i).first()).toBeVisible();
+    await expect(cashSale).toHaveCount(0);
+  });
+
+  test("and the settings screen never offers the switch outside Algeria", async ({ page }) => {
+    await signUp(page);
+    await setProfile(page, "FR", 20);
+
+    await page.goto("/fr/settings");
+    await reloadWithFreshCache(page);
+    await expect(page.locator('input[name="stamp_duty_enabled"]')).toHaveCount(0);
   });
 });
