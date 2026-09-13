@@ -13,6 +13,25 @@ import {
 
 const formatAmount = formatCurrency;
 
+/**
+ * One settlement already banked on this sale.
+ *
+ * A counter sale is not always one method: a customer puts part on a card and
+ * hands over the rest in cash. The till took a single method, so the cashier had
+ * to record the whole sale as one of them — and with the stamp duty falling on
+ * the cash part alone, both choices were wrong. Everything in cash over-charged
+ * the duty; everything on the card charged none.
+ */
+interface SettledLine {
+  method: PosPaymentMethod;
+  amount: number;
+  cashGiven?: number;
+  reference?: string;
+  chequeDate?: string;
+  chequeNumber?: string;
+  chequeBank?: string;
+}
+
 interface PaymentModalProps {
   open: boolean;
   onClose: () => void;
@@ -68,6 +87,7 @@ export function PaymentModal({
   const [chequeNumber, setChequeNumber] = useState<string>("");
   const [chequeBank, setChequeBank] = useState<string>("");
   const [partialAmount, setPartialAmount] = useState<string>("");
+  const [banked, setBanked] = useState<SettledLine[]>([]);
 
   if (!open) return null;
 
@@ -95,18 +115,26 @@ export function PaymentModal({
 
   const cashAmount = parseFloat(cashGiven) || 0;
 
+  // What the banked lines already cover, and what is therefore left for the
+  // entry being filled in now.
+  const bankedTotal = banked.reduce((sum, line) => sum + line.amount, 0);
+  const goodsLeft = Math.max(0, Math.round((totalAmount - bankedTotal) * 1000) / 1000);
+
   // What the customer is settling now. Cash is driven by the amount handed
   // over; the other methods take an explicit figure so a part-payment can be
   // recorded and the rest left on account.
   const settledNow = isCash
-    ? Math.min(cashAmount, totalAmount)
+    ? Math.min(cashAmount, goodsLeft)
     : isCredit
       ? 0
       : partialAmount === ""
-        ? totalAmount
-        : Math.min(parseFloat(partialAmount) || 0, totalAmount);
+        ? goodsLeft
+        : Math.min(parseFloat(partialAmount) || 0, goodsLeft);
 
-  const remaining = Math.max(0, Math.round((totalAmount - settledNow) * 1000) / 1000);
+  const remaining = Math.max(
+    0,
+    Math.round((totalAmount - bankedTotal - settledNow) * 1000) / 1000
+  );
   const leavesBalance = remaining > 0;
 
   // Droit de timbre on the part settled in cash, shown before the money is
@@ -117,23 +145,69 @@ export function PaymentModal({
   // Card, cheque and transfer are exempt (art. 258 quinquies), so switching
   // method makes the line disappear, which is exactly the behaviour the law is
   // trying to encourage.
+  // Across every line, not just the one on screen: a sale settled half in cash
+  // and half by card owes the duty on the half that was cash, which is exactly
+  // what the circular n° 14/MF/DGI/LF.2025 says and what the server recomputes.
+  const cashPortion =
+    banked.reduce((sum, line) => sum + (line.method === "CASH" ? line.amount : 0), 0) +
+    (isCash ? settledNow : 0);
+
   const stampDuty = computeStampDuty({
     fiscalProfile: settings?.fiscal_profile,
     enabled: settings?.stamp_duty_enabled,
     threshold: settings?.stamp_duty_threshold ?? 0,
-    isCashSale: isCash,
-    total: settledNow,
+    isCashSale: cashPortion > 0,
+    total: cashPortion,
     isDraft: false,
   });
   const dueNow = Math.round((totalAmount + stampDuty) * 1000) / 1000;
-  const change = isCash ? Math.max(0, cashAmount - dueNow) : 0;
+  // The cash on the counter covers this line and the duty the sale owes, not
+  // the part a card already took.
+  const change = isCash ? Math.max(0, cashAmount - (settledNow + stampDuty)) : 0;
+
+  // The entry on screen, as a line — used both to bank it and to confirm.
+  const currentLine = (): SettledLine => ({
+    method: paymentMethod,
+    amount: settledNow,
+    cashGiven: isCash ? cashAmount : undefined,
+    // The cheque number IS the reference for a cheque: asking twice for the
+    // same figure is how the two end up disagreeing on the same receipt.
+    reference: chequeMentionsRequired
+      ? chequeNumber
+      : methodTakesReference(paymentMethod)
+        ? reference || undefined
+        : undefined,
+    chequeDate: chequeMentionsRequired ? chequeDate : undefined,
+    chequeNumber: chequeMentionsRequired ? chequeNumber : undefined,
+    chequeBank: chequeMentionsRequired ? chequeBank : undefined,
+  });
+
+  const resetEntry = () => {
+    setCashGiven("");
+    setReference("");
+    setChequeDate("");
+    setChequeNumber("");
+    setChequeBank("");
+    setPartialAmount("");
+  };
+
+  /** Bank this settlement and leave the rest to another method. */
+  const addLine = () => {
+    setBanked((prev) => [...prev, currentLine()]);
+    resetEntry();
+    setPaymentMethod("CASH");
+  };
+
+  // Worth banking only if it settles something and leaves something to settle.
+  const canAddLine =
+    !isCredit && settledNow > 0 && missingMentions.length === 0 && remaining > 0;
 
   // Anything left unpaid becomes the client's balance, so there has to be one.
   const isValid =
     missingMentions.length === 0 &&
     (!leavesBalance || hasClient) &&
     (isCash ? cashAmount >= dueNow || settledNow > 0 : true) &&
-    (isCredit || settledNow > 0 || hasClient);
+    (isCredit || settledNow > 0 || bankedTotal > 0 || hasClient);
 
   const handleConfirm = () => {
     const payments: Array<{
@@ -146,22 +220,10 @@ export function PaymentModal({
       chequeBank?: string;
     }> = [];
 
+    payments.push(...banked);
+
     if (settledNow > 0) {
-      payments.push({
-        method: paymentMethod,
-        amount: settledNow,
-        cashGiven: isCash ? cashAmount : undefined,
-        // The cheque number IS the reference for a cheque: asking twice for the
-        // same figure is how the two end up disagreeing on the same receipt.
-        reference: chequeMentionsRequired
-          ? chequeNumber
-          : methodTakesReference(paymentMethod)
-            ? reference || undefined
-            : undefined,
-        chequeDate: chequeMentionsRequired ? chequeDate : undefined,
-        chequeNumber: chequeMentionsRequired ? chequeNumber : undefined,
-        chequeBank: chequeMentionsRequired ? chequeBank : undefined,
-      });
+      payments.push(currentLine());
     }
     // The unpaid remainder is recorded as its own CREDIT line rather than being
     // silently dropped: the ticket must always account for its full total.
@@ -172,12 +234,16 @@ export function PaymentModal({
     onConfirm(payments, stampDuty);
   };
 
+  // What this cash line has to cover: what is left of the goods, plus the duty
+  // the cash brings with it. With a card line already banked, offering notes for
+  // the whole sale would have the cashier take money twice.
+  const cashTarget = Math.round((goodsLeft + stampDuty) * 1000) / 1000;
   const quickAmounts = [
-    Math.ceil(dueNow / 10) * 10,
-    Math.ceil(dueNow / 50) * 50,
-    Math.ceil(dueNow / 100) * 100,
-    Math.ceil(dueNow / 500) * 500,
-  ].filter((v, i, a) => a.indexOf(v) === i && v >= dueNow);
+    Math.ceil(cashTarget / 10) * 10,
+    Math.ceil(cashTarget / 50) * 50,
+    Math.ceil(cashTarget / 100) * 100,
+    Math.ceil(cashTarget / 500) * 500,
+  ].filter((v, i, a) => a.indexOf(v) === i && v >= cashTarget);
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
@@ -207,6 +273,37 @@ export function PaymentModal({
               </p>
             )}
           </div>
+
+          {/* What has already been settled on this sale */}
+          {banked.length > 0 && (
+            <ul className="space-y-1.5">
+              {banked.map((line, i) => (
+                <li
+                  key={i}
+                  className="flex items-center justify-between gap-3 rounded-lg border border-(--color-border-primary) px-3 py-2"
+                >
+                  <span className="text-sm font-medium">{t(LABEL_KEYS[line.method])}</span>
+                  <span className="flex items-center gap-3">
+                    <span className="text-sm font-mono tabular-nums">
+                      {formatAmount(line.amount)}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setBanked((prev) => prev.filter((_, j) => j !== i))}
+                      aria-label={t("removePayment")}
+                      className="p-1 rounded hover:bg-(--color-bg-secondary)"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </span>
+                </li>
+              ))}
+              <li className="flex items-center justify-between px-3 pt-1 text-sm text-(--color-text-secondary)">
+                <span>{t("remainingToSettle")}</span>
+                <span className="font-mono tabular-nums">{formatAmount(cashTarget)}</span>
+              </li>
+            </ul>
+          )}
 
           {/* Payment method selection */}
           <div className="grid grid-cols-3 gap-2">
@@ -362,6 +459,17 @@ export function PaymentModal({
                 placeholder={t("paymentReferencePlaceholder")}
               />
             </div>
+          )}
+
+          {/* Settle part of the sale now and the rest another way */}
+          {canAddLine && (
+            <button
+              type="button"
+              onClick={addLine}
+              className="w-full px-4 py-2.5 rounded-lg border border-dashed border-(--color-border-secondary) text-sm font-medium hover:bg-(--color-bg-secondary) transition-colors"
+            >
+              {t("addPayment", { amount: formatAmount(settledNow) })}
+            </button>
           )}
 
           {/* What is left on the client's account */}

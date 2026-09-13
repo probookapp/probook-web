@@ -257,11 +257,11 @@ export function POSPage() {
         method: p.method as PosPaymentMethod,
         amount: p.amount,
         cashGiven: p.cashGiven,
-        // Against goods *plus* duty, as the payment screen counted it. Netting
-        // it against the goods alone handed the stamp duty back in change.
-        changeGiven: p.cashGiven
-          ? p.cashGiven - (store.getFinalAmount() + stampDuty)
-          : undefined,
+        // Against what this line covers plus the duty, as the payment screen
+        // counted it. Netting against the goods alone handed the stamp duty back
+        // in change; netting against the whole sale does the same thing once a
+        // card line already paid part of it.
+        changeGiven: p.cashGiven ? p.cashGiven - (p.amount + stampDuty) : undefined,
         chequeDate: p.chequeDate,
         chequeNumber: p.chequeNumber,
         chequeBank: p.chequeBank,
