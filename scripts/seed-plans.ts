@@ -233,6 +233,22 @@ async function main() {
       const planId = plan.rows[0].id;
       planIds.set(offer.slug, planId);
 
+      // Per-currency rows shadow the price above: /api/subscription/plans
+      // prefers a matching `plan_prices` row over the plan's own columns. Rows
+      // left from a previous grid therefore survive a reseed and quietly sell
+      // the offer at the old price — which is exactly what happened in
+      // production on 2026-09-13, where Enterprise showed 4 200 DZD after being
+      // reseeded at 7 900. An offer this script prices is priced here only.
+      const shadowed = await client.query(
+        `DELETE FROM plan_prices WHERE plan_id = $1`,
+        [planId]
+      );
+      if (shadowed.rowCount) {
+        console.log(
+          `  (${offer.slug} : ${shadowed.rowCount} ancien(s) prix par devise retiré(s))`
+        );
+      }
+
       // Rewritten rather than merged: removing a feature from an offer here has
       // to actually remove it, or the seed can only ever add.
       await client.query(`DELETE FROM plan_features WHERE plan_id = $1`, [planId]);
