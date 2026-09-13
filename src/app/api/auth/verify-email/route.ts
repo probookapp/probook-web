@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { verifyEmailSchema } from "@/lib/validations";
 import { isEmailTakenByVerifiedUser } from "@/lib/verification";
+import { Prisma } from "@/generated/prisma/client";
 
 export async function POST(req: NextRequest) {
   try {
@@ -49,8 +50,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Refuse if another account already verified this address (races the DB has
-    // no partial-unique constraint for — enforced here at the point of verify).
+    // Refuse if another account already verified this address. The database now
+    // carries the same rule as a partial unique index, so this check is the
+    // friendly message rather than the guarantee — and the catch below turns the
+    // one case it cannot see, a simultaneous verify, into the same answer.
     if (await isEmailTakenByVerifiedUser(verificationToken.email, verificationToken.userId)) {
       return NextResponse.json(
         { error: "This email is already verified on another account.", code: "EMAIL_TAKEN" },
@@ -59,20 +62,37 @@ export async function POST(req: NextRequest) {
     }
 
     // Update user and mark token as used in a transaction
-    await prisma.$transaction(async (tx) => {
-      await tx.user.update({
-        where: { id: verificationToken.userId },
-        data: {
-          emailVerified: true,
-          email: verificationToken.email,
-        },
-      });
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: verificationToken.userId },
+          data: {
+            emailVerified: true,
+            email: verificationToken.email,
+          },
+        });
 
-      await tx.emailVerificationToken.update({
-        where: { id: verificationToken.id },
-        data: { usedAt: new Date() },
+        await tx.emailVerificationToken.update({
+          where: { id: verificationToken.id },
+          data: { usedAt: new Date() },
+        });
       });
-    });
+    } catch (e: unknown) {
+      // The other half of the race: two verifications for one address landed
+      // together, both read "free", and the index refused the second. The
+      // person on the losing side gets the sentence that explains it, not a
+      // five hundred.
+      if (
+        e instanceof Prisma.PrismaClientKnownRequestError &&
+        e.code === "P2002"
+      ) {
+        return NextResponse.json(
+          { error: "This email is already verified on another account.", code: "EMAIL_TAKEN" },
+          { status: 409 }
+        );
+      }
+      throw e;
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

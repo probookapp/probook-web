@@ -72,6 +72,11 @@ model User {
   username      String
   displayName   String   @map("display_name")
   email         String?
+  /// At most one account may hold a given verified email. Enforced by a partial
+  /// unique index on lower(email) WHERE email_verified — see the migration
+  /// 20260913_verified_email_unique. Prisma cannot express an expression index,
+  /// so it exists in SQL only: do not assume `prisma migrate dev` will recreate
+  /// it from this schema.
   emailVerified Boolean  @default(false) @map("email_verified")
   passwordHash  String   @map("password_hash")
   role          String   @default("employee")
