@@ -44,6 +44,16 @@ test.describe("Products permission enforcement", () => {
   }) => {
     const admin = await signUpSubscribed(page);
 
+    // Unique per run. These were fixed names, and usernames are unique per
+    // tenant but not globally: forty runs had left forty `emp_viewonly`
+    // accounts across forty abandoned tenants, and logging in resolved to an
+    // arbitrary one. It passed for as long as that tenant's trial was still
+    // running, then started reporting demo data — a test failing for a reason
+    // that has nothing to do with what it checks.
+    const stamp = Date.now();
+    const viewOnly = `emp_viewonly_${stamp}`;
+    const fullCrud = `emp_fullcrud_${stamp}`;
+
     // Seed a product so every role has a visible row to reason about.
     await setupProduct(page, "Perm Widget", 500);
 
@@ -59,13 +69,13 @@ test.describe("Products permission enforcement", () => {
     await expect(page.getByRole("button", { name: "Edit" }).first()).toBeVisible();
 
     // ── Create two employees with different products permissions ──────────
-    await createEmployee(page, "emp_viewonly", {
+    await createEmployee(page, viewOnly, {
       can_view: true,
       can_create: false,
       can_edit: false,
       can_delete: false,
     });
-    await createEmployee(page, "emp_fullcrud", {
+    await createEmployee(page, fullCrud, {
       can_view: true,
       can_create: true,
       can_edit: true,
@@ -74,7 +84,7 @@ test.describe("Products permission enforcement", () => {
 
     // ── VIEW-ONLY employee ───────────────────────────────────────────────
     await logOut(page);
-    await logIn(page, "emp_viewonly", "Employee123!");
+    await logIn(page, viewOnly, "Employee123!");
     await gotoProducts(page);
     // The list itself renders (view granted). Desktop table cell, as above.
     await expect(
@@ -95,7 +105,7 @@ test.describe("Products permission enforcement", () => {
 
     // ── FULL-CRUD employee (no over-gating) ──────────────────────────────
     await logOut(page);
-    await logIn(page, "emp_fullcrud", "Employee123!");
+    await logIn(page, fullCrud, "Employee123!");
     await gotoProducts(page);
     await expect(page.getByRole("button", { name: "New Product" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Edit" }).first()).toBeVisible();

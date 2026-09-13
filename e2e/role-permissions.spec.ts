@@ -2,14 +2,23 @@ import { test, expect } from "@playwright/test";
 import { signUp, logOut, logIn } from "./helpers";
 import { apiGet, apiPost } from "./api-helpers";
 
+/**
+ * Usernames are unique per tenant, not globally, so a literal name here quietly
+ * accumulates one account per run across abandoned tenants — and `logIn` then
+ * resolves to an arbitrary one of them. That is how the products permission
+ * suite came to fail six weeks later for a reason unrelated to permissions.
+ */
+const unique = (name: string) => `${name}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+
 test.describe("Role-based access control", () => {
   test("employee cannot create users (admin-only)", async ({ page }) => {
     // Sign up as admin
     await signUp(page);
 
     // Create an employee
+    const employee = unique("employee_rbac");
     const emp = await apiPost(page, "/api/auth/users", {
-      username: "employee_rbac",
+      username: employee,
       display_name: "Employee RBAC",
       password: "Employee123!",
       role: "employee",
@@ -19,11 +28,11 @@ test.describe("Role-based access control", () => {
 
     // Log out and log in as employee
     await logOut(page);
-    await logIn(page, "employee_rbac", "Employee123!");
+    await logIn(page, employee, "Employee123!");
 
     // Employee should NOT be able to create users
     const res = await apiPost(page, "/api/auth/users", {
-      username: "hacker_user",
+      username: unique("hacker_user"),
       display_name: "Hacker",
       password: "Hacker123!",
       role: "employee",
@@ -34,8 +43,9 @@ test.describe("Role-based access control", () => {
   test("employee can access permitted resources", async ({ page }) => {
     await signUp(page);
 
+    const permitted = unique("permitted_emp");
     await apiPost(page, "/api/auth/users", {
-      username: "permitted_emp",
+      username: permitted,
       display_name: "Permitted Employee",
       password: "Employee123!",
       role: "employee",
@@ -43,7 +53,7 @@ test.describe("Role-based access control", () => {
     });
 
     await logOut(page);
-    await logIn(page, "permitted_emp", "Employee123!");
+    await logIn(page, permitted, "Employee123!");
 
     // Should be able to access clients and products
     const clients = await apiGet(page, "/api/clients");
@@ -67,7 +77,7 @@ test.describe("Role-based access control", () => {
     await signUp(page);
 
     const emp = await apiPost(page, "/api/auth/users", {
-      username: "check_perms_emp",
+      username: unique("check_perms_emp"),
       display_name: "Perms Employee",
       password: "Employee123!",
       role: "employee",
