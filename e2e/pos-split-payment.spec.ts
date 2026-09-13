@@ -154,18 +154,28 @@ test.describe("a sale settled by more than one method", () => {
     await expect(confirm).toBeEnabled();
     await confirm.click();
 
-    // The sale reaches the server as two lines, and the duty follows the cash.
-    await expect(page.getByPlaceholder(/Rechercher/i)).toBeVisible({ timeout: 20_000 });
-    const sales = await apiGet(page, `/api/pos/sessions/${session.id}/transactions`);
-    expect(sales.status, JSON.stringify(sales.body).slice(0, 200)).toBe(200);
-    const body = sales.body as unknown as { data?: unknown[] } | unknown[];
-    const rows = (Array.isArray(body) ? body : (body.data ?? [])) as {
-      stamp_duty: string | number;
-      payments?: unknown[];
-    }[];
-    expect(rows.length, "the sale should have been recorded").toBeGreaterThan(0);
+    // Wait for the sale itself, not for a search box that never went away.
+    // Confirming posts the sale and only then clears the cart, so anything on
+    // screen can be true before the server has heard about it — which is how
+    // this passed under `next dev` and failed against a production build.
+    const readSale = async () => {
+      const sales = await apiGet(page, `/api/pos/sessions/${session.id}/transactions`);
+      const body = sales.body as unknown as { data?: unknown[] } | unknown[];
+      return (Array.isArray(body) ? body : (body.data ?? [])) as {
+        stamp_duty: string | number;
+        payments?: unknown[];
+      }[];
+    };
 
-    const latest = rows[0];
+    await expect
+      .poll(async () => (await readSale()).length, {
+        message: "the sale should have been recorded",
+        timeout: 30_000,
+      })
+      .toBeGreaterThan(0);
+
+    const latest = (await readSale())[0];
+    // The duty follows the cash: 5 000 of it, not the 12 000 on the ticket.
     expect(Number(latest.stamp_duty)).toBe(50);
     expect(latest.payments?.length, "both settlements are kept").toBe(2);
   });
