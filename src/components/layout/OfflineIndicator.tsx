@@ -56,7 +56,7 @@ export function OfflineIndicator() {
   // Just synced successfully (and no storage warning)
   if (showSyncedBanner && !storageWarning) {
     return (
-      <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-green-600 text-white text-sm font-medium shadow-lg animate-in fade-in slide-in-from-bottom-2">
+      <div className="pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-2 rounded-full bg-green-600 text-white text-sm font-medium shadow-lg animate-in fade-in slide-in-from-bottom-2">
         <Check className="h-4 w-4" />
         {t("offline.synced")}
       </div>
@@ -64,7 +64,12 @@ export function OfflineIndicator() {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 max-w-md w-full px-4">
+    // Transparent to clicks, because this strip is as wide as the screen and
+    // sits over the bottom of every page. On a phone that is exactly where the
+    // primary button lives: a "synced" pill with nothing to click on was
+    // swallowing taps meant for "Create quote". Only the panel below has
+    // controls, so only it takes pointer events back.
+    <div className="pointer-events-none fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col items-center gap-2 max-w-md w-full px-4">
       {/* Storage warning */}
       {storageWarning && (
         <div
@@ -84,7 +89,7 @@ export function OfflineIndicator() {
       )}
 
       {/* Failed mutations panel */}
-      <div className="w-full">
+      <div className="pointer-events-auto w-full">
         <FailedMutationsPanel />
       </div>
 
