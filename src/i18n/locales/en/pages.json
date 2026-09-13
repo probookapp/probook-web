@@ -1,5 +1,16 @@
 {
   "pricing": {
+    "seats": "Users: {{count}}",
+    "seatsUnlimited": "Unlimited users",
+    "andAlso": "And on top",
+    "core": {
+      "invoicing": "Invoices, down payments and settlements",
+      "quotes": "Quotes, converted into invoices",
+      "creditNotes": "Credit notes and refunds",
+      "catalogue": "Product and client catalogue",
+      "dashboard": "Dashboard and alerts",
+      "reports": "Basic reports and accounting export"
+    },
     "title": "Simple, transparent pricing",
     "subtitle": "Choose the plan that fits your business. No hidden fees, no surprises.",
     "monthly": "Monthly",

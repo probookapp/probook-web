@@ -1,5 +1,16 @@
 {
   "pricing": {
+    "seats": "Utilisateurs : {{count}}",
+    "seatsUnlimited": "Utilisateurs illimités",
+    "andAlso": "Et en plus",
+    "core": {
+      "invoicing": "Factures, acomptes et règlements",
+      "quotes": "Devis et conversion en facture",
+      "creditNotes": "Avoirs et remboursements",
+      "catalogue": "Catalogue produits et clients",
+      "dashboard": "Tableau de bord et alertes",
+      "reports": "Rapports de base et export comptable"
+    },
     "title": "Tarification simple et transparente",
     "subtitle": "Choisissez le forfait adapté à votre activité. Pas de frais cachés, pas de surprises.",
     "monthly": "Mensuel",

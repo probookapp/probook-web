@@ -43,6 +43,30 @@ interface PlansResponse {
   detected_country: string | null;
 }
 
+/**
+ * What every offer contains, named.
+ *
+ * These are not feature flags and never will be: invoicing, quotes, credit
+ * notes, the catalogue, the dashboard and the basic reports are the product,
+ * and a legal obligation is not sold separately. But because they carry no
+ * flag, the entry offer linked nothing and its card rendered no list at all —
+ * a price with nothing under it, for the one offer that contains the most.
+ */
+const CORE_INCLUSIONS = [
+  "pricing.core.invoicing",
+  "pricing.core.quotes",
+  "pricing.core.creditNotes",
+  "pricing.core.catalogue",
+  "pricing.core.dashboard",
+  "pricing.core.reports",
+] as const;
+
+/** The seats an offer covers, or null when it sets no ceiling. */
+function seatsOf(plan: PublicPlan): number | null {
+  const quota = plan.quotas?.find((q) => q.quota_key === "max_users");
+  return quota ? quota.limit_value : null;
+}
+
 function formatPrice(centimes: number, currency: string): string {
   const amount = centimes / 100;
   if (currency === "DZD") {
@@ -210,8 +234,40 @@ export function PricingPage() {
                         {tc("landing.pricing.trialDays", { days: plan.trial_days })}
                       </p>
                     )}
+                    {/* Seats are half the difference between one offer and the
+                        next, and the card said nothing about them. */}
+                    <p
+                      dir={textDir}
+                      className="mt-6 text-sm font-medium text-gray-900 dark:text-gray-100"
+                    >
+                      {seatsOf(plan) === null
+                        ? t("pricing.seatsUnlimited")
+                        : t("pricing.seats", { count: seatsOf(plan) as number })}
+                    </p>
+
+                    <ul className="mt-6 space-y-3">
+                      {CORE_INCLUSIONS.map((key) => (
+                        <li key={key} className="flex items-start gap-3">
+                          <Check className="h-5 w-5 shrink-0 mt-0.5 text-primary-600 dark:text-primary-400" />
+                          <span dir={textDir} className="text-sm text-gray-600 dark:text-gray-300">
+                            {t(key)}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+
                     {featureNames.length > 0 && (
-                      <ul className="mt-8 space-y-3">
+                      <>
+                        <p
+                          dir={textDir}
+                          className="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
+                        >
+                          {t("pricing.andAlso")}
+                        </p>
+                      </>
+                    )}
+                    {featureNames.length > 0 && (
+                      <ul className="mt-3 space-y-3">
                         {featureNames.map((name, i) => (
                           <li key={i} className="flex items-start gap-3">
                             <Check className="h-5 w-5 shrink-0 mt-0.5 text-primary-600 dark:text-primary-400" />
