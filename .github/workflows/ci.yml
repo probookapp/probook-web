@@ -32,6 +32,11 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      # The one place the port is written. playwright.config.ts reads E2E_PORT
+      # too, so the server and the suite cannot drift apart again — which is
+      # how CI came to start the app on 3001 while the suite dialled 3021.
+      E2E_PORT: "3021"
     services:
       postgres:
         image: postgres:16
@@ -58,12 +63,12 @@ jobs:
       # services, but the production boot-time env check requires them to exist.
       - name: Create .env.test
         run: |
-          cat > .env.test <<'EOF'
+          cat > .env.test <<EOF
           DATABASE_URL="postgresql://postgres:postgres@localhost:5432/probook_test?schema=public"
           DIRECT_URL="postgresql://postgres:postgres@localhost:5432/probook_test?schema=public"
           JWT_SECRET="ci-only-jwt-secret-not-used-anywhere-real-0123456789abcdef"
-          NEXT_PUBLIC_APP_URL="http://localhost:3001"
-          NEXT_PUBLIC_SITE_URL="http://localhost:3001"
+          NEXT_PUBLIC_APP_URL="http://localhost:${E2E_PORT}"
+          NEXT_PUBLIC_SITE_URL="http://localhost:${E2E_PORT}"
           NEXT_PUBLIC_APP_NAME="Probook"
           NEXT_PUBLIC_SUPABASE_URL="https://ci-dummy.supabase.co"
           SUPABASE_SERVICE_ROLE_KEY="ci-dummy-service-role-key"
@@ -80,11 +85,18 @@ jobs:
         run: npx dotenv -e .env.test -- npm run build
       - name: Start app
         run: |
-          npx dotenv -e .env.test -- npx next start -p 3001 &
+          npx dotenv -e .env.test -- npx next start -p "$E2E_PORT" &
           for i in $(seq 1 60); do
-            curl -sf http://localhost:3001 > /dev/null && break
+            curl -sf "http://localhost:$E2E_PORT" > /dev/null && break
             sleep 2
           done
+          # Fail here rather than in the suite. When the server never came up,
+          # every spec failed with ERR_CONNECTION_REFUSED and CI spent twenty
+          # minutes reporting two hundred test failures for one missing process.
+          curl -sf "http://localhost:$E2E_PORT" > /dev/null || {
+            echo "::error::the app never answered on port $E2E_PORT"
+            exit 1
+          }
       - run: npx playwright install --with-deps chromium
       - name: Run e2e suite
         run: npx dotenv -e .env.test -- npx playwright test
