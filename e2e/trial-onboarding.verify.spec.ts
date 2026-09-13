@@ -121,9 +121,17 @@ test("3: subscription request is blocked until email is verified", async ({ page
   expect(blocked.status).toBe(403);
   expect(blocked.body.code).toBe("EMAIL_NOT_VERIFIED");
 
-  // Self-service set/verify-email endpoint runs (email delivery depends on env).
-  const setEmail = await apiPost(page, "/api/auth/email", { email: "verify-me@example.com" });
-  console.log("[verify] /api/auth/email status:", setEmail.status, JSON.stringify(setEmail.body));
+  // Changing the address here is throttled, and deterministically so: signing up
+  // just issued a verification token, and /api/auth/email refuses another within
+  // two minutes for the same user so it cannot be used to email-bomb. The call
+  // used to sit here with its status merely logged and a comment claiming the
+  // endpoint "runs" — it never did. Asserting the refusal keeps the throttle
+  // covered instead of pretending the happy path was exercised.
+  const address = `verify-me-${Date.now()}@example.com`;
+  const setEmail = await apiPost(page, "/api/auth/email", { email: address });
+  expect(setEmail.status, JSON.stringify(setEmail.body)).toBe(429);
+
+  // So the address that gets verified below is the one signup recorded.
 
   // After the email is verified, the same request now succeeds.
   const verified = await apiPost(page, "/api/test/verify-email");
