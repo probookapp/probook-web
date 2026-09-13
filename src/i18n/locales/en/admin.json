@@ -414,6 +414,16 @@
     "exportCsv": "Export CSV",
     "searchPlaceholder": "Search by code..."
   },
+  "currencyRates": {
+    "title": "Published currencies",
+    "help": "Prices are written once, in dinars. One rate per currency publishes the whole grid elsewhere — offers, à la carte modules and seats included. A currency with no rate is not offered: prices stay in dinars, correctly labelled.",
+    "code": "Currency (ISO)",
+    "rate": "One dinar is worth",
+    "rounding": "Rounding (minor units)",
+    "save": "Save",
+    "perDinar": "1 DZD = {{value}}",
+    "step": "rounded to {{value}}"
+  },
   "features": {
     "unitPrice": "À la carte price (DZD / month)",
     "unitPricePlaceholder": "700",

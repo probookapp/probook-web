@@ -18,6 +18,7 @@ interface PublishedPlan {
   monthly_price: number;
   currency: string;
   base_currency?: string;
+  features?: unknown[];
 }
 
 /** What the shop window is actually serving, read the way the page reads it. */
@@ -52,14 +53,14 @@ test.describe("the pricing page", () => {
   test("an offer that adds modules shows them apart from the core", async ({ page }) => {
     await openPricing(page);
     const plans = await publishedPlans(page);
-    test.skip(plans.length < 2, "needs more than one offer to compare");
+    test.skip(plans.length === 0, "no offer is published");
 
-    // The heading only appears on the offers that add something, so it must be
-    // rarer than the core list — otherwise the two are indistinguishable and the
-    // customer cannot tell what they are paying extra for.
-    const andAlso = await page.getByText("Et en plus").count();
-    expect(andAlso).toBeGreaterThan(0);
-    expect(andAlso).toBeLessThan(plans.length);
+    // Counted against the offers that actually carry modules, not against the
+    // total: the shared test database gains offers from other suites, and an
+    // assertion phrased as "rarer than the whole catalogue" was really an
+    // assertion about what those suites happened to create.
+    const withModules = plans.filter((p) => (p.features?.length ?? 0) > 0).length;
+    await expect(page.getByText("Et en plus")).toHaveCount(withModules);
   });
 
   test("the shop window quotes one currency", async ({ page }) => {

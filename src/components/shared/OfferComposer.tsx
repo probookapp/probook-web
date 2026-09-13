@@ -55,6 +55,12 @@ interface OfferComposerProps {
   plans: PlanLike[];
   billingCycle: "monthly" | "yearly";
   currency: string;
+  /**
+   * What one extra seat costs, in the same currency as everything above.
+   * Converted server-side so this component never has to know a rate — it adds
+   * up figures that already agree.
+   */
+  seatPrice?: number;
   /** Absent on the public page, where the only next step is signing up. */
   onSubmit?: (composition: { feature_keys: string[]; seats: number }) => void;
   isSubmitting?: boolean;
@@ -72,6 +78,7 @@ export function OfferComposer({
   plans,
   billingCycle,
   currency,
+  seatPrice,
   onSubmit,
   isSubmitting,
   submitLabel,
@@ -120,20 +127,24 @@ export function OfferComposer({
   );
 
   const composition = { moduleKeys: selected, seats };
-  const priced = quote(composition, modules);
+  // The base is the cheapest listed offer, already in the displayed currency,
+  // rather than the dinar constant the library falls back to.
+  const basis = {
+    ...DEFAULT_BASIS,
+    baseMonthlyPrice: plans.length
+      ? Math.min(...plans.map((p) => p.monthly_price))
+      : DEFAULT_BASIS.baseMonthlyPrice,
+    seatUnitPrice: seatPrice ?? DEFAULT_BASIS.seatUnitPrice,
+  };
+  const priced = quote(composition, modules, basis);
   const beaten = bundleThatBeats(composition, bundles, priced.monthly);
   const total = billingCycle === "monthly" ? priced.monthly : priced.yearly;
 
   if (modules.length === 0) return null;
 
-  // Module prices and the seat price are expressed in the catalogue's own
-  // currency and nothing converts them. When the page has resolved the offers
-  // into a visitor's currency, quoting these figures under that label would be
-  // wrong by whatever the exchange rate happens to be — so the composer stays
-  // shut rather than quoting confidently in the wrong money. The three offers
-  // above are priced per currency and still sell.
-  const catalogueCurrency = plans.find((p) => p.base_currency)?.base_currency;
-  if (catalogueCurrency && catalogueCurrency !== currency) return null;
+  // No currency guard any more: module prices, the seat price and the offers
+  // all arrive converted together, so the figures on this screen agree by
+  // construction. The guard existed because they did not.
 
   const toggle = (key: string) =>
     setSelected((prev) =>

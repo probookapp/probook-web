@@ -2,8 +2,10 @@ import { prisma } from "./db";
 import { QUOTA_KEYS } from "./plan-quotas";
 import {
   quote,
+  convertFromDzd,
   DEFAULT_BASIS,
   type Composition,
+  type CurrencyRate,
   type ModuleOption,
   type PricingBasis,
   type Quote,
@@ -73,19 +75,44 @@ export async function priceComposition(
     readBasis(),
   ]);
 
-  // Module prices carry no currency of their own and nothing converts them.
-  // Billing a euro request off dinar figures would be wrong by the exchange
-  // rate — and wrong quietly, every month. The listed offers are priced per
-  // currency and remain available.
+  // Composing in another currency is allowed exactly as far as a rate exists
+  // for it. Without one there is no honest figure to bill, and inventing one is
+  // how a price ends up disagreeing with itself — so this refuses and says in
+  // which currency composing does work.
+  let billing = currency;
+  let workingBasis = basis;
+  let workingModules = modules;
+
   if (requestedCurrency && requestedCurrency !== currency) {
-    return {
-      error: `Composed offers are priced in ${currency}. Choose a listed offer to be billed in ${requestedCurrency}.`,
-      code: "CURRENCY_NOT_COMPOSABLE",
-      currency,
+    const rateRow = await prisma.currencyRate.findUnique({
+      where: { code: requestedCurrency },
+    });
+    if (!rateRow) {
+      return {
+        error: `Composed offers cannot be priced in ${requestedCurrency}. Choose a listed offer, or compose in ${currency}.`,
+        code: "CURRENCY_NOT_COMPOSABLE",
+        currency,
+      };
+    }
+
+    const rate: CurrencyRate = {
+      code: rateRow.code,
+      perDzd: Number(rateRow.perDzd),
+      roundTo: rateRow.roundTo,
     };
+    billing = rate.code;
+    workingBasis = {
+      ...basis,
+      baseMonthlyPrice: convertFromDzd(basis.baseMonthlyPrice, rate),
+      seatUnitPrice: convertFromDzd(basis.seatUnitPrice, rate),
+    };
+    workingModules = modules.map((m) => ({
+      ...m,
+      unitPrice: m.unitPrice == null ? null : convertFromDzd(m.unitPrice, rate),
+    }));
   }
 
-  const priced = quote(composition, modules, basis);
+  const priced = quote(composition, workingModules, workingBasis);
 
   if (priced.unpriced.length > 0) {
     return {
@@ -95,7 +122,7 @@ export async function priceComposition(
     };
   }
 
-  return { quote: priced, modules, currency };
+  return { quote: priced, modules: workingModules, currency: billing };
 }
 
 /**

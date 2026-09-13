@@ -1097,6 +1097,29 @@ model Plan {
   @@map("plans")
 }
 
+/// What one dinar is worth elsewhere, and how the result is rounded.
+///
+/// Every price in this product is written once, in DZD: the offers, the à la
+/// carte modules, the extra seats. Publishing them abroad by typing a second
+/// set of figures is what produced the incident of 2026-09-13 — Enterprise was
+/// reseeded at 7 900 DZD while a leftover row went on selling it at 30 EUR, and
+/// nothing could notice, because the two numbers had no relationship to keep.
+///
+/// A rate cannot drift. Changing the dinar price changes every currency with
+/// it, and a currency nobody has priced simply is not offered.
+model CurrencyRate {
+  /// ISO 4217, uppercase: "EUR", "USD", "MAD".
+  code      String   @id
+  /// Units of this currency per one dinar, e.g. 0.0069 for EUR.
+  perDzd    Decimal  @map("per_dzd") @db.Decimal(18, 8)
+  /// Rounding step in this currency's minor units — 100 rounds to a whole euro,
+  /// 50 to fifty cents. A converted price lands on a figure someone would print.
+  roundTo   Int      @default(100) @map("round_to")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("currency_rates")
+}
+
 model PlanPrice {
   id           String @id @default(uuid())
   planId       String @map("plan_id")

@@ -18,6 +18,7 @@ import { useAdminFeatures } from "@/features/admin/features/hooks/useFeatureFlag
 import { ListSearch, matchesQuery } from "@/features/admin/components/ListSearch";
 import { exportToCsv } from "@/lib/csv-export";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
+import { CurrencyRates } from "./CurrencyRates";
 
 type Plan = Record<string, unknown>;
 type Translations = Record<string, string>;
@@ -343,6 +344,10 @@ export function PlansPage() {
           </Button>
         </div>
       </div>
+
+      {/* Sits with the offers because it is part of pricing them: one rate per
+          currency is all that stands between this grid and selling abroad. */}
+      <CurrencyRates />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {visiblePlans.map((plan) => {

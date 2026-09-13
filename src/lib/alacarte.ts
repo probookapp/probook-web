@@ -71,6 +71,34 @@ export const DEFAULT_BASIS: PricingBasis = {
   monthsPerYear: 10,
 };
 
+/**
+ * One dinar, expressed elsewhere.
+ *
+ * `perDzd` is how much of the target currency one dinar buys; `roundTo` is the
+ * step the result lands on, in that currency's minor units.
+ */
+export interface CurrencyRate {
+  code: string;
+  perDzd: number;
+  roundTo: number;
+}
+
+/**
+ * Convert a price written in dinar centimes into another currency.
+ *
+ * Rounded **up** to the step, never down. A price that rounds down is a discount
+ * nobody decided to give, repeated on every line of every invoice; rounding up
+ * is at worst a few centimes in the seller's favour on a figure the seller
+ * publishes. And the step is what keeps the result printable: 7 900 DZD at
+ * 0.0069 is 54.51 EUR, which reads like a conversion; to the nearest euro it
+ * reads like a price.
+ */
+export function convertFromDzd(centimesDzd: number, rate: CurrencyRate): number {
+  const raw = centimesDzd * rate.perDzd;
+  const step = rate.roundTo > 0 ? rate.roundTo : 1;
+  return Math.ceil(raw / step) * step;
+}
+
 /** The seat counts offered, rather than a free-text box nobody calibrates. */
 export const SEAT_TIERS = [1, 3, 5, 10] as const;
 

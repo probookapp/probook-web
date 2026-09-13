@@ -414,6 +414,16 @@
     "exportCsv": "Exporter CSV",
     "searchPlaceholder": "Rechercher par code..."
   },
+  "currencyRates": {
+    "title": "Devises publiées",
+    "help": "Les prix sont écrits une seule fois, en dinars. Un taux par devise suffit à publier toute la grille ailleurs — offres, modules à la carte et places comprises. Une devise sans taux n'est pas proposée : les prix restent en dinars, correctement étiquetés.",
+    "code": "Devise (ISO)",
+    "rate": "Un dinar vaut",
+    "rounding": "Arrondi (centimes)",
+    "save": "Enregistrer",
+    "perDinar": "1 DZD = {{value}}",
+    "step": "arrondi à {{value}}"
+  },
   "features": {
     "unitPrice": "Prix à la carte (DZD / mois)",
     "unitPricePlaceholder": "700",

@@ -575,6 +575,24 @@ export const createFeatureSchema = z.object({
 
 export const updateFeatureSchema = createFeatureSchema.partial();
 
+/**
+ * A currency the catalogue can be published in.
+ *
+ * `per_dzd` is how much of it one dinar buys — a small positive number for a
+ * stronger currency. `round_to` is the step converted prices land on, in minor
+ * units: 100 rounds to a whole euro, 50 to fifty cents.
+ */
+export const currencyRateSchema = z.object({
+  code: z
+    .string()
+    .trim()
+    .regex(/^[A-Za-z]{3}$/, "Use a three-letter ISO 4217 code, e.g. EUR"),
+  // Bounded on both sides: a zero rate would publish everything free, and an
+  // absurd one would publish a price nobody could read as a mistake.
+  per_dzd: z.coerce.number().positive().max(1000),
+  round_to: z.coerce.number().int().min(1).max(100_000).optional(),
+});
+
 // ─── Admin: Announcements ───────────────────────────────────────────────────
 
 export const createAnnouncementSchema = z.object({

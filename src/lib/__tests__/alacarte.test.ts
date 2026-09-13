@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   quote,
   bundleThatBeats,
+  convertFromDzd,
   DEFAULT_BASIS,
   type ModuleOption,
   type BundleOption,
@@ -130,5 +131,42 @@ describe("the honest comparison line", () => {
     const composition = { moduleKeys: ["pos", "purchasing", "delivery_notes", "expenses"], seats: 1 };
     const total = quote(composition, MODULES).monthly;
     expect(bundleThatBeats(composition, BUNDLES, total)?.slug).toBe("commerce");
+  });
+});
+
+describe("converting a dinar price into another currency", () => {
+  const EUR = { code: "EUR", perDzd: 0.0069, roundTo: 100 };
+
+  it("turns a figure that reads like a conversion into one that reads like a price", () => {
+    // 7 900 DZD → 54.51 EUR raw. Nobody prints 54.51 on a pricing page.
+    expect(convertFromDzd(790_000, EUR)).toBe(5_500);
+    expect(convertFromDzd(190_000, EUR)).toBe(1_400);
+    expect(convertFromDzd(390_000, EUR)).toBe(2_700);
+  });
+
+  it("rounds up, never down", () => {
+    // Down would be a discount nobody decided to give, on every line of every
+    // invoice. Up is a few centimes in the seller's favour, once, in public.
+    const cheap = { code: "EUR", perDzd: 0.0069, roundTo: 100 };
+    expect(convertFromDzd(1, cheap)).toBe(100);
+    expect(convertFromDzd(100, cheap)).toBe(100);
+  });
+
+  it("honours a finer step when one is set", () => {
+    const halves = { code: "EUR", perDzd: 0.0069, roundTo: 50 };
+    expect(convertFromDzd(790_000, halves)).toBe(5_500);
+    expect(convertFromDzd(700_00, halves)).toBe(500);
+  });
+
+  it("never divides by a step of zero", () => {
+    // A rate row with roundTo 0 is a typo, not an instruction to crash.
+    const broken = { code: "EUR", perDzd: 0.0069, roundTo: 0 };
+    expect(Number.isFinite(convertFromDzd(790_000, broken))).toBe(true);
+  });
+
+  it("keeps the order of the grid", () => {
+    const prices = [190_000, 390_000, 790_000].map((p) => convertFromDzd(p, EUR));
+    expect(prices).toEqual([...prices].sort((a, b) => a - b));
+    expect(new Set(prices).size, "no two offers collapse onto one price").toBe(3);
   });
 });

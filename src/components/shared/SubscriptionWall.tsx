@@ -48,6 +48,8 @@ interface Plan {
 
 interface PlansResponse {
   plans: Plan[];
+  /** One extra seat, in the same currency as the offers above. */
+  seat_price?: number;
   detected_currency: string | null;
   detected_country: string | null;
 }
@@ -527,6 +529,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                 plans={plans}
                 billingCycle={billingCycle}
                 currency={detectedCurrency || plans[0].currency}
+                seatPrice={plansData?.seat_price}
                 onSubmit={(composition) => handleSubscribe(composition)}
                 isSubmitting={subscribeRequest.isPending}
                 submitLabel={tCommon("composer.submit")}

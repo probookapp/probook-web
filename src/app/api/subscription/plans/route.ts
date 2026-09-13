@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { toSnakeCase } from "@/lib/api-utils";
+import { convertFromDzd, DEFAULT_BASIS, type CurrencyRate } from "@/lib/alacarte";
 
 /** Map ISO 3166-1 alpha-2 country code to currency. */
 function countryToCurrency(country: string): string {
@@ -47,6 +48,16 @@ export async function GET(req: NextRequest) {
     const detectedCurrency = detectedCountry ? countryToCurrency(detectedCountry) : null;
     const effectiveCurrency = currency || detectedCurrency;
 
+    // One rate per currency, or none — and none means the visitor is quoted the
+    // catalogue as written rather than a figure nobody chose. Explicit
+    // per-currency rows below still win: converting is the default, not a rule.
+    const rateRow = effectiveCurrency
+      ? await prisma.currencyRate.findUnique({ where: { code: effectiveCurrency } })
+      : null;
+    const rate: CurrencyRate | null = rateRow
+      ? { code: rateRow.code, perDzd: Number(rateRow.perDzd), roundTo: rateRow.roundTo }
+      : null;
+
     const plans = await prisma.plan.findMany({
       where: { isActive: true },
       include: {
@@ -70,13 +81,30 @@ export async function GET(req: NextRequest) {
       // tells confidently.
       snaked.base_currency = plan.currency;
 
-      // If a currency is known (explicit or geo-detected), resolve the price for it
+      // If a currency is known (explicit or geo-detected), resolve the price for
+      // it: a row typed by hand first, the rate otherwise.
       if (effectiveCurrency) {
         const match = plan.prices.find((p) => p.currency === effectiveCurrency);
         if (match) {
           snaked.monthly_price = match.monthlyPrice;
           snaked.yearly_price = match.yearlyPrice;
           snaked.currency = match.currency;
+        } else if (rate && effectiveCurrency !== plan.currency) {
+          snaked.monthly_price = convertFromDzd(plan.monthlyPrice, rate);
+          snaked.yearly_price = convertFromDzd(plan.yearlyPrice, rate);
+          snaked.currency = rate.code;
+
+          // The modules travel with the offer. Leaving them in dinars while the
+          // offer reads in euros is the mismatch this whole mechanism exists to
+          // prevent — the composer would add francs to apples.
+          const features = snaked.features as
+            | { feature?: { unit_price?: number | null } }[]
+            | undefined;
+          for (const link of features ?? []) {
+            if (link.feature?.unit_price != null) {
+              link.feature.unit_price = convertFromDzd(link.feature.unit_price, rate);
+            }
+          }
         }
       }
 
@@ -85,6 +113,12 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       plans: result,
+      // Quoted in whatever currency the offers above are quoted in, so the
+      // composer adds up numbers that already agree rather than converting a
+      // second time with a rate it would have to be told about.
+      seat_price: rate
+        ? convertFromDzd(DEFAULT_BASIS.seatUnitPrice, rate)
+        : DEFAULT_BASIS.seatUnitPrice,
       detected_currency: effectiveCurrency || null,
       detected_country: detectedCountry || null,
     });

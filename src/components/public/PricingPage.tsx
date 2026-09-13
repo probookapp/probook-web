@@ -39,6 +39,8 @@ interface PublicPlan {
 
 interface PlansResponse {
   plans: PublicPlan[];
+  /** One extra seat, in the same currency as the offers above. */
+  seat_price?: number;
   detected_currency: string | null;
   detected_country: string | null;
 }
@@ -305,6 +307,7 @@ export function PricingPage() {
               plans={plans}
               billingCycle={billingCycle}
               currency={plans[0].currency}
+              seatPrice={plansData?.seat_price}
               submitLabel={tc("landing.pricing.getStarted")}
               footer={
                 <Link
