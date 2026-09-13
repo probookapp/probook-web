@@ -13,16 +13,52 @@ import { apiGet, apiPost, setupClient, setupIssuedInvoice } from "./api-helpers"
  */
 const JOBS = ["/api/cron/cleanup", "/api/cron/reminders", "/api/cron/subscriptions"];
 
+/**
+ * The header Vercel Cron sends.
+ *
+ * These tests used to send nothing and lean on `cron-auth` waving anything
+ * through outside production. That held under `next dev` and collapsed the
+ * moment the suite ran against a production build — which is exactly what CI
+ * does, on purpose, to exercise the strict CSP. Worse, it meant the bearer
+ * check was never exercised at all: the one line standing between a public URL
+ * and every tenant's reminders was covered by nothing.
+ */
+const asScheduler = {
+  headers: { Authorization: `Bearer ${process.env.CRON_SECRET ?? ""}` },
+};
+
 test.describe("Scheduled jobs", () => {
   for (const job of JOBS) {
     test(`${job} is reachable without a session`, async ({ request }) => {
-      // A bare request fixture carries no cookies, exactly like the scheduler.
-      const res = await request.get(job);
-      // Outside production the routes skip the bearer check, so this is the
-      // job actually running rather than a 401 from the middleware.
+      // A bare request fixture carries no cookies, exactly like the scheduler —
+      // only the bearer. Reaching 200 proves both halves: the middleware let a
+      // cookieless request through, and the route accepted the secret.
+      const res = await request.get(job, asScheduler);
       expect(res.status(), await res.text()).toBe(200);
     });
   }
+
+  test("a wrong secret is refused wherever the check is on", async ({ request }) => {
+    // `cron-auth` waves everything through when NODE_ENV is not production, so
+    // under `next dev` there is nothing to assert. Detected rather than assumed:
+    // if a bare call already succeeds, the check is off and the refusal cannot
+    // be observed here. CI builds for production, so it runs there.
+    const bare = await request.get("/api/cron/cleanup");
+    test.skip(
+      bare.status() === 200,
+      "the server is running with the development bypass on"
+    );
+
+    const wrong = await request.get("/api/cron/cleanup", {
+      headers: { Authorization: "Bearer not-the-secret" },
+    });
+    expect(wrong.status(), await wrong.text()).toBe(401);
+
+    // And the real one still gets in, so the refusal is about the secret and
+    // not about the route being broken.
+    const right = await request.get("/api/cron/cleanup", asScheduler);
+    expect(right.status(), await right.text()).toBe(200);
+  });
 
   test("the reminders job raises a reminder for an overdue invoice", async ({ page, request }) => {
     await signUp(page);
@@ -37,7 +73,7 @@ test.describe("Scheduled jobs", () => {
     // No assertion that the list starts empty: signUp lands on the dashboard,
     // whose reminders widget raises the same reminder on its own. What the job
     // has to guarantee is the end state, for a tenant nobody has visited.
-    const res = await request.get("/api/cron/reminders");
+    const res = await request.get("/api/cron/reminders", asScheduler);
     expect(res.status()).toBe(200);
 
     // The sweep isolates each tenant: one account's error used to abort the
@@ -67,9 +103,9 @@ test.describe("Scheduled jobs", () => {
       lines: [{ description: "Prestation", quantity: 1, unit_price: 10000, tax_rate: 19 }],
     });
 
-    await request.get("/api/cron/reminders");
+    await request.get("/api/cron/reminders", asScheduler);
     const first = ((await apiGet(page, "/api/reminders")).body as unknown as unknown[]).length;
-    await request.get("/api/cron/reminders");
+    await request.get("/api/cron/reminders", asScheduler);
     const second = ((await apiGet(page, "/api/reminders")).body as unknown as unknown[]).length;
 
     // A daily job that piled up a new reminder every morning would be worse
@@ -88,7 +124,7 @@ test.describe("Scheduled jobs", () => {
       lines: [{ description: "Étude", quantity: 1, unit_price: 5000, tax_rate: 19 }],
     });
 
-    await request.get("/api/cron/reminders");
+    await request.get("/api/cron/reminders", asScheduler);
 
     const reread = await apiGet(page, `/api/quotes/${quote.body.id}`);
     expect(reread.body.status).toBe("EXPIRED");
