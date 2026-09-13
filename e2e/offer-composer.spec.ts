@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import { signUp } from "./helpers";
 import { apiGet, apiPost } from "./api-helpers";
-import { setupPlatformAdmin, adminGet } from "./admin-helpers";
+import { setupPlatformAdmin, adminGet, adminPost, createTestPlan } from "./admin-helpers";
 
 /**
  * Composing an offer module by module.
@@ -25,10 +25,61 @@ async function verifyEmail(page: import("@playwright/test").Page) {
   expect(status.status, JSON.stringify(status.body)).toBe(200);
 }
 
+/**
+ * Put a sellable module and a listed offer in the catalogue, and return the
+ * module's key.
+ *
+ * These tests used to assume `pos` was priced and some offer was active, which
+ * is only true after `scripts/seed-plans.ts` has run. That made them pass on a
+ * seeded machine and fail on a fresh database — CI, or a colleague's first
+ * checkout. A test that depends on someone having run a seed is not testing the
+ * product, it is testing the machine.
+ *
+ * An existing priced module is reused when there is one, so this stays cheap on
+ * the shared test database rather than adding a row per run.
+ */
+async function aSellableModule(page: import("@playwright/test").Page): Promise<string> {
+  await setupPlatformAdmin(page);
+
+  const features = await adminGet(page, "/api/admin/features");
+  const existing = (features.body as unknown as { key: string; unit_price: number | null }[]).find(
+    (f) => f.unit_price != null
+  );
+  const key = existing?.key ?? `composable_${Date.now()}`;
+
+  if (!existing) {
+    const created = await adminPost(page, "/api/admin/features", {
+      key,
+      name: "Composable module",
+      is_global: false,
+      unit_price: 70_000,
+    });
+    expect(created.status, JSON.stringify(created.body).slice(0, 200)).toBe(201);
+  }
+
+  // `priceComposition` reads the cheapest *active* offer as the base everyone
+  // pays, and the public list needs at least one row to compare against.
+  const plans = await apiGet(page, "/api/subscription/plans");
+  if ((plans.body.plans as unknown[]).length === 0) {
+    const base = await createTestPlan(page, {
+      slug: `base-${Date.now()}`,
+      name: `Base ${Date.now()}`,
+      monthly_price: 190_000,
+      yearly_price: 1_900_000,
+      currency: "DZD",
+    });
+    expect(base.status, JSON.stringify(base.body).slice(0, 200)).toBe(201);
+  }
+
+  return key;
+}
+
 test.describe("the offer composer", () => {
   test("a composition becomes a private offer nobody else can see", async ({ page }) => {
     await signUp(page);
     await verifyEmail(page);
+
+    const moduleKey = await aSellableModule(page);
 
     const before = await apiGet(page, "/api/subscription/plans");
     const listed = (before.body.plans as unknown as { slug: string }[]).map((p) => p.slug);
@@ -37,7 +88,7 @@ test.describe("the offer composer", () => {
       billing_cycle: "monthly",
       request_type: "new",
       currency: "DZD",
-      custom: { feature_keys: ["pos"], seats: 3 },
+      custom: { feature_keys: [moduleKey], seats: 3 },
     });
     expect(requested.status, JSON.stringify(requested.body)).toBe(201);
 
@@ -52,33 +103,39 @@ test.describe("the offer composer", () => {
     await signUp(page);
     await verifyEmail(page);
 
-    const plans = await apiGet(page, "/api/subscription/plans");
-    const rows = plans.body.plans as unknown as {
-      monthly_price: number;
-      features?: { feature?: { key: string; unit_price?: number | null } }[];
-    }[];
+    const moduleKey = await aSellableModule(page);
 
-    // The entry offer is the base everyone pays; the module prices come from
-    // the same catalogue the page read.
-    const base = rows.reduce((cheapest, p) =>
-      p.monthly_price < cheapest.monthly_price ? p : cheapest
-    ).monthly_price;
-    const unitPrices = new Map<string, number>();
-    for (const p of rows) {
-      for (const link of p.features || []) {
-        if (link.feature?.key && link.feature.unit_price != null) {
-          unitPrices.set(link.feature.key, link.feature.unit_price);
-        }
-      }
-    }
-    const till = unitPrices.get("pos");
-    expect(till, "the till must be priced for the composer to sell it").toBeTruthy();
+    // The server prices a composition off the cheapest active offer. Reading
+    // that figure from the list would be a race: the shared test database gains
+    // and loses offers while this runs, and the cheapest one can change between
+    // the read and the request. Creating one that is unambiguously the cheapest
+    // makes the arithmetic checkable instead of merely likely.
+    const base = 100;
+    const cheapest = await createTestPlan(page, {
+      slug: `composer-base-${Date.now()}`,
+      name: `Composer base ${Date.now()}`,
+      monthly_price: base,
+      yearly_price: base * 10,
+      currency: "DZD",
+      feature_ids: [],
+    });
+    expect(cheapest.status, JSON.stringify(cheapest.body).slice(0, 200)).toBe(201);
+
+    // Straight from the catalogue, not from whatever an active offer happens to
+    // carry: the public payload only exposes a module through the offers that
+    // include it, so a module nobody bundles would read as unpriced here while
+    // the server prices it perfectly well.
+    const catalogue = await adminGet(page, "/api/admin/features");
+    const till = (
+      catalogue.body as unknown as { key: string; unit_price: number | null }[]
+    ).find((f) => f.key === moduleKey)?.unit_price;
+    expect(till, "the module must be priced for the composer to sell it").toBeTruthy();
 
     const requested = await apiPost(page, "/api/subscription/request", {
       billing_cycle: "monthly",
       request_type: "new",
       currency: "DZD",
-      custom: { feature_keys: ["pos"], seats: 1 },
+      custom: { feature_keys: [moduleKey], seats: 1 },
     });
     expect(requested.status, JSON.stringify(requested.body)).toBe(201);
 
@@ -99,7 +156,7 @@ test.describe("the offer composer", () => {
     expect(minted!.yearly_price).toBe((base + till!) * 10);
     // Inactive is what keeps it out of the shop window while still granting.
     expect(minted!.is_active).toBe(false);
-    expect(minted!.features.map((f) => f.feature?.key)).toEqual(["pos"]);
+    expect(minted!.features.map((f) => f.feature?.key)).toEqual([moduleKey]);
     expect(minted!.quotas.find((q) => q.quota_key === "max_users")?.limit_value).toBe(1);
   });
 
@@ -122,6 +179,8 @@ test.describe("the offer composer", () => {
     await signUp(page);
     await verifyEmail(page);
 
+    const moduleKey = await aSellableModule(page);
+
     const plans = await apiGet(page, "/api/subscription/plans");
     const first = (plans.body.plans as unknown as { id: string }[])[0];
 
@@ -130,7 +189,7 @@ test.describe("the offer composer", () => {
       billing_cycle: "monthly",
       request_type: "new",
       currency: "DZD",
-      custom: { feature_keys: ["pos"], seats: 1 },
+      custom: { feature_keys: [moduleKey], seats: 1 },
     });
     expect(both.status).toBe(400);
 
@@ -145,6 +204,7 @@ test.describe("the offer composer", () => {
   test("a currency the catalogue cannot price is refused, not mislabelled", async ({ page }) => {
     await signUp(page);
     await verifyEmail(page);
+    const moduleKey = await aSellableModule(page);
 
     // Module prices carry no currency and nothing converts them. Minting a plan
     // labelled EUR off dinar figures would be wrong by the exchange rate, and
@@ -153,7 +213,7 @@ test.describe("the offer composer", () => {
       billing_cycle: "monthly",
       request_type: "new",
       currency: "EUR",
-      custom: { feature_keys: ["pos"], seats: 1 },
+      custom: { feature_keys: [moduleKey], seats: 1 },
     });
     expect(refused.status, JSON.stringify(refused.body)).toBe(400);
     expect(refused.body.code).toBe("CURRENCY_NOT_COMPOSABLE");
@@ -164,6 +224,7 @@ test.describe("the offer composer", () => {
   test("composing fewer seats than the team has is refused", async ({ page }) => {
     await signUp(page);
     await verifyEmail(page);
+    const moduleKey = await aSellableModule(page);
 
     for (const n of [1, 2]) {
       const created = await apiPost(page, "/api/auth/users", {
@@ -181,7 +242,7 @@ test.describe("the offer composer", () => {
       billing_cycle: "monthly",
       request_type: "new",
       currency: "DZD",
-      custom: { feature_keys: ["pos"], seats: 1 },
+      custom: { feature_keys: [moduleKey], seats: 1 },
     });
     expect(refused.status, JSON.stringify(refused.body)).toBe(409);
     expect(refused.body.code).toBe("SEATS_EXCEEDED");

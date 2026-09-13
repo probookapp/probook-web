@@ -4,7 +4,7 @@ import { signUp } from "./helpers";
 import { apiGet, apiPost } from "./api-helpers";
 import { adminGet } from "./admin-helpers";
 import { assertTestDatabase } from "./assert-test-db";
-import { setupPlatformAdmin, adminPost, adminPut } from "./admin-helpers";
+import { setupPlatformAdmin, adminPost, adminPut, createTestPlan } from "./admin-helpers";
 
 /**
  * Proves the offer gate both ways.
@@ -39,12 +39,72 @@ async function tenantIdOf(username: string): Promise<string> {
   return r.rows[0].tenant_id;
 }
 
-/** Requires the offers to be seeded — scripts/seed-plans.ts. */
+/**
+ * Put the two gated modules and an offer carrying them in the catalogue.
+ *
+ * This suite used to carry a note saying it required `scripts/seed-plans.ts` to
+ * have been run. That is a dependency on the machine, not on the product: it
+ * held on a developer's seeded database and failed on a fresh one, which is
+ * exactly what CI is. And the failure was the worst kind — with no flag in the
+ * table the gate allows everything, so the test that exists to prove the gate
+ * refuses would report that it does not.
+ *
+ * Anything already present is reused; `is_global` is forced off because a
+ * globally-on flag is granted to everyone and would silently defeat the point.
+ */
+const GATED = ["pos", "multi_location"] as const;
+
+async function ensureGatedCatalogue(page: import("@playwright/test").Page) {
+  await setupPlatformAdmin(page);
+
+  const features = await adminGet(page, "/api/admin/features");
+  const rows = features.body as unknown as { id: string; key: string; is_global: boolean }[];
+
+  const ids: string[] = [];
+  for (const key of GATED) {
+    const found = rows.find((f) => f.key === key);
+    if (!found) {
+      const created = await adminPost(page, "/api/admin/features", {
+        key,
+        name: key,
+        is_global: false,
+      });
+      expect(created.status, JSON.stringify(created.body).slice(0, 200)).toBe(201);
+      ids.push(created.body.id as string);
+      continue;
+    }
+    if (found.is_global) {
+      await adminPut(page, `/api/admin/features/${found.id}`, { is_global: false });
+    }
+    ids.push(found.id);
+  }
+
+  // A refusal that cannot name an offer is only a wall, so one has to carry them.
+  const plans = await apiGet(page, "/api/subscription/plans");
+  const carries = (
+    plans.body.plans as unknown as { features?: { feature?: { key: string } }[] }[]
+  ).some((p) => (p.features || []).some((f) => f.feature?.key === "multi_location"));
+
+  if (!carries) {
+    const stamp = Date.now();
+    const plan = await createTestPlan(page, {
+      slug: `gated-${stamp}`,
+      name: `Gated ${stamp}`,
+      monthly_price: 500_000,
+      yearly_price: 5_000_000,
+      currency: "DZD",
+      feature_ids: ids,
+    });
+    expect(plan.status, JSON.stringify(plan.body).slice(0, 200)).toBe(201);
+  }
+}
+
 test.describe("offer entitlements", () => {
   test("a trial carries every module; an expired one carries none of the gated ones", async ({
     page,
   }) => {
     const creds = await signUp(page);
+    await ensureGatedCatalogue(page);
 
     // ─── inside the trial ───
     const included = await apiGet(page, "/api/entitlements");
