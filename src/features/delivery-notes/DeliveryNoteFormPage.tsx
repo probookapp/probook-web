@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useIsNarrow } from "@/hooks/useIsNarrow";
 import { DocumentLinesMobile } from "@/components/documents/DocumentLinesMobile";
 import { useRouter, useParams } from "@/lib/navigation";
@@ -20,7 +20,8 @@ import {
 } from "@/components/ui";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useClients } from "@/features/clients/hooks/useClients";
-import { useProducts } from "@/features/products/hooks/useProducts";
+import { useDocumentCatalog } from "@/hooks/useDocumentCatalog";
+import { stockShortfalls } from "@/lib/stock-shortfalls";
 import {
   useDeliveryNote,
   useCreateDeliveryNote,
@@ -61,7 +62,10 @@ export function DeliveryNoteFormPage() {
 
   const { data: existingNote, isLoading: isLoadingNote } = useDeliveryNote(id || "");
   const { data: clients } = useClients();
-  const { data: products } = useProducts();
+  // A delivery note sends out what is on the shelf: out-of-stock products and
+  // variants are not offered.
+  const catalog = useDocumentCatalog({ hideOutOfStock: true });
+  const products = catalog.products;
   const createDeliveryNote = useCreateDeliveryNote();
   const updateDeliveryNote = useUpdateDeliveryNote();
 
@@ -95,30 +99,21 @@ export function DeliveryNoteFormPage() {
     defaultValue: [{ description: "", quantity: 1, unit: "unit", product_id: null }],
   });
 
+  // Stock is measured per variant when the line names one — see
+  // src/lib/stock-shortfalls.ts.
+  const shortfalls = stockShortfalls(watchedLines, products);
   const getStockError = (index: number): string | null => {
-    const line = watchedLines[index];
-    if (!line?.product_id || !products) return null;
-
-    const product = products.find((p) => p.id === line.product_id);
-    if (!product || product.is_service) return null;
-
-    const available = product.quantity ?? 0;
-    const totalUsed = watchedLines.reduce((sum, l) => {
-      if (l?.product_id === line.product_id) {
-        return sum + Number(l?.quantity || 0);
-      }
-      return sum;
-    }, 0);
-
-    if (totalUsed > available) {
-      return t("common:validation.stockExceeded", { available, total: totalUsed });
-    }
-    return null;
+    const shortfall = shortfalls[index];
+    return shortfall
+      ? t("common:validation.stockExceeded", { available: shortfall.available, total: shortfall.requested })
+      : null;
   };
+  const hasStockErrors = shortfalls.some(Boolean);
 
-  const hasStockErrors = useMemo(() => {
-    return watchedLines.some((_, index) => getStockError(index) !== null);
-  }, [watchedLines, products, getStockError]);
+  // The variant is what the stock is counted on, so a line cannot leave without it.
+  const getVariantError = (index: number): string | null =>
+    catalog.needsVariant(watchedLines[index]) ? catalog.variantRequiredMessage : null;
+  const hasMissingVariant = watchedLines.some((_, index) => getVariantError(index) !== null);
 
   const submittedRef = useRef(false);
   const blocker = useUnsavedChangesGuard(() => isDirty && !submittedRef.current);
@@ -141,6 +136,7 @@ export function DeliveryNoteFormPage() {
       status: existingNote.status,
       lines: existingNote.lines.map((line) => ({
         product_id: line.product_id,
+        variant_id: line.variant_id ?? null,
         description: line.description,
         quantity: line.quantity,
         unit: line.unit || "unit",
@@ -149,6 +145,7 @@ export function DeliveryNoteFormPage() {
   }
 
   const handleProductSelect = (index: number, productId: string) => {
+    setValue(`lines.${index}.variant_id`, null);
     const product = products?.find((p) => p.id === productId);
     if (product) {
       setValue(`lines.${index}.description`, product.designation);
@@ -156,8 +153,16 @@ export function DeliveryNoteFormPage() {
     }
   };
 
+  const handleVariantSelect = (index: number, variantId: string) => {
+    const productId = watchedLines[index]?.product_id;
+    const values = productId ? catalog.variantLine(productId, variantId) : null;
+    setValue(`lines.${index}.variant_id`, variantId || null, { shouldDirty: true });
+    if (values) setValue(`lines.${index}.description`, values.description);
+  };
+
   const onSubmit = async (data: DeliveryNoteFormData & { status?: DeliveryNoteStatus }) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
+    if (hasMissingVariant || hasStockErrors) return;
     try {
       // Transform empty strings to null for optional fields
       const input = {
@@ -170,6 +175,7 @@ export function DeliveryNoteFormPage() {
         lines: data.lines.map((line) => ({
           ...line,
           product_id: line.product_id || null,
+          variant_id: line.variant_id || null,
           unit: line.unit || null,
         })),
       };
@@ -201,10 +207,7 @@ export function DeliveryNoteFormPage() {
   // editor replaces it rather than sitting beside it.
   const isNarrow = useIsNarrow();
 
-  const productOptions = [
-    { value: "", label: t("delivery:selectProduct") },
-    ...(products?.filter((p) => p.is_service || (p.quantity ?? 0) > 0).map((p) => ({ value: p.id, label: `${p.designation}${p.reference ? ` [${p.reference}]` : ""}${p.barcode ? ` - ${p.barcode}` : ""}${!p.is_service ? ` (${p.quantity ?? 0})` : ""}` })) || []),
-  ];
+  const productOptions = catalog.productOptions(t("delivery:selectProduct"));
 
   if (isEdit && isLoadingNote) {
     return (
@@ -218,7 +221,7 @@ export function DeliveryNoteFormPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.push("/delivery-notes")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 me-2" />
           {t("common:buttons.back")}
         </Button>
         <div>
@@ -292,6 +295,8 @@ export function DeliveryNoteFormPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>{t("delivery:lines.title")}</CardTitle>
+              {/* The phone editor carries its own add button under the list. */}
+              {!isNarrow && (
               <Button
                 type="button"
                 variant="secondary"
@@ -300,9 +305,10 @@ export function DeliveryNoteFormPage() {
                   append({ description: "", quantity: 1, unit: "unit", product_id: null }) 
                 }
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 {t("delivery:lines.addLine")}
               </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -323,6 +329,11 @@ export function DeliveryNoteFormPage() {
                 }
                 onRemove={remove}
                 stockError={getStockError}
+                variantOptions={catalog.variantOptions}
+                onSelectVariant={handleVariantSelect}
+                variantLabel={catalog.variantLabel}
+                variantPlaceholder={catalog.variantPlaceholder}
+                variantError={getVariantError}
                 // A delivery note states what left the shelf, not what it costs.
                 withPricing={false}
               />
@@ -338,7 +349,8 @@ export function DeliveryNoteFormPage() {
                     <button
                       type="button"
                       onClick={() => remove(index)}
-                      className="text-red-500 hover:text-red-700"
+                      aria-label={t("common:buttons.delete")}
+                      className="-me-2 rounded-lg p-2 text-red-500 hover:bg-red-50 hover:text-red-700 dark:text-red-400 dark:hover:bg-red-900/20"
                     >
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -357,6 +369,16 @@ export function DeliveryNoteFormPage() {
                     }}
                     placeholder={t("delivery:selectProduct")}
                   />
+                  {catalog.variantOptions(watchedLines[index]?.product_id).length > 0 && (
+                    <SearchableSelect
+                      label={`${catalog.variantLabel} *`}
+                      options={catalog.variantOptions(watchedLines[index]?.product_id)}
+                      value={watchedLines[index]?.variant_id || ""}
+                      onChange={(val) => handleVariantSelect(index, val)}
+                      placeholder={catalog.variantPlaceholder}
+                      error={getVariantError(index) ?? undefined}
+                    />
+                  )}
                   <div className="md:col-span-2">
                     <Input
                       label={`${t("delivery:lines.description")} *`}
@@ -404,18 +426,22 @@ export function DeliveryNoteFormPage() {
         </Card>
 
         {/* Actions */}
-        <div className="flex justify-end gap-3">
+        {/* On a phone the save button is several screens below the lines; it
+            stays in reach at the bottom instead. */}
+        <div className="sticky bottom-0 z-20 -mx-4 flex gap-3 border-t border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-800 dark:bg-gray-900 sm:static sm:mx-0 sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 dark:sm:bg-transparent">
           <Button
             type="button"
             variant="secondary"
             onClick={() => router.push("/delivery-notes")}
+            className="flex-1 sm:flex-none"
           >
             {t("common:buttons.cancel")}
           </Button>
           <Button
             type="submit"
             isLoading={createDeliveryNote.isPending || updateDeliveryNote.isPending}
-            disabled={hasStockErrors}
+            disabled={hasStockErrors || hasMissingVariant}
+            className="flex-1 sm:flex-none"
           >
             {isEdit ? t("common:buttons.save") : t("delivery:createDeliveryNote")}
           </Button>

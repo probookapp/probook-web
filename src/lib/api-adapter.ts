@@ -35,6 +35,17 @@ export function getApiErrorMessage(err: unknown, fallback: string): string {
   return fallback;
 }
 
+/** The `code` a failed API call carries in its JSON body, if any. */
+export function apiErrorCode(err: unknown): string | null {
+  if (!isApiError(err)) return null;
+  try {
+    const parsed = JSON.parse(err.body) as { code?: unknown };
+    return typeof parsed?.code === "string" ? parsed.code : null;
+  } catch {
+    return null;
+  }
+}
+
 type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
 
 interface EndpointDef {

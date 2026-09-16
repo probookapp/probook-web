@@ -55,10 +55,20 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
       { status: 400 }
     );
   }
+  // A variant can carry its own price, as it does at the till.
+  const variantIds = [...new Set(note.lines.map((l) => l.variantId).filter((id): id is string => !!id))];
+  const variants = variantIds.length
+    ? await prisma.productVariant.findMany({
+        where: { tenantId, id: { in: variantIds } },
+        select: { id: true, priceOverride: true },
+      })
+    : [];
+  const variantById = new Map(variants.map((v) => [v.id, v]));
 
   // Build invoice lines from delivery note lines with product pricing
   const invoiceLines: {
     productId: string | null;
+    variantId: string | null;
     description: string;
     descriptionHtml: string | null;
     quantity: number;
@@ -92,7 +102,8 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
 
   for (const line of note.lines) {
     const product = line.productId ? productById.get(line.productId) : undefined;
-    const unitPrice = num(product?.unitPrice);
+    const variant = line.variantId ? variantById.get(line.variantId) : undefined;
+    const unitPrice = num(variant?.priceOverride ?? product?.unitPrice);
     const taxRate = product?.taxRate ?? defaultTaxRate;
     const lineHt = round2(line.quantity * unitPrice);
     const lineVat = round2(lineHt * (taxRate / 100));
@@ -101,6 +112,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
 
     invoiceLines.push({
       productId: line.productId,
+      variantId: line.variantId,
       description: line.description,
       descriptionHtml: line.descriptionHtml,
       quantity: line.quantity,

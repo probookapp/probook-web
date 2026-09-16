@@ -23,6 +23,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { NUMERIC_CELL } from "@/components/ui";
+import { apiErrorCode, getApiErrorMessage } from "@/lib/api-adapter";
 
 export function InvoiceViewPage() {
   const { t } = useTranslation(["invoices", "common"]);
@@ -56,7 +57,15 @@ export function InvoiceViewPage() {
 
   const handleIssue = async () => {
     if (isDemoMode) { showSubscribePrompt(); return; }
-    await issueInvoice.mutateAsync(invoice.id);
+    try {
+      await issueInvoice.mutateAsync(invoice.id);
+    } catch (err) {
+      toast.error(
+        apiErrorCode(err) === "VARIANT_REQUIRED"
+          ? t("common:documentLines.variantRequiredToIssue")
+          : getApiErrorMessage(err, t("common:messages.error"))
+      );
+    }
   };
 
   const handleConvertToDeliveryNote = async () => {
@@ -84,7 +93,7 @@ export function InvoiceViewPage() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => router.push("/invoices")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 me-2" />
             {t("common:buttons.back")}
           </Button>
           <div className="min-w-0 flex-1">
@@ -107,11 +116,11 @@ export function InvoiceViewPage() {
                 size="sm"
                 onClick={() => router.push(`/invoices/${id}/edit`)}
               >
-                <Pencil className="h-4 w-4 mr-2" />
+                <Pencil className="h-4 w-4 me-2" />
                 {t("common:buttons.edit")}
               </Button>
               <Button size="sm" onClick={handleIssue} isLoading={issueInvoice.isPending}>
-                <Send className="h-4 w-4 mr-2" />
+                <Send className="h-4 w-4 me-2" />
                 {t("invoices:actions.markAsIssued")}
               </Button>
             </>
@@ -119,12 +128,12 @@ export function InvoiceViewPage() {
           {invoice.status === "ISSUED" && (
             <>
               <Button variant="secondary" size="sm" onClick={handleSendEmail}>
-                <Mail className="h-4 w-4 mr-2" />
+                <Mail className="h-4 w-4 me-2" />
                 {t("invoices:actions.sendByEmail")}
               </Button>
               {canEdit && (
                 <Button size="sm" onClick={handleMarkPaid} isLoading={markPaid.isPending}>
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                  <CheckCircle className="h-4 w-4 me-2" />
                   {t("invoices:actions.markAsPaid")}
                 </Button>
               )}
@@ -137,7 +146,7 @@ export function InvoiceViewPage() {
               onClick={handleConvertToDeliveryNote}
               isLoading={convertToDeliveryNote.isPending}
             >
-              <Truck className="h-4 w-4 mr-2" />
+              <Truck className="h-4 w-4 me-2" />
               {t("invoices:actions.createDeliveryNote")}
             </Button>
           )}
@@ -147,7 +156,7 @@ export function InvoiceViewPage() {
               size="sm"
               onClick={() => setShowCreditNoteModal(true)}
             >
-              <Undo2 className="h-4 w-4 mr-2" />
+              <Undo2 className="h-4 w-4 me-2" />
               {t("invoices:creditNotes.create")}
             </Button>
           )}

@@ -4,11 +4,13 @@ import { prisma } from "@/lib/db";
 import { calculateDocumentTotals, calculateLineTotals } from "@/lib/document-totals";
 import { requirePermission } from "@/lib/permissions-server";
 import { validateBody, isValidationError } from "@/lib/validate";
+import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
 import { updateInvoiceSchema } from "@/lib/validations";
 import { DEFAULT_IS_CASH_SALE } from "@/lib/stamp-duty";
 
 interface LineInput {
   product_id?: string | null;
+  variant_id?: string | null;
   description: string;
   description_html?: string | null;
   quantity: number;
@@ -42,6 +44,8 @@ export const PUT = withAuth(async (req, { session, tenantId, params }) => {
 
   const body = await validateBody(req, updateInvoiceSchema);
   if (isValidationError(body)) return body;
+  const badVariant = await rejectInvalidLineVariants(tenantId, body.lines ?? []);
+  if (badVariant) return badVariant;
 
   // Tenant-scoped existence check BEFORE any write: without it the old code's
   // unscoped line deleteMany let any tenant wipe another tenant's invoice lines
@@ -110,6 +114,7 @@ export const PUT = withAuth(async (req, { session, tenantId, params }) => {
           const lt = calculateLineTotals(line);
           return {
             productId: line.product_id || null,
+            variantId: line.variant_id || null,
             description: line.description,
             descriptionHtml: line.description_html || null,
             quantity: line.quantity,

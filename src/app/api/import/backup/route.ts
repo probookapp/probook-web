@@ -627,6 +627,7 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
                 data: lines.map((l) => ({
                   id: idOf(l),
                   productId: str(l, "product_id"),
+                  variantId: str(l, "variant_id"),
                   description: reqStr(l, "description"),
                   descriptionHtml: str(l, "description_html"),
                   quantity: num(l, "quantity", 0),
@@ -739,6 +740,7 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
                 data: lines.map((l) => ({
                   id: idOf(l),
                   productId: str(l, "product_id"),
+                  variantId: str(l, "variant_id"),
                   description: reqStr(l, "description"),
                   descriptionHtml: str(l, "description_html"),
                   quantity: num(l, "quantity", 0),
@@ -802,6 +804,7 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
                 data: lines.map((l) => ({
                   id: idOf(l),
                   productId: str(l, "product_id"),
+                  variantId: str(l, "variant_id"),
                   description: reqStr(l, "description"),
                   descriptionHtml: str(l, "description_html"),
                   quantity: num(l, "quantity", 0),

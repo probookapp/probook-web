@@ -19,7 +19,6 @@ import { RichTextEditor } from "@/components/ui/RichTextEditorLazy";
 import { useQuote, useCreateQuote, useUpdateQuote } from "./hooks/useQuotes";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useClients } from "@/features/clients";
-import { useProducts } from "@/features/products";
 import { formatCurrency, formatDateISO, calculateLineTotal } from "@/lib/utils";
 import type { QuoteStatus } from "@/types";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
@@ -32,9 +31,12 @@ import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { toast } from "@/stores/useToastStore";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
 import { getApiErrorMessage } from "@/lib/api-adapter";
+import { stockShortfalls } from "@/lib/stock-shortfalls";
+import { useDocumentCatalog } from "@/hooks/useDocumentCatalog";
 
 const createLineSchema = (t: (key: string) => string) => z.object({
   product_id: z.string().nullable().optional(),
+  variant_id: z.string().nullable().optional(),
   description: z.string().min(1, t("validation:quote.lineDescriptionRequired")),
   description_html: z.string().nullable().optional(),
   quantity: z.coerce.number().min(0.01, t("validation:quote.lineQuantityPositive")),
@@ -72,7 +74,8 @@ export function QuoteFormPage() {
 
   const { data: quote, isLoading: isLoadingQuote } = useQuote(id ?? "");
   const { data: clients } = useClients();
-  const { data: products } = useProducts();
+  const catalog = useDocumentCatalog();
+  const products = catalog.products;
   const createQuote = useCreateQuote();
   const updateQuote = useUpdateQuote();
   const { data: settings } = useCompanySettings();
@@ -189,6 +192,7 @@ export function QuoteFormPage() {
       down_payment_amount: quote.down_payment_amount ?? 0,
       lines: quote.lines.map((line) => ({
         product_id: line.product_id,
+        variant_id: line.variant_id ?? null,
         description: line.description,
         description_html: line.description_html,
         quantity: line.quantity,
@@ -221,40 +225,42 @@ export function QuoteFormPage() {
   });
   const groupSubtotals = totals.groupSubtotals;
 
+  // A quote may promise goods that aren't on the shelf yet: the shortfall is
+  // shown in red, but it never blocks saving — see src/lib/stock-shortfalls.ts.
+  const shortfalls = stockShortfalls(watchedLines, products);
   const getStockError = (index: number): string | null => {
-    const line = watchedLines[index];
-    if (!line?.product_id || !products) return null;
-
-    const product = products.find((p) => p.id === line.product_id);
-    if (!product || product.is_service) return null;
-
-    const available = product.quantity ?? 0;
-    const totalUsed = watchedLines.reduce((sum, l) => {
-      if (l?.product_id === line.product_id && !l?.is_subtotal_line) {
-        return sum + Number(l?.quantity || 0);
-      }
-      return sum;
-    }, 0);
-
-    if (totalUsed > available) {
-      return t("common:validation.stockExceeded", { available, total: totalUsed });
-    }
-    return null;
+    const shortfall = shortfalls[index];
+    if (!shortfall) return null;
+    return shortfall.available <= 0
+      ? t("quotes:stock.none", { requested: shortfall.requested })
+      : t("quotes:stock.short", { ...shortfall });
   };
-
-  const hasStockErrors = useMemo(() => {
-    return watchedLines.some((_, index) => getStockError(index) !== null);
-  }, [watchedLines, products, getStockError]);
 
   const handleProductSelect = (index: number, productId: string) => {
     const product = products?.find((p) => p.id === productId);
     if (product) {
       setValue(`lines.${index}.product_id`, productId);
+      setValue(`lines.${index}.variant_id`, null);
       setValue(`lines.${index}.description`, product.designation);
       setValue(`lines.${index}.unit_price`, product.unit_price);
       setValue(`lines.${index}.tax_rate`, product.tax_rate);
     }
   };
+
+  const handleVariantSelect = (index: number, variantId: string) => {
+    const productId = getValues(`lines.${index}.product_id`);
+    const values = productId ? catalog.variantLine(productId, variantId) : null;
+    setValue(`lines.${index}.variant_id`, variantId || null, { shouldDirty: true });
+    if (values) {
+      setValue(`lines.${index}.description`, values.description);
+      setValue(`lines.${index}.unit_price`, values.unit_price);
+    }
+  };
+
+  // The variant is what the stock is counted on, so a line cannot leave without it.
+  const getVariantError = (index: number): string | null =>
+    catalog.needsVariant(watchedLines[index]) ? catalog.variantRequiredMessage : null;
+  const hasMissingVariant = watchedLines.some((_, index) => getVariantError(index) !== null);
 
   const toggleDescriptionExpand = (index: number) => {
     setExpandedDescriptions((prev) => {
@@ -270,6 +276,7 @@ export function QuoteFormPage() {
 
   const onSubmit = async (data: QuoteFormData) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
+    if (hasMissingVariant) return;
     const formData = {
       ...data,
       notes_html: notesHtml || null,
@@ -310,10 +317,9 @@ export function QuoteFormPage() {
     ...(clients?.map((c) => ({ value: c.id, label: c.name })) ?? []),
   ];
 
-  const productOptions = [
-    { value: "", label: t("quotes:lines.product") + " (" + t("common:labels.optional") + ")" },
-    ...(products?.filter((p) => p.is_service || (p.quantity ?? 0) > 0).map((p) => ({ value: p.id, label: `${p.reference ? `[${p.reference}] ` : ""}${p.designation}${p.barcode ? ` - ${p.barcode}` : ""}${!p.is_service ? ` (${p.quantity ?? 0})` : ""}` })) ?? []),
-  ];
+  const productOptions = catalog.productOptions(
+    t("quotes:lines.product") + " (" + t("common:labels.optional") + ")"
+  );
 
   const statusOptions = [
     { value: "DRAFT", label: t("quotes:status.DRAFT") },
@@ -326,7 +332,7 @@ export function QuoteFormPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" onClick={() => router.push("/quotes")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 me-2" />
           {t("common:buttons.back")}
         </Button>
         <div>
@@ -397,9 +403,9 @@ export function QuoteFormPage() {
                   title={t(denseLines ? "quotes:lines.detailedView" : "quotes:lines.denseView")}
                 >
                   {denseLines ? (
-                    <Rows3 className="h-4 w-4 sm:mr-2" />
+                    <Rows3 className="h-4 w-4 sm:me-2" />
                   ) : (
-                    <List className="h-4 w-4 sm:mr-2" />
+                    <List className="h-4 w-4 sm:me-2" />
                   )}
                   <span className="hidden sm:inline">
                     {t(denseLines ? "quotes:lines.detailedView" : "quotes:lines.denseView")}
@@ -418,7 +424,7 @@ export function QuoteFormPage() {
                     append({ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate })
                   }
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   {t("quotes:lines.addLine")}
                 </Button>
                 )}
@@ -440,6 +446,11 @@ export function QuoteFormPage() {
                 }
                 onRemove={remove}
                 stockError={getStockError}
+                variantOptions={catalog.variantOptions}
+                onSelectVariant={handleVariantSelect}
+                variantLabel={catalog.variantLabel}
+                variantPlaceholder={catalog.variantPlaceholder}
+                variantError={getVariantError}
               />
             ) : (
             <div className="space-y-4">
@@ -460,7 +471,7 @@ export function QuoteFormPage() {
                   return (
                     <div
                       key={field.id}
-                      className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border-l-4 border-blue-400 dark:border-blue-500"
+                      className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border-s-4 border-blue-400 dark:border-blue-500"
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
@@ -500,7 +511,7 @@ export function QuoteFormPage() {
                         </div>
                         <div className="text-end">
                           <span className="text-sm text-blue-600 dark:text-blue-400">{t("quotes:lines.groupTotal")}:</span>
-                          <span className="ml-2 font-bold text-blue-800 dark:text-blue-200">
+                          <span className="ms-2 font-bold text-blue-800 dark:text-blue-200">
                             {formatCurrency(groupSubtotals[groupName]?.total || 0)} {t("quotes:totals.labelTtc")}
                           </span>
                         </div>
@@ -532,6 +543,18 @@ export function QuoteFormPage() {
                           onChange={(val) => handleProductSelect(index, val)}
                           placeholder={t("quotes:lines.product") + " (" + t("common:labels.optional") + ")"}
                         />
+                        {catalog.variantOptions(line?.product_id).length > 0 && (
+                          <div className="mt-2">
+                            <SearchableSelect
+                              label={denseLines ? "" : `${catalog.variantLabel} *`}
+                              options={catalog.variantOptions(line?.product_id)}
+                              value={line?.variant_id || ""}
+                              onChange={(val) => handleVariantSelect(index, val)}
+                              placeholder={catalog.variantPlaceholder}
+                              error={getVariantError(index) ?? undefined}
+                            />
+                          </div>
+                        )}
                       </div>
                       <div className="col-span-12 md:col-span-6 lg:col-span-3">
                         <div className="flex items-end gap-1">
@@ -828,14 +851,17 @@ export function QuoteFormPage() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="secondary" onClick={() => router.push("/quotes")}>
+        {/* On a phone the save button is several screens below the lines; it
+            stays in reach at the bottom instead. */}
+        <div className="sticky bottom-0 z-20 -mx-4 flex gap-3 border-t border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-800 dark:bg-gray-900 sm:static sm:mx-0 sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 dark:sm:bg-transparent">
+          <Button type="button" variant="secondary" onClick={() => router.push("/quotes")} className="flex-1 sm:flex-none">
             {t("common:buttons.cancel")}
           </Button>
           <Button
             type="submit"
             isLoading={createQuote.isPending || updateQuote.isPending}
-            disabled={hasStockErrors}
+            disabled={hasMissingVariant}
+            className="flex-1 sm:flex-none"
           >
             {isEditing ? t("common:buttons.save") : t("quotes:createQuote")}
           </Button>

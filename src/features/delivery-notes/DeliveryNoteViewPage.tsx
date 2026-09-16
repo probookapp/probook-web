@@ -76,6 +76,9 @@ export function DeliveryNoteViewPage() {
         status: "DELIVERED",
         lines: deliveryNote.lines.map((l) => ({
           product_id: l.product_id,
+          // Resent in full: the update replaces every line, so a field left
+          // out here is a field erased.
+          variant_id: l.variant_id ?? null,
           description: l.description,
           quantity: l.quantity,
           unit: l.unit,
@@ -135,7 +138,7 @@ export function DeliveryNoteViewPage() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => router.push("/delivery-notes")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 me-2" />
             {t("common:buttons.back")}
           </Button>
           <div className="min-w-0 flex-1">
@@ -144,7 +147,7 @@ export function DeliveryNoteViewPage() {
                 {deliveryNote.delivery_note_number}
               </h1>
               <Badge variant={statusConfig[deliveryNote.status].variant}>
-                <Truck className="h-3 w-3 mr-1" />
+                <Truck className="h-3 w-3 me-1" />
                 {statusConfig[deliveryNote.status].label}
               </Badge>
             </div>
@@ -162,7 +165,7 @@ export function DeliveryNoteViewPage() {
                 onClick={handleMarkDelivered}
                 isLoading={updateDeliveryNote.isPending}
               >
-                <CheckCircle className="h-4 w-4 mr-2" />
+                <CheckCircle className="h-4 w-4 me-2" />
                 {t("delivery:actions.markAsDelivered")}
               </Button>
               <Button
@@ -170,13 +173,13 @@ export function DeliveryNoteViewPage() {
                 size="sm"
                 onClick={() => router.push(`/delivery-notes/${deliveryNote.id}/edit`)}
               >
-                <Pencil className="h-4 w-4 mr-2" />
+                <Pencil className="h-4 w-4 me-2" />
                 {t("delivery:actions.edit")}
               </Button>
             </>
           )}
           <Button variant="secondary" size="sm" onClick={handleSendEmail}>
-            <Mail className="h-4 w-4 mr-2" />
+            <Mail className="h-4 w-4 me-2" />
             {t("delivery:actions.sendByEmail")}
           </Button>
           {deliveryNote.status === "DELIVERED" && !deliveryNote.invoice_id && canConvertToInvoice && (
@@ -186,13 +189,13 @@ export function DeliveryNoteViewPage() {
               onClick={handleConvertToInvoice}
               isLoading={convertToInvoice.isPending}
             >
-              <FileText className="h-4 w-4 mr-2" />
+              <FileText className="h-4 w-4 me-2" />
               {t("delivery:actions.createInvoice")}
             </Button>
           )}
           {canCreate && (
             <Button variant="secondary" size="sm" onClick={handleDuplicate}>
-              <Copy className="h-4 w-4 mr-2" />
+              <Copy className="h-4 w-4 me-2" />
               {t("delivery:actions.duplicate")}
             </Button>
           )}

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { calculateDocumentTotals, calculateLineTotals } from "@/lib/document-totals";
 import { Prisma } from "@/generated/prisma/client";
 import { validateBody, isValidationError } from "@/lib/validate";
+import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
 import { createQuoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 import { parseArchivedFilter, parseStatusFilter, QUOTE_STATUSES } from "@/lib/document-status";
@@ -11,6 +12,7 @@ import { allocateDocumentNumber } from "@/lib/document-numbering";
 
 interface LineInput {
   product_id?: string | null;
+  variant_id?: string | null;
   description: string;
   description_html?: string | null;
   quantity: number;
@@ -76,6 +78,8 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   if (denied) return denied;
   const body = await validateBody(req, createQuoteSchema);
   if (isValidationError(body)) return body;
+  const badVariant = await rejectInvalidLineVariants(tenantId, body.lines ?? []);
+  if (badVariant) return badVariant;
 
   // Stale offline caches can submit a deleted/foreign client id; catch it here
   // instead of letting the FK violation surface as a 500.
@@ -134,6 +138,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
                 const lt = calculateLineTotals(line);
                 return {
                   productId: line.product_id || null,
+                  variantId: line.variant_id || null,
                   description: line.description,
                   descriptionHtml: line.description_html || null,
                   quantity: line.quantity,

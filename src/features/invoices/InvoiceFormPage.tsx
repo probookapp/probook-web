@@ -20,7 +20,6 @@ import { useInvoice, useCreateInvoice, useUpdateInvoice } from "./hooks/useInvoi
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useClients } from "@/features/clients";
-import { useProducts } from "@/features/products";
 import { formatCurrency, formatDateISO, calculateLineTotal } from "@/lib/utils";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { useDocumentTotals } from "@/hooks/useDocumentTotals";
@@ -33,9 +32,12 @@ import { toast } from "@/stores/useToastStore";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
 import { getApiErrorMessage } from "@/lib/api-adapter";
 import { DEFAULT_IS_CASH_SALE, stampDutyApplies } from "@/lib/stamp-duty";
+import { stockShortfalls } from "@/lib/stock-shortfalls";
+import { useDocumentCatalog } from "@/hooks/useDocumentCatalog";
 
 const createLineSchema = (t: (key: string) => string) => z.object({
   product_id: z.string().nullable().optional(),
+  variant_id: z.string().nullable().optional(),
   description: z.string().min(1, t("validation:invoice.lineDescriptionRequired")),
   description_html: z.string().nullable().optional(),
   quantity: z.coerce.number().min(0.01, t("validation:invoice.lineQuantityPositive")),
@@ -78,7 +80,10 @@ export function InvoiceFormPage() {
 
   const { data: invoice, isLoading: isLoadingInvoice } = useInvoice(id ?? "");
   const { data: clients } = useClients();
-  const { data: products } = useProducts();
+  // An invoice sells what is on the shelf: out-of-stock products and variants
+  // are not offered.
+  const catalog = useDocumentCatalog({ hideOutOfStock: true });
+  const products = catalog.products;
   const createInvoice = useCreateInvoice();
   const updateInvoice = useUpdateInvoice();
   const { data: settings } = useCompanySettings();
@@ -216,6 +221,7 @@ export function InvoiceFormPage() {
       stamp_duty_exempt: invoice.stamp_duty_exempt ?? false,
       lines: invoice.lines.map((line) => ({
         product_id: line.product_id,
+        variant_id: line.variant_id ?? null,
         description: line.description,
         description_html: line.description_html,
         quantity: line.quantity,
@@ -249,47 +255,40 @@ export function InvoiceFormPage() {
   });
   const groupSubtotals = totals.groupSubtotals;
 
-  // Precompute total quantity used per product once per lines change, so each
-  // per-line stock check is an O(1) lookup instead of a reduce over all lines.
-  const getStockError = useMemo(() => {
-    const usedByProduct = new Map<string, number>();
-    for (const l of watchedLines) {
-      if (l?.product_id && !l?.is_subtotal_line) {
-        usedByProduct.set(
-          l.product_id,
-          (usedByProduct.get(l.product_id) ?? 0) + Number(l?.quantity || 0)
-        );
-      }
-    }
+  // Stock is measured per variant when the line names one — see
+  // src/lib/stock-shortfalls.ts. An invoice refuses what the shelf can't cover.
+  const shortfalls = stockShortfalls(watchedLines, products);
+  const getStockError = (index: number): string | null => {
+    const shortfall = shortfalls[index];
+    return shortfall
+      ? t("common:validation.stockExceeded", { available: shortfall.available, total: shortfall.requested })
+      : null;
+  };
+  const hasStockErrors = shortfalls.some(Boolean);
 
-    return (index: number): string | null => {
-      const line = watchedLines[index];
-      if (!line?.product_id || !products) return null;
-
-      const product = products.find((p) => p.id === line.product_id);
-      if (!product || product.is_service) return null;
-
-      const available = product.quantity ?? 0;
-      const totalUsed = usedByProduct.get(line.product_id) ?? 0;
-
-      if (totalUsed > available) {
-        return t("common:validation.stockExceeded", { available, total: totalUsed });
-      }
-      return null;
-    };
-  }, [watchedLines, products, t]);
-
-  const hasStockErrors = useMemo(() => {
-    return watchedLines.some((_, index) => getStockError(index) !== null);
-  }, [watchedLines, getStockError]);
+  // The variant is what the stock is counted on, so a line cannot leave without it.
+  const getVariantError = (index: number): string | null =>
+    catalog.needsVariant(watchedLines[index]) ? catalog.variantRequiredMessage : null;
+  const hasMissingVariant = watchedLines.some((_, index) => getVariantError(index) !== null);
 
   const handleProductSelect = (index: number, productId: string) => {
     const product = products?.find((p) => p.id === productId);
     if (product) {
       setValue(`lines.${index}.product_id`, productId);
+      setValue(`lines.${index}.variant_id`, null);
       setValue(`lines.${index}.description`, product.designation);
       setValue(`lines.${index}.unit_price`, product.unit_price);
       setValue(`lines.${index}.tax_rate`, product.tax_rate);
+    }
+  };
+
+  const handleVariantSelect = (index: number, variantId: string) => {
+    const productId = getValues(`lines.${index}.product_id`);
+    const values = productId ? catalog.variantLine(productId, variantId) : null;
+    setValue(`lines.${index}.variant_id`, variantId || null, { shouldDirty: true });
+    if (values) {
+      setValue(`lines.${index}.description`, values.description);
+      setValue(`lines.${index}.unit_price`, values.unit_price);
     }
   };
 
@@ -308,6 +307,7 @@ export function InvoiceFormPage() {
   const onSubmit = async (data: InvoiceFormData) => {
     if (!canManage) return;
     if (isDemoMode) { showSubscribePrompt(); return; }
+    if (hasMissingVariant || hasStockErrors) return;
     const formData = {
       ...data,
       notes_html: notesHtml || null,
@@ -350,10 +350,9 @@ export function InvoiceFormPage() {
     ...(clients?.map((c) => ({ value: c.id, label: c.name })) ?? []),
   ];
 
-  const productOptions = [
-    { value: "", label: t("invoices:lines.product") + " (" + t("common:labels.optional") + ")" },
-    ...(products?.filter((p) => p.is_service || (p.quantity ?? 0) > 0).map((p) => ({ value: p.id, label: `${p.reference ? `[${p.reference}] ` : ""}${p.designation}${p.barcode ? ` - ${p.barcode}` : ""}${!p.is_service ? ` (${p.quantity ?? 0})` : ""}` })) ?? []),
-  ];
+  const productOptions = catalog.productOptions(
+    t("invoices:lines.product") + " (" + t("common:labels.optional") + ")"
+  );
 
   const statusOptions = [
     { value: "DRAFT", label: t("invoices:status.DRAFT") },
@@ -364,7 +363,7 @@ export function InvoiceFormPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" onClick={() => router.push("/invoices")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 me-2" />
           {t("common:buttons.back")}
         </Button>
         <div>
@@ -435,9 +434,9 @@ export function InvoiceFormPage() {
                   title={t(denseLines ? "invoices:lines.detailedView" : "invoices:lines.denseView")}
                 >
                   {denseLines ? (
-                    <Rows3 className="h-4 w-4 sm:mr-2" />
+                    <Rows3 className="h-4 w-4 sm:me-2" />
                   ) : (
-                    <List className="h-4 w-4 sm:mr-2" />
+                    <List className="h-4 w-4 sm:me-2" />
                   )}
                   <span className="hidden sm:inline">
                     {t(denseLines ? "invoices:lines.detailedView" : "invoices:lines.denseView")}
@@ -456,7 +455,7 @@ export function InvoiceFormPage() {
                     append({ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate })
                   }
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="h-4 w-4 me-2" />
                   {t("invoices:lines.addLine")}
                 </Button>
                 )}
@@ -478,6 +477,11 @@ export function InvoiceFormPage() {
                 }
                 onRemove={remove}
                 stockError={getStockError}
+                variantOptions={catalog.variantOptions}
+                onSelectVariant={handleVariantSelect}
+                variantLabel={catalog.variantLabel}
+                variantPlaceholder={catalog.variantPlaceholder}
+                variantError={getVariantError}
               />
             ) : (
             <div className="space-y-4">
@@ -498,7 +502,7 @@ export function InvoiceFormPage() {
                   return (
                     <div
                       key={field.id}
-                      className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border-l-4 border-blue-400 dark:border-blue-500"
+                      className="p-4 bg-blue-50 dark:bg-blue-900/30 rounded-lg border-s-4 border-blue-400 dark:border-blue-500"
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
@@ -538,7 +542,7 @@ export function InvoiceFormPage() {
                         </div>
                         <div className="text-end">
                           <span className="text-sm text-blue-600 dark:text-blue-400">{t("invoices:lines.groupTotal")}:</span>
-                          <span className="ml-2 font-bold text-blue-800 dark:text-blue-200">
+                          <span className="ms-2 font-bold text-blue-800 dark:text-blue-200">
                             {formatCurrency(groupSubtotals[groupName]?.total || 0)} {t("invoices:totals.labelTtc")}
                           </span>
                         </div>
@@ -570,6 +574,18 @@ export function InvoiceFormPage() {
                           onChange={(val) => handleProductSelect(index, val)}
                           placeholder={t("invoices:lines.product") + " (" + t("common:labels.optional") + ")"}
                         />
+                        {catalog.variantOptions(line?.product_id).length > 0 && (
+                          <div className="mt-2">
+                            <SearchableSelect
+                              label={denseLines ? "" : `${catalog.variantLabel} *`}
+                              options={catalog.variantOptions(line?.product_id)}
+                              value={line?.variant_id || ""}
+                              onChange={(val) => handleVariantSelect(index, val)}
+                              placeholder={catalog.variantPlaceholder}
+                              error={getVariantError(index) ?? undefined}
+                            />
+                          </div>
+                        )}
                       </div>
                       <div className="col-span-12 md:col-span-6 lg:col-span-3">
                         <div className="flex items-end gap-1">
@@ -887,14 +903,17 @@ export function InvoiceFormPage() {
           </CardContent>
         </Card>
 
-        <div className="flex justify-end gap-3">
-          <Button type="button" variant="secondary" onClick={() => router.push("/invoices")}>
+        {/* On a phone the save button is several screens below the lines; it
+            stays in reach at the bottom instead. */}
+        <div className="sticky bottom-0 z-20 -mx-4 flex gap-3 border-t border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-800 dark:bg-gray-900 sm:static sm:mx-0 sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 dark:sm:bg-transparent">
+          <Button type="button" variant="secondary" onClick={() => router.push("/invoices")} className="flex-1 sm:flex-none">
             {t("common:buttons.cancel")}
           </Button>
           <Button
             type="submit"
             isLoading={createInvoice.isPending || updateInvoice.isPending}
-            disabled={hasStockErrors}
+            disabled={hasStockErrors || hasMissingVariant}
+            className="flex-1 sm:flex-none"
           >
             {isEditing ? t("common:buttons.save") : t("invoices:createInvoice")}
           </Button>

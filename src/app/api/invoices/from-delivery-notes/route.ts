@@ -78,11 +78,25 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
       { status: 400 }
     );
   }
+  // A variant can carry its own price, as it does at the till.
+  const variantIds = [
+    ...new Set(
+      deliveryNotes.flatMap((dn) => dn.lines.map((l) => l.variantId)).filter((id): id is string => !!id)
+    ),
+  ];
+  const variants = variantIds.length
+    ? await prisma.productVariant.findMany({
+        where: { tenantId, id: { in: variantIds } },
+        select: { id: true, priceOverride: true },
+      })
+    : [];
+  const variantById = new Map(variants.map((v) => [v.id, v]));
 
   // Gather all lines from delivery notes; use product pricing if available
   let position = 0;
   const invoiceLines: {
     productId: string | null;
+    variantId: string | null;
     description: string;
     descriptionHtml: string | null;
     quantity: number;
@@ -98,13 +112,15 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
   for (const dn of deliveryNotes) {
     for (const line of dn.lines) {
       const product = line.productId ? productById.get(line.productId) : undefined;
-      const unitPrice = num(product?.unitPrice);
+      const variant = line.variantId ? variantById.get(line.variantId) : undefined;
+      const unitPrice = num(variant?.priceOverride ?? product?.unitPrice);
       const taxRate = product?.taxRate ?? defaultTaxRate;
       const subtotal = round2(line.quantity * unitPrice);
       const taxAmount = round2(subtotal * (taxRate / 100));
       const total = round2(subtotal + taxAmount);
       invoiceLines.push({
         productId: line.productId,
+        variantId: line.variantId,
         description: line.description,
         descriptionHtml: line.descriptionHtml,
         quantity: line.quantity,

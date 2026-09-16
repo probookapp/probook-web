@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const createDeliveryNoteLineSchema = (t: (key: string) => string) => z.object({
   product_id: z.string().nullable().optional(),
+  variant_id: z.string().nullable().optional(),
   description: z.string().min(1, t("validation:delivery.lineDescriptionRequired")),
   quantity: z.coerce.number().min(0.01, t("validation:delivery.lineQuantityPositive")),
   unit: z.string().nullable().optional(),

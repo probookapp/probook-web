@@ -319,10 +319,14 @@
   "aria": {
     "closeNotification": "إغلاق الإشعار",
     "openCalendar": "فتح التقويم",
-    "close": "إغلاق"
+    "close": "إغلاق",
+    "clearValue": "مسح الاختيار",
+    "filterOptions": "تصفية الخيارات"
   },
   "nav": {
-    "openMenu": "فتح القائمة"
+    "openMenu": "فتح القائمة",
+    "toggleTheme": "تبديل المظهر",
+    "toggleMenu": "القائمة"
   },
   "update": {
     "available": "تحديث متاح",
@@ -470,5 +474,12 @@
     "coreOnly": "الأساس وحده، دون وحدات إضافية.",
     "submitting": "جارٍ الإرسال…",
     "submit": "اطلب هذا العرض"
+  },
+  "documentLines": {
+    "variant": "المتغير",
+    "selectVariant": "اختر المتغير…",
+    "variantRequired": "اختر المتغير: يُتابَع المخزون لكل متغير على حدة.",
+    "variantRequiredToIssue": "اختر المتغير لكل منتج ذي متغيرات قبل إصدار الفاتورة (زر التعديل).",
+    "outOfStock": "نفد المخزون"
   }
 }

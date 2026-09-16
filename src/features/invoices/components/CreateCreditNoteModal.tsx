@@ -17,6 +17,7 @@ interface CreateCreditNoteModalProps {
 
 interface DraftLine {
   product_id: string | null;
+  variant_id: string | null;
   description: string;
   quantity: number;
   unit_price: number;
@@ -46,6 +47,8 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
     .filter((l) => (quantities[l.id] ?? 0) > 0)
     .map((l) => ({
       product_id: l.product_id,
+      // Restocking puts the goods back on the variant they were sold from.
+      variant_id: l.variant_id ?? null,
       description: l.description,
       quantity: quantities[l.id] ?? 0,
       unit_price: l.unit_price,
@@ -86,6 +89,7 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
         restock,
         lines: draftLines.map((l) => ({
           product_id: l.product_id,
+          variant_id: l.variant_id,
           description: l.description,
           quantity: l.quantity,
           unit_price: l.unit_price,
@@ -122,53 +126,49 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
           />
         </div>
 
-        <div className="border border-(--color-border-primary) rounded-lg overflow-x-auto">
-          <table className="w-full min-w-125">
-            <thead className="bg-(--color-bg-secondary)">
-              <tr>
-                <th className="px-3 py-2 text-start text-sm font-medium text-(--color-text-secondary)">
-                  {t("invoices:lines.description")}
-                </th>
-                <th className="px-3 py-2 text-end text-sm font-medium text-(--color-text-secondary) w-24">
-                  {t("invoices:lines.unitPriceHt")}
-                </th>
-                <th className="px-3 py-2 text-center text-sm font-medium text-(--color-text-secondary) w-28">
-                  {t("invoices:creditNotes.quantityToRefund")}
-                </th>
-                <th className="px-3 py-2 text-end text-sm font-medium text-(--color-text-secondary) w-24">
-                  {t("invoices:lines.totalTtc")}
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-(--color-border-primary)">
-              {refundableLines.map((line) => {
-                const qty = quantities[line.id] ?? 0;
-                const lineSub = qty * line.unit_price;
-                const lineTotal = lineSub + lineSub * (line.tax_rate / 100);
-                return (
-                  <tr key={line.id}>
-                    <td className="px-3 py-2 text-sm">{line.description}</td>
-                    <td className={`px-3 py-2 text-sm ${NUMERIC_CELL}`}>{formatCurrency(line.unit_price)}</td>
-                    <td className="px-3 py-2">
-                      <input
-                        type="number"
-                        min={0}
-                        max={line.quantity}
-                        step="any"
-                        value={qty}
-                        onChange={(e) => setQty(line.id, Number(e.target.value), line.quantity)}
-                        className="w-full text-center rounded-md border border-(--color-border-primary) bg-(--color-bg-primary) px-2 py-1 text-sm"
-                      />
-                      <p className="text-center text-xs text-(--color-text-secondary) mt-0.5">
-                        / {line.quantity}
-                      </p>
-                    </td>
-                    <td className={`px-3 py-2 text-sm font-medium ${NUMERIC_CELL}`}>{formatCurrency(lineTotal)}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        {/* One row per line that re-flows rather than a table that scrolls: in
+            a phone-width dialog a 500px table hid the quantity to refund, the
+            one thing to fill in, off to the side. */}
+        <div className="border border-(--color-border-primary) rounded-lg divide-y divide-(--color-border-primary)">
+          <div className="hidden sm:grid grid-cols-[1fr_6rem_7rem_7rem] gap-3 bg-(--color-bg-secondary) px-3 py-2 text-sm font-medium text-(--color-text-secondary) rounded-t-lg">
+            <span className="text-start">{t("invoices:lines.description")}</span>
+            <span className="text-end">{t("invoices:lines.unitPriceHt")}</span>
+            <span className="text-center">{t("invoices:creditNotes.quantityToRefund")}</span>
+            <span className="text-end">{t("invoices:lines.totalTtc")}</span>
+          </div>
+          {refundableLines.map((line) => {
+            const qty = quantities[line.id] ?? 0;
+            const lineSub = qty * line.unit_price;
+            const lineTotal = lineSub + lineSub * (line.tax_rate / 100);
+            return (
+              <div
+                key={line.id}
+                className="grid grid-cols-[1fr_7rem] sm:grid-cols-[1fr_6rem_7rem_7rem] items-center gap-x-3 gap-y-1 px-3 py-2"
+              >
+                <span className="col-span-2 sm:col-span-1 text-sm">{line.description}</span>
+                <span className={`hidden sm:block text-sm ${NUMERIC_CELL}`}>{formatCurrency(line.unit_price)}</span>
+                <label className="block">
+                  <span className="sm:hidden block text-xs text-(--color-text-secondary)">
+                    {t("invoices:creditNotes.quantityToRefund")}
+                  </span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={line.quantity}
+                    step="any"
+                    inputMode="decimal"
+                    value={qty}
+                    onChange={(e) => setQty(line.id, Number(e.target.value), line.quantity)}
+                    className="w-full h-10 sm:h-8 text-center rounded-md border border-(--color-border-primary) bg-(--color-bg-primary) px-2 text-base sm:text-sm"
+                  />
+                  <span className="block text-center text-xs text-(--color-text-secondary) mt-0.5">
+                    / {line.quantity}
+                  </span>
+                </label>
+                <span className={`text-sm font-medium ${NUMERIC_CELL}`}>{formatCurrency(lineTotal)}</span>
+              </div>
+            );
+          })}
         </div>
 
         <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -198,7 +198,7 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
           <Button variant="secondary" onClick={onClose}>
             {t("common:buttons.cancel")}
           </Button>

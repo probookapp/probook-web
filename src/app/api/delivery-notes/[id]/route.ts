@@ -2,11 +2,13 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
+import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
 import { updateDeliveryNoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 
 interface DeliveryLineInput {
   product_id?: string | null;
+  variant_id?: string | null;
   description: string;
   description_html?: string | null;
   quantity: number;
@@ -30,6 +32,8 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   if (denied) return denied;
   const body = await validateBody(req, updateDeliveryNoteSchema);
   if (isValidationError(body)) return body;
+  const badVariant = await rejectInvalidLineVariants(tenantId, body.lines ?? []);
+  if (badVariant) return badVariant;
   const lines = body.lines || [];
 
   // Tenant-scoped existence check BEFORE any write: without it the old code's
@@ -57,6 +61,7 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
         deleteMany: {},
         create: lines.map((line: DeliveryLineInput, idx: number) => ({
           productId: line.product_id || null,
+          variantId: line.variant_id || null,
           description: line.description,
           descriptionHtml: line.description_html || null,
           quantity: line.quantity,

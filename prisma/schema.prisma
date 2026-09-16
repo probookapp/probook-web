@@ -326,6 +326,9 @@ model ProductVariant {
   product             Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
   posTransactionLines PosTransactionLine[]
   purchaseOrderLines  PurchaseOrderLine[]
+  quoteLines          QuoteLine[]
+  invoiceLines        InvoiceLine[]
+  deliveryNoteLines   DeliveryNoteLine[]
   stockMovements      StockMovement[]
   stockLevels         StockLevel[]
 
@@ -399,6 +402,8 @@ model QuoteLine {
   id              String   @id @default(uuid())
   quoteId         String   @map("quote_id")
   productId       String?  @map("product_id")
+  // The variant quoted, for a product that has them: stock is kept per variant.
+  variantId       String?  @map("variant_id")
   description     String
   descriptionHtml String?  @map("description_html")
   quantity        Float
@@ -412,8 +417,9 @@ model QuoteLine {
   groupName       String?  @map("group_name")
   isSubtotalLine  Boolean? @default(false) @map("is_subtotal_line")
 
-  quote   Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [id])
+  quote   Quote           @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  product Product?        @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([quoteId])
   @@map("quote_lines")
@@ -476,6 +482,8 @@ model InvoiceLine {
   id                String   @id @default(uuid())
   invoiceId         String   @map("invoice_id")
   productId         String?  @map("product_id")
+  // The variant sold: issuing the invoice takes the stock out of that variant.
+  variantId         String?  @map("variant_id")
   description       String
   descriptionHtml   String?  @map("description_html")
   quantity          Float
@@ -492,8 +500,9 @@ model InvoiceLine {
   // Frozen so later edits to the product's purchase price never rewrite history.
   costPriceSnapshot Decimal  @default(0) @map("cost_price_snapshot") @db.Decimal(16, 3)
 
-  invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [id])
+  invoice Invoice         @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product Product?        @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([invoiceId])
   @@map("invoice_lines")
@@ -502,12 +511,12 @@ model InvoiceLine {
 // ========== Payments ==========
 
 model Payment {
-  id             String   @id @default(uuid())
-  tenantId       String   @map("tenant_id")
-  invoiceId      String   @map("invoice_id")
-  amount         Decimal  @db.Decimal(16, 3)
-  paymentDate    DateTime @map("payment_date") @db.Date
-  paymentMethod  String   @map("payment_method")
+  id             String    @id @default(uuid())
+  tenantId       String    @map("tenant_id")
+  invoiceId      String    @map("invoice_id")
+  amount         Decimal   @db.Decimal(16, 3)
+  paymentDate    DateTime  @map("payment_date") @db.Date
+  paymentMethod  String    @map("payment_method")
   reference      String?
   /// Article 258 grants the exemption only if the quittance carries the
   /// cheque's date, its number and the name of the drawee. This is the
@@ -517,8 +526,8 @@ model Payment {
   chequeBank     String?   @map("cheque_bank")
   notes          String?
   // Client-minted dedupe key so offline replays / double-submits cannot record the payment twice.
-  idempotencyKey String?  @map("idempotency_key")
-  createdAt      DateTime @default(now()) @map("created_at")
+  idempotencyKey String?   @map("idempotency_key")
+  createdAt      DateTime  @default(now()) @map("created_at")
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -563,6 +572,7 @@ model DeliveryNoteLine {
   id              String   @id @default(uuid())
   deliveryNoteId  String   @map("delivery_note_id")
   productId       String?  @map("product_id")
+  variantId       String?  @map("variant_id")
   description     String
   descriptionHtml String?  @map("description_html")
   quantity        Float
@@ -570,8 +580,9 @@ model DeliveryNoteLine {
   position        Int      @default(0)
   createdAt       DateTime @default(now()) @map("created_at")
 
-  deliveryNote DeliveryNote @relation(fields: [deliveryNoteId], references: [id], onDelete: Cascade)
-  product      Product?     @relation(fields: [productId], references: [id])
+  deliveryNote DeliveryNote    @relation(fields: [deliveryNoteId], references: [id], onDelete: Cascade)
+  product      Product?        @relation(fields: [productId], references: [id])
+  variant      ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([deliveryNoteId])
   @@map("delivery_note_lines")
@@ -961,18 +972,18 @@ model PosTransactionLine {
 }
 
 model PosPayment {
-  id            String   @id @default(uuid())
-  transactionId String   @map("transaction_id")
-  paymentMethod String   @map("payment_method")
-  amount        Decimal  @db.Decimal(16, 3)
-  cashGiven     Decimal? @map("cash_given") @db.Decimal(16, 3)
-  changeGiven   Decimal? @map("change_given") @db.Decimal(16, 3)
-  cardReference String?  @map("card_reference")
+  id            String    @id @default(uuid())
+  transactionId String    @map("transaction_id")
+  paymentMethod String    @map("payment_method")
+  amount        Decimal   @db.Decimal(16, 3)
+  cashGiven     Decimal?  @map("cash_given") @db.Decimal(16, 3)
+  changeGiven   Decimal?  @map("change_given") @db.Decimal(16, 3)
+  cardReference String?   @map("card_reference")
   /// Same mentions as on an invoice receipt — see Payment.chequeDate.
   chequeDate    DateTime? @map("cheque_date") @db.Date
   chequeNumber  String?   @map("cheque_number")
   chequeBank    String?   @map("cheque_bank")
-  createdAt     DateTime @default(now()) @map("created_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
 
   transaction PosTransaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
 

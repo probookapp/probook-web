@@ -6,6 +6,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/permissions-server";
 import { parseArchivedFilter, parseStatusFilter, INVOICE_STATUSES } from "@/lib/document-status";
 import { validateBody, isValidationError } from "@/lib/validate";
+import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
 import { createInvoiceSchema } from "@/lib/validations";
 import { computeStampDuty, DEFAULT_IS_CASH_SALE } from "@/lib/stamp-duty";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
@@ -13,6 +14,7 @@ import { num } from "@/lib/money";
 
 interface LineInput {
   product_id?: string | null;
+  variant_id?: string | null;
   description: string;
   description_html?: string | null;
   quantity: number;
@@ -90,6 +92,8 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
 
   const body = await validateBody(req, createInvoiceSchema);
   if (isValidationError(body)) return body;
+  const badVariant = await rejectInvalidLineVariants(tenantId, body.lines ?? []);
+  if (badVariant) return badVariant;
 
   const idempotencyKey = body.idempotency_key || null;
 
@@ -185,6 +189,7 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
                 const lt = calculateLineTotals(line);
                 return {
                   productId: line.product_id || null,
+                  variantId: line.variant_id || null,
                   description: line.description,
                   descriptionHtml: line.description_html || null,
                   quantity: line.quantity,

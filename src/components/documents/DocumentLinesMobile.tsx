@@ -31,6 +31,7 @@ import { formatCurrency } from "@/lib/utils";
 /** The subset of a line this editor reads. Kept loose: three documents share it. */
 export interface EditableLine {
   product_id?: string | null;
+  variant_id?: string | null;
   description?: string | null;
   quantity?: number | string | null;
   unit_price?: number | string | null;
@@ -56,6 +57,13 @@ export interface DocumentLinesMobileProps {
   onRemove: (index: number) => void;
   /** Over-committed stock for this line, already worded. */
   stockError?: (index: number) => string | null;
+  /** The variants a product offers; empty for a product without any. */
+  variantOptions?: (productId: string) => { value: string; label: string }[];
+  onSelectVariant?: (index: number, variantId: string) => void;
+  variantLabel?: string;
+  variantPlaceholder?: string;
+  /** A product with variants whose variant is still to be chosen, already worded. */
+  variantError?: (index: number) => string | null;
   /** Lines can carry a discount on quotes and invoices, not on delivery notes. */
   withDiscount?: boolean;
   /** Delivery notes state quantities only — no money. */
@@ -75,6 +83,11 @@ export function DocumentLinesMobile({
   onAdd,
   onRemove,
   stockError,
+  variantOptions,
+  onSelectVariant,
+  variantLabel,
+  variantPlaceholder,
+  variantError,
   withDiscount = true,
   withPricing = true,
 }: DocumentLinesMobileProps) {
@@ -97,6 +110,8 @@ export function DocumentLinesMobile({
 
   const openLine = editing === null ? undefined : lines[editing];
   const openError = editing === null ? null : stockError?.(editing) ?? null;
+  const openVariants =
+    openLine?.product_id && variantOptions ? variantOptions(openLine.product_id) : [];
 
   /** A new line opens straight into the sheet: adding then hunting for it is two gestures. */
   const addAndOpen = () => {
@@ -123,7 +138,7 @@ export function DocumentLinesMobile({
         {fields.map((field, index) => {
           const line = lines[index];
           const isSubtotal = !!line?.is_subtotal_line;
-          const problem = stockError?.(index) ?? null;
+          const problem = variantError?.(index) ?? stockError?.(index) ?? null;
           const description =
             line?.description?.trim() || t(`${ns}:lines.untitled`, { defaultValue: "Sans titre" });
 
@@ -177,7 +192,7 @@ export function DocumentLinesMobile({
       </ul>
 
       <Button type="button" variant="secondary" onClick={addAndOpen} className="w-full">
-        <Plus className="h-4 w-4 mr-2" />
+        <Plus className="h-4 w-4 me-2" />
         {t(`${ns}:lines.addLine`)}
       </Button>
 
@@ -198,6 +213,17 @@ export function DocumentLinesMobile({
               placeholder={`${t(`${ns}:lines.product`)} (${t("common:labels.optional")})`}
             />
 
+            {openVariants.length > 0 && onSelectVariant && (
+              <SearchableSelect
+                label={`${variantLabel} *`}
+                options={openVariants}
+                value={openLine?.variant_id || ""}
+                onChange={(value) => onSelectVariant(editing, value)}
+                placeholder={variantPlaceholder}
+                error={variantError?.(editing) ?? undefined}
+              />
+            )}
+
             <Input
               label={`${t(`${ns}:lines.description`)} *`}
               {...register(`lines.${editing}.description`)}
@@ -216,7 +242,7 @@ export function DocumentLinesMobile({
                 // The phone's own numeric keyboard: it already knows about paste,
                 // decimal commas and screen readers.
                 inputMode="decimal"
-                className="text-lg py-3"
+                className="h-12 text-lg"
                 {...register(`lines.${editing}.quantity`)}
                 error={openError || undefined}
               />
@@ -226,7 +252,7 @@ export function DocumentLinesMobile({
                   type="number"
                   step="0.01"
                   inputMode="decimal"
-                  className="text-lg py-3"
+                  className="h-12 text-lg"
                   {...register(`lines.${editing}.unit_price`)}
                 />
               )}
@@ -239,7 +265,7 @@ export function DocumentLinesMobile({
                   type="number"
                   step="0.1"
                   inputMode="decimal"
-                  className="text-lg py-3"
+                  className="h-12 text-lg"
                   {...register(`lines.${editing}.tax_rate`)}
                 />
                 {withDiscount && (
@@ -248,7 +274,7 @@ export function DocumentLinesMobile({
                     type="number"
                     step="0.1"
                     inputMode="decimal"
-                    className="text-lg py-3"
+                    className="h-12 text-lg"
                     {...register(`lines.${editing}.discount_percent`)}
                   />
                 )}
@@ -284,7 +310,7 @@ export function DocumentLinesMobile({
                     onRemove(index);
                   }}
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
+                  <Trash2 className="h-4 w-4 me-2" />
                   {t("common:buttons.delete")}
                 </Button>
               )}

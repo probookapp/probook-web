@@ -319,10 +319,14 @@
   "aria": {
     "closeNotification": "Fermer la notification",
     "openCalendar": "Ouvrir le calendrier",
-    "close": "Fermer"
+    "close": "Fermer",
+    "clearValue": "Effacer la sélection",
+    "filterOptions": "Filtrer les choix"
   },
   "nav": {
-    "openMenu": "Ouvrir le menu"
+    "openMenu": "Ouvrir le menu",
+    "toggleTheme": "Changer de thème",
+    "toggleMenu": "Menu"
   },
   "update": {
     "available": "Mise à jour disponible",
@@ -470,5 +474,12 @@
     "coreOnly": "Socle seul, sans module supplémentaire.",
     "submitting": "Envoi…",
     "submit": "Demander cette offre"
+  },
+  "documentLines": {
+    "variant": "Variante",
+    "selectVariant": "Choisir la variante…",
+    "variantRequired": "Choisissez la variante : le stock est suivi pour chacune.",
+    "variantRequiredToIssue": "Choisissez la variante de chaque produit à variantes avant d'émettre la facture (bouton Modifier).",
+    "outOfStock": "rupture"
   }
 }

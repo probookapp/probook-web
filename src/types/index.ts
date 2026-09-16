@@ -376,6 +376,7 @@ export interface QuoteLine {
   id: string;
   quote_id: string;
   product_id: string | null;
+  variant_id?: string | null;
   product?: Product;
   description: string;
   description_html: string | null;
@@ -408,6 +409,7 @@ export interface CreateQuoteInput {
 
 export interface CreateQuoteLineInput {
   product_id?: string | null;
+  variant_id?: string | null;
   description: string;
   description_html?: string | null;
   quantity: number;
@@ -471,6 +473,7 @@ export interface InvoiceLine {
   id: string;
   invoice_id: string;
   product_id: string | null;
+  variant_id?: string | null;
   product?: Product;
   description: string;
   description_html: string | null;
@@ -508,6 +511,7 @@ export interface CreateInvoiceInput {
 
 export interface CreateInvoiceLineInput {
   product_id?: string | null;
+  variant_id?: string | null;
   description: string;
   description_html?: string | null;
   quantity: number;
@@ -793,6 +797,7 @@ export interface DeliveryNoteLine {
   id: string;
   delivery_note_id: string;
   product_id: string | null;
+  variant_id?: string | null;
   description: string;
   description_html: string | null;
   quantity: number;
@@ -815,6 +820,7 @@ export interface CreateDeliveryNoteInput {
 
 export interface CreateDeliveryNoteLineInput {
   product_id?: string | null;
+  variant_id?: string | null;
   description: string;
   description_html?: string | null;
   quantity: number;

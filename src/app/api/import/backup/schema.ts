@@ -337,6 +337,7 @@ const TABLES: Record<string, TableSpec> = {
       lines: {
         id,
         product_id: "string",
+        variant_id: "string",
         description: "string!",
         description_html: "string",
         quantity: "number",
@@ -385,6 +386,7 @@ const TABLES: Record<string, TableSpec> = {
       lines: {
         id,
         product_id: "string",
+        variant_id: "string",
         description: "string!",
         description_html: "string",
         quantity: "number",
@@ -431,6 +433,7 @@ const TABLES: Record<string, TableSpec> = {
       lines: {
         id,
         product_id: "string",
+        variant_id: "string",
         description: "string!",
         description_html: "string",
         quantity: "number",

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Pencil, ArrowRight, Mail, Truck } from "lucide-react";
+import { ArrowLeft, Pencil, ArrowRight, Mail, Truck, PackageX } from "lucide-react";
 import {
   Button,
   Card,
@@ -22,6 +22,8 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { NUMERIC_CELL } from "@/components/ui";
+import { useDocumentCatalog } from "@/hooks/useDocumentCatalog";
+import { stockShortfalls, type StockShortfall } from "@/lib/stock-shortfalls";
 
 export function QuoteViewPage() {
   const { t } = useTranslation(["quotes", "common"]);
@@ -38,6 +40,7 @@ export function QuoteViewPage() {
   const { data: company } = useCompanySettings();
   const convertToInvoice = useConvertQuoteToInvoice();
   const convertToDeliveryNote = useConvertQuoteToDeliveryNote();
+  const { products } = useDocumentCatalog();
 
   if (isLoading || !quote) {
     return (
@@ -46,6 +49,15 @@ export function QuoteViewPage() {
       </div>
     );
   }
+
+  // Current stock, not stock on the day the quote was written: what matters is
+  // whether it can be delivered now. Screen only — the PDF goes to the client.
+  const shortfalls = stockShortfalls(quote.lines, products);
+  const shortCount = shortfalls.filter(Boolean).length;
+  const shortfallLabel = (s: StockShortfall) =>
+    s.available <= 0
+      ? t("quotes:stock.none", { requested: s.requested })
+      : t("quotes:stock.short", { ...s });
 
   const handleConvert = async () => {
     if (isDemoMode) { showSubscribePrompt(); return; }
@@ -79,7 +91,7 @@ export function QuoteViewPage() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => router.push("/quotes")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 me-2" />
             {t("common:buttons.back")}
           </Button>
           <div className="min-w-0 flex-1">
@@ -96,7 +108,7 @@ export function QuoteViewPage() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="secondary" size="sm" onClick={handleSendEmail}>
-            <Mail className="h-4 w-4 mr-2" />
+            <Mail className="h-4 w-4 me-2" />
             {t("quotes:actions.sendByEmail")}
           </Button>
           {canEdit && (
@@ -105,7 +117,7 @@ export function QuoteViewPage() {
               size="sm"
               onClick={() => router.push(`/quotes/${id}/edit`)}
             >
-              <Pencil className="h-4 w-4 mr-2" />
+              <Pencil className="h-4 w-4 me-2" />
               {t("common:buttons.edit")}
             </Button>
           )}
@@ -118,13 +130,13 @@ export function QuoteViewPage() {
                   onClick={handleConvertToDeliveryNote}
                   isLoading={convertToDeliveryNote.isPending}
                 >
-                  <Truck className="h-4 w-4 mr-2" />
+                  <Truck className="h-4 w-4 me-2" />
                   {t("quotes:createDeliveryNote")}
                 </Button>
               )}
               {canConvertToInvoice && (
                 <Button size="sm" onClick={() => setShowConvertModal(true)}>
-                  <ArrowRight className="h-4 w-4 mr-2" />
+                  <ArrowRight className="h-4 w-4 me-2" />
                   {t("quotes:actions.convertToInvoice")}
                 </Button>
               )}
@@ -151,11 +163,35 @@ export function QuoteViewPage() {
                 </div>
               </div>
 
+              {shortCount > 0 && (
+                <div
+                  className="mb-4 flex items-start gap-3 rounded-lg border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 p-3 text-sm text-red-700 dark:text-red-300"
+                >
+                  <PackageX className="h-5 w-5 shrink-0" aria-hidden />
+                  <p>{t("quotes:stock.banner", { count: shortCount })}</p>
+                </div>
+              )}
+
               {/* Mobile line items */}
               <div className="md:hidden space-y-3">
-                {quote.lines.map((line) => (
-                  <div key={line.id} className="border rounded-lg p-3 bg-(--color-bg-secondary)">
-                    <p className="text-sm font-medium">{line.description}</p>
+                {quote.lines.map((line, index) => (
+                  <div
+                    key={line.id}
+                    className={`border rounded-lg p-3 ${
+                      shortfalls[index]
+                        ? "border-red-300 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
+                        : "bg-(--color-bg-secondary)"
+                    }`}
+                  >
+                    <p className={`text-sm font-medium ${shortfalls[index] ? "text-red-700 dark:text-red-300" : ""}`}>
+                      {line.description}
+                    </p>
+                    {shortfalls[index] && (
+                      <p className="mt-0.5 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                        <PackageX className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                        {shortfallLabel(shortfalls[index])}
+                      </p>
+                    )}
                     <div className="flex items-center justify-between mt-1.5 text-sm text-(--color-text-secondary)">
                       <span>{line.quantity} × {formatCurrency(line.unit_price)} HT</span>
                       <span>{line.tax_rate}% {t("common:labels.vat")}</span>
@@ -189,10 +225,28 @@ export function QuoteViewPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-(--color-border-primary)">
-                    {quote.lines.map((line) => (
-                      <tr key={line.id}>
-                        <td className="px-3 py-2 text-sm">{line.description}</td>
-                        <td className="px-3 py-2 text-center text-sm tabular-nums">{line.quantity}</td>
+                    {quote.lines.map((line, index) => {
+                      const shortfall = shortfalls[index];
+                      return (
+                      <tr key={line.id} className={shortfall ? "bg-red-50 dark:bg-red-900/20" : undefined}>
+                        <td className="px-3 py-2 text-sm">
+                          <span className={shortfall ? "font-medium text-red-700 dark:text-red-300" : undefined}>
+                            {line.description}
+                          </span>
+                          {shortfall && (
+                            <span className="mt-0.5 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                              <PackageX className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                              {shortfallLabel(shortfall)}
+                            </span>
+                          )}
+                        </td>
+                        <td
+                          className={`px-3 py-2 text-center text-sm tabular-nums ${
+                            shortfall ? "font-semibold text-red-700 dark:text-red-300" : ""
+                          }`}
+                        >
+                          {line.quantity}
+                        </td>
                         <td className={`px-3 py-2 text-sm ${NUMERIC_CELL}`}>
                           {formatCurrency(line.unit_price)}
                         </td>
@@ -201,7 +255,8 @@ export function QuoteViewPage() {
                           {formatCurrency(line.total)}
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -279,6 +334,11 @@ export function QuoteViewPage() {
         <p className="text-(--color-text-secondary) mb-6">
           {t("quotes:confirmConvert")} <strong>{quote.quote_number}</strong>
         </p>
+        {shortCount > 0 && (
+          <p className="-mt-4 mb-6 text-sm text-red-600 dark:text-red-400">
+            {t("quotes:stock.banner", { count: shortCount })}
+          </p>
+        )}
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={() => setShowConvertModal(false)}>
             {t("common:buttons.cancel")}

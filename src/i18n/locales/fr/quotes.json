@@ -109,5 +109,11 @@
     "label": "Marge",
     "cost": "Coût d'achat",
     "partial": "Marge partielle : certaines lignes n'ont pas de prix d'achat renseigné."
+  },
+  "stock": {
+    "none": "Rupture de stock : {{requested}} demandé(s), aucun en stock",
+    "short": "Stock insuffisant : {{available}} en stock pour {{requested}} demandé(s)",
+    "banner_one": "{{count}} article de ce devis n'est pas disponible en quantité suffisante. Le devis reste valable : pensez à réapprovisionner avant de livrer ou de facturer.",
+    "banner_other": "{{count}} articles de ce devis ne sont pas disponibles en quantité suffisante. Le devis reste valable : pensez à réapprovisionner avant de livrer ou de facturer."
   }
 }

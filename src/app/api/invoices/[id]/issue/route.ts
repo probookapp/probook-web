@@ -67,10 +67,35 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
   const products = productIds.length
     ? await prisma.product.findMany({
         where: { tenantId, id: { in: productIds } },
-        select: { id: true, purchasePrice: true, isService: true },
+        select: {
+          id: true,
+          purchasePrice: true,
+          isService: true,
+          hasVariants: true,
+          variants: { where: { isActive: true }, select: { id: true }, take: 1 },
+        },
       })
     : [];
   const productById = new Map(products.map((p) => [p.id, p]));
+
+  // Stock for a product with variants lives on the variants. A line that never
+  // said which one would be taken out of a product-level count that holds
+  // nothing, so it is refused here, while the invoice can still be corrected.
+  const variantless = invoice.lines.filter((l) => {
+    const product = l.productId ? productById.get(l.productId) : undefined;
+    return !l.variantId && !!product?.hasVariants && product.variants.length > 0;
+  });
+  if (variantless.length > 0) {
+    return NextResponse.json(
+      {
+        error:
+          "Choose the variant for these lines before issuing: " +
+          variantless.map((l) => l.description).join(", "),
+        code: "VARIANT_REQUIRED",
+      },
+      { status: 400 }
+    );
+  }
 
   // Issue the invoice, freeze the COGS snapshots, and decrement stock atomically:
   // an invoice must never end up ISSUED with only some lines' stock deducted.
@@ -117,6 +142,9 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
       await applyStockChange(tx, {
         tenantId,
         productId: line.productId,
+        // A variant's stock is its own row: without it, a red XL shirt was
+        // taken out of the product-level count, which holds nothing.
+        variantId: line.variantId ?? null,
         type: "sale",
         // No rounding: the ledger carries the quantity the document says.
         quantityChange: -line.quantity,

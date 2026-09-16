@@ -52,6 +52,7 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
             lines: {
               create: original.lines.map((line) => ({
                 productId: line.productId,
+                variantId: line.variantId,
                 description: line.description,
                 descriptionHtml: line.descriptionHtml,
                 quantity: line.quantity,

@@ -46,6 +46,7 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
                 .filter((line) => !line.isSubtotalLine)
                 .map((line, idx) => ({
                   productId: line.productId,
+                  variantId: line.variantId,
                   description: line.description,
                   descriptionHtml: line.descriptionHtml,
                   quantity: line.quantity,

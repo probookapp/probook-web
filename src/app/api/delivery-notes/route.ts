@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { validateBody, isValidationError } from "@/lib/validate";
+import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
 import { createDeliveryNoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 import { parseStatusFilter, DELIVERY_NOTE_STATUSES } from "@/lib/document-status";
@@ -14,6 +15,7 @@ function isUniqueViolation(err: unknown): boolean {
 
 interface DeliveryLineInput {
   product_id?: string | null;
+  variant_id?: string | null;
   description: string;
   description_html?: string | null;
   quantity: number;
@@ -67,6 +69,8 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   if (denied) return denied;
   const body = await validateBody(req, createDeliveryNoteSchema);
   if (isValidationError(body)) return body;
+  const badVariant = await rejectInvalidLineVariants(tenantId, body.lines ?? []);
+  if (badVariant) return badVariant;
 
   // Stale offline caches can submit a deleted/foreign client id; catch it here
   // instead of letting the FK violation surface as a 500.
@@ -108,6 +112,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
             lines: {
               create: lines.map((line: DeliveryLineInput, idx: number) => ({
                 productId: line.product_id || null,
+                variantId: line.variant_id || null,
                 description: line.description,
                 descriptionHtml: line.description_html || null,
                 quantity: line.quantity,

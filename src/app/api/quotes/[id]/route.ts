@@ -3,11 +3,13 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { calculateDocumentTotals, calculateLineTotals } from "@/lib/document-totals";
 import { validateBody, isValidationError } from "@/lib/validate";
+import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
 import { updateQuoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 
 interface LineInput {
   product_id?: string | null;
+  variant_id?: string | null;
   description: string;
   description_html?: string | null;
   quantity: number;
@@ -36,6 +38,8 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   if (denied) return denied;
   const body = await validateBody(req, updateQuoteSchema);
   if (isValidationError(body)) return body;
+  const badVariant = await rejectInvalidLineVariants(tenantId, body.lines ?? []);
+  if (badVariant) return badVariant;
   const lines = body.lines || [];
   // Rounding follows the tenant's currency (millimes vs centimes).
   const settings = await prisma.companySettings.findFirst({
@@ -86,6 +90,7 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
           const lt = calculateLineTotals(line);
           return {
             productId: line.product_id || null,
+            variantId: line.variant_id || null,
             description: line.description,
             descriptionHtml: line.description_html || null,
             quantity: line.quantity,

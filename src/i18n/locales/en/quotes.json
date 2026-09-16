@@ -109,5 +109,11 @@
     "label": "Margin",
     "cost": "Cost",
     "partial": "Partial margin: some lines have no purchase price recorded."
+  },
+  "stock": {
+    "none": "Out of stock: {{requested}} requested, none on hand",
+    "short": "Short on stock: {{available}} on hand for {{requested}} requested",
+    "banner_one": "{{count}} item on this quote isn't in stock in the quantity quoted. The quote still stands: restock before delivering or invoicing.",
+    "banner_other": "{{count}} items on this quote aren't in stock in the quantities quoted. The quote still stands: restock before delivering or invoicing."
   }
 }

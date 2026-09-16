@@ -319,10 +319,14 @@
   "aria": {
     "closeNotification": "Close notification",
     "openCalendar": "Open calendar",
-    "close": "Close"
+    "close": "Close",
+    "clearValue": "Clear selection",
+    "filterOptions": "Filter the choices"
   },
   "nav": {
-    "openMenu": "Open menu"
+    "openMenu": "Open menu",
+    "toggleTheme": "Toggle dark mode",
+    "toggleMenu": "Menu"
   },
   "update": {
     "available": "Update available",
@@ -470,5 +474,12 @@
     "coreOnly": "Core only, no extra module.",
     "submitting": "Sending…",
     "submit": "Request this offer"
+  },
+  "documentLines": {
+    "variant": "Variant",
+    "selectVariant": "Choose the variant…",
+    "variantRequired": "Choose the variant: stock is tracked for each one.",
+    "variantRequiredToIssue": "Choose the variant of every product with variants before issuing the invoice (Edit button).",
+    "outOfStock": "out of stock"
   }
 }
