@@ -227,6 +227,7 @@
   "pdfViewer": {
     "title": "مستند PDF",
     "loading": "جاري التحميل...",
+    "openPdf": "افتح ملف PDF",
     "downloadPdf": "تحميل PDF",
     "preview": "معاينة",
     "errorPreview": "خطأ في فتح معاينة PDF",
@@ -476,6 +477,8 @@
     "submit": "اطلب هذا العرض"
   },
   "documentLines": {
+    "previousLine": "السطر السابق",
+    "nextLine": "السطر التالي",
     "variant": "المتغير",
     "selectVariant": "اختر المتغير…",
     "variantRequired": "اختر المتغير: يُتابَع المخزون لكل متغير على حدة.",

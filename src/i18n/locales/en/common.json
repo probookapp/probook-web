@@ -227,6 +227,7 @@
   "pdfViewer": {
     "title": "PDF Document",
     "loading": "Loading...",
+    "openPdf": "Open the PDF",
     "downloadPdf": "Download PDF",
     "preview": "Preview",
     "errorPreview": "Error opening PDF preview",
@@ -476,6 +477,8 @@
     "submit": "Request this offer"
   },
   "documentLines": {
+    "previousLine": "Previous line",
+    "nextLine": "Next line",
     "variant": "Variant",
     "selectVariant": "Choose the variant…",
     "variantRequired": "Choose the variant: stock is tracked for each one.",

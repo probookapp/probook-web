@@ -227,6 +227,7 @@
   "pdfViewer": {
     "title": "Document PDF",
     "loading": "Chargement...",
+    "openPdf": "Ouvrir le PDF",
     "downloadPdf": "Télécharger PDF",
     "preview": "Aperçu",
     "errorPreview": "Erreur lors de l'ouverture de l'aperçu PDF",
@@ -476,6 +477,8 @@
     "submit": "Demander cette offre"
   },
   "documentLines": {
+    "previousLine": "Ligne précédente",
+    "nextLine": "Ligne suivante",
     "variant": "Variante",
     "selectVariant": "Choisir la variante…",
     "variantRequired": "Choisissez la variante : le stock est suivi pour chacune.",

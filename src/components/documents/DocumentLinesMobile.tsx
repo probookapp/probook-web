@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Trash2, ChevronRight, Layers } from "lucide-react";
+import { Plus, Trash2, ChevronLeft, ChevronRight, Layers } from "lucide-react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import { Button, Input, Modal, SearchableSelect } from "@/components/ui";
 import { calculateLineTotals } from "@/lib/document-totals";
@@ -295,6 +295,36 @@ export function DocumentLinesMobile({
                 <span className="text-xl font-semibold text-gray-900 dark:text-gray-100 tabular-nums">
                   {formatCurrency(totalOf(openLine))}
                 </span>
+              </div>
+            )}
+
+            {/* A document is rarely one article. The sheet edits one at a time,
+                so it says which one, and walks to the next without folding back
+                to the list first — a customer who could not find the other
+                lines was looking at this sheet. */}
+            {fields.length > 1 && (
+              <div className="flex items-center justify-between gap-2 border-t border-gray-200 pt-3 dark:border-gray-700">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={editing === 0}
+                  aria-label={t("common:documentLines.previousLine")}
+                  onClick={() => setEditing(Math.max(0, editing - 1))}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-sm tabular-nums text-gray-500 dark:text-gray-400">
+                  {editing + 1} / {fields.length}
+                </span>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  disabled={editing === fields.length - 1}
+                  aria-label={t("common:documentLines.nextLine")}
+                  onClick={() => setEditing(Math.min(fields.length - 1, editing + 1))}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
             )}
 
