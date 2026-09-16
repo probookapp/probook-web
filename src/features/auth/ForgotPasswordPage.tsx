@@ -40,7 +40,7 @@ export function ForgotPasswordPage() {
           </h1>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
           {submitted ? (
             <div className="text-center">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
@@ -52,7 +52,7 @@ export function ForgotPasswordPage() {
               </p>
               <Link
                 href={`/${locale}/login`}
-                className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium inline-flex items-center gap-2"
+                className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium inline-flex min-h-10 items-center gap-2"
               >
                 <ArrowLeft className="h-4 w-4" />
                 {t('forgotPassword.backToLogin')}
@@ -80,7 +80,7 @@ export function ForgotPasswordPage() {
                 />
 
                 <Button type="submit" className="w-full" isLoading={isLoading}>
-                  <Mail className="h-4 w-4 mr-2" />
+                  <Mail className="h-4 w-4" />
                   {t('forgotPassword.submit')}
                 </Button>
               </form>
@@ -88,7 +88,7 @@ export function ForgotPasswordPage() {
               <p className="mt-6 text-center text-sm">
                 <Link
                   href={`/${locale}/login`}
-                  className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium inline-flex items-center gap-2"
+                  className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium inline-flex min-h-10 items-center gap-2"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   {t('forgotPassword.backToLogin')}

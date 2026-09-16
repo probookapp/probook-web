@@ -32,7 +32,7 @@ export function CreditNoteViewPage() {
     <div className="space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => router.push("/invoices/credit-notes")}>
-          <ArrowLeft className="h-4 w-4 mr-2" />
+          <ArrowLeft className="h-4 w-4 me-2" />
           {t("common:buttons.back")}
         </Button>
         <div className="min-w-0 flex-1">

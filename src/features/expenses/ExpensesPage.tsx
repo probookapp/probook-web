@@ -186,14 +186,14 @@ export function ExpensesPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
         </div>
-        <div className="flex gap-2 self-start sm:self-auto">
+        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
           <Button variant="secondary" size="sm" onClick={() => setCategoriesOpen(true)}>
-            <Tags className="h-4 w-4 mr-2" />
+            <Tags className="h-4 w-4 me-2" />
             {t("categories.manage")}
           </Button>
           {canCreate && (
             <Button onClick={() => handleOpenModal()} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               {t("newExpense")}
             </Button>
           )}
@@ -205,7 +205,7 @@ export function ExpensesPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("expenseList")}</CardTitle>
             <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 id="expense-search"
                 name="expense-search"
@@ -213,7 +213,7 @@ export function ExpensesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoComplete="off"
-                className="pl-9"
+                className="ps-9"
               />
             </div>
           </div>
@@ -224,12 +224,14 @@ export function ExpensesPage() {
             {filteredExpenses && filteredExpenses.length > 0 ? (
               filteredExpenses.map((expense) => (
                 <div key={expense.id} className="p-4 flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={selection.isSelected(expense.id)}
-                    onChange={() => selection.toggle(expense.id)}
-                    className="mt-0.5 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                  />
+                  <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selection.isSelected(expense.id)}
+                      onChange={() => selection.toggle(expense.id)}
+                      className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                  </label>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{expense.name}</p>
@@ -244,9 +246,9 @@ export function ExpensesPage() {
                       )}
                     </div>
                     {expense.notes && <p className="text-sm text-gray-400 dark:text-gray-500 truncate mt-0.5">{expense.notes}</p>}
-                    <div className="flex justify-end gap-1 mt-2">
-                      {canEdit && <button onClick={() => handleOpenModal(expense)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={tCommon("buttons.edit")} aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
-                      {canDelete && <button onClick={() => setDeleteConfirmId(expense.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
+                    <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
+                      {canEdit && <button onClick={() => handleOpenModal(expense)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={tCommon("buttons.edit")} aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
+                      {canDelete && <button onClick={() => setDeleteConfirmId(expense.id)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
                     </div>
                   </div>
                 </div>
@@ -261,13 +263,15 @@ export function ExpensesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
-                  <input
-                    type="checkbox"
-                    checked={selection.isAllSelected}
-                    ref={(el) => { if (el) el.indeterminate = selection.isIndeterminate; }}
-                    onChange={() => selection.toggleAll()}
-                    className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                  />
+                  <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selection.isAllSelected}
+                      ref={(el) => { if (el) el.indeterminate = selection.isIndeterminate; }}
+                      onChange={() => selection.toggleAll()}
+                      className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                  </label>
                 </TableHead>
                 <TableHead>{t("fields.name")}</TableHead>
                 <TableHead>{t("fields.category")}</TableHead>
@@ -282,12 +286,14 @@ export function ExpensesPage() {
                 filteredExpenses.map((expense) => (
                   <TableRow key={expense.id}>
                     <TableCell>
-                      <input
-                        type="checkbox"
-                        checked={selection.isSelected(expense.id)}
-                        onChange={() => selection.toggle(expense.id)}
-                        className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                      />
+                      <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selection.isSelected(expense.id)}
+                          onChange={() => selection.toggle(expense.id)}
+                          className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        />
+                      </label>
                     </TableCell>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">{expense.name}</TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
@@ -303,11 +309,11 @@ export function ExpensesPage() {
                     <TableCell className="text-gray-600 dark:text-gray-400">{formatDate(expense.date)}</TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">{expense.notes || "-"}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 lg:gap-1">
                         {canEdit && (
                         <button
                           onClick={() => handleOpenModal(expense)}
-                          className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                           title={tCommon("buttons.edit")}
                           aria-label={tCommon("buttons.edit")}
                         >
@@ -317,7 +323,7 @@ export function ExpensesPage() {
                         {canDelete && (
                         <button
                           onClick={() => setDeleteConfirmId(expense.id)}
-                          className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title={tCommon("buttons.delete")}
                           aria-label={tCommon("buttons.delete")}
                         >

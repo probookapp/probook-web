@@ -109,11 +109,11 @@ export function ReferralsPage() {
               )
             }
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             {t("referrals.exportCsv")}
           </Button>
           <Button {...superOnly.button} size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t("referrals.newCode")}
           </Button>
         </div>

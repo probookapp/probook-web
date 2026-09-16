@@ -58,12 +58,12 @@ export function EmailVerifyNotice({ variant = "bar" }: { variant?: "bar" | "card
           : t("emailVerify.banner");
 
   const actions = (
-    <div className="flex items-center gap-2 shrink-0">
+    <div className="flex items-center gap-1 lg:gap-2 shrink-0">
       {state !== "ok" && (
         <button
           onClick={resend}
           disabled={sending}
-          className="text-xs font-medium rounded-md px-3 py-1.5 transition-colors disabled:opacity-50 bg-warning-100 hover:bg-warning-200 text-warning-800 dark:bg-warning-900 dark:hover:bg-warning-800 dark:text-warning-100"
+          className="min-h-10 lg:min-h-0 text-xs font-medium rounded-md px-3 py-1.5 transition-colors disabled:opacity-50 bg-warning-100 hover:bg-warning-200 text-warning-800 dark:bg-warning-900 dark:hover:bg-warning-800 dark:text-warning-100"
         >
           {t("emailVerify.resend")}
         </button>
@@ -71,7 +71,8 @@ export function EmailVerifyNotice({ variant = "bar" }: { variant?: "bar" | "card
       <button
         onClick={() => setDismissed(true)}
         aria-label={t("emailVerify.dismiss")}
-        className="text-warning-700 dark:text-warning-300 hover:opacity-70"
+        // The icon is 16px; the target around it is not, below lg.
+        className="-me-2 lg:me-0 p-3 lg:p-1 rounded-md text-warning-700 dark:text-warning-300 hover:opacity-70"
       >
         <X className="h-4 w-4" />
       </button>
@@ -94,7 +95,7 @@ export function EmailVerifyNotice({ variant = "bar" }: { variant?: "bar" | "card
 
   return (
     <div className={cn("bg-warning-50 dark:bg-warning-950 border-b border-warning-200 dark:border-warning-800")}>
-      <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
+      <div className="px-4 sm:px-6 lg:px-8 py-1 lg:py-2 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0 text-sm text-warning-800 dark:text-warning-200">
           <MailWarning className="h-4 w-4 shrink-0" />
           <span className="truncate">{message}</span>

@@ -139,8 +139,10 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
             disabled={disabled}
             aria-label={t("aria.openCalendar")}
             // Logical inset, so the icon sits inside the padding in Arabic too
-            // rather than landing on top of the text.
-            className="absolute inset-e-2 top-1/2 -translate-y-1/2 rounded-sm p-1 text-(--color-text-tertiary) transition-colors hover:text-(--color-text-primary) disabled:opacity-50 disabled:cursor-not-allowed"
+            // rather than landing on top of the text. The button fills the
+            // field's end, full height, so the target is the whole corner of
+            // the field and not the 16px icon in it.
+            className="absolute inset-y-0 inset-e-0 flex w-10 items-center justify-center rounded-e-md text-(--color-text-tertiary) transition-colors hover:text-(--color-text-primary) disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <Calendar className="h-4 w-4" />
           </button>

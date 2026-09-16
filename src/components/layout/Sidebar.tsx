@@ -125,7 +125,9 @@ export function Sidebar({ onClose }: SidebarProps) {
 
   return (
     <aside className="w-56 lg:w-64 h-full bg-gray-900 dark:bg-gray-950 text-white flex flex-col">
-      <div className="p-6 flex items-center justify-between">
+      {/* Shorter above lg: in the drawer every row of the rail it spends on
+          padding is a row of navigation pushed below the fold on a phone. */}
+      <div className="px-4 py-3 lg:p-6 flex items-center justify-between">
         <div className="flex items-center justify-center gap-2.5 flex-1">
           <Logo className="h-7 w-7 text-white" title="Probook" />
           <h1 className="text-xl font-bold">Probook</h1>
@@ -134,7 +136,8 @@ export function Sidebar({ onClose }: SidebarProps) {
           <button
             onClick={onClose}
             aria-label={t("closeSidebar")}
-            className="p-1 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 lg:hidden"
+            // 44px: the drawer only exists on touch-sized screens.
+            className="p-3 -me-2 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 lg:hidden"
           >
             <X className="h-5 w-5" />
           </button>
@@ -185,7 +188,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           </div>
         ))}
       </nav>
-      <div className="p-4 border-t border-gray-800 space-y-3">
+      <div className="p-4 pb-[max(1rem,env(safe-area-inset-bottom))] border-t border-gray-800 space-y-3">
         {/* POS Mode Button */}
         {hasPermission("pos") && (entitlements?.[FEATURE_KEYS.POS]?.included ?? true) && (
           <button
@@ -219,7 +222,7 @@ export function Sidebar({ onClose }: SidebarProps) {
             </div>
             <button
               onClick={handleLogout}
-              className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+              className="p-3 -me-2 lg:p-1.5 lg:me-0 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
               aria-label={t("logout")}
               title={t("logout")}
             >

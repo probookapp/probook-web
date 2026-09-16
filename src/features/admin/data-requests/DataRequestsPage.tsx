@@ -173,11 +173,11 @@ export function DataRequestsPage() {
               )
             }
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             {t("data_requests.exportCsv")}
           </Button>
           <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t("data_requests.create")}
           </Button>
         </div>
@@ -224,7 +224,7 @@ export function DataRequestsPage() {
                           size="sm"
                           onClick={() => handleDownload(String(dr.id))}
                         >
-                          <Download className="h-4 w-4 mr-1" />
+                          <Download className="h-4 w-4 me-1" />
                           {t("data_requests.download")}
                         </Button>
                       )}
@@ -238,7 +238,7 @@ export function DataRequestsPage() {
                             setConfirmName("");
                           }}
                         >
-                          <Trash2 className="h-4 w-4 mr-1" />
+                          <Trash2 className="h-4 w-4 me-1" />
                           {t("data_requests.execute_deletion")}
                         </Button>
                       )}
@@ -251,7 +251,7 @@ export function DataRequestsPage() {
                             onClick={() => handleSetStatus(String(dr.id), "completed")}
                             isLoading={updateDataRequest.isPending}
                           >
-                            <Check className="h-4 w-4 mr-1" />
+                            <Check className="h-4 w-4 me-1" />
                             {t("data_requests.mark_completed")}
                           </Button>
                           <Button
@@ -261,7 +261,7 @@ export function DataRequestsPage() {
                             onClick={() => handleSetStatus(String(dr.id), "failed")}
                             className="text-red-600 hover:text-red-700"
                           >
-                            <X className="h-4 w-4 mr-1" />
+                            <X className="h-4 w-4 me-1" />
                             {t("data_requests.mark_failed")}
                           </Button>
                         </>
@@ -324,7 +324,7 @@ export function DataRequestsPage() {
                               size="sm"
                               onClick={() => handleDownload(String(dr.id))}
                             >
-                              <Download className="h-4 w-4 mr-1" />
+                              <Download className="h-4 w-4 me-1" />
                               {t("data_requests.download")}
                             </Button>
                           )}
@@ -335,7 +335,7 @@ export function DataRequestsPage() {
                               onClick={() => { setDeleteTarget(dr); setConfirmName(""); }}
                               title={t("data_requests.execute_deletion")}
                             >
-                              <Trash2 className="h-4 w-4 mr-1" />
+                              <Trash2 className="h-4 w-4 me-1" />
                               {t("data_requests.execute_deletion")}
                             </Button>
                           )}

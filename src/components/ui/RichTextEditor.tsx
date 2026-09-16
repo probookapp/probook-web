@@ -40,8 +40,11 @@ function ToolbarButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
+      aria-label={title}
+      aria-pressed={isActive}
       className={cn(
-        "p-1.5 rounded transition-colors",
+        // 40px below lg, where the toolbar is tapped; compact from lg up.
+        "p-3 lg:p-1.5 rounded transition-colors",
         isActive
           ? "bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300"
           : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200",
@@ -153,7 +156,9 @@ export function RichTextEditor({
         className
       )}
     >
-      <div className="flex items-center gap-1 px-2 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+      {/* Wraps rather than scrolls: a toolbar that runs off the edge of a phone
+          hides its undo button with nothing to say it is there. */}
+      <div className="flex flex-wrap items-center gap-1 px-2 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
           isActive={editor.isActive("bold")}
@@ -185,8 +190,10 @@ export function RichTextEditor({
               setShowFontPicker(false);
             }}
             title={t("editor.textColor")}
+            aria-label={t("editor.textColor")}
+            aria-expanded={showColorPicker}
             className={cn(
-              "flex items-center gap-0.5 p-1.5 rounded transition-colors",
+              "flex items-center gap-0.5 p-3 lg:p-1.5 rounded transition-colors",
               showColorPicker
                 ? "bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300"
                 : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200"
@@ -200,19 +207,20 @@ export function RichTextEditor({
             <ChevronDown className="h-3 w-3" />
           </button>
           {showColorPicker && (
-            <div className="absolute top-full left-0 mt-1 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
+            <div className="absolute top-full start-0 mt-1 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
               <div className="grid grid-cols-5 gap-1">
                 {COLOR_KEYS.map((color) => (
                   <button
                     key={color.value}
                     type="button"
                     title={t(`editor.colors.${color.key}`)}
+                    aria-label={t(`editor.colors.${color.key}`)}
                     onClick={() => {
                       editor.chain().focus().setColor(color.value).run();
                       setShowColorPicker(false);
                     }}
                     className={cn(
-                      "w-6 h-6 rounded border-2 transition-transform hover:scale-110",
+                      "w-9 h-9 lg:w-6 lg:h-6 rounded border-2 transition-transform hover:scale-110",
                       currentColor === color.value
                         ? "border-primary-500"
                         : "border-gray-200 dark:border-gray-600"
@@ -228,7 +236,7 @@ export function RichTextEditor({
                     editor.chain().focus().unsetColor().run();
                     setShowColorPicker(false);
                   }}
-                  className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
+                  className="min-h-10 lg:min-h-0 text-xs text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
                 >
                   {t("editor.reset")}
                 </button>
@@ -245,8 +253,10 @@ export function RichTextEditor({
               setShowColorPicker(false);
             }}
             title={t("editor.font")}
+            aria-label={t("editor.font")}
+            aria-expanded={showFontPicker}
             className={cn(
-              "flex items-center gap-0.5 p-1.5 rounded transition-colors",
+              "flex items-center gap-0.5 p-3 lg:p-1.5 rounded transition-colors",
               showFontPicker
                 ? "bg-primary-100 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300"
                 : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 hover:text-gray-700 dark:hover:text-gray-200"
@@ -256,7 +266,7 @@ export function RichTextEditor({
             <ChevronDown className="h-3 w-3" />
           </button>
           {showFontPicker && (
-            <div className="absolute top-full left-0 mt-1 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-40">
+            <div className="absolute top-full start-0 mt-1 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-40">
               {FONT_OPTIONS.map((font) => (
                 <button
                   key={font.key || font.name}
@@ -270,7 +280,7 @@ export function RichTextEditor({
                     setShowFontPicker(false);
                   }}
                   className={cn(
-                    "w-full px-3 py-1.5 text-start text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-100",
+                    "w-full px-3 py-2.5 lg:py-1.5 text-start text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-100",
                     currentFont === font.value && "bg-primary-50 dark:bg-primary-900/50 text-primary-700 dark:text-primary-300"
                   )}
                   style={{ fontFamily: font.value || "inherit" }}

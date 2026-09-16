@@ -162,7 +162,7 @@ export function ImportDialog({
         {/* Download template */}
         <div>
           <Button variant="secondary" size="sm" onClick={handleDownloadTemplate}>
-            <FileDown className="h-4 w-4 mr-2" />
+            <FileDown className="h-4 w-4" />
             {t("import.downloadTemplate")}
           </Button>
         </div>
@@ -186,7 +186,7 @@ export function ImportDialog({
                 {t("import.noFileSelected")}
               </p>
               <Button variant="secondary" size="sm" onClick={handleSelectFile}>
-                <Upload className="h-4 w-4 mr-2" />
+                <Upload className="h-4 w-4" />
                 {t("import.selectFile")}
               </Button>
             </div>
@@ -264,7 +264,7 @@ export function ImportDialog({
               disabled={!selectedFile}
               isLoading={isImporting}
             >
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4" />
               {t("import.importButton")}
             </Button>
           )}

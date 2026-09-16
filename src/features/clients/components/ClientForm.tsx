@@ -115,8 +115,8 @@ export function ClientForm({ client, onSubmit, onCancel, onManageContacts, isLoa
 
       <div className="flex justify-end gap-3">
         {onManageContacts && (
-          <Button type="button" variant="secondary" onClick={onManageContacts} className="mr-auto">
-            <Users className="h-4 w-4 mr-2" />
+          <Button type="button" variant="secondary" onClick={onManageContacts} className="me-auto">
+            <Users className="h-4 w-4 me-2" />
             {t("contacts.title")}
           </Button>
         )}

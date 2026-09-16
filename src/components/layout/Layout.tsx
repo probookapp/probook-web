@@ -15,7 +15,7 @@ export function Layout({ children, topBanner }: LayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="flex h-dvh bg-gray-100 dark:bg-gray-900">
       {/* Toast notifications */}
       <ToastContainer />
       <OfflineIndicator />
@@ -28,24 +28,28 @@ export function Layout({ children, topBanner }: LayoutProps) {
         />
       )}
 
-      {/* Sidebar - hidden on mobile, visible on lg+ */}
+      {/* The rail is a drawer below lg, pinned beside the page from lg up. The
+          closed offset only exists below lg, so from lg up there is nothing to
+          override. */}
       <div
         className={`
-          fixed inset-y-0 left-0 z-50 w-56 lg:w-64 transform transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0
-          ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
+          fixed inset-y-0 start-0 z-50 w-56 lg:w-64 transform transition-transform duration-200 ease-in-out lg:relative
+          ${isSidebarOpen ? "translate-x-0" : "max-lg:-translate-x-full"}
         `}
       >
         <Sidebar onClose={() => setIsSidebarOpen(false)} />
       </div>
 
       {/* Main content */}
-      <main className="flex-1 overflow-auto">
-        {/* Mobile header with hamburger */}
-        <div className="sticky top-0 z-30 flex items-center gap-4 bg-gray-100 dark:bg-gray-900 px-4 py-3 lg:hidden border-b border-gray-200 dark:border-gray-800">
+      <main className="flex-1 min-w-0 overflow-auto">
+        {/* Mobile header with hamburger. The safe-area padding is zero unless the
+            page is laid out under a notch, where it keeps the button tappable. */}
+        <div className="sticky top-0 z-30 flex items-center gap-2 bg-gray-100 dark:bg-gray-900 px-2 sm:px-4 pt-[max(0.375rem,env(safe-area-inset-top))] pb-1.5 lg:hidden border-b border-gray-200 dark:border-gray-800">
           <button
             onClick={() => setIsSidebarOpen(true)}
             aria-label={t("nav.openMenu")}
-            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800"
+            aria-expanded={isSidebarOpen}
+            className="p-2.5 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-800"
           >
             <Menu className="h-6 w-6" />
           </button>

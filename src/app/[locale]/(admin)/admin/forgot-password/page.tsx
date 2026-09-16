@@ -57,7 +57,7 @@ export default function AdminForgotPasswordPage() {
                 {t("forgotPassword.sent")}
               </p>
               <Button variant="secondary" className="w-full" onClick={() => router.push("/admin/login")}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
+                <ArrowLeft className="h-4 w-4 me-2" />
                 {t("forgotPassword.backToLogin")}
               </Button>
             </div>
@@ -77,7 +77,7 @@ export default function AdminForgotPasswordPage() {
               />
               {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
               <Button type="submit" className="w-full" isLoading={isSubmitting}>
-                <Mail className="h-4 w-4 mr-2" />
+                <Mail className="h-4 w-4 me-2" />
                 {t("forgotPassword.send")}
               </Button>
               <button

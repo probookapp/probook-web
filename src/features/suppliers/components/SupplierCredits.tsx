@@ -113,7 +113,7 @@ export function SupplierCredits({ supplier, onClose }: SupplierCreditsProps) {
       {canRecordPayment && (
         <div className="flex justify-end">
           <Button size="sm" onClick={() => isDemoMode ? showSubscribePrompt() : setIsPaymentModalOpen(true)}>
-            <DollarSign className="h-4 w-4 mr-2" />
+            <DollarSign className="h-4 w-4 me-2" />
             {t("credits.recordPayment")}
           </Button>
         </div>

@@ -187,11 +187,11 @@ export function AnnouncementsPage() {
               )
             }
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             {t("announcements.exportCsv")}
           </Button>
           <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t("announcements.create")}
           </Button>
         </div>
@@ -271,7 +271,7 @@ export function AnnouncementsPage() {
                         {String(a.target_type || "all")}
                       </Badge>
                       {a.target_id ? (
-                        <span className="ml-1 text-xs text-gray-400">
+                        <span className="ms-1 text-xs text-gray-400">
                           ({String(a.target_id).slice(0, 8)}...)
                         </span>
                       ) : null}

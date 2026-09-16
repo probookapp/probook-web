@@ -146,7 +146,7 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
                   onClick={onClose}
                   className={cn(
                     "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors",
-                    item.indent && "ml-4",
+                    item.indent && "ms-4",
                     isActive
                       ? "bg-primary-600 text-white"
                       : "text-gray-300 hover:bg-gray-800 hover:text-white"

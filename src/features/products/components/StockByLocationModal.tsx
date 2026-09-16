@@ -47,7 +47,7 @@ export function StockByLocationModal({ isOpen, onClose, product }: StockByLocati
                   </Badge>
                 </div>
                 {loc.variants.length > 0 && (
-                  <div className="mt-2 ml-6 space-y-1">
+                  <div className="mt-2 ms-6 space-y-1">
                     {loc.variants.map((v) => (
                       <div
                         key={v.variant_id}

@@ -86,13 +86,13 @@ export function FailedMutationsPanel() {
           <div className="flex gap-2 mb-2">
             <button
               onClick={handleRetryAll}
-              className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
+              className="min-h-10 lg:min-h-0 text-xs px-3 lg:px-2 py-1 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
             >
               {t("offline.retryAll")}
             </button>
             <button
               onClick={handleDiscardAll}
-              className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
+              className="min-h-10 lg:min-h-0 text-xs px-3 lg:px-2 py-1 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-900/60 transition-colors"
             >
               {t("offline.discardAll")}
             </button>
@@ -122,8 +122,9 @@ export function FailedMutationsPanel() {
                 <button
                   onClick={() => handleRetry(mutation.id)}
                   disabled={retryingId === mutation.id}
-                  className="p-1.5 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors disabled:opacity-50"
+                  className="p-3 lg:p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors disabled:opacity-50"
                   title={t("offline.retry")}
+                  aria-label={t("offline.retry")}
                 >
                   <RefreshCw
                     className={`h-3.5 w-3.5 ${retryingId === mutation.id ? "animate-spin" : ""}`}
@@ -131,8 +132,9 @@ export function FailedMutationsPanel() {
                 </button>
                 <button
                   onClick={() => handleDiscard(mutation.id)}
-                  className="p-1.5 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
+                  className="p-3 lg:p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                   title={t("offline.discard")}
+                  aria-label={t("offline.discard")}
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                 </button>

@@ -92,7 +92,7 @@ export default function AdminResetPasswordPage() {
               />
               {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
               <Button type="submit" className="w-full" isLoading={isSubmitting}>
-                <KeyRound className="h-4 w-4 mr-2" />
+                <KeyRound className="h-4 w-4 me-2" />
                 {t("resetPassword.submit")}
               </Button>
             </form>

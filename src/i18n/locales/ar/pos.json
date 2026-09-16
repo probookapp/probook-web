@@ -145,5 +145,8 @@
   "leftOnAccount": "المتبقي على حساب العميل",
   "creditNeedsClient": "اختر عميلًا لترك رصيد للتحصيل.",
   "compactView": "عرض مضغوط",
-  "gridView": "عرض المربعات"
+  "gridView": "عرض المربعات",
+  "decreaseQuantity": "إنقاص الكمية",
+  "increaseQuantity": "زيادة الكمية",
+  "removeItem": "إزالة المنتج من السلة"
 }

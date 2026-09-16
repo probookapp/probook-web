@@ -124,7 +124,7 @@ export function StockTransferForm({ locations, onSubmit, onCancel, isLoading }: 
             size="sm"
             onClick={() => setLines((prev) => [...prev, { ...emptyLine }])}
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 me-1" />
             {t("transfers.fields.addLine")}
           </Button>
         </div>

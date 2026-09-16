@@ -144,14 +144,14 @@ export function QuotesPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-(--color-text-primary)">{t("quotes:title")}</h1>
           <p className="text-sm sm:text-base text-(--color-text-secondary)">{t("quotes:subtitle")}</p>
         </div>
-        <div className="flex gap-2 self-start sm:self-auto">
+        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
           <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredQuotes?.length}>
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             {t("common:buttons.exportCsv")}
           </Button>
           {canCreate && (
             <Button onClick={() => router.push("/quotes/new")} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               {t("quotes:newQuote")}
             </Button>
           )}
@@ -163,7 +163,7 @@ export function QuotesPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("quotes:listTitle")}</CardTitle>
             <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 id="quote-search"
                 name="quote-search"
@@ -171,7 +171,7 @@ export function QuotesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoComplete="off"
-                className="pl-9"
+                className="ps-9"
               />
             </div>
           </div>
@@ -188,12 +188,14 @@ export function QuotesPage() {
             {filteredQuotes && filteredQuotes.length > 0 ? (
               filteredQuotes.map((quote) => (
                 <div key={quote.id} className="p-4 flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={selection.isSelected(quote.id)}
-                    onChange={() => selection.toggle(quote.id)}
-                    className="mt-1 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                  />
+                  <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selection.isSelected(quote.id)}
+                      onChange={() => selection.toggle(quote.id)}
+                      className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                  </label>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-mono font-medium text-(--color-text-primary)">{quote.quote_number}</span>
@@ -206,15 +208,15 @@ export function QuotesPage() {
                       <span className="text-xs text-(--color-text-secondary)">{formatDate(quote.issue_date)} → {formatDate(quote.validity_date)}</span>
                       <span className="font-medium text-(--color-text-primary)">{formatCurrency(quote.total)}</span>
                     </div>
-                    <div className="flex justify-end gap-1 mt-2">
-                      <button onClick={() => router.push(`/quotes/${quote.id}`)} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.view")} aria-label={t("common:buttons.view")}><Eye className="h-4 w-4" /></button>
-                      {canEdit && <button onClick={() => router.push(`/quotes/${quote.id}/edit`)} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.edit")} aria-label={t("common:buttons.edit")}><Pencil className="h-4 w-4" /></button>}
-                      {canCreate && <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateQuote.mutate(quote.id); }} className="p-1 text-gray-500 hover:text-blue-600" title={t("quotes:actions.duplicate")} aria-label={t("quotes:actions.duplicate")} disabled={duplicateQuote.isPending}><Copy className="h-4 w-4" /></button>}
+                    <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
+                      <button onClick={() => router.push(`/quotes/${quote.id}`)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600" title={t("common:buttons.view")} aria-label={t("common:buttons.view")}><Eye className="h-4 w-4" /></button>
+                      {canEdit && <button onClick={() => router.push(`/quotes/${quote.id}/edit`)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600" title={t("common:buttons.edit")} aria-label={t("common:buttons.edit")}><Pencil className="h-4 w-4" /></button>}
+                      {canCreate && <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateQuote.mutate(quote.id); }} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-blue-600" title={t("quotes:actions.duplicate")} aria-label={t("quotes:actions.duplicate")} disabled={duplicateQuote.isPending}><Copy className="h-4 w-4" /></button>}
                       {quote.status === "ACCEPTED" && canConvertToInvoice && (
-                        <button onClick={() => setConvertConfirm(quote)} className="p-1 text-gray-500 hover:text-green-600" title={t("quotes:actions.convertToInvoice")} aria-label={t("quotes:actions.convertToInvoice")}><ArrowRight className="h-4 w-4" /></button>
+                        <button onClick={() => setConvertConfirm(quote)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-green-600" title={t("quotes:actions.convertToInvoice")} aria-label={t("quotes:actions.convertToInvoice")}><ArrowRight className="h-4 w-4" /></button>
                       )}
-                      {canEdit && <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } archiveQuote.mutate({ id: quote.id, archived: !quote.archived_at }); }} className="p-1 text-gray-500 hover:text-amber-600" title={t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")} aria-label={t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")} disabled={archiveQuote.isPending}>{quote.archived_at ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}</button>}
-                      {canDelete && <button onClick={() => setDeleteConfirmId(quote.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
+                      {canEdit && <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } archiveQuote.mutate({ id: quote.id, archived: !quote.archived_at }); }} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-amber-600" title={t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")} aria-label={t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")} disabled={archiveQuote.isPending}>{quote.archived_at ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}</button>}
+                      {canDelete && <button onClick={() => setDeleteConfirmId(quote.id)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
                     </div>
                   </div>
                 </div>
@@ -236,13 +238,15 @@ export function QuotesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
-                  <input
-                    type="checkbox"
-                    checked={selection.isAllSelected}
-                    ref={(el) => { if (el) el.indeterminate = selection.isIndeterminate; }}
-                    onChange={() => selection.toggleAll()}
-                    className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                  />
+                  <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selection.isAllSelected}
+                      ref={(el) => { if (el) el.indeterminate = selection.isIndeterminate; }}
+                      onChange={() => selection.toggleAll()}
+                      className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                  </label>
                 </TableHead>
                 <TableHead>{t("quotes:fields.quoteNumber")}</TableHead>
                 <TableHead>{t("quotes:fields.client")}</TableHead>
@@ -258,12 +262,14 @@ export function QuotesPage() {
                 filteredQuotes.map((quote) => (
                   <TableRow key={quote.id}>
                     <TableCell>
-                      <input
-                        type="checkbox"
-                        checked={selection.isSelected(quote.id)}
-                        onChange={() => selection.toggle(quote.id)}
-                        className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                      />
+                      <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selection.isSelected(quote.id)}
+                          onChange={() => selection.toggle(quote.id)}
+                          className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        />
+                      </label>
                     </TableCell>
                     <TableCell className="font-mono font-medium">
                       {quote.quote_number}
@@ -280,10 +286,10 @@ export function QuotesPage() {
                       {formatCurrency(quote.total)}
                     </TableNumericCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2 lg:gap-1">
                         <button
                           onClick={() => router.push(`/quotes/${quote.id}`)}
-                          className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
+                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 transition-colors"
                           title={t("common:buttons.view")}
                           aria-label={t("common:buttons.view")}
                         >
@@ -292,7 +298,7 @@ export function QuotesPage() {
                         {canEdit && (
                         <button
                           onClick={() => router.push(`/quotes/${quote.id}/edit`)}
-                          className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
+                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 transition-colors"
                           title={t("common:buttons.edit")}
                           aria-label={t("common:buttons.edit")}
                         >
@@ -302,7 +308,7 @@ export function QuotesPage() {
                         {canCreate && (
                         <button
                           onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateQuote.mutate(quote.id); }}
-                          className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
+                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-blue-600 transition-colors"
                           title={t("quotes:actions.duplicate")}
                           aria-label={t("quotes:actions.duplicate")}
                           disabled={duplicateQuote.isPending}
@@ -316,7 +322,7 @@ export function QuotesPage() {
                             if (isDemoMode) { showSubscribePrompt(); return; }
                             archiveQuote.mutate({ id: quote.id, archived: !quote.archived_at });
                           }}
-                          className="p-1 text-gray-500 hover:text-amber-600 transition-colors"
+                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-amber-600 transition-colors"
                           title={t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")}
                           aria-label={t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")}
                           disabled={archiveQuote.isPending}
@@ -331,7 +337,7 @@ export function QuotesPage() {
                         {quote.status === "ACCEPTED" && canConvertToInvoice && (
                           <button
                             onClick={() => setConvertConfirm(quote)}
-                            className="p-1 text-gray-500 hover:text-green-600 transition-colors"
+                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-green-600 transition-colors"
                             title={t("quotes:actions.convertToInvoice")}
                             aria-label={t("quotes:actions.convertToInvoice")}
                           >
@@ -341,7 +347,7 @@ export function QuotesPage() {
                         {canDelete && (
                         <button
                           onClick={() => setDeleteConfirmId(quote.id)}
-                          className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title={t("common:buttons.delete")}
                           aria-label={t("common:buttons.delete")}
                         >

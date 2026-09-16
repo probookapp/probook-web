@@ -121,7 +121,7 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
         </h3>
         {!isAdding && canManage && (
           <Button size="sm" onClick={() => setIsAdding(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t("suppliers.addSupplier")}
           </Button>
         )}
@@ -203,7 +203,7 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
                   </TableCell>
                   <TableNumericCell className="text-gray-600 dark:text-gray-400">
                     {editingLinkId === supplier.link_id ? (
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center justify-end gap-2 lg:gap-1">
                         <input
                           type="number"
                           step="0.01"
@@ -215,19 +215,21 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
                             if (e.key === "Escape") { setEditingLinkId(null); setEditingPrice(""); }
                           }}
                           autoFocus
-                          className="w-24 px-2 py-1 text-sm border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
+                          className="w-28 px-2 py-2 lg:py-1 text-base sm:text-sm border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
                         />
                         <button
                           onClick={handleSavePrice}
-                          className="p-1 text-green-600 hover:text-green-700 transition-colors"
+                          className="p-3 lg:p-1.5 rounded-md text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors"
                           title={tCommon("buttons.save")}
+                          aria-label={tCommon("buttons.save")}
                         >
                           <Check className="h-4 w-4" />
                         </button>
                         <button
                           onClick={() => { setEditingLinkId(null); setEditingPrice(""); }}
-                          className="p-1 text-gray-500 hover:text-gray-700 transition-colors"
+                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
                           title={tCommon("buttons.cancel")}
+                          aria-label={tCommon("buttons.cancel")}
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -235,11 +237,13 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
                     ) : canManage ? (
                       <button
                         onClick={() => handleStartEditPrice(supplier)}
-                        className="group flex items-center gap-1 hover:text-primary-600 transition-colors"
+                        className="group inline-flex items-center gap-1.5 -my-2 py-2 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                         title={t("suppliers.editPrice")}
                       >
                         {formatCurrency(supplier.purchase_price)}
-                        <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                        {/* Hover-only would hide it from every touch screen; the
+                            pencil is only tucked away where a pointer can find it. */}
+                        <Pencil className="h-3.5 w-3.5 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-visible:opacity-100 transition-opacity" />
                       </button>
                     ) : (
                       formatCurrency(supplier.purchase_price)
@@ -249,7 +253,7 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
                     {canManage && (
                     <button
                       onClick={() => handleRemoveSupplier(supplier.link_id)}
-                      className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+                      className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors"
                       title={t("suppliers.removeSupplier")}
                       aria-label={t("suppliers.removeSupplier")}
                     >

@@ -650,7 +650,7 @@ export function POSPage() {
       {/* Main content */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Cart section (60% on desktop, full on mobile when tab active) */}
-        <div className={`lg:w-3/5 flex flex-col bg-(--color-bg-primary) lg:border-r border-(--color-border-primary) ${
+        <div className={`lg:w-3/5 flex flex-col bg-(--color-bg-primary) lg:border-e border-(--color-border-primary) ${
           mobileTab === "cart" ? "flex" : "hidden lg:flex"
         }`}>
           <CartDisplay />

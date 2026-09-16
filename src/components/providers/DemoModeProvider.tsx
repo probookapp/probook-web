@@ -112,7 +112,7 @@ function SubscribePrompt({
       <div className="pt-6 pb-2 space-y-3">
         <Button onClick={onViewPlans} className="w-full">
           {t("demo.viewPlans")}
-          <ArrowRight className="h-4 w-4 ml-2" />
+          <ArrowRight className="h-4 w-4 ms-2" />
         </Button>
         <button
           onClick={onClose}
@@ -142,7 +142,7 @@ function PlansOverlay({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="fixed inset-0 z-60 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
-      <div className="absolute top-3 right-3 sm:top-4 sm:right-4 z-10">
+      <div className="absolute top-3 end-3 sm:top-4 sm:end-4 z-10">
         <button
           onClick={onClose}
           className="p-2 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-800 transition-colors"

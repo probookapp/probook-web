@@ -118,7 +118,7 @@ export function AdminUsersPage() {
             )
           }
         >
-          <Download className="h-4 w-4 mr-2" />
+          <Download className="h-4 w-4 me-2" />
           {t("users.exportCsv")}
         </Button>
       </div>
@@ -127,14 +127,14 @@ export function AdminUsersPage() {
         <CardContent className="p-0">
           <div className="px-4 py-3 sm:px-6 sm:py-4 border-b border-gray-200 dark:border-gray-700">
             <div className="relative max-w-sm">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 name="user-search"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder={t("users.search_placeholder")}
                 autoComplete="off"
-                className="pl-9"
+                className="ps-9"
               />
             </div>
           </div>
@@ -241,7 +241,7 @@ export function AdminUsersPage() {
                             onClick={() => handleToggleActive(user)}
                             isLoading={disableUser.isPending}
                           >
-                            <Power className="h-4 w-4 mr-1" />
+                            <Power className="h-4 w-4 me-1" />
                             {user.is_active
                               ? t("users.disable")
                               : t("users.enable")}
@@ -251,7 +251,7 @@ export function AdminUsersPage() {
                             size="sm"
                             onClick={() => handleOpenResetPassword(user)}
                           >
-                            <KeyRound className="h-4 w-4 mr-1" />
+                            <KeyRound className="h-4 w-4 me-1" />
                             {t("users.reset_password")}
                           </Button>
                         </div>

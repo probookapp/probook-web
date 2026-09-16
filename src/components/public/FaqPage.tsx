@@ -35,7 +35,7 @@ function FaqItem({ questionKey }: { questionKey: string }) {
           {t(`faq.items.${questionKey}.q`)}
         </span>
         <ChevronDown
-          className={`h-5 w-5 text-gray-400 shrink-0 ml-4 transition-transform ${
+          className={`h-5 w-5 text-gray-400 shrink-0 ms-4 transition-transform ${
             open ? "rotate-180" : ""
           }`}
         />

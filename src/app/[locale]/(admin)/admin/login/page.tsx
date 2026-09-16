@@ -3,8 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { LogIn, Eye, EyeOff, Shield } from "lucide-react";
-import { Button, Input } from "@/components/ui";
+import { LogIn, Shield } from "lucide-react";
+import { Button, Input, PasswordToggle } from "@/components/ui";
 import { useAdminAuthStore } from "@/stores/useAdminAuthStore";
 
 export default function AdminLoginPage() {
@@ -159,7 +159,7 @@ export default function AdminLoginPage() {
                 isLoading={isSubmitting}
                 disabled={totpCode.length < 6}
               >
-                <Shield className="h-4 w-4 mr-2" />
+                <Shield className="h-4 w-4 me-2" />
                 {t("login.twoFactor.verify")}
               </Button>
               <Button
@@ -189,20 +189,10 @@ export default function AdminLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
-                className="pr-10"
+                className="pe-10"
                 required
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-9 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
+              <PasswordToggle shown={showPassword} onToggle={() => setShowPassword(!showPassword)} />
             </div>
 
             {error && (
@@ -210,7 +200,7 @@ export default function AdminLoginPage() {
             )}
 
             <Button type="submit" className="w-full" isLoading={isSubmitting}>
-              <LogIn className="h-4 w-4 mr-2" />
+              <LogIn className="h-4 w-4 me-2" />
               {t("login.signIn")}
             </Button>
 

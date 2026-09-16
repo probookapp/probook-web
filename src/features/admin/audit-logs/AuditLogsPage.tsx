@@ -101,7 +101,7 @@ export function AuditLogsPage() {
             )
           }
         >
-          <Download className="h-4 w-4 mr-2" />
+          <Download className="h-4 w-4 me-2" />
           {t("auditLogs.exportCsv")}
         </Button>
       </div>

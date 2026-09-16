@@ -70,7 +70,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                 {t("common:errors.tryAgain")}
               </Button>
               <Button onClick={this.handleReload}>
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw className="h-4 w-4 me-2" />
                 {t("common:errors.reloadPage")}
               </Button>
             </div>

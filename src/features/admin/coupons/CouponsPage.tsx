@@ -223,7 +223,7 @@ export function CouponsPage() {
               )
             }
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             {t("coupons.exportCsv")}
           </Button>
           <ListSearch
@@ -233,7 +233,7 @@ export function CouponsPage() {
             placeholder={t("coupons.searchPlaceholder")}
           />
           <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t("coupons.create")}
           </Button>
         </div>

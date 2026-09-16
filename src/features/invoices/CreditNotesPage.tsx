@@ -74,7 +74,7 @@ export function CreditNotesPage() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={() => router.push("/invoices")}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="h-4 w-4 me-2" />
             {t("common:buttons.back")}
           </Button>
           <div>
@@ -93,7 +93,7 @@ export function CreditNotesPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("invoices:creditNotes.listTitle")}</CardTitle>
             <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 id="credit-note-search"
                 name="credit-note-search"
@@ -101,13 +101,51 @@ export function CreditNotesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoComplete="off"
-                className="pl-9"
+                className="ps-9"
               />
             </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          {/* Phones: one card per credit note instead of a table to scroll sideways. */}
+          <ul className="md:hidden divide-y divide-(--color-border-primary)">
+            {filtered && filtered.length > 0 ? (
+              filtered.map((cn) => (
+                <li key={cn.id} className="flex items-start gap-3 px-4 py-3">
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/invoices/credit-notes/${cn.id}`)}
+                    className="min-w-0 flex-1 text-start"
+                  >
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-sm font-medium">{cn.credit_note_number}</span>
+                      <span className="text-sm font-medium tabular-nums whitespace-nowrap">{formatCurrency(cn.total)}</span>
+                    </span>
+                    <span className="mt-0.5 block truncate text-sm text-(--color-text-secondary)">
+                      {cn.client?.name || "-"}
+                    </span>
+                    <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-(--color-text-secondary)">
+                      {formatDate(cn.issue_date)}
+                      {cn.restocked && <Badge variant="success">{t("invoices:creditNotes.restocked")}</Badge>}
+                    </span>
+                  </button>
+                  <button
+                    onClick={() => setDeleteConfirmId(cn.id)}
+                    className="-me-2 shrink-0 p-3 rounded-md text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
+                    title={t("common:buttons.delete")}
+                    aria-label={t("common:buttons.delete")}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </li>
+              ))
+            ) : (
+              <li className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                {t("invoices:creditNotes.noCreditNotes")}
+              </li>
+            )}
+          </ul>
+          <div className="hidden md:block overflow-x-auto">
             <Table className="min-w-150">
               <TableHeader>
                 <TableRow>
@@ -135,10 +173,10 @@ export function CreditNotesPage() {
                       </TableCell>
                       <TableNumericCell className="font-medium">{formatCurrency(cn.total)}</TableNumericCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
+                        <div className="flex items-center gap-2 lg:gap-1">
                           <button
                             onClick={() => router.push(`/invoices/credit-notes/${cn.id}`)}
-                            className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
+                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 transition-colors"
                             title={t("common:buttons.view")}
                             aria-label={t("common:buttons.view")}
                           >
@@ -146,7 +184,7 @@ export function CreditNotesPage() {
                           </button>
                           <button
                             onClick={() => setDeleteConfirmId(cn.id)}
-                            className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors"
                             title={t("common:buttons.delete")}
                             aria-label={t("common:buttons.delete")}
                           >

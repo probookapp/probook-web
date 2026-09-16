@@ -147,18 +147,18 @@ export function InvoicesPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-(--color-text-primary)">{t("invoices:title")}</h1>
           <p className="text-sm sm:text-base text-(--color-text-secondary)">{t("invoices:subtitle")}</p>
         </div>
-        <div className="flex gap-2 self-start sm:self-auto">
+        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
           <Button variant="secondary" onClick={() => router.push("/invoices/credit-notes")} size="sm">
-            <Undo2 className="h-4 w-4 mr-2" />
+            <Undo2 className="h-4 w-4 me-2" />
             {t("invoices:creditNotes.title")}
           </Button>
           <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredInvoices?.length}>
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             {t("common:buttons.exportCsv")}
           </Button>
           {canCreate && (
             <Button onClick={() => router.push("/invoices/new")} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               {t("invoices:newInvoice")}
             </Button>
           )}
@@ -170,7 +170,7 @@ export function InvoicesPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("invoices:listTitle")}</CardTitle>
             <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 id="invoice-search"
                 name="invoice-search"
@@ -178,7 +178,7 @@ export function InvoicesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoComplete="off"
-                className="pl-9"
+                className="ps-9"
               />
             </div>
           </div>
@@ -196,12 +196,14 @@ export function InvoicesPage() {
               filteredInvoices.map((invoice) => (
                 <div key={invoice.id} className="p-4 flex items-start gap-3">
                   {canDelete && invoice.status === "DRAFT" && (
-                    <input
-                      type="checkbox"
-                      checked={selection.isSelected(invoice.id)}
-                      onChange={() => selection.toggle(invoice.id)}
-                      className="mt-1 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
+                    <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selection.isSelected(invoice.id)}
+                        onChange={() => selection.toggle(invoice.id)}
+                        className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                    </label>
                   )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
@@ -215,19 +217,19 @@ export function InvoicesPage() {
                       <span className="text-xs text-(--color-text-secondary)">{formatDate(invoice.issue_date)} → {formatDate(invoice.due_date)}</span>
                       <span className="font-medium text-(--color-text-primary)">{formatCurrency(invoice.total)}</span>
                     </div>
-                    <div className="flex justify-end gap-1 mt-2">
-                      <button onClick={() => router.push(`/invoices/${invoice.id}`)} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.view")} aria-label={t("common:buttons.view")}><Eye className="h-4 w-4" /></button>
+                    <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
+                      <button onClick={() => router.push(`/invoices/${invoice.id}`)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600" title={t("common:buttons.view")} aria-label={t("common:buttons.view")}><Eye className="h-4 w-4" /></button>
                       {canEdit && invoice.status === "DRAFT" && (
-                        <button onClick={() => router.push(`/invoices/${invoice.id}/edit`)} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.edit")} aria-label={t("common:buttons.edit")}><Pencil className="h-4 w-4" /></button>
+                        <button onClick={() => router.push(`/invoices/${invoice.id}/edit`)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600" title={t("common:buttons.edit")} aria-label={t("common:buttons.edit")}><Pencil className="h-4 w-4" /></button>
                       )}
                       {canEdit && invoice.status === "ISSUED" && (
-                        <button onClick={() => setMarkPaidId(invoice.id)} className="p-1 text-gray-500 hover:text-green-600" title={t("invoices:actions.markAsPaid")} aria-label={t("invoices:actions.markAsPaid")}><CheckCircle className="h-4 w-4" /></button>
+                        <button onClick={() => setMarkPaidId(invoice.id)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-green-600" title={t("invoices:actions.markAsPaid")} aria-label={t("invoices:actions.markAsPaid")}><CheckCircle className="h-4 w-4" /></button>
                       )}
                       {canCreate && (
-                        <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateInvoice.mutate(invoice.id); }} className="p-1 text-gray-500 hover:text-blue-600" title={t("invoices:actions.duplicate")} aria-label={t("invoices:actions.duplicate")} disabled={duplicateInvoice.isPending}><Copy className="h-4 w-4" /></button>
+                        <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateInvoice.mutate(invoice.id); }} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-blue-600" title={t("invoices:actions.duplicate")} aria-label={t("invoices:actions.duplicate")} disabled={duplicateInvoice.isPending}><Copy className="h-4 w-4" /></button>
                       )}
                       {canDelete && invoice.status === "DRAFT" && (
-                        <button onClick={() => setDeleteConfirmId(invoice.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>
+                        <button onClick={() => setDeleteConfirmId(invoice.id)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>
                       )}
                     </div>
                   </div>
@@ -251,14 +253,16 @@ export function InvoicesPage() {
               <TableRow>
                 <TableHead className="w-10">
                   {canDelete && (
-                    <input
-                      type="checkbox"
-                      checked={selection.isAllSelected}
-                      ref={(el) => { if (el) el.indeterminate = selection.isIndeterminate; }}
-                      onChange={() => selection.toggleAll(selectableInvoices)}
-                      disabled={selectableInvoices.length === 0}
-                      className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
+                    <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selection.isAllSelected}
+                        ref={(el) => { if (el) el.indeterminate = selection.isIndeterminate; }}
+                        onChange={() => selection.toggleAll(selectableInvoices)}
+                        disabled={selectableInvoices.length === 0}
+                        className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                    </label>
                   )}
                 </TableHead>
                 <TableHead>{t("invoices:fields.invoiceNumber")}</TableHead>
@@ -276,12 +280,14 @@ export function InvoicesPage() {
                   <TableRow key={invoice.id}>
                     <TableCell>
                       {canDelete && invoice.status === "DRAFT" ? (
-                        <input
-                          type="checkbox"
-                          checked={selection.isSelected(invoice.id)}
-                          onChange={() => selection.toggle(invoice.id)}
-                          className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                        />
+                        <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selection.isSelected(invoice.id)}
+                            onChange={() => selection.toggle(invoice.id)}
+                            className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                          />
+                        </label>
                       ) : null}
                     </TableCell>
                     <TableCell className="font-mono font-medium">
@@ -299,10 +305,10 @@ export function InvoicesPage() {
                       {formatCurrency(invoice.total)}
                     </TableNumericCell>
                     <TableCell>
-                      <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2 lg:gap-1">
                         <button
                           onClick={() => router.push(`/invoices/${invoice.id}`)}
-                          className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
+                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 transition-colors"
                           title={t("common:buttons.view")}
                           aria-label={t("common:buttons.view")}
                         >
@@ -311,7 +317,7 @@ export function InvoicesPage() {
                         {canEdit && invoice.status === "DRAFT" && (
                           <button
                             onClick={() => router.push(`/invoices/${invoice.id}/edit`)}
-                            className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
+                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 transition-colors"
                             title={t("common:buttons.edit")}
                             aria-label={t("common:buttons.edit")}
                           >
@@ -321,7 +327,7 @@ export function InvoicesPage() {
                         {canEdit && invoice.status === "ISSUED" && (
                           <button
                             onClick={() => setMarkPaidId(invoice.id)}
-                            className="p-1 text-gray-500 hover:text-green-600 transition-colors"
+                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-green-600 transition-colors"
                             title={t("invoices:actions.markAsPaid")}
                             aria-label={t("invoices:actions.markAsPaid")}
                           >
@@ -331,7 +337,7 @@ export function InvoicesPage() {
                         {canCreate && (
                           <button
                             onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateInvoice.mutate(invoice.id); }}
-                            className="p-1 text-gray-500 hover:text-blue-600 transition-colors"
+                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-blue-600 transition-colors"
                             title={t("invoices:actions.duplicate")}
                             aria-label={t("invoices:actions.duplicate")}
                             disabled={duplicateInvoice.isPending}
@@ -348,7 +354,7 @@ export function InvoicesPage() {
                                 archived: !invoice.archived_at,
                               });
                             }}
-                            className="p-1 text-gray-500 hover:text-amber-600 transition-colors"
+                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-amber-600 transition-colors"
                             title={t(invoice.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")}
                             aria-label={t(invoice.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")}
                             disabled={archiveInvoice.isPending}
@@ -362,7 +368,7 @@ export function InvoicesPage() {
                         )}
                         <button
                           onClick={() => router.push(`/invoices/${invoice.id}`)}
-                          className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
+                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 transition-colors"
                           title={t("invoices:actions.downloadPdf")}
                           aria-label={t("invoices:actions.downloadPdf")}
                         >
@@ -371,7 +377,7 @@ export function InvoicesPage() {
                         {canDelete && invoice.status === "DRAFT" && (
                           <button
                             onClick={() => setDeleteConfirmId(invoice.id)}
-                            className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title={t("common:buttons.delete")}
                             aria-label={t("common:buttons.delete")}
                           >

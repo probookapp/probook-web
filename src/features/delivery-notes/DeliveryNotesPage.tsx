@@ -168,7 +168,7 @@ export function DeliveryNotesPage() {
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           {canCreate && (
             <Button onClick={() => router.push("/delivery-notes/new")} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               {t("delivery:newDeliveryNote")}
             </Button>
           )}
@@ -180,7 +180,7 @@ export function DeliveryNotesPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("delivery:listTitle", "Delivery Note List")}</CardTitle>
             <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 id="delivery-note-search"
                 name="delivery-note-search"
@@ -188,7 +188,7 @@ export function DeliveryNotesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoComplete="off"
-                className="pl-9"
+                className="ps-9"
               />
             </div>
           </div>
@@ -205,17 +205,19 @@ export function DeliveryNotesPage() {
             {filteredDeliveryNotes && filteredDeliveryNotes.length > 0 ? (
               filteredDeliveryNotes.map((note) => (
                 <div key={note.id} className="p-4 flex items-start gap-3">
-                  <input
-                    type="checkbox"
-                    checked={selection.isSelected(note.id)}
-                    onChange={() => selection.toggle(note.id)}
-                    className="mt-1 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                  />
+                  <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selection.isSelected(note.id)}
+                      onChange={() => selection.toggle(note.id)}
+                      className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                  </label>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-mono font-medium text-(--color-text-primary)">{note.delivery_note_number}</span>
                       <Badge variant={statusConfig[note.status].variant}>
-                        <Truck className="h-3 w-3 mr-1" />
+                        <Truck className="h-3 w-3 me-1" />
                         {statusConfig[note.status].label}
                       </Badge>
                     </div>
@@ -232,13 +234,13 @@ export function DeliveryNotesPage() {
                         </Link>
                       )}
                     </div>
-                    <div className="flex justify-end gap-1 mt-2">
-                      <Link href={`/delivery-notes/${note.id}`} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.view")} aria-label={t("common:buttons.view")}><Eye className="h-4 w-4" /></Link>
+                    <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
+                      <Link href={`/delivery-notes/${note.id}`} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600" title={t("common:buttons.view")} aria-label={t("common:buttons.view")}><Eye className="h-4 w-4" /></Link>
                       {note.status === "DRAFT" && canEdit && (
-                        <Link href={`/delivery-notes/${note.id}/edit`} className="p-1 text-gray-500 hover:text-primary-600" title={t("common:buttons.edit")} aria-label={t("common:buttons.edit")}><Pencil className="h-4 w-4" /></Link>
+                        <Link href={`/delivery-notes/${note.id}/edit`} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600" title={t("common:buttons.edit")} aria-label={t("common:buttons.edit")}><Pencil className="h-4 w-4" /></Link>
                       )}
-                      {canCreate && <button onClick={() => handleDuplicate(note)} className="p-1 text-gray-500 hover:text-primary-600" title={t("delivery:actions.duplicate", "Duplicate")} aria-label={t("delivery:actions.duplicate", "Duplicate")}><Copy className="h-4 w-4" /></button>}
-                      {canDelete && <button onClick={() => setDeleteConfirmId(note.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
+                      {canCreate && <button onClick={() => handleDuplicate(note)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600" title={t("delivery:actions.duplicate", "Duplicate")} aria-label={t("delivery:actions.duplicate", "Duplicate")}><Copy className="h-4 w-4" /></button>}
+                      {canDelete && <button onClick={() => setDeleteConfirmId(note.id)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
                     </div>
                   </div>
                 </div>
@@ -253,13 +255,15 @@ export function DeliveryNotesPage() {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">
-                  <input
-                    type="checkbox"
-                    checked={selection.isAllSelected}
-                    ref={(el) => { if (el) el.indeterminate = selection.isIndeterminate; }}
-                    onChange={() => selection.toggleAll()}
-                    className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                  />
+                  <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selection.isAllSelected}
+                      ref={(el) => { if (el) el.indeterminate = selection.isIndeterminate; }}
+                      onChange={() => selection.toggleAll()}
+                      className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    />
+                  </label>
                 </TableHead>
                 <TableHead>{t("delivery:fields.deliveryNoteNumber")}</TableHead>
                 <TableHead>{t("delivery:fields.client")}</TableHead>
@@ -275,12 +279,14 @@ export function DeliveryNotesPage() {
                 filteredDeliveryNotes.map((note) => (
                   <TableRow key={note.id}>
                     <TableCell>
-                      <input
-                        type="checkbox"
-                        checked={selection.isSelected(note.id)}
-                        onChange={() => selection.toggle(note.id)}
-                        className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                      />
+                      <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selection.isSelected(note.id)}
+                          onChange={() => selection.toggle(note.id)}
+                          className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        />
+                      </label>
                     </TableCell>
                     <TableCell className="font-mono font-medium">
                       {note.delivery_note_number}
@@ -292,7 +298,7 @@ export function DeliveryNotesPage() {
                     </TableCell>
                     <TableCell>
                       <Badge variant={statusConfig[note.status].variant}>
-                        <Truck className="h-3 w-3 mr-1" />
+                        <Truck className="h-3 w-3 me-1" />
                         {statusConfig[note.status].label}
                       </Badge>
                     </TableCell>
@@ -310,10 +316,10 @@ export function DeliveryNotesPage() {
                       )}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 lg:gap-1">
                         <Link
                           href={`/delivery-notes/${note.id}`}
-                          className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
+                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 transition-colors"
                           title={t("common:buttons.view")}
                           aria-label={t("common:buttons.view")}
                         >
@@ -322,7 +328,7 @@ export function DeliveryNotesPage() {
                         {note.status === "DRAFT" && canEdit && (
                           <Link
                             href={`/delivery-notes/${note.id}/edit`}
-                            className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
+                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 transition-colors"
                             title={t("common:buttons.edit")}
                             aria-label={t("common:buttons.edit")}
                           >
@@ -332,7 +338,7 @@ export function DeliveryNotesPage() {
                         {canCreate && (
                         <button
                           onClick={() => handleDuplicate(note)}
-                          className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
+                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 transition-colors"
                           title={t("delivery:actions.duplicate", "Duplicate")}
                           aria-label={t("delivery:actions.duplicate", "Duplicate")}
                         >
@@ -342,7 +348,7 @@ export function DeliveryNotesPage() {
                         {canDelete && (
                         <button
                           onClick={() => setDeleteConfirmId(note.id)}
-                          className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                           title={t("common:buttons.delete")}
                           aria-label={t("common:buttons.delete")}
                         >
@@ -409,7 +415,7 @@ export function DeliveryNotesPage() {
               onClick={handleCreateInvoiceFromSelection}
               isLoading={createInvoiceFromDNs.isPending}
             >
-              <FileText className="h-4 w-4 mr-2" />
+              <FileText className="h-4 w-4 me-2" />
               {t("delivery:createInvoiceFromSelection")}
             </Button>
           )}

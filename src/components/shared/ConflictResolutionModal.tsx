@@ -52,7 +52,7 @@ export function ConflictResolutionModal() {
           <h3 className="text-lg font-semibold">
             {t("conflict.title")}
             {conflicts.length > 1 && (
-              <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-400">
+              <span className="ms-2 text-sm font-normal text-gray-500 dark:text-gray-400">
                 (1/{conflicts.length})
               </span>
             )}

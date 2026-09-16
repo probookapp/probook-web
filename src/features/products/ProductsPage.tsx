@@ -222,18 +222,18 @@ export function ProductsPage() {
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
         </div>
         {activeTab === "products" && (
-          <div className="flex gap-2 self-start sm:self-auto">
+          <div className="flex flex-wrap gap-2 self-start sm:self-auto">
             <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredProducts?.length}>
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               {tCommon("buttons.exportCsv")}
             </Button>
             <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 me-2" />
               {tCommon("buttons.import")}
             </Button>
             {canCreate && (
               <Button onClick={() => handleOpenModal()} size="sm">
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="h-4 w-4 me-2" />
                 {t("newProduct")}
               </Button>
             )}
@@ -283,7 +283,7 @@ export function ProductsPage() {
               <span className="text-sm font-medium text-amber-800 dark:text-amber-300">
                 {t("lowStock.banner", { count: lowStock.length })}
               </span>
-              <span className="ml-auto text-xs text-amber-700 dark:text-amber-400">
+              <span className="ms-auto text-xs text-amber-700 dark:text-amber-400">
                 {showLowStock ? t("lowStock.hide") : t("lowStock.show")}
               </span>
             </button>
@@ -329,7 +329,7 @@ export function ProductsPage() {
                   </select>
                 )}
                 <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                   <Input
                     id="product-search"
                     name="product-search"
@@ -337,7 +337,7 @@ export function ProductsPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     autoComplete="off"
-                    className="pl-9"
+                    className="ps-9"
                   />
                 </div>
               </div>
@@ -349,35 +349,24 @@ export function ProductsPage() {
               {filteredProducts && filteredProducts.length > 0 ? (
                 filteredProducts.map((product) => (
                   <div key={product.id} className="p-4 flex items-start gap-3">
-                    <input
-                      type="checkbox"
-                      checked={selection.isSelected(product.id)}
-                      onChange={() => selection.toggle(product.id)}
-                      className="mt-1 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
+                    <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selection.isSelected(product.id)}
+                        onChange={() => selection.toggle(product.id)}
+                        className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                    </label>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          {product.is_service ? (
-                            <Badge variant="info"><Briefcase className="h-3 w-3 mr-1" />{t("types.service")}</Badge>
-                          ) : (
-                            <Badge variant="default"><Package className="h-3 w-3 mr-1" />{t("types.product")}</Badge>
-                          )}
-                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{product.designation}</p>
-                        </div>
-                        <div className="flex items-center gap-1 shrink-0">
-                          {!product.is_service && (
-                            <>
-                              {canEdit && <button onClick={() => handleAdjustStock(product)} className="p-1 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400" aria-label={t("adjustStock.title")} title={t("adjustStock.title")}><SlidersHorizontal className="h-4 w-4" /></button>}
-                              <button onClick={() => setMovementsProduct(product)} className="p-1 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400" aria-label={t("movements.title")} title={t("movements.title")}><History className="h-4 w-4" /></button>
-                            </>
-                          )}
-                          <button onClick={() => setSupplierProductId(product.id)} className="p-1 text-gray-500 hover:text-amber-600 dark:hover:text-amber-400" aria-label={t("fields.suppliers")} title={t("fields.suppliers")}><Truck className="h-4 w-4" /></button>
-                          {canEdit && <button onClick={() => handleOpenModal(product)} className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
-                          {canDelete && <button onClick={() => setDeleteConfirmId(product.id)} className="p-1 text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
-                        </div>
+                      <div className="flex items-start gap-2">
+                        {product.is_service ? (
+                          <Badge variant="info" className="shrink-0"><Briefcase className="h-3 w-3 me-1" />{t("types.service")}</Badge>
+                        ) : (
+                          <Badge variant="default" className="shrink-0"><Package className="h-3 w-3 me-1" />{t("types.product")}</Badge>
+                        )}
+                        <p className="min-w-0 font-medium text-gray-900 dark:text-gray-100 wrap-break-word">{product.designation}</p>
                       </div>
-                      <div className="flex items-center gap-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      <div className="flex flex-wrap items-center gap-x-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
                         {product.reference && <span className="font-mono">{product.reference}</span>}
                         {getCategoryName(product.category_id) && (
                           <span className="inline-flex items-center gap-1"><Folder className="h-3 w-3" />{getCategoryName(product.category_id)}</span>
@@ -395,13 +384,26 @@ export function ProductsPage() {
                                 onClick={() => setStockLocationsProduct(product)}
                                 aria-label={t("stockLocations.title")}
                                 title={t("stockLocations.title")}
-                                className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
+                                className="-my-2 -me-3 p-3 rounded-md text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
                               >
                                 <MapPin className="h-4 w-4" />
                               </button>
                             )}
                           </div>
                         )}
+                      </div>
+                      {/* Five icons beside the name left it a few letters wide:
+                          on a phone they get a row of their own. */}
+                      <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
+                        {!product.is_service && (
+                          <>
+                            {canEdit && <button onClick={() => handleAdjustStock(product)} className="p-3 rounded-md text-gray-500 hover:text-blue-600 dark:hover:text-blue-400" aria-label={t("adjustStock.title")} title={t("adjustStock.title")}><SlidersHorizontal className="h-4 w-4" /></button>}
+                            <button onClick={() => setMovementsProduct(product)} className="p-3 rounded-md text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400" aria-label={t("movements.title")} title={t("movements.title")}><History className="h-4 w-4" /></button>
+                          </>
+                        )}
+                        <button onClick={() => setSupplierProductId(product.id)} className="p-3 rounded-md text-gray-500 hover:text-amber-600 dark:hover:text-amber-400" aria-label={t("fields.suppliers")} title={t("fields.suppliers")}><Truck className="h-4 w-4" /></button>
+                        {canEdit && <button onClick={() => handleOpenModal(product)} className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
+                        {canDelete && <button onClick={() => setDeleteConfirmId(product.id)} className="p-3 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
                       </div>
                     </div>
                   </div>
@@ -416,17 +418,19 @@ export function ProductsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10">
-                    <input type="checkbox" checked={selection.isAllSelected} ref={(el) => { if (el) el.indeterminate = selection.isIndeterminate; }} onChange={() => selection.toggleAll()} className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500" />
+                    <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
+                      <input type="checkbox" checked={selection.isAllSelected} ref={(el) => { if (el) el.indeterminate = selection.isIndeterminate; }} onChange={() => selection.toggleAll()} className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500" />
+                    </label>
                   </TableHead>
                   <TableHead>{t("fields.type")}</TableHead>
                   <TableHead>{t("fields.reference")}</TableHead>
                   <TableHead>{t("fields.designation")}</TableHead>
                   <TableHead>{t("fields.category")}</TableHead>
                   <TableHead>{t("fields.suppliers")}</TableHead>
-                  <TableHead className="text-end">{t("fields.purchasePriceHt")}</TableHead>
-                  <TableHead className="text-end">{t("fields.priceHT")}</TableHead>
+                  <TableHead className="text-end whitespace-nowrap">{t("fields.purchasePriceHt")}</TableHead>
+                  <TableHead className="text-end whitespace-nowrap">{t("fields.priceHT")}</TableHead>
                   <TableHead>{t("fields.quantity")}</TableHead>
-                  <TableHead className="w-24">{tCommon("buttons.actions")}</TableHead>
+                  <TableHead>{tCommon("buttons.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -434,17 +438,19 @@ export function ProductsPage() {
                   filteredProducts.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell>
-                        <input type="checkbox" checked={selection.isSelected(product.id)} onChange={() => selection.toggle(product.id)} className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500" />
+                        <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
+                          <input type="checkbox" checked={selection.isSelected(product.id)} onChange={() => selection.toggle(product.id)} className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500" />
+                        </label>
                       </TableCell>
                       <TableCell>
                         {product.is_service ? (
                           <Badge variant="info">
-                            <Briefcase className="h-3 w-3 mr-1" />
+                            <Briefcase className="h-3 w-3 me-1" />
                             {t("types.service")}
                           </Badge>
                         ) : (
                           <Badge variant="default">
-                            <Package className="h-3 w-3 mr-1" />
+                            <Package className="h-3 w-3 me-1" />
                             {t("types.product")}
                           </Badge>
                         )}
@@ -452,7 +458,9 @@ export function ProductsPage() {
                       <TableCell className="font-mono text-sm text-gray-600 dark:text-gray-400">
                         {product.reference || "-"}
                       </TableCell>
-                      <TableCell className="font-medium text-gray-900 dark:text-gray-100">{product.designation}</TableCell>
+                      {/* A floor under the name: the figures are nowrap, so without one the
+                          designation was the column that gave way, a word per line. */}
+                      <TableCell className="min-w-48 font-medium text-gray-900 dark:text-gray-100">{product.designation}</TableCell>
                       <TableCell className="text-gray-600 dark:text-gray-400">
                         {getCategoryName(product.category_id) ? (
                           <span className="inline-flex items-center gap-1">
@@ -493,7 +501,7 @@ export function ProductsPage() {
                                 onClick={() => setStockLocationsProduct(product)}
                                 aria-label={t("stockLocations.title")}
                                 title={t("stockLocations.title")}
-                                className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                                className="-my-2 p-3 lg:p-1.5 rounded-md text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                               >
                                 <MapPin className="h-4 w-4" />
                               </button>
@@ -502,7 +510,7 @@ export function ProductsPage() {
                         )}
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 lg:gap-1">
                           {!product.is_service && (
                             <>
                               {canEdit && (
@@ -510,7 +518,7 @@ export function ProductsPage() {
                                 onClick={() => handleAdjustStock(product)}
                                 aria-label={t("adjustStock.title")}
                                 title={t("adjustStock.title")}
-                                className="p-1 text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                                className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                               >
                                 <SlidersHorizontal className="h-4 w-4" />
                               </button>
@@ -519,7 +527,7 @@ export function ProductsPage() {
                                 onClick={() => setMovementsProduct(product)}
                                 aria-label={t("movements.title")}
                                 title={t("movements.title")}
-                                className="p-1 text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                                className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                               >
                                 <History className="h-4 w-4" />
                               </button>
@@ -529,7 +537,7 @@ export function ProductsPage() {
                             onClick={() => setSupplierProductId(product.id)}
                             aria-label={t("fields.suppliers")}
                             title={t("fields.suppliers")}
-                            className="p-1 text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
                           >
                             <Truck className="h-4 w-4" />
                           </button>
@@ -537,7 +545,7 @@ export function ProductsPage() {
                           <button
                             onClick={() => handleOpenModal(product)}
                             aria-label={tCommon("buttons.edit")}
-                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                           >
                             <Pencil className="h-4 w-4" />
                           </button>
@@ -546,7 +554,7 @@ export function ProductsPage() {
                           <button
                             onClick={() => setDeleteConfirmId(product.id)}
                             aria-label={tCommon("buttons.delete")}
-                            className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                             title={tCommon("buttons.delete")}
                           >
                             <Trash2 className="h-4 w-4" />

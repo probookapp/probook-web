@@ -173,7 +173,7 @@ export function TenantsPage() {
             )
           }
         >
-          <Download className="h-4 w-4 mr-2" />
+          <Download className="h-4 w-4 me-2" />
           {t("tenants.exportCsv")}
         </Button>
       </div>
@@ -209,14 +209,14 @@ export function TenantsPage() {
                 ]}
               />
               <div className="relative w-full sm:w-56 md:w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   name="tenant-search"
                   placeholder={t("tenants.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoComplete="off"
-                  className="pl-9"
+                  className="ps-9"
                 />
               </div>
             </div>

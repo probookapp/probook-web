@@ -47,7 +47,7 @@ function ProductTile({
           <span className="text-xs text-(--color-text-secondary) truncate">
             {product.reference || product.barcode || "-"}
           </span>
-          <span className="font-bold text-sm text-primary-600 shrink-0 ml-1">
+          <span className="font-bold text-sm text-primary-600 shrink-0 ms-1">
             {formatAmount(product.unit_price * (1 + product.tax_rate / 100))}
           </span>
         </div>
@@ -84,15 +84,15 @@ function ProductRow({ product, onClick }: { product: Product; onClick: () => voi
   return (
     <button
       onClick={onClick}
-      className="w-full text-start px-3 py-2 border-b border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex items-center gap-3"
+      className="w-full text-start px-3 py-2.5 min-h-12 border-b border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex items-center gap-3"
     >
       <div className="min-w-0 flex-1">
         <p className="font-medium text-sm truncate">{product.designation}</p>
         <p className="text-xs text-(--color-text-secondary) truncate">
           {product.reference || product.barcode || "-"}
-          {outOfStock && <span className="ml-2 text-red-600 dark:text-red-400">{t("outOfStock")}</span>}
+          {outOfStock && <span className="ms-2 text-red-600 dark:text-red-400">{t("outOfStock")}</span>}
           {lowStock && (
-            <span className="ml-2 text-orange-500 dark:text-orange-400">
+            <span className="ms-2 text-orange-500 dark:text-orange-400">
               {t("lowStock", { count: product.quantity ?? 0 })}
             </span>
           )}
@@ -121,7 +121,7 @@ function PriceTierPicker({ product, onSelect, onClose }: PriceTierPickerProps) {
       <div className="space-y-2">
         <button
           onClick={() => onSelect(product)}
-          className="w-full text-start px-3 py-2 rounded-lg border border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex justify-between items-center"
+          className="w-full text-start px-3 py-3 rounded-lg border border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex justify-between items-center"
         >
           <span className="text-sm font-medium">{t("pos:defaultPrice")}</span>
           <span className="text-sm font-bold text-primary-600">{formatAmount(product.unit_price * (1 + product.tax_rate / 100))}</span>
@@ -130,7 +130,7 @@ function PriceTierPicker({ product, onSelect, onClose }: PriceTierPickerProps) {
           <button
             key={p.id}
             onClick={() => onSelect(product, p.label)}
-            className="w-full text-start px-3 py-2 rounded-lg border border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex justify-between items-center"
+            className="w-full text-start px-3 py-3 rounded-lg border border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex justify-between items-center"
           >
             <span className="text-sm font-medium">
               {t(`products:pricing.labels.${p.label}`, { defaultValue: p.label })}
@@ -203,24 +203,24 @@ export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearc
       {/* Search input */}
       <div className="p-4 border-b border-(--color-border-primary)">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-(--color-text-secondary)" />
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-(--color-text-secondary)" />
           <input
             type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder={t("searchProducts")}
-            className="w-full pl-10 pr-4 py-3 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-full ps-10 pe-4 py-3 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
             data-barcode-input="true"
           />
         </div>
-        <div className="flex justify-end gap-1 mt-2">
+        <div className="flex justify-end gap-2 mt-2">
           <button
             type="button"
             onClick={() => setViewMode("grid")}
             aria-pressed={viewMode === "grid"}
             title={t("gridView")}
             aria-label={t("gridView")}
-            className={`p-1.5 rounded-md transition-colors ${
+            className={`p-3 rounded-md transition-colors ${
               viewMode === "grid"
                 ? "bg-primary-600 text-white"
                 : "text-(--color-text-secondary) hover:bg-(--color-bg-secondary)"
@@ -234,7 +234,7 @@ export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearc
             aria-pressed={viewMode === "list"}
             title={t("compactView")}
             aria-label={t("compactView")}
-            className={`p-1.5 rounded-md transition-colors ${
+            className={`p-3 rounded-md transition-colors ${
               viewMode === "list"
                 ? "bg-primary-600 text-white"
                 : "text-(--color-text-secondary) hover:bg-(--color-bg-secondary)"
@@ -250,7 +250,7 @@ export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearc
         <div className="px-4 py-2 border-b border-(--color-border-primary) flex gap-2 overflow-x-auto shrink-0">
           <button
             onClick={() => setSelectedCategory(null)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+            className={`px-3 py-2.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
               selectedCategory === null
                 ? "bg-primary-600 text-white"
                 : "bg-(--color-bg-tertiary) text-(--color-text-secondary) hover:bg-(--color-bg-secondary)"
@@ -262,7 +262,7 @@ export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearc
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id === selectedCategory ? null : cat.id)}
-              className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+              className={`px-3 py-2.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
                 selectedCategory === cat.id
                   ? "bg-primary-600 text-white"
                   : "bg-(--color-bg-tertiary) text-(--color-text-secondary) hover:bg-(--color-bg-secondary)"
@@ -275,12 +275,15 @@ export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearc
       )}
 
       {/* Product grid */}
-      <div className={`flex-1 overflow-auto ${viewMode === "list" ? "" : "p-4"}`}>
+      {/* Columns follow the panel, not the screen: the same panel is 40 % of a
+          laptop and the whole of a tablet in portrait, and two tiles 350 px
+          wide wasted most of the latter. */}
+      <div className={`@container flex-1 overflow-auto ${viewMode === "list" ? "" : "p-4"}`}>
         <div
           className={
             viewMode === "list"
               ? "divide-y divide-(--color-border-primary)"
-              : "grid grid-cols-2 gap-2"
+              : "grid grid-cols-2 @md:grid-cols-3 @2xl:grid-cols-4 gap-2"
           }
         >
           {filteredProducts.map((product) => {

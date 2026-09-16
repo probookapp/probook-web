@@ -13,6 +13,8 @@ export function Footer() {
 
   return (
     <footer className="py-16 px-4 sm:px-6 lg:px-8 bg-gray-900 dark:bg-gray-950 text-gray-400">
+      {/* Links are 40px tall below lg, where they are tapped: 18px of text
+          was the whole target. */}
       <div className="max-w-7xl mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
           <div>
@@ -28,14 +30,14 @@ export function Footer() {
             <h4 className="text-sm font-semibold mb-4 text-white">
               {t("landing.footer.product")}
             </h4>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-1 lg:space-y-2 text-sm">
               <li>
-                <Link href={`/${locale}/#features`} className="hover:text-white transition-colors">
+                <Link href={`/${locale}/#features`} className="inline-flex min-h-10 lg:min-h-0 items-center hover:text-white transition-colors">
                   {t("landing.footer.features")}
                 </Link>
               </li>
               <li>
-                <Link href={`/${locale}/pricing`} className="hover:text-white transition-colors">
+                <Link href={`/${locale}/pricing`} className="inline-flex min-h-10 lg:min-h-0 items-center hover:text-white transition-colors">
                   {t("landing.footer.pricing")}
                 </Link>
               </li>
@@ -45,19 +47,19 @@ export function Footer() {
             <h4 className="text-sm font-semibold mb-4 text-white">
               {t("landing.footer.company")}
             </h4>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-1 lg:space-y-2 text-sm">
               <li>
-                <Link href={`/${locale}/about`} className="hover:text-white transition-colors">
+                <Link href={`/${locale}/about`} className="inline-flex min-h-10 lg:min-h-0 items-center hover:text-white transition-colors">
                   {t("landing.footer.about")}
                 </Link>
               </li>
               <li>
-                <Link href={`/${locale}/contact`} className="hover:text-white transition-colors">
+                <Link href={`/${locale}/contact`} className="inline-flex min-h-10 lg:min-h-0 items-center hover:text-white transition-colors">
                   {t("landing.footer.contact")}
                 </Link>
               </li>
               <li>
-                <Link href={`/${locale}/faq`} className="hover:text-white transition-colors">
+                <Link href={`/${locale}/faq`} className="inline-flex min-h-10 lg:min-h-0 items-center hover:text-white transition-colors">
                   {t("landing.footer.faq")}
                 </Link>
               </li>
@@ -67,14 +69,14 @@ export function Footer() {
             <h4 className="text-sm font-semibold mb-4 text-white">
               {t("landing.footer.legal")}
             </h4>
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-1 lg:space-y-2 text-sm">
               <li>
-                <Link href={`/${locale}/privacy`} className="hover:text-white transition-colors">
+                <Link href={`/${locale}/privacy`} className="inline-flex min-h-10 lg:min-h-0 items-center hover:text-white transition-colors">
                   {t("landing.footer.privacy")}
                 </Link>
               </li>
               <li>
-                <Link href={`/${locale}/terms`} className="hover:text-white transition-colors">
+                <Link href={`/${locale}/terms`} className="inline-flex min-h-10 lg:min-h-0 items-center hover:text-white transition-colors">
                   {t("landing.footer.terms")}
                 </Link>
               </li>

@@ -134,8 +134,11 @@ export function PricingPage() {
           type="button"
           role="switch"
           aria-checked={billingCycle === "yearly"}
+          aria-label={t("pricing.yearly")}
           onClick={() => setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+          // The pseudo-element widens the target to 44px tall without growing the
+          // switch itself.
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors before:absolute before:-inset-2.5 ${
             billingCycle === "yearly" ? "bg-primary-600" : "bg-gray-300 dark:bg-gray-600"
           }`}
         >
@@ -155,7 +158,7 @@ export function PricingPage() {
           >
             {t("pricing.yearly")}
           </span>
-          <span className="hidden sm:inline absolute left-full top-1/2 -translate-y-1/2 ml-2 whitespace-nowrap">
+          <span className="hidden sm:inline absolute start-full top-1/2 -translate-y-1/2 ms-2 whitespace-nowrap">
             <span className="inline-flex items-center rounded-full bg-green-50 dark:bg-green-950 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-300 ring-1 ring-inset ring-green-600/20">
               {t("pricing.saveWithYearly")}
             </span>
@@ -333,7 +336,7 @@ export function PricingPage() {
           </p>
           <Link
             href={`/${locale}/faq`}
-            className="text-primary-600 dark:text-primary-400 font-medium hover:underline"
+            className="inline-flex min-h-10 items-center text-primary-600 dark:text-primary-400 font-medium hover:underline"
           >
             {t("pricing.viewFaq")}
           </Link>

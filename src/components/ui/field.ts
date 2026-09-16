@@ -10,8 +10,11 @@ import { cn } from "@/lib/utils";
  * like it: the eye reads the near-miss as a defect.
  */
 
-/** Matches Button's `md` height, so a field and a button sit on one line. */
-export const FIELD_HEIGHT = "h-9";
+/**
+ * Matches Button's `md` height, so a field and a button sit on one line —
+ * including its 40px floor below lg, where fields are tapped.
+ */
+export const FIELD_HEIGHT = "h-9 max-lg:min-h-10";
 
 export const fieldLabel =
   "block text-sm font-medium text-(--color-text-secondary) mb-1.5";
@@ -20,7 +23,9 @@ export const fieldError = "mt-1.5 text-sm text-danger-600 dark:text-danger-400";
 
 export function fieldBase(hasError?: boolean, className?: string) {
   return cn(
-    "w-full px-3 rounded-md border text-sm",
+    // 16px on phones: iOS zooms the page in on any field set smaller, and
+    // leaves it zoomed (and scrolling sideways) once the keyboard closes.
+    "w-full px-3 rounded-md border text-base sm:text-sm",
     "bg-(--color-bg-input) text-(--color-text-primary)",
     "transition-[border-color,box-shadow] duration-150",
     "placeholder:text-(--color-text-tertiary)",

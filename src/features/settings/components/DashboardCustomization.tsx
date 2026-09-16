@@ -32,12 +32,12 @@ export function DashboardCustomization() {
           return (
             <li
               key={id}
-              className="flex items-center justify-between gap-3 px-4 py-3 bg-(--color-bg-secondary)"
+              className="flex items-center justify-between gap-3 ps-4 pe-2 py-1.5 bg-(--color-bg-secondary)"
             >
-              <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+              <label className="flex items-center gap-3 py-2 cursor-pointer flex-1 min-w-0">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  className="h-4 w-4 shrink-0 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                   checked={isVisible}
                   onChange={() => toggle(id)}
                 />
@@ -51,10 +51,11 @@ export function DashboardCustomization() {
                   {t(`dashboard:stats.${id}`)}
                 </span>
               </label>
-              <div className="flex items-center gap-1 shrink-0">
+              <div className="flex items-center gap-2 lg:gap-1 shrink-0">
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="w-10 px-0 max-lg:h-10 lg:w-8"
                   onClick={() => moveUp(id)}
                   disabled={index === 0}
                   aria-label={t("dashboardCustomization.moveUp")}
@@ -65,6 +66,7 @@ export function DashboardCustomization() {
                 <Button
                   variant="ghost"
                   size="sm"
+                  className="w-10 px-0 max-lg:h-10 lg:w-8"
                   onClick={() => moveDown(id)}
                   disabled={index === order.length - 1}
                   aria-label={t("dashboardCustomization.moveDown")}
@@ -80,7 +82,7 @@ export function DashboardCustomization() {
 
       <div className="flex justify-end">
         <Button variant="secondary" size="sm" onClick={reset}>
-          <RotateCcw className="h-4 w-4 mr-2" />
+          <RotateCcw className="h-4 w-4 me-2" />
           {t("dashboardCustomization.reset")}
         </Button>
       </div>

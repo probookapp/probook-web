@@ -294,9 +294,11 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6">
+    // A settings form is read field by field, not scanned like a table: on a
+    // 1920 px screen full-width inputs put the label a metre from the value.
+    <div className="space-y-6 max-w-5xl">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
         <p className="text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
       </div>
 
@@ -359,7 +361,7 @@ export function SettingsPage() {
                   key={lang.value}
                   type="button"
                   onClick={() => handleLanguageChange(lang.value)}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-colors ${
+                  className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 rounded-lg border-2 text-center transition-colors ${
                     locale === lang.value
                       ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                       : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300'
@@ -387,7 +389,7 @@ export function SettingsPage() {
                   key={themeOption.value}
                   type="button"
                   onClick={() => handleThemeChange(themeOption.value)}
-                  className={`flex items-center justify-center gap-2 px-4 py-3 rounded-lg border-2 transition-colors ${
+                  className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-3 rounded-lg border-2 text-center transition-colors ${
                     theme === themeOption.value
                       ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                       : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 text-gray-700 dark:text-gray-300'
@@ -407,8 +409,8 @@ export function SettingsPage() {
           <CardTitle>{t("branding.title")}</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center gap-6">
-            <div className="w-24 h-24 sm:w-32 sm:h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center bg-gray-50 dark:bg-gray-800 overflow-hidden">
+          <div className="flex flex-wrap items-center gap-4 sm:gap-6">
+            <div className="shrink-0 w-24 h-24 sm:w-32 sm:h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg flex items-center justify-center bg-gray-50 dark:bg-gray-800 overflow-hidden">
               {logoBase64 ? (
                 /* eslint-disable-next-line @next/next/no-img-element */
                 <img
@@ -422,12 +424,12 @@ export function SettingsPage() {
               )}
             </div>
             <div className="space-y-3">
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
                 {t("branding.logoDescription")}
                 <br />
                 {t("branding.acceptedFormats")}
               </p>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -441,7 +443,7 @@ export function SettingsPage() {
                   onClick={handleUploadLogo}
                   isLoading={uploadLogo.isPending}
                 >
-                  <Upload className="h-4 w-4 mr-2" />
+                  <Upload className="h-4 w-4 me-2" />
                   {logoBase64 ? t("branding.changeLogo") : t("branding.uploadLogo")}
                 </Button>
                 {logoBase64 && (
@@ -451,7 +453,7 @@ export function SettingsPage() {
                     onClick={handleDeleteLogo}
                     isLoading={deleteLogo.isPending}
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-4 w-4 me-2" />
                     {t("branding.delete")}
                   </Button>
                 )}
@@ -656,10 +658,10 @@ export function SettingsPage() {
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {t("taxes.description")}
               </p>
-              <label className="mt-4 flex items-center gap-3 cursor-pointer">
+              <label className="mt-2 flex items-center gap-3 py-2 cursor-pointer">
                 <input
                   type="checkbox"
-                  className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  className="h-4 w-4 shrink-0 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                   {...register("stamp_duty_enabled")}
                 />
                 <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -706,20 +708,20 @@ export function SettingsPage() {
                 error={errors.pos_low_stock_threshold?.message}
               />
             </div>
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label className="flex items-center gap-3 py-2 cursor-pointer">
               <input
                 type="checkbox"
-                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                className="h-4 w-4 shrink-0 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                 {...register("pos_auto_print_receipt")}
               />
               <span className="text-sm text-gray-700 dark:text-gray-300">
                 {t("pos.autoPrintReceipt")}
               </span>
             </label>
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label className="flex items-center gap-3 py-2 cursor-pointer">
               <input
                 type="checkbox"
-                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                className="h-4 w-4 shrink-0 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                 {...register("pos_show_stock_warning")}
               />
               <span className="text-sm text-gray-700 dark:text-gray-300">
@@ -730,13 +732,13 @@ export function SettingsPage() {
           <CardFooter>
             <div className="flex items-center gap-4 w-full">
               {saveSuccess && (
-                <span className="text-green-600 text-sm">
+                <span className="text-green-600 dark:text-green-400 text-sm">
                   {t("messages.saveSuccess")}
                 </span>
               )}
               <div className="flex-1" />
               <Button type="submit" isLoading={updateSettings.isPending} disabled={!isDirty}>
-                <Save className="h-4 w-4 mr-2" />
+                <Save className="h-4 w-4 me-2" />
                 {t("buttons.save")}
               </Button>
             </div>

@@ -249,7 +249,7 @@ export function SubscriptionsPage() {
         </div>
         <div className="flex gap-2 self-start sm:self-auto">
           <Button size="sm" onClick={handleOpenCreate}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t("subscriptions.create")}
           </Button>
           <Button
@@ -270,7 +270,7 @@ export function SubscriptionsPage() {
               )
             }
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             {t("subscriptions.exportCsv")}
           </Button>
         </div>
@@ -296,14 +296,14 @@ export function SubscriptionsPage() {
                 ]}
               />
               <div className="relative w-full sm:w-56">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
                   name="subscription-search"
                   placeholder={t("subscriptions.searchPlaceholder")}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   autoComplete="off"
-                  className="pl-9"
+                  className="ps-9"
                 />
               </div>
             </div>

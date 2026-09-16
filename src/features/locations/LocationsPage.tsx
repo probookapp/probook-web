@@ -143,10 +143,10 @@ export function LocationsPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
           <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
         </div>
-        <div className="flex gap-2 self-start sm:self-auto">
+        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
           {tab === "locations" ? (
             <Button onClick={() => handleOpenLocationModal()} size="sm">
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               {t("newLocation")}
             </Button>
           ) : (
@@ -155,7 +155,7 @@ export function LocationsPage() {
               size="sm"
               disabled={(locations?.length ?? 0) < 2}
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="h-4 w-4 me-2" />
               {t("transfers.newTransfer")}
             </Button>
           )}
@@ -170,7 +170,7 @@ export function LocationsPage() {
               key={tabItem.key}
               onClick={() => setTab(tabItem.key)}
               className={cn(
-                "py-3 border-b-2 text-sm font-medium transition-colors",
+                "min-w-10 px-1 py-3 border-b-2 text-sm font-medium transition-colors",
                 tab === tabItem.key
                   ? "border-primary-600 text-primary-600 dark:text-primary-400"
                   : "border-transparent text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
@@ -193,7 +193,53 @@ export function LocationsPage() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              {/* Phones: one card per location instead of a table to scroll sideways. */}
+              <ul className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                {locations && locations.length > 0 ? (
+                  locations.map((location) => (
+                    <li key={location.id} className="flex items-start gap-3 px-4 py-3">
+                      {location.type === "warehouse" ? (
+                        <Warehouse className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                      ) : (
+                        <Store className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
+                      )}
+                      <div className="min-w-0 flex-1">
+                        <p className="flex flex-wrap items-center gap-2 font-medium text-gray-900 dark:text-gray-100">
+                          {location.name}
+                          {location.is_default && <Badge variant="success">{t("fields.default")}</Badge>}
+                        </p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {t(`types.${location.type === "warehouse" ? "warehouse" : "store"}`)}
+                          {location.address ? ` · ${location.address}` : ""}
+                        </p>
+                      </div>
+                      <div className="-me-2 flex shrink-0 items-center gap-1">
+                        <button
+                          onClick={() => handleOpenLocationModal(location)}
+                          className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors"
+                          title={tCommon("buttons.edit")}
+                          aria-label={tCommon("buttons.edit")}
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirmId(location.id)}
+                          disabled={location.is_default}
+                          className="p-3 rounded-md text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                          title={tCommon("buttons.delete")}
+                          aria-label={tCommon("buttons.delete")}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </li>
+                  ))
+                ) : (
+                  <li className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">{t("noLocations")}</li>
+                )}
+              </ul>
+              <div className="hidden md:block overflow-x-auto">
                 <Table className="min-w-150">
                   <TableHeader>
                     <TableRow>
@@ -226,10 +272,10 @@ export function LocationsPage() {
                             {location.is_default && <Badge variant="success">{t("fields.default")}</Badge>}
                           </TableCell>
                           <TableCell>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 lg:gap-1">
                               <button
                                 onClick={() => handleOpenLocationModal(location)}
-                                className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                                className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                                 title={tCommon("buttons.edit")}
                                 aria-label={tCommon("buttons.edit")}
                               >
@@ -238,7 +284,7 @@ export function LocationsPage() {
                               <button
                                 onClick={() => setDeleteConfirmId(location.id)}
                                 disabled={location.is_default}
-                                className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                 title={tCommon("buttons.delete")}
                                 aria-label={tCommon("buttons.delete")}
                               >
@@ -258,6 +304,7 @@ export function LocationsPage() {
                   </TableBody>
                 </Table>
               </div>
+              </>
             )}
           </CardContent>
         </Card>
@@ -272,7 +319,29 @@ export function LocationsPage() {
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
               </div>
             ) : (
-              <div className="overflow-x-auto">
+              <>
+              <ul className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                {transfers && transfers.length > 0 ? (
+                  transfers.map((transfer) => (
+                    <li key={transfer.id} className="px-4 py-3">
+                      <p className="flex items-center justify-between gap-2">
+                        <span className="font-medium text-gray-900 dark:text-gray-100">{transfer.transfer_number}</span>
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {transfer.created_at ? new Date(transfer.created_at).toLocaleDateString() : "-"}
+                        </span>
+                      </p>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {transfer.from_location?.name ?? "-"} → {transfer.to_location?.name ?? "-"}
+                        {" · "}
+                        {t("transfers.fields.items")} : {transfer.lines?.length ?? 0}
+                      </p>
+                    </li>
+                  ))
+                ) : (
+                  <li className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">{t("transfers.noTransfers")}</li>
+                )}
+              </ul>
+              <div className="hidden md:block overflow-x-auto">
                 <Table className="min-w-150">
                   <TableHeader>
                     <TableRow>
@@ -316,6 +385,7 @@ export function LocationsPage() {
                   </TableBody>
                 </Table>
               </div>
+              </>
             )}
           </CardContent>
         </Card>

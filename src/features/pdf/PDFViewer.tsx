@@ -158,9 +158,9 @@ export function PDFViewer(props: PDFViewerProps) {
         disabled={isDownloading}
       >
         {isDownloading ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          <Loader2 className="h-4 w-4 me-2 animate-spin" />
         ) : (
-          <Download className="h-4 w-4 mr-2" />
+          <Download className="h-4 w-4 me-2" />
         )}
         {t("pdfViewer.downloadPdf")}
       </Button>
@@ -173,9 +173,9 @@ export function PDFViewer(props: PDFViewerProps) {
         disabled={isOpening}
       >
         {isOpening ? (
-          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+          <Loader2 className="h-4 w-4 me-2 animate-spin" />
         ) : (
-          <Eye className="h-4 w-4 mr-2" />
+          <Eye className="h-4 w-4 me-2" />
         )}
         {t("pdfViewer.preview")}
       </Button>

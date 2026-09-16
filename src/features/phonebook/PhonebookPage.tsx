@@ -67,7 +67,7 @@ export function PhonebookPage() {
           <div className="flex items-center justify-between">
             <CardTitle>{t("phonebook.contacts")}</CardTitle>
             <div className="relative w-full sm:w-56 md:w-64 lg:w-80">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 id="phonebook-search"
                 name="phonebook-search"
@@ -75,7 +75,7 @@ export function PhonebookPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoComplete="off"
-                className="pl-9"
+                className="ps-9"
               />
             </div>
           </div>

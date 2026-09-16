@@ -48,7 +48,7 @@ export function AnnouncementBanner() {
           </div>
           <button
             onClick={() => dismissMutation.mutate(String(announcement.id))}
-            className="flex-shrink-0 p-1 text-blue-400 hover:text-blue-600 dark:hover:text-blue-200 transition-colors"
+            className="shrink-0 -m-1.5 p-2.5 lg:m-0 lg:p-1 text-blue-400 hover:text-blue-600 dark:hover:text-blue-200 transition-colors"
             aria-label={t("common:aria.closeNotification")}
           >
             <X className="h-4 w-4" />

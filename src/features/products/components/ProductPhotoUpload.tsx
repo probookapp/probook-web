@@ -86,7 +86,7 @@ export function ProductPhotoUpload({ productId }: ProductPhotoUploadProps) {
               onClick={handleUpload}
               isLoading={isUploading}
             >
-              <Upload className="h-4 w-4 mr-1" />
+              <Upload className="h-4 w-4 me-1" />
               {t("photos.change")}
             </Button>
             <Button
@@ -96,7 +96,7 @@ export function ProductPhotoUpload({ productId }: ProductPhotoUploadProps) {
               onClick={handleDelete}
               isLoading={deletePhoto.isPending}
             >
-              <Trash2 className="h-4 w-4 mr-1" />
+              <Trash2 className="h-4 w-4 me-1" />
               {t("buttons.delete")}
             </Button>
           </div>

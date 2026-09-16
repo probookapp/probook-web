@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { SentryProvider } from "@/components/providers/SentryProvider";
@@ -52,6 +52,15 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     images: ["/og-image.png"],
   },
+};
+
+// viewport-fit=cover lets the page run under an iPhone's notch and home bar;
+// the shell pads itself back out with env(safe-area-inset-*), which reads 0
+// without it.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default async function RootLayout({

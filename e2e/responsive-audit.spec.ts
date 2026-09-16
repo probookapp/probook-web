@@ -49,6 +49,8 @@ const ROUTES = [
 ];
 
 const PHONE = { width: 390, height: 844 };
+// Portrait tablet: touch, and still below the width where the sidebar docks.
+const TABLET = { width: 768, height: 1024 };
 
 /**
  * Namespaces the app declares; a raw key always starts with one of them.
@@ -91,10 +93,20 @@ async function seed(page: Page) {
   });
 }
 
+/**
+ * Sideways scroll of the page, or of <main>: the app shell scrolls inside
+ * <main>, so a table one column too wide there never widens the document —
+ * measuring the document alone passed pages that scrolled sideways on a phone.
+ */
 async function overflowOf(page: Page): Promise<number> {
-  return page.evaluate(
-    () => document.documentElement.scrollWidth - document.documentElement.clientWidth
-  );
+  return page.evaluate(() => {
+    const doc = document.documentElement;
+    const main = document.querySelector("main");
+    return Math.max(
+      doc.scrollWidth - doc.clientWidth,
+      main ? main.scrollWidth - main.clientWidth : 0
+    );
+  });
 }
 
 async function rawKeysOn(page: Page, namespaces: string[]): Promise<string[]> {
@@ -138,23 +150,25 @@ async function missingKeysOn(page: Page): Promise<string[]> {
 }
 
 test.describe("Responsive and translation audit", () => {
-  test("no page scrolls sideways at 390 px", async ({ page }) => {
-    test.setTimeout(300_000);
-    await page.setViewportSize(PHONE);
+  test("no page scrolls sideways on a phone or a tablet", async ({ page }) => {
+    test.setTimeout(420_000);
     await signUp(page);
     await seed(page);
 
     const offenders: string[] = [];
-    for (const route of ROUTES) {
-      await page.goto(`/fr/${route}`);
-      await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
-      await page.waitForTimeout(250);
-      // One pixel of slack: sub-pixel rounding on borders is not a layout bug.
-      const overflow = await overflowOf(page);
-      if (overflow > 1) offenders.push(`${route}: ${overflow}px`);
+    for (const viewport of [PHONE, TABLET]) {
+      await page.setViewportSize(viewport);
+      for (const route of ROUTES) {
+        await page.goto(`/fr/${route}`);
+        await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
+        await page.waitForTimeout(250);
+        // One pixel of slack: sub-pixel rounding on borders is not a layout bug.
+        const overflow = await overflowOf(page);
+        if (overflow > 1) offenders.push(`${viewport.width}px ${route}: ${overflow}px`);
+      }
     }
 
-    expect(offenders, `Pages overflowing at ${PHONE.width}px:\n${offenders.join("\n")}`).toEqual([]);
+    expect(offenders, `Pages overflowing:\n${offenders.join("\n")}`).toEqual([]);
   });
 
   test("no figure is clipped inside its own box at 390 px", async ({ page }) => {

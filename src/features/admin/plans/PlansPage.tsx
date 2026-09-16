@@ -325,7 +325,7 @@ export function PlansPage() {
               )
             }
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             {t("plans.exportCsv")}
           </Button>
           <label className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
@@ -339,7 +339,7 @@ export function PlansPage() {
             {t("plans.showArchived")}
           </label>
           <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t("plans.newPlan")}
           </Button>
         </div>
@@ -446,7 +446,7 @@ export function PlansPage() {
                     onClick={() => handleOpenEdit(plan)}
                     className="flex-1"
                   >
-                    <Pencil className="h-4 w-4 mr-1" />
+                    <Pencil className="h-4 w-4 me-1" />
                     {t("plans.edit")}
                   </Button>
                   {plan.is_active ? (
@@ -457,7 +457,7 @@ export function PlansPage() {
                       onClick={() => setArchivingPlan(plan)}
                       className="flex-1"
                     >
-                      <Archive className="h-4 w-4 mr-1" />
+                      <Archive className="h-4 w-4 me-1" />
                       {t("plans.archive")}
                     </Button>
                   ) : (
@@ -469,7 +469,7 @@ export function PlansPage() {
                       isLoading={updatePlan.isPending}
                       className="flex-1"
                     >
-                      <ArchiveRestore className="h-4 w-4 mr-1" />
+                      <ArchiveRestore className="h-4 w-4 me-1" />
                       {t("plans.restore")}
                     </Button>
                   )}
@@ -596,7 +596,7 @@ export function PlansPage() {
               </label>
               {formData.prices.length < CURRENCIES.length && (
                 <Button type="button" variant="secondary" size="sm" onClick={addPriceRow}>
-                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  <Plus className="h-3.5 w-3.5 me-1" />
                   {t("plans.form.addCurrency")}
                 </Button>
               )}
@@ -659,7 +659,7 @@ export function PlansPage() {
               </label>
               {formData.quotas.length < QUOTA_KEYS.length && (
                 <Button type="button" variant="secondary" size="sm" onClick={addQuotaRow}>
-                  <Plus className="h-3.5 w-3.5 mr-1" />
+                  <Plus className="h-3.5 w-3.5 me-1" />
                   {t("plans.addQuota")}
                 </Button>
               )}

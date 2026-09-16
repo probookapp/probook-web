@@ -71,7 +71,7 @@ function ToastItem({ type, message, onClose }: ToastItemProps) {
       <p className="flex-1 text-sm font-medium">{message}</p>
       <button
         onClick={handleClose}
-        className="shrink-0 p-1 rounded-sm text-(--color-text-tertiary) transition-colors hover:bg-(--color-bg-tertiary) hover:text-(--color-text-primary)"
+        className="shrink-0 -m-1.5 p-2.5 lg:m-0 lg:p-1 rounded-sm text-(--color-text-tertiary) transition-colors hover:bg-(--color-bg-tertiary) hover:text-(--color-text-primary)"
         aria-label={t("aria.closeNotification")}
       >
         <X className="h-4 w-4" />

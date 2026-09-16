@@ -251,7 +251,7 @@ export function PaymentModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-(--color-border-primary)">
           <h2 className="text-xl font-bold">{t("payment")}</h2>
-          <button onClick={onClose} className="p-1 hover:bg-(--color-bg-secondary) rounded">
+          <button onClick={onClose} aria-label={t("close")} className="-me-1.5 p-2.5 hover:bg-(--color-bg-secondary) rounded-md">
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -291,7 +291,7 @@ export function PaymentModal({
                       type="button"
                       onClick={() => setBanked((prev) => prev.filter((_, j) => j !== i))}
                       aria-label={t("removePayment")}
-                      className="p-1 rounded hover:bg-(--color-bg-secondary)"
+                      className="p-2.5 rounded-md hover:bg-(--color-bg-secondary)"
                     >
                       <X className="h-4 w-4" />
                     </button>

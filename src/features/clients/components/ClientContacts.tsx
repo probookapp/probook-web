@@ -129,7 +129,7 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
         <h3 className="font-medium text-gray-900 dark:text-gray-100">{t("contacts.title")}</h3>
         {canCreate && (
           <Button size="sm" variant="secondary" onClick={handleOpenAdd}>
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 me-1" />
             {tCommon("buttons.add")}
           </Button>
         )}
@@ -178,7 +178,7 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
                 <button
                   onClick={() => handleOpenEdit(contact)}
                   aria-label={tCommon("buttons.edit")}
-                  className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400"
+                  className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400"
                 >
                   <Pencil className="h-4 w-4" />
                 </button>
@@ -187,7 +187,7 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
                 <button
                   onClick={() => setDeleteConfirmId(contact.id)}
                   aria-label={tCommon("buttons.delete")}
-                  className="p-1 text-gray-500 hover:text-red-600 dark:hover:text-red-400"
+                  className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

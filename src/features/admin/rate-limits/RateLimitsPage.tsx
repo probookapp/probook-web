@@ -93,7 +93,7 @@ export function RateLimitsPage() {
             )
           }
         >
-          <Download className="h-4 w-4 mr-2" />
+          <Download className="h-4 w-4 me-2" />
           {t("rate_limits.exportCsv")}
         </Button>
       </div>
@@ -120,7 +120,7 @@ export function RateLimitsPage() {
                     size="sm"
                     onClick={() => setClearing(group)}
                   >
-                    <Eraser className="h-4 w-4 mr-1" />
+                    <Eraser className="h-4 w-4 me-1" />
                     {t("rate_limits.clear")}
                   </Button>
                 }
@@ -159,7 +159,7 @@ export function RateLimitsPage() {
                         size="sm"
                         onClick={() => setClearing(group)}
                       >
-                        <Eraser className="h-4 w-4 mr-1" />
+                        <Eraser className="h-4 w-4 me-1" />
                         {t("rate_limits.clear")}
                       </Button>
                     </TableCell>

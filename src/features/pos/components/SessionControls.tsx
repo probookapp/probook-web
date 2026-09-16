@@ -44,7 +44,7 @@ export function SessionControls({
         {items.length > 0 && (
           <button
             onClick={clearCart}
-            className="px-3 py-1.5 text-sm font-medium bg-white/15 hover:bg-white/25 rounded-lg flex items-center gap-1.5 transition-colors"
+            className="px-3 py-2.5 text-sm font-medium bg-white/15 hover:bg-white/25 rounded-lg flex items-center gap-1.5 transition-colors"
           >
             <Trash2 className="h-3.5 w-3.5" />
             {t("clearCart")}
@@ -52,7 +52,7 @@ export function SessionControls({
         )}
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="px-3 py-1.5 text-sm font-medium bg-white/15 hover:bg-white/25 rounded-lg flex items-center gap-1.5 transition-colors"
+          className="px-3 py-2.5 text-sm font-medium bg-white/15 hover:bg-white/25 rounded-lg flex items-center gap-1.5 transition-colors"
         >
           {t("menu")}
           <ChevronDown
@@ -67,7 +67,7 @@ export function SessionControls({
             className="fixed inset-0 z-10"
             onClick={() => setShowMenu(false)}
           />
-          <div className="absolute right-0 top-full mt-2 bg-(--color-bg-primary) text-(--color-text-primary) rounded-xl shadow-lg border border-(--color-border-primary) z-20 min-w-52 py-1 overflow-hidden">
+          <div className="absolute end-0 top-full mt-2 bg-(--color-bg-primary) text-(--color-text-primary) rounded-xl shadow-lg border border-(--color-border-primary) z-20 min-w-52 py-1 overflow-hidden">
             <button
               onClick={() => {
                 setShowMenu(false);

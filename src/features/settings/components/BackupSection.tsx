@@ -118,10 +118,10 @@ export function BackupSection() {
 
         {/* Applies to BOTH export paths below */}
         <div>
-          <label className="flex items-center gap-3 cursor-pointer">
+          <label className="flex items-center gap-3 py-2 cursor-pointer">
             <input
               type="checkbox"
-              className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              className="h-4 w-4 shrink-0 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
               checked={includePhotos}
               onChange={(e) => setIncludePhotos(e.target.checked)}
             />
@@ -129,20 +129,20 @@ export function BackupSection() {
               {t("backup.includePhotos")}
             </span>
           </label>
-          <p className="mt-1 ml-7 text-xs text-gray-500 dark:text-gray-400">
+          <p className="ms-7 text-xs text-gray-500 dark:text-gray-400">
             {t("backup.includePhotosHint")}
           </p>
         </div>
 
         {/* Plain export */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <Button
             type="button"
             variant="secondary"
             onClick={handleExportPlain}
             isLoading={isExporting}
           >
-            <FileDown className="h-4 w-4 mr-2" />
+            <FileDown className="h-4 w-4 me-2" />
             {t("backup.exportPlain")}
           </Button>
         </div>
@@ -178,7 +178,7 @@ export function BackupSection() {
             isLoading={isExportingEncrypted}
             disabled={!exportPassword || exportPassword !== exportPasswordConfirm}
           >
-            <Lock className="h-4 w-4 mr-2" />
+            <Lock className="h-4 w-4 me-2" />
             {isExportingEncrypted ? t("backup.exporting") : t("backup.exportEncrypted")}
           </Button>
         </div>
@@ -214,7 +214,7 @@ export function BackupSection() {
               isLoading={isImporting}
               disabled={!importPassword}
             >
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="h-4 w-4 me-2" />
               {isImporting ? t("backup.importing") : t("backup.selectFile")}
             </Button>
           </div>

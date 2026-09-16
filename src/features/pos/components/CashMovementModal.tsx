@@ -75,7 +75,8 @@ export function CashMovementModal({
           <h2 className="text-xl font-bold">{t("cashMovement")}</h2>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-(--color-bg-secondary) rounded"
+            aria-label={t("close")}
+            className="-me-1.5 p-2.5 hover:bg-(--color-bg-secondary) rounded-md"
           >
             <X className="h-5 w-5" />
           </button>
@@ -209,7 +210,7 @@ export function CashMovementModal({
                         </span>
                       </div>
                       <span
-                        className={`font-medium shrink-0 ml-2 ${
+                        className={`font-medium shrink-0 ms-2 ${
                           isIn
                             ? "text-green-600 dark:text-green-400"
                             : "text-red-600 dark:text-red-400"

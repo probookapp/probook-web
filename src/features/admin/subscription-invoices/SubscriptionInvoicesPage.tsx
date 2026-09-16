@@ -244,11 +244,11 @@ export function SubscriptionInvoicesPage() {
               )
             }
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             {t("subscriptionInvoices.exportCsv")}
           </Button>
           <Button {...superOnly.button} size="sm" onClick={() => { setCreateForm(emptyCreate); setCreateOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t("subscriptionInvoices.newInvoice")}
           </Button>
         </div>
@@ -266,7 +266,7 @@ export function SubscriptionInvoicesPage() {
               }}
               isLoading={bulkBusy}
             >
-              <CheckCircle className="h-4 w-4 mr-1" />
+              <CheckCircle className="h-4 w-4 me-1" />
               {t("bulk.markPaid")}
             </Button>
           </BulkBar>
@@ -331,7 +331,7 @@ export function SubscriptionInvoicesPage() {
                           size="sm"
                           onClick={() => handleOpenMarkPaid(invoice)}
                         >
-                          <CheckCircle className="h-4 w-4 mr-1" />
+                          <CheckCircle className="h-4 w-4 me-1" />
                           {t("subscriptionInvoices.markPaid")}
                         </Button>
                       )}
@@ -342,7 +342,7 @@ export function SubscriptionInvoicesPage() {
                           size="sm"
                           onClick={() => setRefundTarget(invoice)}
                         >
-                          <RotateCcw className="h-4 w-4 mr-1" />
+                          <RotateCcw className="h-4 w-4 me-1" />
                           {t("subscriptionInvoices.refund")}
                         </Button>
                       )}
@@ -445,7 +445,7 @@ export function SubscriptionInvoicesPage() {
                               size="sm"
                               onClick={() => handleOpenMarkPaid(invoice)}
                             >
-                              <CheckCircle className="h-4 w-4 mr-1" />
+                              <CheckCircle className="h-4 w-4 me-1" />
                               {t("subscriptionInvoices.markPaid")}
                             </Button>
                           )}
@@ -456,7 +456,7 @@ export function SubscriptionInvoicesPage() {
                               onClick={() => setRefundTarget(invoice)}
                               title={t("subscriptionInvoices.refund")}
                             >
-                              <RotateCcw className="h-4 w-4 mr-1" />
+                              <RotateCcw className="h-4 w-4 me-1" />
                               {t("subscriptionInvoices.refund")}
                             </Button>
                           )}

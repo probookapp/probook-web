@@ -188,7 +188,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             size="sm"
             onClick={() => setTrialModalOpen(true)}
           >
-            <Gift className="h-4 w-4 mr-2" />
+            <Gift className="h-4 w-4 me-2" />
             {trialActive ? t("tenants.trial.extend") : t("tenants.trial.grant")}
           </Button>
           {trialActive && (
@@ -197,7 +197,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
               size="sm"
               onClick={() => setEndTrialConfirmOpen(true)}
             >
-              <CalendarX className="h-4 w-4 mr-2" />
+              <CalendarX className="h-4 w-4 me-2" />
               {t("tenants.trial.endNow")}
             </Button>
           )}
@@ -208,13 +208,13 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
             isLoading={suspendTenant.isPending || activateTenant.isPending}
           >
             {tenant.status === "suspended" ? (
-              <><Play className="h-4 w-4 mr-2" />{t("tenants.activate")}</>
+              <><Play className="h-4 w-4 me-2" />{t("tenants.activate")}</>
             ) : (
-              <><Pause className="h-4 w-4 mr-2" />{t("tenants.suspend")}</>
+              <><Pause className="h-4 w-4 me-2" />{t("tenants.suspend")}</>
             )}
           </Button>
           <Button variant="danger" size="sm" onClick={() => setDeleteConfirmOpen(true)}>
-            <Trash2 className="h-4 w-4 mr-2" />
+            <Trash2 className="h-4 w-4 me-2" />
             {t("tenants.delete")}
           </Button>
         </div>
@@ -454,7 +454,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                         onClick={() => toggleUser.mutateAsync(String(user.id))}
                         isLoading={toggleUser.isPending}
                       >
-                        <Power className="h-4 w-4 mr-1" />
+                        <Power className="h-4 w-4 me-1" />
                         {user.is_active === false
                           ? t("tenants.detail.enableUser")
                           : t("tenants.detail.disableUser")}
@@ -468,7 +468,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                           setNewPassword("");
                         }}
                       >
-                        <KeyRound className="h-4 w-4 mr-1" />
+                        <KeyRound className="h-4 w-4 me-1" />
                         {t("tenants.detail.resetPassword")}
                       </Button>
                     </div>

@@ -32,30 +32,44 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
         {/* Warm-tinted rather than pure black: a neutral scrim over warm paper
             drains the colour out of the page behind it. */}
         <Dialog.Overlay className="fixed inset-0 z-50 bg-gray-950/45 backdrop-blur-[2px]" />
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        {/* On a phone the dialog is a sheet on the bottom edge, full width: the
+            actions at the foot of a form land under the thumb instead of in the
+            middle of the screen, and no width is lost to side margins. From sm
+            up it floats in the centre as before. */}
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center pt-4 sm:p-4">
           <Dialog.Content
             aria-describedby={undefined}
+            // Escape inside an open dropdown (SearchableSelect) closes the
+            // dropdown, not the whole form.
+            onEscapeKeyDown={(e) => {
+              if ((e.target as Element | null)?.closest?.("[data-popup-open]")) e.preventDefault();
+            }}
             className={cn(
               // A dialog genuinely floats, so this is one of the few places a
               // real shadow is earned.
-              "relative bg-(--color-bg-elevated) rounded-xl border border-(--color-border-primary)",
-              "shadow-lg max-h-[90vh] overflow-auto focus:outline-none",
+              "relative bg-(--color-bg-elevated) rounded-t-xl sm:rounded-xl border border-(--color-border-primary)",
+              "max-sm:border-b-0 max-sm:pb-[env(safe-area-inset-bottom)]",
+              // dvh, not vh: on a phone vh ignores the browser bars and the keyboard,
+              // and the bottom of a long form (its buttons) ends up under them.
+              // No max-width below sm: the sheet spans the phone edge to edge.
+              "shadow-lg max-h-[92dvh] sm:max-h-[90dvh] overflow-auto overscroll-contain focus:outline-none",
               {
-                "w-full max-w-[calc(100%-2rem)] sm:max-w-sm": size === "sm",
-                "w-full max-w-[calc(100%-2rem)] sm:max-w-md": size === "md",
-                "w-full max-w-[calc(100%-2rem)] sm:max-w-lg": size === "lg",
-                "w-full max-w-[calc(100%-2rem)] sm:max-w-2xl": size === "xl",
+                "w-full sm:max-w-sm": size === "sm",
+                "w-full sm:max-w-md": size === "md",
+                "w-full sm:max-w-lg": size === "lg",
+                "w-full sm:max-w-2xl": size === "xl",
               }
             )}
           >
-            <div className="flex items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4 border-b border-(--color-border-primary)">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-1 sm:px-6 sm:py-4 border-b border-(--color-border-primary) bg-(--color-bg-elevated) rounded-t-xl">
               <Dialog.Title className="text-base sm:text-lg font-semibold text-(--color-text-primary)">
                 {title}
               </Dialog.Title>
               <Dialog.Close asChild>
                 <button
                   aria-label={t("aria.close")}
-                  className="-me-1 shrink-0 rounded-md p-1.5 text-(--color-text-tertiary) transition-colors hover:bg-(--color-bg-tertiary) hover:text-(--color-text-primary)"
+                  // 44px on a phone, where it is the one way out a thumb can reach.
+                  className="-me-2 sm:-me-1 shrink-0 rounded-md p-3 sm:p-1.5 text-(--color-text-tertiary) transition-colors hover:bg-(--color-bg-tertiary) hover:text-(--color-text-primary)"
                 >
                   <X className="h-5 w-5" />
                 </button>

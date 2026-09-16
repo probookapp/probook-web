@@ -83,11 +83,11 @@ function AlertItem({
   const getSeverityClass = () => {
     switch (alert.severity) {
       case "danger":
-        return "border-l-red-500 bg-red-50 dark:bg-red-900/20";
+        return "border-s-red-500 bg-red-50 dark:bg-red-900/20";
       case "warning":
-        return "border-l-amber-500 bg-amber-50 dark:bg-amber-900/20";
+        return "border-s-amber-500 bg-amber-50 dark:bg-amber-900/20";
       default:
-        return "border-l-blue-500 bg-blue-50 dark:bg-blue-900/20";
+        return "border-s-blue-500 bg-blue-50 dark:bg-blue-900/20";
     }
   };
 
@@ -98,9 +98,9 @@ function AlertItem({
   };
 
   return (
-    <div className={`p-3 border-l-4 rounded-r-lg ${getSeverityClass()}`}>
-      <div className="flex items-start gap-3">
-        <div className="mt-0.5">{getIcon()}</div>
+    <div className={`p-3 border-s-4 rounded-e-lg ${getSeverityClass()}`}>
+      <div className="flex flex-wrap sm:flex-nowrap items-start gap-x-3">
+        <div className="mt-0.5 shrink-0">{getIcon()}</div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <Link
@@ -121,10 +121,12 @@ function AlertItem({
             </p>
           )}
         </div>
-        <div className="flex items-center gap-2">
+        {/* Up to four 40 px targets beside the text left a phone with a
+            sliver of it: below sm they drop to a row of their own. */}
+        <div className="flex basis-full sm:basis-auto justify-end items-center gap-2 lg:gap-1 shrink-0 -me-2 sm:-my-2">
           <Link
             href={getDocumentPath()}
-            className="p-1 text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+            className="p-3 lg:p-1.5 rounded-md text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
             aria-label={t("alerts.viewDetails")}
           >
             <ChevronRight className="h-4 w-4" />
@@ -133,7 +135,7 @@ function AlertItem({
             <button
               onClick={() => onSend(reminder.id)}
               disabled={busy}
-              className="p-1 text-gray-400 hover:text-primary-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-3 lg:p-1.5 rounded-md text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title={tc("reminders.sendEmail")}
               aria-label={tc("reminders.sendEmail")}
             >
@@ -144,7 +146,7 @@ function AlertItem({
             <button
               onClick={() => onDone(reminder.id)}
               disabled={busy}
-              className="p-1 text-gray-400 hover:text-success-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-3 lg:p-1.5 rounded-md text-gray-400 hover:text-success-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title={tc("reminders.markAsDone")}
               aria-label={tc("reminders.markAsDone")}
             >
@@ -154,7 +156,7 @@ function AlertItem({
           {alert.alert_type === "EXPIRED_QUOTE" && onMarkExpired && (
             <button
               onClick={() => onMarkExpired(alert.document_id)}
-              className="p-1 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="p-3 lg:p-1.5 rounded-md text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               title={t("alerts.markExpired")}
               aria-label={t("alerts.markExpired")}
             >

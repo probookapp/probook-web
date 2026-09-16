@@ -32,7 +32,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       {/* Sidebar - hidden on mobile, visible on lg+ */}
       <div
         className={`
-          fixed inset-y-0 left-0 z-50 w-56 lg:w-64 transform transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0
+          fixed inset-y-0 start-0 z-50 w-56 lg:w-64 transform transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0
           ${isSidebarOpen ? "translate-x-0" : "-translate-x-full"}
         `}
       >

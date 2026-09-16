@@ -244,7 +244,7 @@ export function PurchasesPage() {
             size="sm"
             className="self-start sm:self-auto"
           >
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t("newPurchase")}
           </Button>
         )}
@@ -255,7 +255,7 @@ export function PurchasesPage() {
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("purchaseList")}</CardTitle>
             <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 id="purchase-search"
                 name="purchase-search"
@@ -263,7 +263,7 @@ export function PurchasesPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 autoComplete="off"
-                className="pl-9"
+                className="ps-9"
               />
             </div>
           </div>
@@ -286,12 +286,14 @@ export function PurchasesPage() {
                 return (
                   <div key={purchase.id} className="p-4 flex items-start gap-3">
                     {isPending && (
-                      <input
-                        type="checkbox"
-                        checked={selection.isSelected(purchase.id)}
-                        onChange={() => selection.toggle(purchase.id)}
-                        className="mt-0.5 h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                      />
+                      <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selection.isSelected(purchase.id)}
+                          onChange={() => selection.toggle(purchase.id)}
+                          className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        />
+                      </label>
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2">
@@ -323,11 +325,11 @@ export function PurchasesPage() {
                         </Badge>
                       </div>
                       {isReceivable && (
-                        <div className="flex justify-end gap-1 mt-2">
+                        <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
                           {isPending && canEdit && (
                             <button
                               onClick={() => handleOpenForm(purchase)}
-                              className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400"
+                              className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400"
                               title={tCommon("buttons.edit")}
                               aria-label={tCommon("buttons.edit")}
                             >
@@ -337,7 +339,7 @@ export function PurchasesPage() {
                           {canEdit && (
                           <button
                             onClick={() => setConfirmingPurchase(purchase)}
-                            className="p-1 text-gray-500 hover:text-green-600 dark:hover:text-green-400"
+                            className="p-3 rounded-md text-gray-500 hover:text-green-600 dark:hover:text-green-400"
                             title={t("actions.confirm")}
                             aria-label={t("actions.confirm")}
                           >
@@ -349,7 +351,7 @@ export function PurchasesPage() {
                               {canEdit && (
                               <button
                                 onClick={() => setCancelConfirmId(purchase.id)}
-                                className="p-1 text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400"
+                                className="p-3 rounded-md text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400"
                                 title={t("actions.cancel")}
                                 aria-label={t("actions.cancel")}
                               >
@@ -359,7 +361,7 @@ export function PurchasesPage() {
                               {canDelete && (
                               <button
                                 onClick={() => setDeleteConfirmId(purchase.id)}
-                                className="p-1 text-gray-500 hover:text-red-600"
+                                className="p-3 rounded-md text-gray-500 hover:text-red-600"
                                 title={tCommon("buttons.delete")}
                                 aria-label={tCommon("buttons.delete")}
                               >
@@ -387,15 +389,17 @@ export function PurchasesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10">
-                    <input
-                      type="checkbox"
-                      checked={selection.isAllSelected}
-                      ref={(el) => {
-                        if (el) el.indeterminate = selection.isIndeterminate;
-                      }}
-                      onChange={() => selection.toggleAll(selectablePurchases)}
-                      className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
+                    <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selection.isAllSelected}
+                        ref={(el) => {
+                          if (el) el.indeterminate = selection.isIndeterminate;
+                        }}
+                        onChange={() => selection.toggleAll(selectablePurchases)}
+                        className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                    </label>
                   </TableHead>
                   <TableHead>{t("fields.orderNumber")}</TableHead>
                   <TableHead>{t("fields.supplier")}</TableHead>
@@ -417,12 +421,14 @@ export function PurchasesPage() {
                       <TableRow key={purchase.id}>
                         <TableCell>
                           {isPending ? (
-                            <input
-                              type="checkbox"
-                              checked={selection.isSelected(purchase.id)}
-                              onChange={() => selection.toggle(purchase.id)}
-                              className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                            />
+                            <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={selection.isSelected(purchase.id)}
+                                onChange={() => selection.toggle(purchase.id)}
+                                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                              />
+                            </label>
                           ) : (
                             <span />
                           )}
@@ -459,11 +465,11 @@ export function PurchasesPage() {
                         </TableNumericCell>
                         <TableCell>
                           {isReceivable && (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-2 lg:gap-1">
                               {isPending && canEdit && (
                                 <button
                                   onClick={() => handleOpenForm(purchase)}
-                                  className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+                                  className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
                                   title={tCommon("buttons.edit")}
                                   aria-label={tCommon("buttons.edit")}
                                 >
@@ -475,7 +481,7 @@ export function PurchasesPage() {
                                 onClick={() =>
                                   setConfirmingPurchase(purchase)
                                 }
-                                className="p-1 text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
+                                className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
                                 title={t("actions.confirm")}
                                 aria-label={t("actions.confirm")}
                               >
@@ -489,7 +495,7 @@ export function PurchasesPage() {
                                     onClick={() =>
                                       setCancelConfirmId(purchase.id)
                                     }
-                                    className="p-1 text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors"
+                                    className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors"
                                     title={t("actions.cancel")}
                                     aria-label={t("actions.cancel")}
                                   >
@@ -501,7 +507,7 @@ export function PurchasesPage() {
                                     onClick={() =>
                                       setDeleteConfirmId(purchase.id)
                                     }
-                                    className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+                                    className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors"
                                     title={tCommon("buttons.delete")}
                                     aria-label={tCommon("buttons.delete")}
                                   >

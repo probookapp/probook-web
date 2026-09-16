@@ -164,7 +164,7 @@ export function PrinterManagement() {
     <div className="space-y-4">
       <div className="flex justify-end">
         <Button size="sm" onClick={openCreate}>
-          <Plus className="h-4 w-4 mr-2" />
+          <Plus className="h-4 w-4 me-2" />
           {t("printers.addPrinter")}
         </Button>
       </div>
@@ -210,11 +210,12 @@ export function PrinterManagement() {
                   )}
                 </TableCell>
                 <TableCell className="text-end">
-                  <div className="flex justify-end gap-1">
+                  <div className="flex justify-end gap-2 lg:gap-1">
                     {!printer.is_default && (
                       <Button
                         variant="ghost"
                         size="sm"
+                        className="w-10 px-0 max-lg:h-10 lg:w-8"
                         onClick={() => handleSetDefault(printer)}
                         title={t("printers.setDefault")}
                         aria-label={t("printers.setDefault")}
@@ -225,6 +226,7 @@ export function PrinterManagement() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="w-10 px-0 max-lg:h-10 lg:w-8"
                       onClick={() => openEdit(printer)}
                       title={t("printers.edit")}
                       aria-label={t("printers.edit")}
@@ -234,6 +236,7 @@ export function PrinterManagement() {
                     <Button
                       variant="ghost"
                       size="sm"
+                      className="w-10 px-0 max-lg:h-10 lg:w-8"
                       onClick={() => handleDelete(printer)}
                       title={t("printers.delete")}
                       aria-label={t("printers.delete")}
@@ -293,10 +296,10 @@ export function PrinterManagement() {
               onChange={(e) => setForm({ ...form, register_id: e.target.value })}
             />
           </div>
-          <label className="flex items-center gap-3 cursor-pointer">
+          <label className="flex items-center gap-3 py-2 cursor-pointer">
             <input
               type="checkbox"
-              className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+              className="h-4 w-4 shrink-0 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
               checked={form.is_default}
               onChange={(e) => setForm({ ...form, is_default: e.target.checked })}
             />
@@ -305,10 +308,10 @@ export function PrinterManagement() {
             </span>
           </label>
           {editing && (
-            <label className="flex items-center gap-3 cursor-pointer">
+            <label className="flex items-center gap-3 py-2 cursor-pointer">
               <input
                 type="checkbox"
-                className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                className="h-4 w-4 shrink-0 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                 checked={form.is_active}
                 onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
               />

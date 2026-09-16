@@ -63,7 +63,7 @@ export function WhatsAppCta({ variant }: Props) {
         rel="noopener noreferrer"
         onClick={() => trackMetaEvent("Contact", { content_name: "whatsapp_cta", locale })}
         aria-label={label}
-        className="fixed bottom-5 right-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-[#0b2e1a] shadow-lg transition-transform hover:scale-105"
+        className="fixed bottom-5 end-5 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] text-[#0b2e1a] shadow-lg transition-transform hover:scale-105"
       >
         {icon}
       </a>

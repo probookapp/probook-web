@@ -419,7 +419,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                 role="switch"
                 aria-checked={billingCycle === "yearly"}
                 onClick={() => setBillingCycle(billingCycle === "yearly" ? "monthly" : "yearly")}
-                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors before:absolute before:-inset-2.5 ${
                   billingCycle === "yearly" ? "bg-primary-600" : "bg-gray-300 dark:bg-gray-600"
                 }`}
               >
@@ -433,7 +433,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                 <span className={`text-sm font-medium ${billingCycle === "yearly" ? "text-gray-900 dark:text-gray-100" : "text-gray-500 dark:text-gray-400"}`}>
                   {t("subscriptionWall.yearly")}
                 </span>
-                <span className="absolute left-full top-1/2 -translate-y-1/2 ml-2 whitespace-nowrap">
+                <span className="absolute start-full top-1/2 -translate-y-1/2 ms-2 whitespace-nowrap">
                   <Badge variant="success">{t("subscriptionWall.saveWithYearly")}</Badge>
                 </span>
               </span>

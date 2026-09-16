@@ -12,10 +12,16 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * Fixed heights rather than padding alone, so a button placed beside an input
  * lines up with it instead of missing by a pixel or two — the kind of drift
  * that reads as sloppiness long before anyone can name it.
+ *
+ * Below lg the screen is a phone or a tablet and the pointer is a finger, so
+ * `sm` and `md` get a taller floor. A floor (min-height) and not a new height:
+ * a caller that sets its own taller height keeps it, and from lg up any height
+ * passed in className still wins as before. FIELD_HEIGHT carries the same
+ * floor, so a field and a button still sit on one line.
  */
 const SIZES = {
-  sm: "h-8 px-3 text-sm gap-1.5",
-  md: "h-9 px-4 text-sm gap-2",
+  sm: "h-8 max-lg:min-h-9 px-3 text-sm gap-1.5",
+  md: "h-9 max-lg:min-h-10 px-4 text-sm gap-2",
   lg: "h-11 px-6 text-base gap-2",
 } as const;
 

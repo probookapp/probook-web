@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { KeyRound, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { KeyRound, ArrowLeft } from 'lucide-react';
 import { authApi } from '@/lib/api';
 import { useLocale } from '@/lib/navigation';
-import { Button, Input } from '@/components/ui';
+import { Button, Input, PasswordToggle } from '@/components/ui';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Logo } from "@/components/shared/Logo";
@@ -59,13 +59,13 @@ export function ResetPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
         <div className="w-full max-w-md">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 text-center">
             <p className="text-red-600 dark:text-red-400 mb-4">
               {t('resetPassword.tokenRequired')}
             </p>
             <Link
               href={`/${locale}/forgot-password`}
-              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
+              className="inline-block py-3 -my-3 text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
             >
               {t('forgotPassword.title')}
             </Link>
@@ -79,13 +79,13 @@ export function ResetPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
         <div className="w-full max-w-md">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 text-center">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 text-center">
             <p className="text-green-600 dark:text-green-400 mb-4">
               {t('resetPassword.success')}
             </p>
             <Link
               href={`/${locale}/login`}
-              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium inline-flex items-center gap-2"
+              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium inline-flex min-h-10 items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
               {t('forgotPassword.backToLogin')}
@@ -106,7 +106,7 @@ export function ResetPasswordPage() {
           </h1>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
             {t('resetPassword.title')}
           </h2>
@@ -122,18 +122,12 @@ export function ResetPasswordPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
-                className="pr-10"
+                className="pe-10"
                 minLength={8}
                 autoFocus
                 required
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-8.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
+              <PasswordToggle shown={showPassword} onToggle={() => setShowPassword(!showPassword)} />
             </div>
 
             <div className="relative">
@@ -143,16 +137,10 @@ export function ResetPasswordPage() {
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 autoComplete="new-password"
-                className="pr-10"
+                className="pe-10"
                 required
               />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-8.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
-              </button>
+              <PasswordToggle shown={showConfirmPassword} onToggle={() => setShowConfirmPassword(!showConfirmPassword)} />
             </div>
 
             {error && (
@@ -160,7 +148,7 @@ export function ResetPasswordPage() {
             )}
 
             <Button type="submit" className="w-full" isLoading={isLoading}>
-              <KeyRound className="h-4 w-4 mr-2" />
+              <KeyRound className="h-4 w-4" />
               {t('resetPassword.submit')}
             </Button>
           </form>
@@ -168,7 +156,7 @@ export function ResetPasswordPage() {
           <p className="mt-6 text-center text-sm">
             <Link
               href={`/${locale}/login`}
-              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium inline-flex items-center gap-2"
+              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium inline-flex min-h-10 items-center gap-2"
             >
               <ArrowLeft className="h-4 w-4" />
               {t('forgotPassword.backToLogin')}

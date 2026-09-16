@@ -145,5 +145,8 @@
   "leftOnAccount": "Reste sur le compte client",
   "creditNeedsClient": "Sélectionnez un client pour laisser un solde à recouvrer.",
   "compactView": "Vue compacte",
-  "gridView": "Vue en vignettes"
+  "gridView": "Vue en vignettes",
+  "decreaseQuantity": "Diminuer la quantité",
+  "increaseQuantity": "Augmenter la quantité",
+  "removeItem": "Retirer l'article du panier"
 }

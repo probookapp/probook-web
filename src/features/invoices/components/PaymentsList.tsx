@@ -89,11 +89,11 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <CardTitle>{t("payments.title")}</CardTitle>
           {invoice.status !== "PAID" && remaining > 0 && (
             <Button size="sm" onClick={() => setShowAddModal(true)}>
-              <Plus className="h-4 w-4 mr-1" />
+              <Plus className="h-4 w-4 me-1" />
               {t("buttons.add")}
             </Button>
           )}
@@ -134,22 +134,24 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
             {invoice.payments.map((payment) => (
               <div
                 key={payment.id}
-                className="flex items-center justify-between p-3 border rounded-lg"
+                className="flex items-center justify-between gap-2 p-3 border border-(--color-border-primary) rounded-lg"
               >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                    <CreditCard className="h-4 w-4 text-green-600" />
+                {/* min-w-0 all the way down: an amount beside a long method name
+                    in a narrow sidebar card pushed the delete button out. */}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg shrink-0">
+                    <CreditCard className="h-4 w-4 text-green-600 dark:text-green-400" />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                      <span className="font-medium font-mono tabular-nums whitespace-nowrap">
                         {formatCurrency(payment.amount)}
                       </span>
                       <Badge variant="default">
                         {getPaymentMethodLabel(payment.payment_method)}
                       </Badge>
                     </div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-gray-500 dark:text-gray-400 wrap-break-word">
                       {formatDate(payment.payment_date)}
                       {payment.reference && ` - ${t("payments.ref")} ${payment.reference}`}
                     </p>
@@ -158,7 +160,8 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
                 <button
                   onClick={() => setDeleteConfirmId(payment.id)}
                   aria-label={t("buttons.delete")}
-                  className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                  title={t("buttons.delete")}
+                  className="shrink-0 -me-1 p-3 lg:p-2 rounded-md text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

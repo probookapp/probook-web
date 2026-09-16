@@ -145,7 +145,7 @@ export function ExpenseCategoriesModal({ isOpen, onClose, canEdit, canDelete }: 
                 />
                 <button
                   type="button"
-                  className="p-1 text-gray-500 hover:text-primary-600"
+                  className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600"
                   title={tCommon("buttons.save")}
                   aria-label={tCommon("buttons.save")}
                   onClick={() => {
@@ -158,7 +158,7 @@ export function ExpenseCategoriesModal({ isOpen, onClose, canEdit, canDelete }: 
                 </button>
                 <button
                   type="button"
-                  className="p-1 text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"
+                  className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"
                   title={tCommon("buttons.cancel")}
                   aria-label={tCommon("buttons.cancel")}
                   onClick={() => setEditingId(null)}
@@ -175,7 +175,7 @@ export function ExpenseCategoriesModal({ isOpen, onClose, canEdit, canDelete }: 
                 {canEdit && (
                   <button
                     type="button"
-                    className="p-1 text-gray-500 hover:text-primary-600"
+                    className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600"
                     title={tCommon("buttons.edit")}
                     aria-label={`${tCommon("buttons.edit")} ${category.name}`}
                     onClick={() => startEditing(category)}
@@ -186,7 +186,7 @@ export function ExpenseCategoriesModal({ isOpen, onClose, canEdit, canDelete }: 
                 {canDelete && (
                   <button
                     type="button"
-                    className="p-1 text-gray-500 hover:text-red-600"
+                    className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600"
                     title={tCommon("buttons.delete")}
                     aria-label={`${tCommon("buttons.delete")} ${category.name}`}
                     onClick={() => setConfirmDeleteId(category.id)}

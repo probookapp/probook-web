@@ -152,11 +152,11 @@ export function ClientStatement({ isOpen, onClose, clientId, clientName }: Clien
           </div>
           <div className="flex gap-2">
             <Button variant="secondary" size="sm" onClick={handleExportCsv} disabled={!hasData}>
-              <Download className="h-4 w-4 mr-2" />
+              <Download className="h-4 w-4 me-2" />
               {tCommon("buttons.exportCsv")}
             </Button>
             <Button variant="secondary" size="sm" onClick={handleExportPdf} disabled={!hasData}>
-              <FileText className="h-4 w-4 mr-2" />
+              <FileText className="h-4 w-4 me-2" />
               {t("statement.exportPdf")}
             </Button>
           </div>

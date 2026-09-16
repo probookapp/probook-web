@@ -203,7 +203,7 @@ export function DashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
         <p className="text-gray-500 dark:text-gray-400">{t("welcome")}</p>
       </div>
 
@@ -254,14 +254,14 @@ export function DashboardPage() {
             {stats?.recent_invoices && stats.recent_invoices.length > 0 ? (
               <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                 {stats.recent_invoices.map((invoice) => (
-                  <li key={invoice.id} className="py-3 flex justify-between">
-                    <div>
+                  <li key={invoice.id} className="py-3 flex justify-between gap-4">
+                    <div className="min-w-0">
                       <p className="font-medium text-gray-900 dark:text-gray-100">{invoice.invoice_number}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                         {invoice.client?.name}
                       </p>
                     </div>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                    <p className="shrink-0 font-medium tabular-nums whitespace-nowrap text-gray-900 dark:text-gray-100">
                       {formatCurrency(invoice.total)}
                     </p>
                   </li>
@@ -283,14 +283,14 @@ export function DashboardPage() {
             {stats?.recent_quotes && stats.recent_quotes.length > 0 ? (
               <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                 {stats.recent_quotes.map((quote) => (
-                  <li key={quote.id} className="py-3 flex justify-between">
-                    <div>
+                  <li key={quote.id} className="py-3 flex justify-between gap-4">
+                    <div className="min-w-0">
                       <p className="font-medium text-gray-900 dark:text-gray-100">{quote.quote_number}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
                         {quote.client?.name}
                       </p>
                     </div>
-                    <p className="font-medium text-gray-900 dark:text-gray-100">
+                    <p className="shrink-0 font-medium tabular-nums whitespace-nowrap text-gray-900 dark:text-gray-100">
                       {formatCurrency(quote.total)}
                     </p>
                   </li>

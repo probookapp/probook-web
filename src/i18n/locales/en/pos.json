@@ -145,5 +145,8 @@
   "leftOnAccount": "Left on the client's account",
   "creditNeedsClient": "Select a client to leave a balance to collect.",
   "compactView": "Compact view",
-  "gridView": "Tile view"
+  "gridView": "Tile view",
+  "decreaseQuantity": "Decrease quantity",
+  "increaseQuantity": "Increase quantity",
+  "removeItem": "Remove item from cart"
 }

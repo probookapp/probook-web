@@ -176,11 +176,11 @@ export function PlatformAdminsPage() {
               )
             }
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             {t("platformAdmins.exportCsv")}
           </Button>
           <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t("platformAdmins.create")}
           </Button>
         </div>

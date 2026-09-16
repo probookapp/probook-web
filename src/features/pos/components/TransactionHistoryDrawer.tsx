@@ -263,7 +263,8 @@ export function TransactionHistoryDrawer({
           </div>
           <button
             onClick={onClose}
-            className="p-1 hover:bg-(--color-bg-secondary) rounded"
+            aria-label={t("close")}
+            className="-me-1.5 p-2.5 hover:bg-(--color-bg-secondary) rounded-md"
           >
             <X className="h-5 w-5" />
           </button>

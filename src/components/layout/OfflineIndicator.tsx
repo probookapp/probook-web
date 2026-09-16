@@ -108,7 +108,7 @@ export function OfflineIndicator() {
             <span>
               {t("offline.working_offline")}
               {pendingCount > 0 && (
-                <span className="ml-1 opacity-80">
+                <span className="ms-1 opacity-80">
                   ({pendingCount} {t("offline.pending")})
                 </span>
               )}
@@ -127,7 +127,7 @@ export function OfflineIndicator() {
             </span>
             <button
               onClick={sync}
-              className="ml-1 px-2 py-0.5 rounded bg-white/20 hover:bg-white/30 transition-colors"
+              className="ms-1 px-2.5 py-1.5 lg:py-0.5 rounded bg-white/20 hover:bg-white/30 transition-colors"
             >
               {t("offline.sync_now")}
             </button>

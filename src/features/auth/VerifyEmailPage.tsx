@@ -128,7 +128,7 @@ export function VerifyEmailPage() {
           </h1>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6 text-center">
             {t("verifyEmail.title")}
           </h2>
@@ -183,7 +183,7 @@ export function VerifyEmailPage() {
                   variant="secondary"
                   isLoading={resendStatus === "loading"}
                 >
-                  <Mail className="h-4 w-4 mr-2" />
+                  <Mail className="h-4 w-4" />
                   {t("verifyEmail.resend")}
                 </Button>
 
@@ -211,7 +211,7 @@ export function VerifyEmailPage() {
           <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
             <Link
               href={`/${locale}/login`}
-              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
+              className="inline-block py-3 -my-3 text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
             >
               {t("verifyEmail.goToLogin")}
             </Link>

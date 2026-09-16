@@ -42,7 +42,7 @@ export function VariantPickerModal({ product, onSelect, onClose }: VariantPicker
                     ))}
                   </div>
                 </div>
-                <div className="text-end shrink-0 ml-2">
+                <div className="text-end shrink-0 ms-2">
                   <p className="text-sm font-bold text-primary-600">
                     {formatCurrency(price * (1 + product.tax_rate / 100))}
                   </p>

@@ -115,7 +115,10 @@ function Strip({
 }) {
   return (
     <div className={`border-b ${TONES[tone]}`}>
-      <div className="max-w-7xl mx-auto px-4 py-2 flex items-center justify-between gap-3">
+      {/* The page's own gutter rather than a centred max-width: on a wide screen
+          a centred strip started its sentence 180px right of the page title
+          under it, and finished its button just as far short of the edge. */}
+      <div className="px-4 sm:px-6 lg:px-8 py-1 lg:py-2 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0 text-sm font-medium">
           {icon}
           <span className="truncate">{message}</span>
@@ -130,7 +133,9 @@ function StripAction({ onClick, children }: { onClick: () => void; children: Rea
   return (
     <button
       onClick={onClick}
-      className="shrink-0 text-xs font-medium rounded-md px-3 py-1.5 transition-colors bg-current/10 hover:bg-current/20"
+      // 40px tall where the strip is tapped rather than clicked; the strip grows
+      // by a few pixels there instead of the button being a thumb-width sliver.
+      className="shrink-0 min-h-10 lg:min-h-0 text-xs font-medium rounded-md px-3 py-1.5 transition-colors bg-current/10 hover:bg-current/20"
     >
       {children}
     </button>

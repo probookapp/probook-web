@@ -204,12 +204,12 @@ export function VariantManager({ productId }: VariantManagerProps) {
                     {v.barcode || "-"}
                   </td>
                   <td className="px-3 py-2">
-                    <div className="flex items-center gap-1 justify-end">
+                    <div className="flex items-center gap-2 lg:gap-1 justify-end">
                       {canEdit && (
                       <button
                         type="button"
                         onClick={() => isDemoMode ? showSubscribePrompt() : startEdit(v)}
-                        className="p-1 text-gray-500 hover:text-primary-600 rounded"
+                        className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400"
                       >
                         <Edit2 className="h-3.5 w-3.5" />
                       </button>
@@ -221,7 +221,7 @@ export function VariantManager({ productId }: VariantManagerProps) {
                           if (isDemoMode) { showSubscribePrompt(); return; }
                           if (confirm(t("common:messages.deleteConfirm"))) deleteMutation.mutate(v.id);
                         }}
-                        className="p-1 text-gray-500 hover:text-red-600 rounded"
+                        className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -356,7 +356,9 @@ export function VariantManager({ productId }: VariantManagerProps) {
                 <button
                   type="button"
                   onClick={() => removeAttribute(key)}
-                  className="p-1 text-red-500 hover:text-red-700"
+                  aria-label={t("common:buttons.delete")}
+                  title={t("common:buttons.delete")}
+                  className="p-3 lg:p-1.5 rounded-md text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -374,9 +376,9 @@ export function VariantManager({ productId }: VariantManagerProps) {
               isLoading={createMutation.isPending || updateMutation.isPending}
             >
               {editingId ? (
-                <><Save className="h-4 w-4 mr-1" /> {t("common:buttons.save")}</>
+                <><Save className="h-4 w-4 me-1" /> {t("common:buttons.save")}</>
               ) : (
-                <><Plus className="h-4 w-4 mr-1" /> {t("variants.addVariant")}</>
+                <><Plus className="h-4 w-4 me-1" /> {t("variants.addVariant")}</>
               )}
             </Button>
           </div>

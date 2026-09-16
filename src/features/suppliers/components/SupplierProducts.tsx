@@ -95,7 +95,7 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
         </h3>
         {!isAdding && canManage && (
           <Button size="sm" onClick={() => setIsAdding(true)}>
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t("products.addProduct")}
           </Button>
         )}
@@ -191,7 +191,7 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
                     {canManage && (
                     <button
                       onClick={() => handleRemoveProduct(product.link_id)}
-                      className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+                      className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors"
                       title={t("products.removeProduct")}
                       aria-label={t("products.removeProduct")}
                     >

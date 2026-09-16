@@ -203,7 +203,7 @@ export function PurchaseConfirmModal({
         </label>
 
         {paidFromRegister && (
-          <div className="space-y-3 pl-7">
+          <div className="space-y-3 ps-7">
             <SearchableSelect
               label={t("confirmModal.selectRegister")}
               options={registerOptions}
@@ -234,7 +234,7 @@ export function PurchaseConfirmModal({
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-2">
+        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
           <Button variant="secondary" onClick={handleClose}>
             {tCommon("buttons.cancel")}
           </Button>

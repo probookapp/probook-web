@@ -140,11 +140,11 @@ function ExportBar({ onCsv, onPdf }: { onCsv: () => void; onPdf: () => void }) {
   return (
     <div className="flex justify-end gap-2">
       <Button variant="secondary" size="sm" onClick={onPdf}>
-        <FileDown className="h-4 w-4 mr-2" />
+        <FileDown className="h-4 w-4 me-2" />
         {t("reports:exportPdf")}
       </Button>
       <Button variant="secondary" size="sm" onClick={onCsv}>
-        <Download className="h-4 w-4 mr-2" />
+        <Download className="h-4 w-4 me-2" />
         {t("reports:exportCsv")}
       </Button>
     </div>
@@ -476,7 +476,7 @@ export function ReportsPage() {
                         <TableCell>
                           {row.due_date ? formatDate(row.due_date) : "-"}
                           {row.overdue && (
-                            <Badge variant="danger" className="ml-2">
+                            <Badge variant="danger" className="ms-2">
                               {t("common:status.overdue")}
                             </Badge>
                           )}
@@ -1069,7 +1069,7 @@ export function ReportsPage() {
                     )
                   }
                 >
-                  <FileDown className="h-4 w-4 mr-2" />
+                  <FileDown className="h-4 w-4 me-2" />
                   {t("reports:exportPdf")}
                 </Button>
               </div>
@@ -1712,7 +1712,7 @@ export function ReportsPage() {
                 size="sm"
                 onClick={() => exportToCSV(ae.journal, "journal_comptable")}
               >
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-4 w-4 me-2" />
                 {t("reports:accountingExport.downloadJournal")}
               </Button>
               {counts.map((c) => (
@@ -1723,7 +1723,7 @@ export function ReportsPage() {
                   onClick={() => exportToCSV(c.data, c.filename)}
                   disabled={c.value === 0}
                 >
-                  <Download className="h-4 w-4 mr-2" />
+                  <Download className="h-4 w-4 me-2" />
                   {c.label}
                 </Button>
               ))}
@@ -1804,7 +1804,7 @@ export function ReportsPage() {
             onClick={() => setActiveReport(report.id)}
             className="whitespace-nowrap"
           >
-            <report.icon className="h-4 w-4 mr-2" />
+            <report.icon className="h-4 w-4 me-2" />
             {report.label}
           </Button>
         ))}

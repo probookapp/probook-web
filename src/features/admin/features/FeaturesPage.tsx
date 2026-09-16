@@ -219,11 +219,11 @@ export function FeaturesPage() {
               )
             }
           >
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="h-4 w-4 me-2" />
             {t("features.exportCsv")}
           </Button>
           <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t("features.create")}
           </Button>
         </div>
@@ -267,7 +267,7 @@ export function FeaturesPage() {
                         onClick={() => handleToggleGlobal(feature)}
                         isLoading={updateFeature.isPending}
                       >
-                        <Globe className="h-4 w-4 mr-1" />
+                        <Globe className="h-4 w-4 me-1" />
                         {feature.is_global ? t("features.disabled") : t("features.enabled")}
                       </Button>
                       <Button

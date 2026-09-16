@@ -121,11 +121,11 @@ export function CategoryManager() {
               <span className="text-sm text-gray-500 dark:text-gray-400">- {category.description}</span>
             )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 lg:gap-1 shrink-0">
             {canEdit && (
             <button
               onClick={() => handleOpenModal(category)}
-              className="p-1 text-gray-500 hover:text-primary-600 transition-colors"
+              className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
               title={t("common:buttons.edit")}
               aria-label={t("common:buttons.edit")}
             >
@@ -135,7 +135,7 @@ export function CategoryManager() {
             {canDelete && (
             <button
               onClick={() => setDeleteConfirmId(category.id)}
-              className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+              className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors"
               title={t("common:buttons.delete")}
               aria-label={t("common:buttons.delete")}
             >
@@ -166,7 +166,7 @@ export function CategoryManager() {
         </div>
         {canCreate && (
           <Button onClick={() => handleOpenModal()} size="sm">
-            <Plus className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 me-2" />
             {t("categories.newCategory")}
           </Button>
         )}

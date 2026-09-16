@@ -199,7 +199,7 @@ export function AdminSecuritySection() {
                   toast.success(t("security.twoFactor.backupCodesCopied"));
                 }}
               >
-                <Copy className="h-4 w-4 mr-2" />
+                <Copy className="h-4 w-4 me-2" />
                 {t("security.twoFactor.copyBackupCodes")}
               </Button>
               <Button type="button" onClick={() => setBackupCodes([])}>
@@ -256,12 +256,12 @@ export function AdminSecuritySection() {
                 variant="danger"
                 onClick={() => setDisableMode(!disableMode)}
               >
-                <ShieldOff className="h-4 w-4 mr-2" />
+                <ShieldOff className="h-4 w-4 me-2" />
                 {t("security.twoFactor.disable")}
               </Button>
             ) : (
               <Button type="button" onClick={handleSetup} isLoading={isSettingUp}>
-                <ShieldCheck className="h-4 w-4 mr-2" />
+                <ShieldCheck className="h-4 w-4 me-2" />
                 {t("security.twoFactor.enable")}
               </Button>
             )}

@@ -211,7 +211,7 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
                   variant="secondary"
                   onClick={handleCopyBackupCodes}
                 >
-                  <Copy className="h-4 w-4 mr-2" />
+                  <Copy className="h-4 w-4 me-2" />
                   Copy
                 </Button>
                 <Button
@@ -317,7 +317,7 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
 
           {/* Status and action buttons */}
           {!setupMode && !showBackupCodes && (
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-3">
               <p
                 className={`text-sm font-medium ${
                   totpEnabled
@@ -335,7 +335,7 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
                   variant="danger"
                   onClick={() => setDisableMode(!disableMode)}
                 >
-                  <ShieldOff className="h-4 w-4 mr-2" />
+                  <ShieldOff className="h-4 w-4 me-2" />
                   {t("security.twoFactor.disable")}
                 </Button>
               ) : (
@@ -344,7 +344,7 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
                   onClick={handleSetup2FA}
                   isLoading={isSettingUp}
                 >
-                  <ShieldCheck className="h-4 w-4 mr-2" />
+                  <ShieldCheck className="h-4 w-4 me-2" />
                   {t("security.twoFactor.enable")}
                 </Button>
               )}
@@ -375,10 +375,10 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
               {sessions.map((session) => (
                 <div
                   key={session.id}
-                  className="flex items-center justify-between border border-gray-200 dark:border-gray-700 rounded-lg p-3"
+                  className="flex flex-wrap items-center justify-between gap-3 border border-gray-200 dark:border-gray-700 rounded-lg p-3"
                 >
                   <div className="space-y-1 min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                         {parseUserAgent(session.user_agent)}
                       </span>
@@ -388,7 +388,7 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
                         </span>
                       )}
                     </div>
-                    <div className="flex gap-4 text-xs text-gray-500 dark:text-gray-400">
+                    <div className="flex flex-wrap gap-x-4 text-xs text-gray-500 dark:text-gray-400">
                       {session.ip_address && (
                         <span>
                           {t("security.sessions.ipAddress")}: {session.ip_address}
@@ -405,7 +405,7 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
                       variant="danger"
                       onClick={() => handleRevokeSession(session.id)}
                     >
-                      <Trash2 className="h-4 w-4 mr-1" />
+                      <Trash2 className="h-4 w-4 me-1" />
                       {t("security.sessions.revoke")}
                     </Button>
                   )}
@@ -426,7 +426,7 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
                   isLoading={isRevokingAll}
                   className="w-full"
                 >
-                  <LogOut className="h-4 w-4 mr-2" />
+                  <LogOut className="h-4 w-4 me-2" />
                   {t("security.sessions.revokeAll")}
                 </Button>
               )}

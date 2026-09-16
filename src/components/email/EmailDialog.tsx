@@ -183,7 +183,7 @@ export function EmailDialog({
             {t("buttons.cancel")}
           </Button>
           <Button onClick={handleSend}>
-            <Send className="h-4 w-4 mr-2" />
+            <Send className="h-4 w-4 me-2" />
             {t("email.send")}
           </Button>
         </div>

@@ -33,7 +33,7 @@ export function OpenSessionModal({
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-(--color-border-primary)">
           <h2 className="text-xl font-bold">{t("openSession")}</h2>
-          <button onClick={onClose} className="p-1 hover:bg-(--color-bg-secondary) rounded">
+          <button onClick={onClose} aria-label={t("close")} className="-me-1.5 p-2.5 hover:bg-(--color-bg-secondary) rounded-md">
             <X className="h-5 w-5" />
           </button>
         </div>
