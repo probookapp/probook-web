@@ -2,10 +2,10 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { UserPlus, Eye, EyeOff } from "lucide-react";
+import { UserPlus } from "lucide-react";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useLocale } from "@/lib/navigation";
-import { Button, Input } from "@/components/ui";
+import { Button, Input, PasswordToggle } from "@/components/ui";
 import { useQueryClient } from "@tanstack/react-query";
 import { clearAllUserData } from "@/lib/session-cleanup";
 import { MetaPixel, trackMetaEvent } from "@/components/analytics/MetaPixel";
@@ -92,7 +92,7 @@ export function SignupPage() {
           </p>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
             {t("signup.title")}
           </h2>
@@ -129,6 +129,9 @@ export function SignupPage() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               required
             />
 
@@ -139,20 +142,10 @@ export function SignupPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="new-password"
-                className="pr-10"
+                className="pe-10"
                 required
               />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-8.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-              >
-                {showPassword ? (
-                  <EyeOff className="h-5 w-5" />
-                ) : (
-                  <Eye className="h-5 w-5" />
-                )}
-              </button>
+              <PasswordToggle shown={showPassword} onToggle={() => setShowPassword(!showPassword)} />
             </div>
 
             <Input
@@ -169,7 +162,7 @@ export function SignupPage() {
             )}
 
             <Button type="submit" className="w-full" isLoading={isLoading}>
-              <UserPlus className="h-4 w-4 mr-2" />
+              <UserPlus className="h-4 w-4" />
               {t("signup.submit")}
             </Button>
           </form>
@@ -178,7 +171,7 @@ export function SignupPage() {
             {t("signup.haveAccount")}{" "}
             <Link
               href={`/${locale}/login`}
-              className="text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
+              className="inline-block py-3 -my-3 text-primary-600 hover:text-primary-700 dark:text-primary-400 font-medium"
             >
               {t("signup.signIn")}
             </Link>

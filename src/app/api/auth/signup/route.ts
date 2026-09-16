@@ -6,6 +6,7 @@ import { issueEmailVerificationToken, isEmailTakenByVerifiedUser } from "@/lib/v
 import { validateBody, isValidationError } from "@/lib/validate";
 import { signupSchema } from "@/lib/validations";
 import { getClientIp } from "@/lib/client-ip";
+import { isUsernameTaken } from "@/lib/usernames";
 import { rateLimitDurable } from "@/lib/rate-limit";
 
 // New signups get a free trial with full (non-demo) access, after which they
@@ -41,10 +42,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Check if username is already taken (across all tenants)
-    const existingUser = await prisma.user.findFirst({
-      where: { username },
-    });
-    if (existingUser) {
+    if (await isUsernameTaken(username)) {
       // Deliberately vague: a "username already taken" message would let
       // anyone probe which usernames exist across all tenants.
       return NextResponse.json(

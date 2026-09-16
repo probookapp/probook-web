@@ -6,6 +6,7 @@ export { SearchableSelect, type SearchableSelectProps, type SearchableSelectOpti
 export { Textarea, type TextareaProps } from "./Textarea";
 export { Card, CardHeader, CardTitle, CardContent, CardFooter } from "./Card";
 export { Modal } from "./Modal";
+export { PasswordToggle } from "./PasswordToggle";
 export {
   Table,
   TableHeader,

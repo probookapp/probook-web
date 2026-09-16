@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { findActiveUsersByIdentifier } from "@/lib/usernames";
 import { verifyPassword, createToken, setSessionCookie, hashToken, createTotpChallengeToken } from "@/lib/auth";
 import { checkAccountLocked, checkAccountLockedByIp, recordLoginAttempt } from "@/lib/brute-force";
 import { validateBody, isValidationError } from "@/lib/validate";
@@ -24,12 +25,10 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await prisma.user.findFirst({
-      where: { username, isActive: true },
-      include: { tenant: { select: { status: true } } },
-    });
+    // `username` is the login identifier: a username or an email address.
+    const candidates = await findActiveUsersByIdentifier(username);
 
-    if (!user) {
+    if (candidates.length === 0) {
       // Record failed attempt even for non-existent users
       await recordLoginAttempt({
         username,
@@ -40,21 +39,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
     }
 
-    // Check brute force lockout for known user
-    const lockout = await checkAccountLocked(user.tenantId, username);
-    if (lockout.locked) {
+    // Check brute force lockout for each known account answering to this name
+    const unlocked: typeof candidates = [];
+    let minutesLeft = 0;
+    for (const candidate of candidates) {
+      const lockout = await checkAccountLocked(candidate.tenantId, username);
+      if (lockout.locked) minutesLeft = Math.max(minutesLeft, lockout.minutesLeft);
+      else unlocked.push(candidate);
+    }
+    if (unlocked.length === 0) {
       return NextResponse.json(
-        { error: `Account temporarily locked. Try again in ${lockout.minutesLeft} minutes.` },
+        { error: `Account temporarily locked. Try again in ${minutesLeft} minutes.` },
         { status: 429 }
       );
     }
 
-    const valid = await verifyPassword(password, user.passwordHash);
-    if (!valid) {
+    // The password decides which account is meant when the name is shared
+    // (legacy duplicates across businesses): picking one blindly locked the
+    // other out with a correct password.
+    let user: (typeof candidates)[number] | undefined;
+    for (const candidate of unlocked) {
+      if (await verifyPassword(password, candidate.passwordHash)) {
+        user = candidate;
+        break;
+      }
+    }
+    if (!user) {
       await recordLoginAttempt({
-        userId: user.id,
+        userId: unlocked[0].id,
         username,
-        tenantId: user.tenantId,
+        tenantId: unlocked[0].tenantId,
         ipAddress,
         success: false,
       });

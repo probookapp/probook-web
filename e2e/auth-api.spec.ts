@@ -121,7 +121,7 @@ test.describe("Auth API flows", () => {
     await signUp(page);
 
     const user = await apiPost(page, "/api/auth/users", {
-      username: "employee1",
+      username: `employee_${Date.now()}`,
       display_name: "Employee One",
       password: "Employee123!",
       role: "employee",
@@ -130,5 +130,64 @@ test.describe("Auth API flows", () => {
 
     expect(user.status).toBe(200);
     expect(user.body.role).toBe("employee");
+  });
+
+  // Login names no business, so a username handed over by an admin must reach
+  // exactly that account: not another business's user of the same name, and
+  // not be defeated by a phone capitalising it or a pasted trailing space.
+  test("an admin-created account logs in whatever the case, and its name can't be reused elsewhere", async ({ page }) => {
+    const name = `caisse_${Date.now()}`;
+    await signUp(page);
+    const created = await apiPost(page, "/api/auth/users", {
+      username: name,
+      display_name: "Caisse",
+      password: "Caisse123!",
+      role: "employee",
+      permissions: ["pos"],
+    });
+    expect(created.status).toBe(200);
+
+    await logOut(page);
+    await signUp(page);
+    const clash = await apiPost(page, "/api/auth/users", {
+      username: name.toUpperCase(),
+      display_name: "Other Caisse",
+      password: "Other123!",
+      role: "employee",
+      permissions: ["pos"],
+    });
+    expect(clash.status).toBe(409);
+    expect(clash.body.code).toBe("USERNAME_TAKEN");
+    // The refusal comes with a free name to use instead.
+    const suggestion = clash.body.suggestion as string;
+    expect(suggestion).toMatch(new RegExp(`^${name.toUpperCase()}`));
+    const retry = await apiPost(page, "/api/auth/users", {
+      username: suggestion,
+      display_name: "Other Caisse",
+      password: "Other123!",
+      role: "employee",
+      permissions: ["pos"],
+    });
+    expect(retry.status).toBe(200);
+
+    await logOut(page);
+    const login = await apiPost(page, "/api/auth/login", {
+      username: ` ${name.charAt(0).toUpperCase()}${name.slice(1)} `,
+      password: "Caisse123!",
+    });
+    expect(login.status).toBe(200);
+    expect(login.body.username).toBe(name);
+  });
+
+  test("the owner can log in with the email address instead of the username", async ({ page }) => {
+    const { username, password, email } = await signUp(page);
+    await logOut(page);
+
+    const byEmail = await apiPost(page, "/api/auth/login", { username: email.toUpperCase(), password });
+    expect(byEmail.status).toBe(200);
+    expect(byEmail.body.username).toBe(username);
+
+    const wrong = await apiPost(page, "/api/auth/login", { username: email, password: "nope-nope" });
+    expect(wrong.status).toBe(401);
   });
 });

@@ -6,6 +6,7 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { updateUserSchema } from "@/lib/validations";
 import { buildPermissionRows, serializeUser } from "../permissions";
 import { isOwner } from "@/lib/tenant-owner";
+import { isUsernameTaken, usernameTakenResponse } from "@/lib/usernames";
 
 export const PUT = withAdmin(async (req, { tenantId, params }) => {
   const id = params?.id;
@@ -38,6 +39,10 @@ export const PUT = withAdmin(async (req, { tenantId, params }) => {
         { status: 400 }
       );
     }
+  }
+
+  if (await isUsernameTaken(username, id)) {
+    return usernameTakenResponse(username, tenantId);
   }
 
   const updateData: { username: string; displayName: string; role: string; isActive: boolean; passwordHash?: string } = {

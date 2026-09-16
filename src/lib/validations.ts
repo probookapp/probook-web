@@ -16,6 +16,11 @@ const optionalEmail = z
     { message: "Invalid email format" }
   );
 const requiredString = (field: string) => z.string().min(1, `${field} is required`);
+// Usernames are handed over by word of mouth and typed on phones: a stray space
+// copied along with them must not make an account unreachable. Case is handled
+// at lookup (see src/lib/usernames.ts), so what the admin typed is kept as is.
+const username = (min = 1) =>
+  z.string().trim().min(min, min > 1 ? `Username must be at least ${min} characters` : "Username is required");
 // Operational money is Decimal(16,3) (13 integer digits). Cap inputs well below
 // that ceiling so an absurd amount returns a clean 400 instead of a Postgres
 // numeric-overflow 500 (audit CFG-V1).
@@ -34,7 +39,7 @@ const requiredEmail = z
 
 export const signupSchema = z.object({
   company_name: requiredString("Company name"),
-  username: z.string().min(3, "Username must be at least 3 characters"),
+  username: username(3),
   display_name: requiredString("Display name"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   email: requiredEmail,
@@ -70,7 +75,7 @@ export const createSubscriptionSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  username: requiredString("Username"),
+  username: username(),
   password: requiredString("Password"),
 });
 
@@ -83,7 +88,7 @@ const permissionDetailSchema = z.object({
 });
 
 export const createUserSchema = z.object({
-  username: requiredString("Username"),
+  username: username(),
   display_name: requiredString("Display name"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   role: z.enum(["admin", "employee"]).default("employee"),
@@ -92,7 +97,7 @@ export const createUserSchema = z.object({
 });
 
 export const updateUserSchema = z.object({
-  username: requiredString("Username"),
+  username: username(),
   display_name: requiredString("Display name"),
   password: z.string().min(8).optional().or(z.literal("")),
   role: z.enum(["admin", "employee"]),
@@ -257,6 +262,8 @@ export const expenseCategorySchema = z.object({
 
 const documentLineSchema = z.object({
   product_id: optionalString,
+  // The variant sold, for a product with variants: stock is kept per variant.
+  variant_id: optionalString,
   description: requiredString("Line description"),
   description_html: optionalString,
   quantity: z.coerce.number().min(0.01, "Quantity must be positive"),
@@ -374,6 +381,7 @@ export const paymentSchema = z.object({
 
 const deliveryNoteLineSchema = z.object({
   product_id: optionalString,
+  variant_id: optionalString,
   description: requiredString("Line description"),
   description_html: optionalString,
   quantity: z.coerce.number().min(0.01, "Quantity must be positive"),

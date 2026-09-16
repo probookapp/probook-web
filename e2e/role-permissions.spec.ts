@@ -3,10 +3,11 @@ import { signUp, logOut, logIn } from "./helpers";
 import { apiGet, apiPost } from "./api-helpers";
 
 /**
- * Usernames are unique per tenant, not globally, so a literal name here quietly
- * accumulates one account per run across abandoned tenants — and `logIn` then
- * resolves to an arbitrary one of them. That is how the products permission
- * suite came to fail six weeks later for a reason unrelated to permissions.
+ * A username names one account across the whole platform, so a literal name
+ * here would be refused on the second run (the first run's tenant still holds
+ * it). Before that rule, the copies piled up across abandoned tenants and
+ * `logIn` resolved to an arbitrary one — which is how the products permission
+ * suite came to fail six weeks later, and how real customers were locked out.
  */
 const unique = (name: string) => `${name}_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 

@@ -32,7 +32,7 @@ test.describe("Authentication flows", () => {
     await page.locator('button[type="submit"]').click();
 
     // Should show error and stay on login page
-    await expect(page.locator("text=Invalid username or password").first()).toBeVisible({
+    await expect(page.locator("text=Invalid login or password").first()).toBeVisible({
       timeout: 5_000,
     });
     expect(page.url()).toContain("/login");

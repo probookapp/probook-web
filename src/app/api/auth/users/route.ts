@@ -7,6 +7,7 @@ import { createUserSchema } from "@/lib/validations";
 import { buildPermissionRows, serializeUser } from "./permissions";
 import { getUserQuotaUsage } from "@/lib/plan-quotas";
 import { getOwnerUserId } from "@/lib/tenant-owner";
+import { isUsernameTaken, usernameTakenResponse } from "@/lib/usernames";
 
 // Admin-only: the roster and every user's permission set are management data,
 // consistent with the admin-gated POST/PUT/DELETE on this resource (audit TEN-2).
@@ -51,6 +52,10 @@ export const POST = withAdmin(async (req, { tenantId }) => {
     );
   }
   const { username, display_name, password, role, permissions, permission_details } = body;
+
+  if (await isUsernameTaken(username)) {
+    return usernameTakenResponse(username, tenantId);
+  }
 
   const passwordHash = await hashPassword(password);
   const user = await prisma.user.create({
