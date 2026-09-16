@@ -100,5 +100,10 @@
     "partiallyReceived": "Partiellement reçus",
     "confirmed": "Confirmés",
     "cancelled": "Annulés"
+  },
+  "newProduct": {
+    "button": "Nouveau produit",
+    "title": "Nouveau produit",
+    "offline": "Hors ligne : le produit sera créé à la reconnexion, mais il ne peut pas encore être ajouté à cette commande."
   }
 }

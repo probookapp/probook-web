@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
 import { Button, Input, Textarea, Select, SearchableSelect } from "@/components/ui";
+import { fieldBase, FIELD_HEIGHT } from "@/components/ui/field";
 import { useVatRateOptions } from "@/hooks/useFiscalProfile";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { createProductSchema, type ProductFormData } from "../schemas/productSchema";
@@ -17,10 +18,16 @@ interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void;
   onCancel: () => void;
   isLoading?: boolean;
+  /**
+   * Created from a purchase order: the order itself brings the stock in when it
+   * is received, so an opening quantity here would count the goods twice. Variants
+   * are set up from the product page, where they can be named.
+   */
+  fromPurchase?: boolean;
 }
 
 
-export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductFormProps) {
+export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurchase }: ProductFormProps) {
   const { t } = useTranslation(["products", "common"]);
   const { data: categories } = useProductCategories();
   // A new product inherits the tenant's usual rate. It used to open at 0 %,
@@ -93,7 +100,16 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
   ];
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    // Opened over another form (a purchase order), this form sits in a portal:
+    // the DOM keeps them apart but React bubbles submit up its own tree, and the
+    // order behind would submit too.
+    <form
+      onSubmit={(e) => {
+        e.stopPropagation();
+        return handleSubmit(onSubmit)(e);
+      }}
+      className="space-y-6"
+    >
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Input
           label={t("fields.designationRequired")}
@@ -170,7 +186,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
             />
           )}
         />
-        {!isService && (
+        {!isService && !fromPurchase && (
           <Input
             label={t("fields.quantity")}
             type="number"
@@ -191,7 +207,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
           <button
             type="button"
             onClick={() => appendPrice({ label: "", price: 0 })}
-            className="flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400"
+            className="flex min-h-10 items-center gap-1 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 lg:min-h-0"
           >
             <Plus className="h-4 w-4" />
             {t("pricing.addTier")}
@@ -207,8 +223,13 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
           const isPreset = priceTierLabelOptions.some((o) => o.value === currentLabel);
           const isCustom = currentLabel !== "" && !isPreset;
           return (
-            <div key={field.id} className="flex items-start gap-3">
-              <div className="flex-1">
+            // On a phone the three fields cannot share a row inside the modal:
+            // the tariff and its delete button stay on top, the rest stack below.
+            <div
+              key={field.id}
+              className="grid grid-cols-[minmax(0,1fr)_auto] gap-2 sm:flex sm:items-start sm:gap-3"
+            >
+              <div className="sm:flex-1 sm:min-w-0">
                 <Controller
                   name={`prices.${index}.label`}
                   control={control}
@@ -222,7 +243,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
                           labelField.onChange(e.target.value);
                         }
                       }}
-                      className="w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className={fieldBase(false, FIELD_HEIGHT)}
                     >
                       <option value="">{t("pricing.selectLabel")}</option>
                       {priceTierLabelOptions.map((opt) => (
@@ -234,14 +255,14 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
                 />
               </div>
               {isCustom && (
-                <div className="flex-1">
+                <div className="col-span-2 sm:flex-1 sm:min-w-0">
                   <Input
                     placeholder={t("pricing.labelPlaceholder")}
                     {...register(`prices.${index}.label`)}
                   />
                 </div>
               )}
-              <div className="flex-1">
+              <div className="col-span-2 sm:flex-1 sm:min-w-0">
                 <Input
                   type="number"
                   step="0.01"
@@ -252,7 +273,9 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
               <button
                 type="button"
                 onClick={() => removePrice(index)}
-                className="mt-2 p-1 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
+                aria-label={t("pricing.removeTier")}
+                title={t("pricing.removeTier")}
+                className="col-start-2 row-start-1 p-3 lg:p-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -273,7 +296,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading }: ProductF
         </label>
       </div>
 
-      {!isService && (
+      {!isService && !fromPurchase && (
         <div className="flex items-center gap-2">
           <input
             type="checkbox"

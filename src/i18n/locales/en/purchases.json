@@ -100,5 +100,10 @@
     "partiallyReceived": "Partially Received",
     "confirmed": "Confirmed",
     "cancelled": "Cancelled"
+  },
+  "newProduct": {
+    "button": "New product",
+    "title": "New product",
+    "offline": "Offline: the product will be created once you reconnect, but it can't be added to this order yet."
   }
 }

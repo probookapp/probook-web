@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2 } from "lucide-react";
@@ -9,11 +9,19 @@ import {
   Textarea,
   Select,
   SearchableSelect,
+  Modal,
 } from "@/components/ui";
 import { supplierApi, productApi, locationsApi } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { ProductForm, useCreateProduct } from "@/features/products";
+import type { ProductFormData } from "@/features/products/schemas/productSchema";
+import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { isOfflineQueuedError } from "@/lib/offline-errors";
+import { getApiErrorMessage } from "@/lib/api-adapter";
 import { formatCurrency, formatDateISO } from "@/lib/utils";
 import type {
+  Product,
   PurchaseOrder,
   CreatePurchaseOrderInput,
   CreatePurchaseOrderLineInput,
@@ -156,19 +164,65 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
     [lineSubtotals]
   );
 
+  const fillLineFromProduct = (index: number, product: Product) => {
+    const purchasePrice = product.purchase_price ?? 0;
+    setValue(`lines.${index}.unit_price`, purchasePrice);
+    setValue(`lines.${index}.previous_price`, purchasePrice);
+    setValue(`lines.${index}.tax_rate`, product.tax_rate ?? 0);
+    setValue(`lines.${index}.use_average_price`, false);
+  };
+
   // When product is selected, fill in default price
   const handleProductChange = (index: number, productId: string) => {
     setValue(`lines.${index}.product_id`, productId);
     setValue(`lines.${index}.variant_id`, "");
-    if (productId && products) {
-      const product = products.find((p) => p.id === productId);
-      if (product) {
-        const purchasePrice = product.purchase_price ?? 0;
-        setValue(`lines.${index}.unit_price`, purchasePrice);
-        setValue(`lines.${index}.previous_price`, purchasePrice);
-        setValue(`lines.${index}.tax_rate`, product.tax_rate ?? 0);
-        setValue(`lines.${index}.use_average_price`, false);
-      }
+    const product = productId ? products?.find((p) => p.id === productId) : undefined;
+    if (product) fillLineFromProduct(index, product);
+  };
+
+  // New goods usually arrive with the supplier before they exist in the
+  // catalogue: create the product without leaving the order, on the line that
+  // asked for it.
+  const queryClient = useQueryClient();
+  const { isDemoMode, showSubscribePrompt } = useDemoMode();
+  const canCreateProduct = useAuthStore((s) => s.hasPermission("products", "create"));
+  const createProduct = useCreateProduct();
+  const [newProductLine, setNewProductLine] = useState<number | null>(null);
+
+  const openNewProduct = (index: number) => {
+    if (isDemoMode) { showSubscribePrompt(); return; }
+    setNewProductLine(index);
+  };
+
+  const handleCreateProduct = async (data: ProductFormData) => {
+    if (newProductLine === null) return;
+    const index = newProductLine;
+    try {
+      const created = await createProduct.mutateAsync({
+        ...data,
+        description: data.description || null,
+        reference: data.reference || null,
+        category_id: data.category_id || null,
+        quantity: 0,
+        has_variants: false,
+      });
+      // Into the picker now, not after the refetch: the line shows its product
+      // the moment the dialog closes.
+      queryClient.setQueryData<Product[]>(["products-with-details"], (old) =>
+        old ? [created, ...old.filter((p) => p.id !== created.id)] : [created]
+      );
+      queryClient.invalidateQueries({ queryKey: ["products-with-details"] });
+      setValue(`lines.${index}.product_id`, created.id, { shouldValidate: true });
+      setValue(`lines.${index}.variant_id`, "");
+      fillLineFromProduct(index, created);
+      setNewProductLine(null);
+    } catch (err) {
+      // A queued product has no id yet, so no line can point at it.
+      toast.error(
+        isOfflineQueuedError(err)
+          ? t("newProduct.offline")
+          : getApiErrorMessage(err, tCommon("messages.error"))
+      );
     }
   };
 
@@ -280,7 +334,7 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
               })
             }
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus className="h-4 w-4 me-1" />
             {t("fields.addLine")}
           </Button>
         </div>
@@ -303,22 +357,34 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
                 className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg space-y-3"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <Controller
-                      control={control}
-                      name={`lines.${index}.product_id`}
-                      rules={{ required: t("validation.productRequired") }}
-                      render={({ field: selectField }) => (
-                        <SearchableSelect
-                          label={t("fields.product") + " *"}
-                          options={productOptions}
-                          value={selectField.value}
-                          onChange={(val) => handleProductChange(index, val)}
-                          placeholder={t("fields.selectProduct")}
-                          error={errors.lines?.[index]?.product_id?.message}
-                        />
+                  <div className="flex-1 min-w-0 grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="min-w-0">
+                      <Controller
+                        control={control}
+                        name={`lines.${index}.product_id`}
+                        rules={{ required: t("validation.productRequired") }}
+                        render={({ field: selectField }) => (
+                          <SearchableSelect
+                            label={t("fields.product") + " *"}
+                            options={productOptions}
+                            value={selectField.value}
+                            onChange={(val) => handleProductChange(index, val)}
+                            placeholder={t("fields.selectProduct")}
+                            error={errors.lines?.[index]?.product_id?.message}
+                          />
+                        )}
+                      />
+                      {canCreateProduct && (
+                        <button
+                          type="button"
+                          onClick={() => openNewProduct(index)}
+                          className="mt-1 inline-flex items-center gap-1 min-h-9 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+                        >
+                          <Plus className="h-4 w-4" />
+                          {t("newProduct.button")}
+                        </button>
                       )}
-                    />
+                    </div>
 
                     {hasVariants && (
                       <Controller
@@ -389,7 +455,7 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
                   </div>
 
                   <Input
-                    label={t("fields.taxRate") + " (%)"}
+                    label={t("fields.taxRate")}
                     type="number"
                     min="0"
                     max="100"
@@ -457,6 +523,22 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
           {purchase ? tCommon("buttons.save") : tCommon("buttons.create")}
         </Button>
       </div>
+
+      <Modal
+        isOpen={newProductLine !== null}
+        onClose={() => setNewProductLine(null)}
+        title={t("newProduct.title")}
+        size="lg"
+      >
+        {newProductLine !== null && (
+          <ProductForm
+            fromPurchase
+            onSubmit={handleCreateProduct}
+            onCancel={() => setNewProductLine(null)}
+            isLoading={createProduct.isPending}
+          />
+        )}
+      </Modal>
     </form>
   );
 }
