@@ -84,10 +84,19 @@ test.describe("publishing the grid in another currency", () => {
       expect(plan.monthly_price % 100).toBe(0);
     }
 
-    // The order of the grid survives: an offer that costs more in dinars must
-    // not come out cheaper elsewhere.
-    const order = converted.plans.map((p) => p.monthly_price);
-    expect(order).toEqual([...order].sort((a, b) => a - b));
+    // An offer that costs more in dinars must not come out cheaper elsewhere.
+    //
+    // Read against the dinar prices, not against the order the grid happens to
+    // arrive in: that order is the catalogue's own `sort_order`, which no rule
+    // ties to price, and any offer another spec publishes while this one runs
+    // sits in it too. Comparing the list to itself sorted therefore failed on
+    // a grid that was perfectly converted.
+    const inDinars = new Map(dinars.plans.map((p) => [p.slug, p.monthly_price]));
+    const byDinarPrice = converted.plans
+      .filter((p) => inDinars.has(p.slug))
+      .sort((a, b) => inDinars.get(a.slug)! - inDinars.get(b.slug)!)
+      .map((p) => p.monthly_price);
+    expect(byDinarPrice).toEqual([...byDinarPrice].sort((a, b) => a - b));
 
     await dropRate(page);
   });
