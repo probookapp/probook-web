@@ -54,6 +54,38 @@ test("Chapitre 7 — Fournisseurs et réapprovisionnement", async ({ page }) => 
   );
   await tour.set(order.locator('input[name="lines.1.quantity"]'), "50");
 
+  // ─── nouveau produit depuis la commande ───
+  await tour.say(
+    "Le fournisseur propose aussi une nouveauté qui n'est pas encore au catalogue. Pas besoin de quitter la commande : on la crée d'ici."
+  );
+  await tour.click(order.getByRole("button", { name: t("purchases:fields.addLine") }));
+  await tour.click(
+    order.getByRole("button", { name: t("purchases:newProduct.button") }).last(),
+    { settleMs: 1200 }
+  );
+
+  // The product form opens over the order; `tour.dialog()` is the topmost one.
+  const newProduct = tour.dialog();
+  await tour.type(newProduct.locator('input[name="designation"]'), PRODUCTS.soundbar.designation);
+  await tour.type(newProduct.locator('input[name="reference"]'), PRODUCTS.soundbar.reference);
+  await tour.set(newProduct.locator('input[name="unit_price"]'), PRODUCTS.soundbar.salePrice);
+  await tour.set(newProduct.locator('input[name="purchase_price"]'), PRODUCTS.soundbar.purchasePrice);
+  await tour.say(
+    "Pas de quantité à saisir ici : le stock arrivera avec la réception de la commande."
+  );
+  await expect(newProduct.locator('input[name="quantity"]')).toHaveCount(0);
+  await tour.click(
+    newProduct.getByRole("button", { name: t("products:createProduct"), exact: true }),
+    { settleMs: 1600 }
+  );
+
+  await tour.say("Le produit est créé et déjà placé sur la ligne, avec son prix d'achat.");
+  await expect(
+    tour.fieldByLabel(`${t("purchases:fields.product")} *`, order, 2).locator("button").first()
+  ).toContainText(PRODUCTS.soundbar.designation);
+  await tour.set(order.locator('input[name="lines.2.quantity"]'), "6");
+  await tour.pause(1200);
+
   await tour.click(order.getByRole("button", { name: t("common:buttons.create"), exact: true }), {
     settleMs: 1800,
   });

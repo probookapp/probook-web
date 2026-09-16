@@ -11,7 +11,7 @@ test("Chapitre 1 — Créer son compte et découvrir Probook", async ({ page }) 
   // The address and the login are typed on camera, so they have to read like a
   // real shop's. The previous take is removed rather than dodged with a stamp.
   const { username, email } = BIZ;
-  await releaseDemoAccount({ email, username });
+  await releaseDemoAccount({ email, username, staffUsernames: [BIZ.staffUsername] });
 
   await page.goto(`/${LOCALE}`);
   await page.waitForLoadState("domcontentloaded");

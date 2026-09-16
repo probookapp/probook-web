@@ -38,6 +38,11 @@ const TEXT = {
     restock: "Réception complémentaire fournisseur",
     returned: "Téléviseur retourné (emballage ouvert)",
     buyerRole: "Responsable achats",
+    mount: "Support mural TV",
+    mountTilt: "Inclinable",
+    mountFixed: "Fixe",
+    mountSearch: "Support",
+    soundbar: "Barre de son Condor 2.1",
   },
   en: {
     tv: '43" Condor LED TV',
@@ -56,6 +61,11 @@ const TEXT = {
     restock: "Additional supplier delivery",
     returned: "Television returned (box opened)",
     buyerRole: "Head of purchasing",
+    mount: "TV wall mount",
+    mountTilt: "Tilting",
+    mountFixed: "Fixed",
+    mountSearch: "mount",
+    soundbar: "Condor 2.1 soundbar",
   },
   ar: {
     tv: "تلفزيون Condor LED 43 بوصة",
@@ -74,6 +84,11 @@ const TEXT = {
     restock: "استلام إضافي من المورد",
     returned: "تلفزيون مُرجَع (العلبة مفتوحة)",
     buyerRole: "مسؤول المشتريات",
+    mount: "حامل تلفزيون جداري",
+    mountTilt: "قابل للإمالة",
+    mountFixed: "ثابت",
+    mountSearch: "حامل",
+    soundbar: "مكبر صوت شريطي Condor 2.1",
   },
 }[LOCALE];
 
@@ -83,6 +98,9 @@ export const BIZ = {
   username: "karim",
   password: "Probook2026!",
   email: "contact@electro-souk.dz",
+  // The employee account chapter 11 creates. Logins are unique across every
+  // business, so an earlier take's copy has to be released like the owner's.
+  staffUsername: "amina",
 };
 
 export const CLIENT = {
@@ -132,6 +150,25 @@ export const PRODUCTS = {
     purchasePrice: "950",
     quantity: "60",
     search: "HDMI",
+  },
+  /** Sold in two models (chapter 04): the one quoted is the one taken out of stock. */
+  mount: {
+    designation: TEXT.mount,
+    reference: "ACC-SUPP-TV",
+    salePrice: 4500,
+    purchasePrice: 2600,
+    variants: [
+      { name: TEXT.mountTilt, quantity: 20, priceOverride: 6500 },
+      { name: TEXT.mountFixed, quantity: 20, priceOverride: null },
+    ],
+    search: TEXT.mountSearch,
+  },
+  /** Not in the catalogue yet: created from the purchase order in chapter 07. */
+  soundbar: {
+    designation: TEXT.soundbar,
+    reference: "AUD-COND-21",
+    salePrice: "18500",
+    purchasePrice: "12900",
   },
   install: {
     designation: TEXT.install,

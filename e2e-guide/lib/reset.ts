@@ -24,7 +24,7 @@ import { assertTestDatabase } from "../../e2e/assert-test-db";
  * connection if DATABASE_URL points anywhere else.
  */
 export async function releaseDemoAccount(
-  account: { email: string; username: string }
+  account: { email: string; username: string; staffUsernames?: string[] }
 ): Promise<void> {
   assertTestDatabase(process.env.DATABASE_URL);
 
@@ -42,14 +42,14 @@ export async function releaseDemoAccount(
         WHERE email = $1`,
       [account.email]
     );
-    // Signup rejects a username taken by ANY tenant — deliberately, so nobody
-    // can probe which logins exist — even though the column is only unique per
-    // tenant. Releasing the address without the login left the form refusing
-    // with "try a different username".
+    // A login names one person across every business: signup and the user
+    // settings both refuse a name taken elsewhere, whatever its case, even
+    // though the column is only unique per tenant. Releasing the address
+    // without the logins left the forms refusing the name.
     await client.query(
       `UPDATE users SET username = 'retired-' || left(id, 8) || '-' || username
-        WHERE username = $1`,
-      [account.username]
+        WHERE lower(username) = ANY($1)`,
+      [[account.username, ...(account.staffUsernames ?? [])].map((u) => u.toLowerCase())]
     );
     await client.query("COMMIT");
   } catch (err) {

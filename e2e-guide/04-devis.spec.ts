@@ -4,9 +4,48 @@ import { resume } from "./lib/session";
 import { t } from "./lib/i18n";
 import { CLIENT, PRODUCTS } from "./lib/data";
 
+/**
+ * A product sold in two models, set up off camera.
+ *
+ * Chapter 03 films the catalogue without variants; what this chapter shows is
+ * the quote choosing one, so the product is simply there when the viewer
+ * arrives — the same way the mobile chapters arrange their starting position.
+ */
+async function aProductWithVariants(page: import("@playwright/test").Page) {
+  await page.evaluate(async (mount) => {
+    const post = (url: string, body: unknown) =>
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(body),
+      }).then((r) => r.json());
+    const product = await post("/api/products", {
+      designation: mount.designation,
+      reference: mount.reference,
+      unit_price: mount.salePrice,
+      purchase_price: mount.purchasePrice,
+      tax_rate: 19,
+      unit: "unit",
+      is_service: false,
+      has_variants: true,
+    });
+    for (const v of mount.variants) {
+      await post(`/api/products/${product.id}/variants`, {
+        name: v.name,
+        quantity: v.quantity,
+        price_override: v.priceOverride,
+      });
+    }
+  }, PRODUCTS.mount);
+}
+
 test("Chapitre 4 — Du devis à la facture", async ({ page }) => {
   const tour = await Tour.open(page, "4 · Devis");
   await resume(page, "quotes");
+  await aProductWithVariants(page);
+  await page.reload();
+  await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
   await tour.titleCard("Les devis", "Chapitre 4 — chiffrer, envoyer, convertir");
 
   await tour.say(
@@ -41,6 +80,30 @@ test("Chapitre 4 — Du devis à la facture", async ({ page }) => {
     { search: PRODUCTS.install.search }
   );
   await tour.set(page.locator('input[name="lines.1.quantity"]'), "3");
+
+  // ─── variante ───
+  await tour.say("Troisième ligne : un support mural, vendu en deux modèles.");
+  await tour.click(tour.button(t("quotes:lines.addLine")));
+  await tour.pick(
+    tour.fieldByLabel(t("quotes:lines.product"), undefined, 2),
+    PRODUCTS.mount.designation,
+    { search: PRODUCTS.mount.search }
+  );
+  await tour.say(
+    "Probook demande alors quel modèle : chacun a son propre stock, et parfois son propre prix."
+  );
+  await tour.pick(
+    tour.fieldByLabel(`${t("common:documentLines.variant")} *`),
+    PRODUCTS.mount.variants[0].name
+  );
+  await expect(page.locator('input[name="lines.2.description"]')).toHaveValue(
+    `${PRODUCTS.mount.designation} — ${PRODUCTS.mount.variants[0].name}`
+  );
+  await tour.set(page.locator('input[name="lines.2.quantity"]'), "3");
+  await tour.say(
+    "La désignation et le prix suivent le modèle choisi. À la facturation, c'est ce modèle précis qui sortira du stock."
+  );
+  await tour.pause(1400);
 
   await tour.say("Le total hors taxe, la TVA et le total TTC se recalculent en direct.");
   await tour.pause(1400);

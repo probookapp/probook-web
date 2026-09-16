@@ -125,7 +125,7 @@ test("Chapitre 11 — Paramétrer son entreprise", async ({ page }) => {
 
   const userForm = tour.dialog();
   const inputs = userForm.locator("input:not([type='file'])");
-  await tour.type(inputs.nth(0), "amina");
+  await tour.type(inputs.nth(0), BIZ.staffUsername);
   await tour.type(inputs.nth(1), "Amina Cherif");
   await tour.type(inputs.nth(2), "Vendeuse2026!");
 

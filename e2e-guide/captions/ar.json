@@ -263,5 +263,11 @@
   "On choisit ensuite le nombre d'utilisateurs.": "ثم نختار عدد المستخدمين.",
   "Et quand une offre du catalogue contient exactement les mêmes modules pour moins cher, Probook le dit. Sans insister : c'est vous qui décidez.": "وعندما يحتوي أحد العروض على الوحدات نفسها بسعر أقل، يقولها بروبوك. دون إلحاح: القرار قرارك.",
   "Une fois l'offre choisie ou composée, la demande part à notre équipe, qui l'active. Vos données, elles, ne bougent pas : elles étaient déjà là pendant l'essai.": "بمجرد اختيار العرض أو تكوينه، يصل الطلب إلى فريقنا الذي يفعّله. أما بياناتك فلا تتحرّك: كانت موجودة أصلًا أثناء التجربة.",
-  "Le guide s'arrête ici. Bonne gestion.": "ينتهي الدليل هنا. بالتوفيق في إدارة عملك."
+  "Le guide s'arrête ici. Bonne gestion.": "ينتهي الدليل هنا. بالتوفيق في إدارة عملك.",
+  "Troisième ligne : un support mural, vendu en deux modèles.": "السطر الثالث: حامل جداري يُباع بطرازين.",
+  "Probook demande alors quel modèle : chacun a son propre stock, et parfois son propre prix.": "يسأل Probook عندها عن الطراز: لكل طراز مخزونه الخاص، وأحيانًا سعره الخاص.",
+  "La désignation et le prix suivent le modèle choisi. À la facturation, c'est ce modèle précis qui sortira du stock.": "تتبع التسمية والسعر الطراز المختار. وعند الفوترة، هذا الطراز بالذات هو الذي يُخصم من المخزون.",
+  "Le fournisseur propose aussi une nouveauté qui n'est pas encore au catalogue. Pas besoin de quitter la commande : on la crée d'ici.": "يقترح المورد أيضًا منتجًا جديدًا غير موجود بعد في الكتالوج. لا حاجة لمغادرة الطلب: ننشئه من هنا.",
+  "Pas de quantité à saisir ici : le stock arrivera avec la réception de la commande.": "لا كمية لإدخالها هنا: سيدخل المخزون عند استلام الطلب.",
+  "Le produit est créé et déjà placé sur la ligne, avec son prix d'achat.": "أُنشئ المنتج ووُضع مباشرة على السطر، مع سعر شرائه."
 }
