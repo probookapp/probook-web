@@ -49,6 +49,18 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    // Firefox, for the PDF flow only.
+    //
+    // Building a document is one thing; handing it to the browser is another,
+    // and that part is where the engines disagree — a customer on Firefox got
+    // an error where Chrome saved the file. Running the whole suite twice would
+    // double a twenty-minute build for no more information, so this project
+    // watches the one flow that broke.
+    {
+      name: "firefox-pdf",
+      testMatch: /quote-edit-and-pdf\.spec\.ts/,
+      use: { ...devices["Desktop Firefox"] },
+    },
   ],
   webServer: process.env.CI
     ? undefined

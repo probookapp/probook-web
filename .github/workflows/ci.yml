@@ -97,7 +97,11 @@ jobs:
             echo "::error::the app never answered on port $E2E_PORT"
             exit 1
           }
-      - run: npx playwright install --with-deps chromium
+      # Firefox too: playwright.config runs the PDF flow on it, because handing
+      # a finished document to the browser is where the engines disagree and a
+      # customer on Firefox once got an error where Chrome saved the file.
+      # Installing only chromium would fail that project on the runner.
+      - run: npx playwright install --with-deps chromium firefox
       - name: Run e2e suite
         run: npx dotenv -e .env.test -- npx playwright test
       - uses: actions/upload-artifact@v4
