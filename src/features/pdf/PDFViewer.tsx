@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { pdf } from "@react-pdf/renderer";
+import * as Sentry from "@sentry/nextjs";
 import { toast } from "@/stores/useToastStore";
 import { Download, Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui";
@@ -49,6 +50,24 @@ function showInTab(tab: Window | null, url: string, fileName: string, openLabel:
       `<iframe src="${url}" title="${escape(fileName)}"></iframe></body></html>`
   );
   tab.document.close();
+}
+
+/**
+ * What went wrong, said out loud.
+ *
+ * A PDF that fails says so in a toast, and until now that was all anyone knew —
+ * a customer on Firefox could only report "an error appears", which is not
+ * something to debug from. The reason now rides in the message and goes to
+ * Sentry with the browser attached, so the next occurrence names itself.
+ */
+function reportPdfFailure(err: unknown, what: "preview" | "download", fallback: string): string {
+  Sentry.captureException(err, {
+    tags: { feature: "pdf", action: what },
+    extra: { userAgent: typeof navigator === "undefined" ? "" : navigator.userAgent },
+  });
+  console.error(`PDF ${what} failed`, err);
+  const reason = err instanceof Error ? err.message : String(err ?? "");
+  return reason ? `${fallback} (${reason.slice(0, 120)})` : fallback;
 }
 
 function canDownloadFiles(): boolean {
@@ -158,8 +177,7 @@ export function PDFViewer(props: PDFViewerProps) {
       showInTab(tab, url, fileName, t("pdfViewer.openPdf"));
     } catch (err) {
       tab?.close();
-      console.error("PDF preview failed", err);
-      toast.error(t("pdfViewer.errorPreview"));
+      toast.error(reportPdfFailure(err, "preview", t("pdfViewer.errorPreview")));
     } finally {
       setIsOpening(false);
     }
@@ -194,8 +212,7 @@ export function PDFViewer(props: PDFViewerProps) {
       toast.success(t("pdfViewer.downloadSuccess", { path: fileName }));
     } catch (err) {
       tab?.close();
-      console.error("PDF download failed", err);
-      toast.error(t("pdfViewer.downloadError"));
+      toast.error(reportPdfFailure(err, "download", t("pdfViewer.downloadError")));
     } finally {
       setIsDownloading(false);
     }

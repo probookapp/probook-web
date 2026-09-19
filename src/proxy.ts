@@ -84,7 +84,10 @@ function buildCsp(nonce: string): string {
     "font-src 'self' data:",
     "connect-src 'self' data: https://*.supabase.co https://*.sentry.io https://*.ingest.de.sentry.io https://connect.facebook.net https://www.facebook.com",
     "worker-src 'self' blob:",
-    "frame-src 'self' https://www.facebook.com",
+    // blob: is how a generated PDF is handed to the reader — the tab opened for
+    // it holds the document in a frame. Without it the tab stays blank, and the
+    // only trace is a policy violation in the console.
+    "frame-src 'self' blob: https://www.facebook.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self' https://www.facebook.com",
