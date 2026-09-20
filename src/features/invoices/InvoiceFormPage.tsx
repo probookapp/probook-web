@@ -204,7 +204,16 @@ export function InvoiceFormPage() {
 
   const [lastResetInvoiceId, setLastResetInvoiceId] = useState<string | null>(null);
 
-  if (invoice && isEditing && invoice.id !== lastResetInvoiceId) {
+  // Seeded from an effect, not from the render itself.
+  //
+  // `reset()` called while rendering never reaches useFieldArray: the values
+  // land, the list of fields does not, and the editor shows one line for a
+  // document that has five. Adding a line resynced it, which is how a customer
+  // found the missing ones. It only bit when the document was already in the
+  // cache — coming back from its own page, or a reload — because that is when
+  // the data is there on the very first render.
+  useEffect(() => {
+    if (!invoice || !isEditing || invoice.id === lastResetInvoiceId) return;
     setLastResetInvoiceId(invoice.id);
     reset({
       client_id: invoice.client_id,
@@ -232,7 +241,8 @@ export function InvoiceFormPage() {
       })),
     });
     setNotesHtml(invoice.notes_html || "");
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per document, never again on a refetch
+  }, [invoice, isEditing, lastResetInvoiceId]);
 
   // Totals come from the same engine the server persists with, so what is on
   // screen while typing cannot drift from what gets saved. It also gives us the

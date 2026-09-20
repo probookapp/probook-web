@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useIsNarrow } from "@/hooks/useIsNarrow";
 import { DocumentLinesMobile } from "@/components/documents/DocumentLinesMobile";
 import { useRouter, useParams } from "@/lib/navigation";
@@ -123,7 +123,16 @@ export function DeliveryNoteFormPage() {
   // re-ran on every refetch and overwrote whatever was being typed.
   const [lastResetNoteId, setLastResetNoteId] = useState<string | null>(null);
 
-  if (existingNote && isEdit && existingNote.id !== lastResetNoteId) {
+  // Seeded from an effect, not from the render itself.
+  //
+  // `reset()` called while rendering never reaches useFieldArray: the values
+  // land, the list of fields does not, and the editor shows one line for a
+  // document that has five. Adding a line resynced it, which is how a customer
+  // found the missing ones. It only bit when the document was already in the
+  // cache — coming back from its own page, or a reload — because that is when
+  // the data is there on the very first render.
+  useEffect(() => {
+    if (!existingNote || !isEdit || existingNote.id === lastResetNoteId) return;
     setLastResetNoteId(existingNote.id);
     reset({
       client_id: existingNote.client_id,
@@ -142,7 +151,8 @@ export function DeliveryNoteFormPage() {
         unit: line.unit || "unit",
       })),
     });
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per document, never again on a refetch
+  }, [existingNote, isEdit, lastResetNoteId]);
 
   const handleProductSelect = (index: number, productId: string) => {
     setValue(`lines.${index}.variant_id`, null);

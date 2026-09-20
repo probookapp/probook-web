@@ -64,6 +64,34 @@ test.describe("Editing a quote with several lines", () => {
   }
 });
 
+test("the lines are all there when the quote is opened from its own page", async ({ page }) => {
+  // The customer's path, and the one that broke: the document is already in the
+  // cache when the editor mounts, so it used to be seeded while rendering —
+  // which sets the values but never the list of fields. One line showed; adding
+  // a line made the others appear.
+  await signUp(page);
+  const id = await aQuoteOfThreeLines(page);
+
+  await page.goto(`/en/quotes/${id}`);
+  await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
+  await page.getByRole("button", { name: "Edit" }).first().click();
+  await page.waitForURL(/\/edit$/);
+  await page.waitForTimeout(1200);
+
+  const described = await page
+    .locator('input[name^="lines."][name$=".description"]')
+    .evaluateAll((els) => els.map((el) => (el as HTMLInputElement).value));
+  expect(described).toEqual(LINES.map((l) => l.description));
+
+  // And again after a reload, where the cache answers on the first render.
+  await page.reload();
+  await page.waitForTimeout(1200);
+  const afterReload = await page
+    .locator('input[name^="lines."][name$=".description"]')
+    .evaluateAll((els) => els.map((el) => (el as HTMLInputElement).value));
+  expect(afterReload).toEqual(LINES.map((l) => l.description));
+});
+
 test.describe("PDF generation", () => {
   for (const locale of ["fr", "en", "ar"]) {
     test(`an invoice, a quote and a delivery note come out as PDFs in ${locale}`, async ({ page }) => {

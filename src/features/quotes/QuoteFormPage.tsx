@@ -178,7 +178,16 @@ export function QuoteFormPage() {
 
   const [lastResetQuoteId, setLastResetQuoteId] = useState<string | null>(null);
 
-  if (quote && isEditing && quote.id !== lastResetQuoteId) {
+  // Seeded from an effect, not from the render itself.
+  //
+  // `reset()` called while rendering never reaches useFieldArray: the values
+  // land, the list of fields does not, and the editor shows one line for a
+  // document that has five. Adding a line resynced it, which is how a customer
+  // found the missing ones. It only bit when the document was already in the
+  // cache — coming back from its own page, or a reload — because that is when
+  // the data is there on the very first render.
+  useEffect(() => {
+    if (!quote || !isEditing || quote.id === lastResetQuoteId) return;
     setLastResetQuoteId(quote.id);
     reset({
       client_id: quote.client_id,
@@ -203,7 +212,8 @@ export function QuoteFormPage() {
       })),
     });
     setNotesHtml(quote.notes_html || "");
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per document, never again on a refetch
+  }, [quote, isEditing, lastResetQuoteId]);
 
   // Same engine the server persists with, plus the margin — see
   // src/hooks/useDocumentTotals.ts.
