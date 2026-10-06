@@ -135,6 +135,14 @@ export function OfferComposer({
   const priced = quote(composition, modules, basis);
   const beaten = bundleThatBeats(composition, bundles, priced.monthly);
   const total = billingCycle === "monthly" ? priced.monthly : priced.yearly;
+  // Every figure on the composer speaks the cycle its total does: on yearly,
+  // a monthly base and monthly modules above a yearly total added up to
+  // nothing the reader could check.
+  const forCycle = (monthly: number) =>
+    billingCycle === "monthly" ? monthly : monthly * basis.monthsPerYear;
+  const cycleUnit = t(
+    billingCycle === "monthly" ? "landing.pricing.perMonth" : "landing.pricing.perYear"
+  );
 
   if (modules.length === 0) return null;
 
@@ -169,7 +177,9 @@ export function OfferComposer({
             {t("composer.title")}
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {t("composer.subtitle", { base: formatPriceTag(priced.base, currency, locale) })}
+            {t("composer.subtitle", {
+              base: formatPriceTag(forCycle(priced.base), currency, locale) + cycleUnit,
+            })}
           </p>
 
           <fieldset className="mt-6">
@@ -200,7 +210,7 @@ export function OfferComposer({
                       </span>
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400 font-mono tabular-nums whitespace-nowrap">
-                      +{formatPriceTag(m.unitPrice ?? 0, currency, locale)}
+                      +{formatPriceTag(forCycle(m.unitPrice ?? 0), currency, locale)}
                     </span>
                   </label>
                 );
