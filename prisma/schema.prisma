@@ -60,6 +60,7 @@ model Tenant {
   locations            Location[]
   stockLevels          StockLevel[]
   stockTransfers       StockTransfer[]
+  tags                 Tag[]
 
   @@map("tenants")
 }
@@ -391,6 +392,7 @@ model Quote {
   lines         QuoteLine[]
   invoices      Invoice[]      @relation("QuoteInvoices")
   deliveryNotes DeliveryNote[] @relation("QuoteDeliveryNotes")
+  tags          QuoteTag[]
 
   @@unique([tenantId, quoteNumber])
   @@index([tenantId])
@@ -423,6 +425,80 @@ model QuoteLine {
 
   @@index([quoteId])
   @@map("quote_lines")
+}
+
+// ========== Tags ==========
+
+/// A label the business invents for itself: "Chantier Hydra", "Prioritaire",
+/// "À revoir". Deliberately NOT a status — a document's `status` is a state
+/// machine that drives the expiry sweep, the relance alerts, the conversion to
+/// an invoice and the conversion-rate report, so a free-form state would quietly
+/// drop a document out of all four. A tag is a second axis, like `archivedAt`:
+/// it classifies without changing what the document *is*.
+///
+/// One vocabulary across quotes, invoices and delivery notes: a job called
+/// "Chantier Hydra" is the same job whichever document is in front of you, and
+/// two lists of labels to maintain would drift apart within a week.
+model Tag {
+  id        String   @id @default(uuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  /// A key from src/lib/tag-colors.ts, never a raw hex: the palette has six
+  /// hues on purpose and each one owes a dark-theme counterpart. A colour
+  /// picked freely would be unreadable in one of the two themes.
+  color     String   @default("gray")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  quotes        QuoteTag[]
+  invoices      InvoiceTag[]
+  deliveryNotes DeliveryNoteTag[]
+
+  /// Case-sensitive at the database level; the routes fold case before
+  /// writing, so "Prioritaire" and "prioritaire" cannot both exist.
+  @@unique([tenantId, name])
+  @@index([tenantId])
+  @@map("tags")
+}
+
+/// One join table per document type rather than a polymorphic column: a foreign
+/// key that actually constrains, and a cascade that actually fires, are worth
+/// more than the two tables saved.
+model QuoteTag {
+  quoteId String @map("quote_id")
+  tagId   String @map("tag_id")
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  tag   Tag   @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([quoteId, tagId])
+  @@index([tagId])
+  @@map("quote_tags")
+}
+
+model InvoiceTag {
+  invoiceId String @map("invoice_id")
+  tagId     String @map("tag_id")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  tag     Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([invoiceId, tagId])
+  @@index([tagId])
+  @@map("invoice_tags")
+}
+
+model DeliveryNoteTag {
+  deliveryNoteId String @map("delivery_note_id")
+  tagId          String @map("tag_id")
+
+  deliveryNote DeliveryNote @relation(fields: [deliveryNoteId], references: [id], onDelete: Cascade)
+  tag          Tag          @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([deliveryNoteId, tagId])
+  @@index([tagId])
+  @@map("delivery_note_tags")
 }
 
 // ========== Invoices ==========
@@ -469,6 +545,7 @@ model Invoice {
   deliveryNotes   DeliveryNote[]   @relation("InvoiceDeliveryNotes")
   posTransactions PosTransaction[]
   creditNotes     CreditNote[]
+  tags            InvoiceTag[]
 
   @@unique([tenantId, invoiceNumber])
   @@unique([tenantId, idempotencyKey])
@@ -561,6 +638,7 @@ model DeliveryNote {
   quote   Quote?             @relation("QuoteDeliveryNotes", fields: [quoteId], references: [id])
   invoice Invoice?           @relation("InvoiceDeliveryNotes", fields: [invoiceId], references: [id])
   lines   DeliveryNoteLine[]
+  tags    DeliveryNoteTag[]
 
   @@unique([tenantId, deliveryNoteNumber])
   @@index([tenantId])

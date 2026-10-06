@@ -12,6 +12,7 @@ import {
   Download,
   Archive,
   ArchiveRestore,
+  Tag as TagIcon,
 } from "lucide-react";
 import {
   Button,
@@ -29,6 +30,7 @@ import {
   TableNumericCell,
   Input,
   Badge,
+  TagChip,
   getQuoteStatusVariant,
   getStatusLabel,
 } from "@/components/ui";
@@ -38,12 +40,15 @@ import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { StatusFilterChips } from "@/components/shared/StatusFilterChips";
 import { ALL_STATUSES, ARCHIVED_FILTER, chipToQuery, QUOTE_STATUSES } from "@/lib/document-status";
 import { useStatusFilter } from "@/hooks/useStatusFilter";
+import { useTagListFilter } from "@/hooks/useTagListFilter";
+import { TagsModal } from "@/components/documents/TagsModal";
 import { useSelection } from "@/hooks/useSelection";
 import { useInfiniteQuotes, useDeleteQuote, useConvertQuoteToInvoice, useDuplicateQuote, useBatchDeleteQuotes, useArchiveQuote } from "./hooks/useQuotes";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csv-export";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { RestockPanel } from "./components/RestockPanel";
 import type { QuoteListItem } from "@/types";
 
 export function QuotesPage() {
@@ -59,6 +64,7 @@ export function QuotesPage() {
   const [convertConfirm, setConvertConfirm] = useState<QuoteListItem | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useStatusFilter(QUOTE_STATUSES);
+  const tagList = useTagListFilter();
 
   const {
     data: quotePages,
@@ -66,7 +72,11 @@ export function QuotesPage() {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = useInfiniteQuotes(chipToQuery(statusFilter).status, chipToQuery(statusFilter).archived);
+  } = useInfiniteQuotes(
+    chipToQuery(statusFilter).status,
+    chipToQuery(statusFilter).archived,
+    tagList.tagQuery
+  );
   const quotes = useMemo(
     () => quotePages?.pages.flatMap((page) => page.data),
     [quotePages]
@@ -89,7 +99,7 @@ export function QuotesPage() {
 
   useEffect(() => {
     selection.clear();
-  }, [searchQuery, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchQuery, statusFilter, tagList.tagFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const statusOptions = [
     { key: ALL_STATUSES, label: t("common:filters.all") },
@@ -102,6 +112,7 @@ export function QuotesPage() {
     { key: ARCHIVED_FILTER, label: t("common:filters.archived") },
   ];
 
+
   const handleExportCsv = () => {
     exportToCsv(
       filteredQuotes ?? [],
@@ -110,6 +121,10 @@ export function QuotesPage() {
         { header: t("quotes:fields.client"), accessor: (q) => q.client?.name ?? "" },
         { header: t("quotes:fields.issueDate"), accessor: (q) => formatDate(q.issue_date) },
         { header: t("quotes:fields.status"), accessor: (q) => q.status },
+        {
+          header: t("common:tags.label"),
+          accessor: (q) => (q.tags ?? []).map((tag) => tag.name).join(", "),
+        },
         { header: t("quotes:fields.totalTtc"), accessor: (q) => q.total },
       ],
       `quotes_${new Date().toISOString().split("T")[0]}.csv`
@@ -145,6 +160,12 @@ export function QuotesPage() {
           <p className="text-sm sm:text-base text-(--color-text-secondary)">{t("quotes:subtitle")}</p>
         </div>
         <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+          {canEdit && (
+            <Button variant="secondary" onClick={tagList.openTagsModal} size="sm">
+              <TagIcon className="h-4 w-4 me-2" />
+              {tagList.manageLabel}
+            </Button>
+          )}
           <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredQuotes?.length}>
             <Download className="h-4 w-4 me-2" />
             {t("common:buttons.exportCsv")}
@@ -157,6 +178,10 @@ export function QuotesPage() {
           )}
         </div>
       </div>
+
+      {/* What the quotes on the table add up to, before the list of quotes
+          themselves: it is the part that needs acting on. */}
+      <RestockPanel />
 
       <Card>
         <CardHeader>
@@ -181,6 +206,16 @@ export function QuotesPage() {
             onChange={setStatusFilter}
             label={t("common:filters.filterByStatus")}
           />
+          {/* A second row, and only once the business has invented a label:
+              "accepted" and "Chantier Hydra" can both be on at once. */}
+          {tagList.hasTags && (
+            <StatusFilterChips
+              options={tagList.tagOptions}
+              value={tagList.tagFilter}
+              onChange={tagList.setTagFilter}
+              label={tagList.filterLabel}
+            />
+          )}
         </CardHeader>
         <CardContent className="p-0">
           {/* Mobile card view */}
@@ -204,6 +239,13 @@ export function QuotesPage() {
                       </Badge>
                     </div>
                     <p className="text-sm text-(--color-text-secondary) mt-0.5">{quote.client?.name || "-"}</p>
+                    {(quote.tags?.length ?? 0) > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {quote.tags?.map((tag) => (
+                          <TagChip key={tag.id} name={tag.name} color={tag.color} />
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-xs text-(--color-text-secondary)">{formatDate(quote.issue_date)} → {formatDate(quote.validity_date)}</span>
                       <span className="font-medium text-(--color-text-primary)">{formatCurrency(quote.total)}</span>
@@ -253,6 +295,7 @@ export function QuotesPage() {
                 <TableHead>{t("quotes:fields.issueDate")}</TableHead>
                 <TableHead>{t("quotes:fields.validityDate")}</TableHead>
                 <TableHead>{t("quotes:fields.status")}</TableHead>
+                <TableHead>{t("common:tags.label")}</TableHead>
                 <TableHead className="text-end">{t("quotes:fields.totalTtc")}</TableHead>
                 <TableHead className="w-32">{t("common:buttons.actions")}</TableHead>
               </TableRow>
@@ -281,6 +324,16 @@ export function QuotesPage() {
                       <Badge variant={getQuoteStatusVariant(quote.status)}>
                         {getStatusLabel(quote.status)}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {/* A column of its own, next to the state rather than
+                          inside it: one says what the document is, the other
+                          what we call it. */}
+                      <div className="flex flex-wrap gap-1">
+                        {quote.tags?.map((tag) => (
+                          <TagChip key={tag.id} name={tag.name} color={tag.color} />
+                        ))}
+                      </div>
                     </TableCell>
                     <TableNumericCell className="font-medium">
                       {formatCurrency(quote.total)}
@@ -360,7 +413,7 @@ export function QuotesPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-gray-500 py-8">
+                  <TableCell colSpan={9} className="text-center text-gray-500 py-8">
                     {t("quotes:noQuotes")}
                     <div className="mt-3">
                       <Button size="sm" onClick={() => router.push("/quotes/new")}>
@@ -447,6 +500,12 @@ export function QuotesPage() {
         }}
         count={selection.selectedCount}
         isLoading={batchDeleteQuotes.isPending}
+      />
+
+      <TagsModal
+        isOpen={tagList.tagsModalOpen}
+        onClose={tagList.closeTagsModal}
+        canEdit={canEdit}
       />
     </div>
   );

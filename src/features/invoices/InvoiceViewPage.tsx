@@ -20,6 +20,7 @@ import { useInvoice, useMarkInvoicePaid, useIssueInvoice, useVerifyInvoiceIntegr
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCompanySettings } from "@/features/settings";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { DocumentTagsRow } from "@/components/documents/DocumentTagsRow";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { NUMERIC_CELL } from "@/components/ui";
@@ -106,6 +107,16 @@ export function InvoiceViewPage() {
               </Badge>
             </div>
             <p className="text-(--color-text-secondary) truncate">{invoice.client?.name}</p>
+            {/* Labels are editable here even once the invoice is issued and
+                frozen: they are not part of what the document declares. */}
+            <div className="mt-2">
+              <DocumentTagsRow
+                document="invoices"
+                id={invoice.id}
+                tags={invoice.tags}
+                canEdit={canEdit}
+              />
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">

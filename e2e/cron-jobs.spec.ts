@@ -129,4 +129,25 @@ test.describe("Scheduled jobs", () => {
     const reread = await apiGet(page, `/api/quotes/${quote.body.id}`);
     expect(reread.body.status).toBe("EXPIRED");
   });
+
+  test("the reminders job leaves a refused quote alone", async ({ page, request }) => {
+    await signUp(page);
+    const client = await setupClient(page, "Devis Refusé");
+    const past = {
+      client_id: client.id,
+      issue_date: "2026-01-01",
+      validity_date: "2026-01-15", // long past, same as the test above
+      lines: [{ description: "Étude", quantity: 1, unit_price: 5000, tax_rate: 19 }],
+    };
+    const refused = await apiPost(page, "/api/quotes", { ...past, status: "REFUSED" });
+    const sent = await apiPost(page, "/api/quotes", { ...past, status: "SENT" });
+
+    await request.get("/api/cron/reminders", asScheduler);
+
+    // A refusal is an answer: the quote has stopped moving, so expiring it on
+    // top would overwrite "they said no" with "they never replied".
+    expect((await apiGet(page, `/api/quotes/${refused.body.id}`)).body.status).toBe("REFUSED");
+    // The control, with identical dates: the sweep did run.
+    expect((await apiGet(page, `/api/quotes/${sent.body.id}`)).body.status).toBe("EXPIRED");
+  });
 });

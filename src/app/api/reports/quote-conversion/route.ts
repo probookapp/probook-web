@@ -26,6 +26,10 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   const totalQuotes = quotes.length;
   const acceptedQuotes = quotes.filter((q) => q.status === "ACCEPTED");
   const convertedQuotes = acceptedQuotes.length;
+  // The gap between quoted and won used to be one undifferentiated number.
+  // Split out the refusals: they are the part of it that has an answer, and
+  // the part worth asking why about.
+  const refusedQuotes = quotes.filter((q) => q.status === "REFUSED").length;
   const conversionRate =
     totalQuotes > 0
       ? Math.round((convertedQuotes / totalQuotes) * 10000) / 100
@@ -38,6 +42,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     toSnakeCase({
       totalQuotes,
       convertedQuotes,
+      refusedQuotes,
       conversionRate,
       totalQuotedAmount,
       convertedAmount,

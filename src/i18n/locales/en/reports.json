@@ -90,6 +90,7 @@
   "quoteConversion": {
     "title": "Quote Conversion Rate",
     "totalQuotes": "Total Quotes",
+    "refusedQuotes": "Refused quotes",
     "conversionRate": "Conversion Rate",
     "totalQuotedAmount": "Total Quoted Amount",
     "convertedAmount": "Converted Amount",

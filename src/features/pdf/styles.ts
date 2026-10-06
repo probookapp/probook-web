@@ -208,6 +208,10 @@ export const styles = StyleSheet.create({
     backgroundColor: "#d2e8da",
     color: "#184331",
   },
+  statusRefused: {
+    backgroundColor: "#f6d9d5",
+    color: "#7a2b28",
+  },
   statusIssued: {
     backgroundColor: "#f6e5c8",
     color: "#613e16",

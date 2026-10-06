@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/permissions-server";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
+import { flattenTags, TAGS_INCLUDE } from "@/lib/document-tags";
 
 /** Business-rule failure inside the create transaction → mapped to an HTTP error. */
 class ConvertError extends Error {
@@ -21,7 +22,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
   if (denied) return denied;
   const quote = await prisma.quote.findFirst({
     where: { tenantId, id: params?.id },
-    include: { lines: { orderBy: { position: "asc" } } },
+    include: { lines: { orderBy: { position: "asc" } }, ...TAGS_INCLUDE },
   });
   if (!quote) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -59,6 +60,9 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
               issueDate: new Date(),
               notes: quote.notes,
               notesHtml: quote.notesHtml,
+              // The labels come along, same as for the invoice: one job, several
+              // documents, one word for it.
+              tags: { create: quote.tags.map((row) => ({ tagId: row.tagId })) },
               lines: {
                 create: quote.lines
                   .filter((line) => !line.isSubtotalLine)
@@ -73,7 +77,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
                   })),
               },
             },
-            include: { lines: { orderBy: { position: "asc" } }, client: true },
+            include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE },
           });
 
           // A quote whose goods are being delivered is by definition accepted.
@@ -85,7 +89,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
           return created;
         });
 
-        return NextResponse.json(toSnakeCase(deliveryNote));
+        return NextResponse.json(toSnakeCase(flattenTags(deliveryNote)));
       } catch (err) {
         if (!isUniqueViolation(err) || attempt >= MAX_ATTEMPTS - 1) throw err;
       }

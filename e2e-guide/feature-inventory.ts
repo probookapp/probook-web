@@ -81,6 +81,15 @@ export const GUIDE_TOPICS: GuideTopic[] = [
   { label: "Marge en direct", chapter: "04-devis", evidence: "quotes:margin.label" },
   { label: "Produit à variantes sur un devis", chapter: "04-devis", evidence: "common:documentLines.variant" },
   { label: "Devis converti en facture", chapter: "04-devis", evidence: "convertToInvoice" },
+  // "Can we add our own statuses?" — answered on camera: the states stay a
+  // fixed machine, the vocabulary is free. Both halves have to be shown, or the
+  // answer sounds like a refusal.
+  {
+    label: "Étiquettes libres sur les documents",
+    chapter: "04-devis",
+    evidence: "common:tags.manage",
+  },
+  { label: "Devis refusé", chapter: "04-devis", evidence: "quotes:status.REFUSED" },
   { label: "Encaissement d'une facture", chapter: "05-factures", evidence: "payments.savePayment" },
   { label: "Avoir", chapter: "05-factures", evidence: "creditNotes.create" },
   { label: "Filtrer par état", chapter: "05-factures", evidence: "common:status.paid" },

@@ -28,6 +28,8 @@ import { useIsNarrow } from "@/hooks/useIsNarrow";
 import { DocumentLinesMobile } from "@/components/documents/DocumentLinesMobile";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
+import { TagPicker } from "@/components/documents/TagPicker";
+import { TagsModal } from "@/components/documents/TagsModal";
 import { toast } from "@/stores/useToastStore";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
 import { getApiErrorMessage } from "@/lib/api-adapter";
@@ -62,6 +64,9 @@ const createInvoiceFormSchema = (t: (key: string) => string) => z.object({
   discount_amount: z.coerce.number().min(0).optional(),
   is_cash_sale: z.boolean().optional(),
   stamp_duty_exempt: z.boolean().optional(),
+  // Labels, on creation only: afterwards they change from the invoice's own page,
+  // which works even once it is issued and frozen. See DocumentTagsRow.
+  tag_ids: z.array(z.string()).optional(),
   lines: z.array(createLineSchema(t)).min(1, t("validation:invoice.linesRequired")),
 });
 
@@ -119,6 +124,7 @@ export function InvoiceFormPage() {
       // when stamp duty is enabled in settings). Uncheck for transfer/cheque.
       is_cash_sale: DEFAULT_IS_CASH_SALE,
       stamp_duty_exempt: false,
+      tag_ids: [],
       lines: [{ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate }],
     },
   });
@@ -248,6 +254,7 @@ export function InvoiceFormPage() {
   // screen while typing cannot drift from what gets saved. It also gives us the
   // margin, which is what makes a discount an informed decision.
   // Dense mode is a per-browser habit, not per-document.
+  const [tagsModalOpen, setTagsModalOpen] = useState(false);
   const [denseLines, setDenseLines] = useLocalPreference("probook.lines.dense");
   // Below lg the grid editor becomes a four-row column per line; the phone
   // editor replaces it entirely rather than sitting beside it, so the same
@@ -424,6 +431,24 @@ export function InvoiceFormPage() {
                 />
               )}
             </div>
+            {/* Only while creating. An existing invoice is labelled from its own
+                page instead, because that is the only place that still works
+                once it has been issued. */}
+            {!isEditing && (
+              <div className="mt-4">
+                <Controller
+                  name="tag_ids"
+                  control={control}
+                  render={({ field }) => (
+                    <TagPicker
+                      value={field.value ?? []}
+                      onChange={field.onChange}
+                      onManage={() => setTagsModalOpen(true)}
+                    />
+                  )}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -930,6 +955,8 @@ export function InvoiceFormPage() {
         </div>
       </form>
       <UnsavedChangesDialog isBlocked={blocker.isBlocked} onProceed={blocker.proceed} onReset={blocker.reset} />
+      {/* Outside the form: a label created here must not submit the invoice. */}
+      <TagsModal isOpen={tagsModalOpen} onClose={() => setTagsModalOpen(false)} canEdit />
     </div>
   );
 }

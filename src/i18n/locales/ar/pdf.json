@@ -45,6 +45,7 @@
       "DRAFT": "مسودة",
       "SENT": "مرسل",
       "ACCEPTED": "مقبول",
+      "REFUSED": "مرفوض",
       "EXPIRED": "منتهي"
     },
     "table": {

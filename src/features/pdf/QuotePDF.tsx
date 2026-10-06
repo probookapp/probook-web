@@ -51,6 +51,8 @@ export function QuotePDF({
     switch (quote.status) {
       case "ACCEPTED":
         return styles.statusAccepted;
+      case "REFUSED":
+        return styles.statusRefused;
       case "SENT":
         return styles.statusSent;
       default:

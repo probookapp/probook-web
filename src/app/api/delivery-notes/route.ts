@@ -6,6 +6,8 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
 import { createDeliveryNoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { flattenTags, parseTagFilter, TAGS_INCLUDE } from "@/lib/document-tags";
+import { ownTagIds } from "@/lib/document-tags-server";
 import { parseStatusFilter, DELIVERY_NOTE_STATUSES } from "@/lib/document-status";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
 
@@ -33,6 +35,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     new URL(req.url).searchParams.get("status"),
     DELIVERY_NOTE_STATUSES
   );
+  // Labels are a second axis: they narrow whatever state is selected.
+  const tagFilter = parseTagFilter(new URL(req.url).searchParams.get("tag"));
 
   // Opt-in cursor pagination (audit SALE-23): lean rows — scalars + client
   // name, no line arrays.
@@ -44,24 +48,25 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
           select: { id: true },
         }))?.id ?? null
       : null;
-    const data = await prisma.deliveryNote.findMany({
-      where: { tenantId, ...statusFilter },
+    const rows = await prisma.deliveryNote.findMany({
+      where: { tenantId, ...statusFilter, ...tagFilter },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: page.limit,
       ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
-      include: { client: { select: { id: true, name: true } } },
+      include: { client: { select: { id: true, name: true } }, ...TAGS_INCLUDE },
     });
+    const data = rows.map(flattenTags);
     return NextResponse.json(
       toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
     );
   }
 
   const notes = await prisma.deliveryNote.findMany({
-    where: { tenantId, ...statusFilter },
+    where: { tenantId, ...statusFilter, ...tagFilter },
     orderBy: { createdAt: "desc" },
-    include: { lines: { orderBy: { position: "asc" } }, client: true },
+    include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE },
   });
-  return NextResponse.json(toSnakeCase(notes));
+  return NextResponse.json(toSnakeCase(notes.map(flattenTags)));
 });
 
 export const POST = withAuth(async (req, { tenantId, session }) => {
@@ -92,6 +97,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   const MAX_ATTEMPTS = 3;
   for (let attempt = 0; ; attempt++) {
     try {
+      const tagIds = await ownTagIds(tenantId, body.tag_ids ?? []);
       const note = await prisma.$transaction(async (tx) => {
         const nextNum = await allocateDocumentNumber(tx, tenantId, "nextDeliveryNoteNumber");
         const deliveryNoteNumber = `${prefix}${String(nextNum).padStart(5, "0")}`;
@@ -109,6 +115,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
             deliveryAddress: body.delivery_address || null,
             notes: body.notes || null,
             notesHtml: body.notes_html || null,
+            tags: { create: tagIds.map((tagId) => ({ tagId })) },
             lines: {
               create: lines.map((line: DeliveryLineInput, idx: number) => ({
                 productId: line.product_id || null,
@@ -121,11 +128,11 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
               })),
             },
           },
-          include: { lines: { orderBy: { position: "asc" } }, client: true },
+          include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE },
         });
       });
 
-      return NextResponse.json(toSnakeCase(note));
+      return NextResponse.json(toSnakeCase(flattenTags(note)));
     } catch (err) {
       if (!isUniqueViolation(err) || attempt >= MAX_ATTEMPTS - 1) throw err;
     }

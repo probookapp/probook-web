@@ -4,6 +4,7 @@ import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_DELIVERY_NOTES } from "@/lib/demo-data";
 import { LIST_PAGE_SIZE } from "@/lib/pagination";
 import { filterByStatus } from "@/lib/document-status";
+import { filterByTag } from "@/lib/document-tags";
 import type {
   CreateDeliveryNoteInput,
   UpdateDeliveryNoteInput,
@@ -22,17 +23,19 @@ export function useDeliveryNotes() {
 
 /** Cursor-paginated delivery notes list (lean rows) for the list page. */
 /** `status` is a comma-separated list of states, or undefined for every state. */
-export function useInfiniteDeliveryNotes(status?: string) {
+/** `tag` is one tag id — a second axis, so it narrows whatever state is chosen. */
+export function useInfiniteDeliveryNotes(status?: string, tag?: string) {
   const { isDemoMode } = useDemoMode();
   return useInfiniteQuery({
     // Shares the ["deliveryNotes"] prefix so existing invalidations refresh it too.
-    queryKey: ["deliveryNotes", "infinite", status ?? null, { demo: isDemoMode }],
+    queryKey: ["deliveryNotes", "infinite", status ?? null, tag ?? null, { demo: isDemoMode }],
     queryFn: isDemoMode
       ? (): CursorPage<DeliveryNoteListItem> => ({
-          data: filterByStatus(DEMO_DELIVERY_NOTES, status),
+          data: filterByTag(filterByStatus(DEMO_DELIVERY_NOTES, status), tag),
           next_cursor: null,
         })
-      : ({ pageParam }) => deliveryNoteApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam, status }),
+      : ({ pageParam }) =>
+          deliveryNoteApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam, status, tag }),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.next_cursor,
     staleTime: isDemoMode ? Infinity : undefined,

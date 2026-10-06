@@ -14,6 +14,7 @@ import {
   Undo2,
   Archive,
   ArchiveRestore,
+  Tag as TagIcon,
 } from "lucide-react";
 import {
   Button,
@@ -31,6 +32,7 @@ import {
   TableNumericCell,
   Input,
   Badge,
+  TagChip,
   getInvoiceStatusVariantWithUrgency,
   getInvoiceStatusLabelWithUrgency,
 } from "@/components/ui";
@@ -40,6 +42,8 @@ import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { StatusFilterChips } from "@/components/shared/StatusFilterChips";
 import { ALL_STATUSES, ARCHIVED_FILTER, chipToQuery, INVOICE_STATUSES } from "@/lib/document-status";
 import { useStatusFilter } from "@/hooks/useStatusFilter";
+import { useTagListFilter } from "@/hooks/useTagListFilter";
+import { TagsModal } from "@/components/documents/TagsModal";
 import { useSelection } from "@/hooks/useSelection";
 import { useInfiniteInvoices, useDeleteInvoice, useMarkInvoicePaid, useDuplicateInvoice, useBatchDeleteInvoices, useArchiveInvoice } from "./hooks/useInvoices";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
@@ -60,6 +64,7 @@ export function InvoicesPage() {
   const [markPaidId, setMarkPaidId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useStatusFilter(INVOICE_STATUSES);
+  const tagList = useTagListFilter();
 
   const {
     data: invoicePages,
@@ -67,7 +72,11 @@ export function InvoicesPage() {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = useInfiniteInvoices(chipToQuery(statusFilter).status, chipToQuery(statusFilter).archived);
+  } = useInfiniteInvoices(
+    chipToQuery(statusFilter).status,
+    chipToQuery(statusFilter).archived,
+    tagList.tagQuery
+  );
   const invoices = useMemo(
     () => invoicePages?.pages.flatMap((page) => page.data),
     [invoicePages]
@@ -93,7 +102,7 @@ export function InvoicesPage() {
   const selection = useSelection(selectableInvoices);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { selection.clear(); }, [searchQuery, statusFilter]);
+  useEffect(() => { selection.clear(); }, [searchQuery, statusFilter, tagList.tagFilter]);
 
   const statusOptions = [
     { key: ALL_STATUSES, label: t("common:filters.all") },
@@ -114,6 +123,10 @@ export function InvoicesPage() {
         { header: t("invoices:fields.client"), accessor: (i) => i.client?.name ?? "" },
         { header: t("invoices:fields.issueDate"), accessor: (i) => formatDate(i.issue_date) },
         { header: t("invoices:fields.status"), accessor: (i) => i.status },
+        {
+          header: t("common:tags.label"),
+          accessor: (i) => (i.tags ?? []).map((tag) => tag.name).join(", "),
+        },
         { header: t("invoices:fields.totalTtc"), accessor: (i) => i.total },
       ],
       `invoices_${new Date().toISOString().split("T")[0]}.csv`
@@ -152,6 +165,12 @@ export function InvoicesPage() {
             <Undo2 className="h-4 w-4 me-2" />
             {t("invoices:creditNotes.title")}
           </Button>
+          {canEdit && (
+            <Button variant="secondary" onClick={tagList.openTagsModal} size="sm">
+              <TagIcon className="h-4 w-4 me-2" />
+              {tagList.manageLabel}
+            </Button>
+          )}
           <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredInvoices?.length}>
             <Download className="h-4 w-4 me-2" />
             {t("common:buttons.exportCsv")}
@@ -188,6 +207,16 @@ export function InvoicesPage() {
             onChange={setStatusFilter}
             label={t("common:filters.filterByStatus")}
           />
+          {/* Labels narrow whatever state is selected: "the unpaid ones on the
+              Hydra site" is one question, not two. */}
+          {tagList.hasTags && (
+            <StatusFilterChips
+              options={tagList.tagOptions}
+              value={tagList.tagFilter}
+              onChange={tagList.setTagFilter}
+              label={tagList.filterLabel}
+            />
+          )}
         </CardHeader>
         <CardContent className="p-0">
           {/* Mobile card view */}
@@ -213,6 +242,13 @@ export function InvoicesPage() {
                       </Badge>
                     </div>
                     <p className="text-sm text-(--color-text-secondary) mt-0.5">{invoice.client?.name || "-"}</p>
+                    {(invoice.tags?.length ?? 0) > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {invoice.tags?.map((tag) => (
+                          <TagChip key={tag.id} name={tag.name} color={tag.color} />
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-xs text-(--color-text-secondary)">{formatDate(invoice.issue_date)} → {formatDate(invoice.due_date)}</span>
                       <span className="font-medium text-(--color-text-primary)">{formatCurrency(invoice.total)}</span>
@@ -270,6 +306,7 @@ export function InvoicesPage() {
                 <TableHead>{t("invoices:fields.issueDate")}</TableHead>
                 <TableHead>{t("invoices:fields.dueDate")}</TableHead>
                 <TableHead>{t("invoices:fields.status")}</TableHead>
+                <TableHead>{t("common:tags.label")}</TableHead>
                 <TableHead className="text-end">{t("invoices:fields.totalTtc")}</TableHead>
                 <TableHead className="w-32">{t("common:buttons.actions")}</TableHead>
               </TableRow>
@@ -300,6 +337,13 @@ export function InvoicesPage() {
                       <Badge variant={getInvoiceStatusVariantWithUrgency(invoice.status, invoice.due_date)}>
                         {getInvoiceStatusLabelWithUrgency(invoice.status, invoice.due_date)}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {invoice.tags?.map((tag) => (
+                          <TagChip key={tag.id} name={tag.name} color={tag.color} />
+                        ))}
+                      </div>
                     </TableCell>
                     <TableNumericCell className="font-medium">
                       {formatCurrency(invoice.total)}
@@ -390,7 +434,7 @@ export function InvoicesPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-gray-500 py-8">
+                  <TableCell colSpan={9} className="text-center text-gray-500 py-8">
                     {t("invoices:noInvoices")}
                     <div className="mt-3">
                       <Button size="sm" onClick={() => router.push("/invoices/new")}>
@@ -479,6 +523,12 @@ export function InvoicesPage() {
           />
         </>
       )}
+
+      <TagsModal
+        isOpen={tagList.tagsModalOpen}
+        onClose={tagList.closeTagsModal}
+        canEdit={canEdit}
+      />
     </div>
   );
 }

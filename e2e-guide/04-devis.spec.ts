@@ -5,6 +5,15 @@ import { t } from "./lib/i18n";
 import { CLIENT, PRODUCTS } from "./lib/data";
 
 /**
+ * The label the chapter invents on camera.
+ *
+ * A place name rather than a word like "urgent": the whole point of the axis is
+ * that it holds what the status cannot, and a site is the clearest example of
+ * something true at the same time as "sent" or "accepted".
+ */
+const TAG_NAME = "Chantier Hydra";
+
+/**
  * A product sold in two models, set up off camera.
  *
  * Chapter 03 films the catalogue without variants; what this chapter shows is
@@ -52,6 +61,26 @@ test("Chapitre 4 — Du devis à la facture", async ({ page }) => {
     "Un client demande un chiffrage : on lui prépare un devis, qui deviendra une facture d'un seul clic une fois accepté."
   );
 
+  // ─── étiquettes ───
+  await tour.say(
+    "Avant de commencer : un devis a un statut, et il peut aussi porter vos propres étiquettes. Le statut dit où en est le document ; l'étiquette dit comment vous, vous le rangez."
+  );
+  await tour.click(tour.button(t("common:tags.manage")), { settleMs: 1000 });
+  await tour.say(
+    "On crée ici le vocabulaire de la maison : un chantier, une priorité, ce qu'on veut. Autant d'étiquettes qu'on veut, et une couleur pour les repérer."
+  );
+  await tour.type(tour.dialog().locator("#new-tag"), TAG_NAME);
+  await tour.click(tour.dialog().getByRole("button", { name: t("common:buttons.add") }), {
+    settleMs: 1200,
+  });
+  await expect(tour.dialog().getByText(TAG_NAME)).toBeVisible();
+  await tour.say(
+    "Une étiquette ne touche à rien : ni aux relances, ni à la conversion en facture, ni aux rapports. C'est un classement, pas un état."
+  );
+  await tour.click(tour.dialog().getByRole("button", { name: t("common:aria.close") }), {
+    settleMs: 900,
+  });
+
   await tour.click(tour.button(t("quotes:newQuote")), { settleMs: 1200 });
 
   await tour.say("On choisit le client. La liste se filtre à la frappe.");
@@ -63,6 +92,12 @@ test("Chapitre 4 — Du devis à la facture", async ({ page }) => {
     "Les dates d'émission et de validité sont pré-remplies : le devis est valable 30 jours par défaut."
   );
   await tour.pause(900);
+
+  await tour.say("Et on range tout de suite le devis sous son étiquette.");
+  await tour.click(page.getByRole("button", { name: TAG_NAME, pressed: false }), {
+    settleMs: 900,
+  });
+  await expect(page.getByRole("button", { name: TAG_NAME, pressed: true })).toBeVisible();
 
   // ─── lignes ───
   await tour.say("Première ligne : on sélectionne un produit du catalogue.");
@@ -145,6 +180,11 @@ test("Chapitre 4 — Du devis à la facture", async ({ page }) => {
   // ─── acceptation ───
   await tour.say("Le client accepte : on passe le devis au statut « Accepté ».");
   await tour.click(tour.button(t("common:buttons.edit")), { settleMs: 1500 });
+  await tour.say(
+    "Les statuts sont une liste fixe, et « Refusé » en fait partie : un client qui dit non, c'est enregistré comme tel, Probook arrête de relancer, et le rapport de conversion le compte à part des devis restés sans réponse."
+  );
+  await expect(page.locator('select[name="status"]')).toContainText(t("quotes:status.REFUSED"));
+  await tour.pause(1400);
   await tour.choose(page.locator('select[name="status"]'), "ACCEPTED");
   await tour.click(tour.button(t("common:buttons.save")), { settleMs: 1800 });
 
@@ -161,4 +201,11 @@ test("Chapitre 4 — Du devis à la facture", async ({ page }) => {
   await expect(page).toHaveURL(/\/invoices/);
   await expect(tour.row(CLIENT.name)).toBeVisible();
   await tour.say("La facture est créée, reprenant lignes, quantités et montants du devis.");
+
+  // ─── l'étiquette a suivi ───
+  await tour.say(
+    "Et l'étiquette a suivi : le même mot sur le devis, sur la facture et sur le bon de livraison. Un chantier ne change pas de nom en changeant de document."
+  );
+  await expect(tour.row(CLIENT.name).getByText(TAG_NAME)).toBeVisible();
+  await tour.pause(1600);
 });

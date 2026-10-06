@@ -1,6 +1,7 @@
 import type { Invoice } from "@/types";
 import { DEMO_CLIENTS } from "./clients";
 import { DEMO_PRODUCTS } from "./products";
+import { DEMO_TAGS } from "./tags";
 
 const now = "2026-03-20T10:00:00.000Z";
 
@@ -12,6 +13,9 @@ export const DEMO_INVOICES: Invoice[] = [
     client: DEMO_CLIENTS[0],
     quote_id: null,
     status: "PAID",
+    // The same label the quote and the delivery note for this job wear: one
+    // word, three documents.
+    tags: [DEMO_TAGS[0]],
     issue_date: "2026-02-15",
     due_date: "2026-03-15",
     subtotal: 150000,

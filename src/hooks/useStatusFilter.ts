@@ -26,19 +26,63 @@ export function useStatusFilter(allowed: readonly string[]): [string, (next: str
   const initial = fromUrl && selectable.includes(fromUrl) ? fromUrl : ALL_STATUSES;
 
   const [value, setValue] = useState(initial);
+  const writeParam = useUrlParamWriter(pathname);
 
   const set = useCallback(
     (next: string) => {
       setValue(next);
+      writeParam("status", next === ALL_STATUSES ? null : next);
+    },
+    [writeParam]
+  );
+
+  return [value, set];
+}
+
+/**
+ * The selected label of a document list, kept in the URL beside the state.
+ *
+ * Not validated against the tenant's tags the way the state is: the list of
+ * labels arrives from the server a beat after the first render, so checking
+ * against it would reset a shared link to "all" before the answer came back.
+ * An id that no longer exists narrows the list to nothing, which is the same
+ * thing a stale state bookmark does — see src/lib/document-status.ts.
+ */
+export function useTagFilter(): [string, (next: string) => void] {
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const [value, setValue] = useState(() => searchParams?.get("tag") ?? ALL_STATUSES);
+  const writeParam = useUrlParamWriter(pathname);
+
+  const set = useCallback(
+    (next: string) => {
+      setValue(next);
+      writeParam("tag", next === ALL_STATUSES ? null : next);
+    },
+    [writeParam]
+  );
+
+  return [value, set];
+}
+
+/**
+ * Write one list filter into the query string.
+ *
+ * replaceState rather than a router push, for the reason above: clicking
+ * through four chips should not put four entries in the back button. Shared by
+ * both filters so one of them cannot wipe the other's parameter.
+ */
+function useUrlParamWriter(pathname: string) {
+  return useCallback(
+    (param: string, next: string | null) => {
       if (typeof window === "undefined") return;
       const params = new URLSearchParams(window.location.search);
-      if (next === ALL_STATUSES) params.delete("status");
-      else params.set("status", next);
+      if (next === null) params.delete(param);
+      else params.set(param, next);
       const query = params.toString();
       window.history.replaceState(null, "", `${pathname}${query ? `?${query}` : ""}`);
     },
     [pathname]
   );
-
-  return [value, set];
 }

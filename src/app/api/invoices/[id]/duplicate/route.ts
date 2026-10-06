@@ -49,6 +49,12 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
             shippingTaxRate: original.shippingTaxRate,
             downPaymentPercent: original.downPaymentPercent,
             downPaymentAmount: original.downPaymentAmount,
+            // Same omission the quote duplicate had: without these the copy
+            // carries the original's discounted subtotal and total while
+            // claiming no discount, so it no longer reconstructs from its own
+            // lines (see src/lib/document-totals.ts).
+            discountPercent: original.discountPercent,
+            discountAmount: original.discountAmount,
             lines: {
               create: original.lines.map((line) => ({
                 productId: line.productId,
@@ -63,6 +69,7 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
                 total: line.total,
                 position: line.position,
                 groupName: line.groupName,
+                discountPercent: line.discountPercent,
                 isSubtotalLine: line.isSubtotalLine,
               })),
             },

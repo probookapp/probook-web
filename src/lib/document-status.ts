@@ -6,7 +6,12 @@
  * unpaid ones among the fifty most recent" — an answer that looks precise and
  * is not.
  */
-export const QUOTE_STATUSES = ["DRAFT", "SENT", "ACCEPTED", "EXPIRED"] as const;
+// REFUSED is a said no, EXPIRED a silence that ran out of time. They were the
+// same state until 2026-10, which made "we lost it" indistinguishable from
+// "they never answered" and kept chasing a client who had already declined:
+// every automation below keys off SENT, so a refused quote now stops being
+// relanced and never expires.
+export const QUOTE_STATUSES = ["DRAFT", "SENT", "ACCEPTED", "REFUSED", "EXPIRED"] as const;
 export const INVOICE_STATUSES = ["DRAFT", "ISSUED", "PAID"] as const;
 export const DELIVERY_NOTE_STATUSES = ["DRAFT", "DELIVERED", "CANCELLED"] as const;
 

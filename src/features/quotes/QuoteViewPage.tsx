@@ -21,6 +21,7 @@ import { useCompanySettings } from "@/features/settings";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { DocumentTagsRow } from "@/components/documents/DocumentTagsRow";
 import { NUMERIC_CELL } from "@/components/ui";
 import { useDocumentCatalog } from "@/hooks/useDocumentCatalog";
 import { stockShortfalls, type StockShortfall } from "@/lib/stock-shortfalls";
@@ -104,6 +105,16 @@ export function QuoteViewPage() {
               </Badge>
             </div>
             <p className="text-(--color-text-secondary) truncate">{quote.client?.name}</p>
+            {/* The same row the invoice and the delivery note carry, so a label
+                is changed the same way wherever you are. */}
+            <div className="mt-2">
+              <DocumentTagsRow
+                document="quotes"
+                id={quote.id}
+                tags={quote.tags}
+                canEdit={canEdit}
+              />
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">

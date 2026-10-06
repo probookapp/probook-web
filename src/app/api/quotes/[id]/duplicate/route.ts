@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/permissions-server";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
+import { flattenTags, TAGS_INCLUDE } from "@/lib/document-tags";
 
 function isUniqueViolation(err: unknown): boolean {
   return err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002";
@@ -14,7 +15,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
   if (denied) return denied;
   const original = await prisma.quote.findFirst({
     where: { tenantId, id: params?.id },
-    include: { lines: { orderBy: { position: "asc" } } },
+    include: { lines: { orderBy: { position: "asc" } }, ...TAGS_INCLUDE },
   });
   if (!original) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -47,6 +48,15 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
             shippingTaxRate: original.shippingTaxRate,
             downPaymentPercent: original.downPaymentPercent,
             downPaymentAmount: original.downPaymentAmount,
+            // The commercial discount was left behind here, which copied the
+            // original's discounted subtotal and total onto a quote that
+            // claimed no discount — a document that no longer reconstructed
+            // from its own lines (see src/lib/document-totals.ts).
+            discountPercent: original.discountPercent,
+            discountAmount: original.discountAmount,
+            // Labels follow the copy: a duplicate of the Hydra quote is still
+            // the Hydra site.
+            tags: { create: original.tags.map((row) => ({ tagId: row.tagId })) },
             lines: {
               create: original.lines.map((line) => ({
                 productId: line.productId,
@@ -61,15 +71,18 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
                 total: line.total,
                 position: line.position,
                 groupName: line.groupName,
+                // Dropped too: a line's own discount is part of how its
+                // subtotal was reached.
+                discountPercent: line.discountPercent,
                 isSubtotalLine: line.isSubtotalLine,
               })),
             },
           },
-          include: { lines: { orderBy: { position: "asc" } }, client: true },
+          include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE },
         });
       });
 
-      return NextResponse.json(toSnakeCase(duplicate));
+      return NextResponse.json(toSnakeCase(flattenTags(duplicate)));
     } catch (err) {
       if (!isUniqueViolation(err) || attempt >= MAX_ATTEMPTS - 1) throw err;
     }

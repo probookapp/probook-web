@@ -101,6 +101,7 @@ export const DEMO_QUOTE_CONVERSION: QuoteConversionStats = (() => {
   return {
     total_quotes: total,
     converted_quotes: converted.length,
+    refused_quotes: DEMO_QUOTES.filter((q) => q.status === "REFUSED").length,
     conversion_rate: total > 0 ? round2((converted.length / total) * 100) : 0,
     total_quoted_amount: round2(DEMO_QUOTES.reduce((s, q) => s + q.total, 0)),
     converted_amount: round2(converted.reduce((s, q) => s + q.total, 0)),

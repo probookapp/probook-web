@@ -44,8 +44,13 @@ export function getQuoteStatusVariant(status: string): BadgeProps["variant"] {
       return "info";
     case "ACCEPTED":
       return "success";
-    case "EXPIRED":
+    // A refusal is the firm red; an expiry is the softer amber. They shared
+    // "danger" while they were one state, and two identical red badges in a
+    // list say less than two different ones.
+    case "REFUSED":
       return "danger";
+    case "EXPIRED":
+      return "warning";
     default:
       return "default";
   }
@@ -69,6 +74,7 @@ export function getStatusLabel(status: string): string {
     DRAFT: "draft",
     SENT: "sent",
     ACCEPTED: "accepted",
+    REFUSED: "refused",
     EXPIRED: "expired",
     ISSUED: "issued",
     PAID: "paid",

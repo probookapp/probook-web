@@ -1,6 +1,7 @@
 import type { Quote } from "@/types";
 import { DEMO_CLIENTS } from "./clients";
 import { DEMO_PRODUCTS } from "./products";
+import { DEMO_TAGS } from "./tags";
 
 const now = "2026-03-20T10:00:00.000Z";
 
@@ -11,6 +12,9 @@ export const DEMO_QUOTES: Quote[] = [
     client_id: DEMO_CLIENTS[4].id,
     client: DEMO_CLIENTS[4],
     status: "SENT",
+    // Two labels on one document, which is the point of the axis: a site and a
+    // priority are both true at once, where a status can only be one thing.
+    tags: [DEMO_TAGS[0], DEMO_TAGS[2]],
     issue_date: "2026-03-12",
     validity_date: "2026-04-12",
     subtotal: 185000,
@@ -114,6 +118,7 @@ export const DEMO_QUOTES: Quote[] = [
     client_id: DEMO_CLIENTS[2].id,
     client: DEMO_CLIENTS[2],
     status: "DRAFT",
+    tags: [DEMO_TAGS[1]],
     issue_date: "2026-03-19",
     validity_date: "2026-04-19",
     subtotal: 56500,
@@ -142,6 +147,51 @@ export const DEMO_QUOTES: Quote[] = [
         subtotal: 57000,
         tax_amount: 10830,
         total: 67830,
+        position: 0,
+        group_name: null,
+        is_subtotal_line: null,
+      },
+    ],
+    created_at: now,
+    updated_at: now,
+  },
+  {
+    // A quote the client turned down. It used to sit in "Envoyé" until it
+    // expired, which read as "no answer yet" — the reason REFUSED exists.
+    id: "demo-quote-004",
+    quote_number: "DEV-2026-004",
+    client_id: DEMO_CLIENTS[3].id,
+    client: DEMO_CLIENTS[3],
+    status: "REFUSED",
+    tags: [DEMO_TAGS[0]],
+    issue_date: "2026-03-05",
+    validity_date: "2026-04-05",
+    subtotal: 25000,
+    tax_amount: 4750,
+    total: 29750,
+    notes: null,
+    notes_html: null,
+    logo_snapshot: null,
+    shipping_cost: 0,
+    shipping_tax_rate: 0,
+    down_payment_percent: 0,
+    down_payment_amount: 0,
+    discount_percent: 0,
+    discount_amount: 0,
+    lines: [
+      {
+        id: "demo-qtline-005",
+        quote_id: "demo-quote-004",
+        product_id: DEMO_PRODUCTS[6].id,
+        product: DEMO_PRODUCTS[6],
+        description: "Maintenance mensuelle",
+        description_html: null,
+        quantity: 1,
+        unit_price: 25000,
+        tax_rate: 19,
+        subtotal: 25000,
+        tax_amount: 4750,
+        total: 29750,
         position: 0,
         group_name: null,
         is_subtotal_line: null,

@@ -33,6 +33,8 @@ import { isOfflineQueuedError } from "@/lib/offline-errors";
 import { getApiErrorMessage } from "@/lib/api-adapter";
 import { stockShortfalls } from "@/lib/stock-shortfalls";
 import { useDocumentCatalog } from "@/hooks/useDocumentCatalog";
+import { TagPicker } from "@/components/documents/TagPicker";
+import { TagsModal } from "@/components/documents/TagsModal";
 
 const createLineSchema = (t: (key: string) => string) => z.object({
   product_id: z.string().nullable().optional(),
@@ -51,13 +53,17 @@ const createQuoteFormSchema = (t: (key: string) => string) => z.object({
   issue_date: z.string().min(1, t("validation:quote.issueDateRequired")),
   validity_date: z.string().min(1, t("validation:quote.validityDateRequired")),
   notes: z.string().nullable().optional(),
-  status: z.enum(["DRAFT", "SENT", "ACCEPTED", "EXPIRED"]).optional(),
+  status: z.enum(["DRAFT", "SENT", "ACCEPTED", "REFUSED", "EXPIRED"]).optional(),
   shipping_cost: z.coerce.number().min(0).optional(),
   shipping_tax_rate: z.coerce.number().min(0).max(100).optional(),
   down_payment_percent: z.coerce.number().min(0).max(100).optional(),
   down_payment_amount: z.coerce.number().min(0).optional(),
   discount_percent: z.coerce.number().min(0).max(100).optional(),
   discount_amount: z.coerce.number().min(0).optional(),
+  // Free labels, on a second axis from the status — see src/lib/tag-colors.ts.
+  // Held in the form rather than beside it so the unsaved-changes guard sees a
+  // label added and nothing else as the change it is.
+  tag_ids: z.array(z.string()).optional(),
   lines: z.array(createLineSchema(t)).min(1, t("validation:quote.linesRequired")),
 });
 
@@ -83,6 +89,7 @@ export function QuoteFormPage() {
   const [notesHtml, setNotesHtml] = useState("");
   const [expandedDescriptions, setExpandedDescriptions] = useState<Set<number>>(new Set());
   const submittedRef = useRef(false);
+  const [tagsModalOpen, setTagsModalOpen] = useState(false);
   const [defaultValidityDate] = useState(() => formatDateISO(new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)));
 
   const {
@@ -107,6 +114,7 @@ export function QuoteFormPage() {
       down_payment_amount: 0,
       discount_percent: 0,
       discount_amount: 0,
+      tag_ids: [],
       lines: [{ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate }],
     },
   });
@@ -199,6 +207,7 @@ export function QuoteFormPage() {
       shipping_tax_rate: quote.shipping_tax_rate ?? 0,
       down_payment_percent: quote.down_payment_percent ?? 0,
       down_payment_amount: quote.down_payment_amount ?? 0,
+      tag_ids: (quote.tags ?? []).map((tag) => tag.id),
       lines: quote.lines.map((line) => ({
         product_id: line.product_id,
         variant_id: line.variant_id ?? null,
@@ -335,6 +344,7 @@ export function QuoteFormPage() {
     { value: "DRAFT", label: t("quotes:status.DRAFT") },
     { value: "SENT", label: t("quotes:status.SENT") },
     { value: "ACCEPTED", label: t("quotes:status.ACCEPTED") },
+    { value: "REFUSED", label: t("quotes:status.REFUSED") },
     { value: "EXPIRED", label: t("quotes:status.EXPIRED") },
   ];
 
@@ -392,6 +402,22 @@ export function QuoteFormPage() {
                   {...register("status")}
                 />
               )}
+            </div>
+            {/* Below the grid, not in it: the labels row wraps to as many lines
+                as the business has words, so it cannot share a column with a
+                fixed-height field. */}
+            <div className="mt-4">
+              <Controller
+                name="tag_ids"
+                control={control}
+                render={({ field }) => (
+                  <TagPicker
+                    value={field.value ?? []}
+                    onChange={field.onChange}
+                    onManage={() => setTagsModalOpen(true)}
+                  />
+                )}
+              />
             </div>
           </CardContent>
         </Card>
@@ -878,6 +904,8 @@ export function QuoteFormPage() {
         </div>
       </form>
       <UnsavedChangesDialog isBlocked={blocker.isBlocked} onProceed={blocker.proceed} onReset={blocker.reset} />
+      {/* Outside the form: a label created here must not submit the quote. */}
+      <TagsModal isOpen={tagsModalOpen} onClose={() => setTagsModalOpen(false)} canEdit />
     </div>
   );
 }

@@ -45,6 +45,7 @@
       "DRAFT": "BROUILLON",
       "SENT": "ENVOYÉ",
       "ACCEPTED": "ACCEPTÉ",
+      "REFUSED": "REFUSÉ",
       "EXPIRED": "EXPIRÉ"
     },
     "table": {

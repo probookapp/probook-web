@@ -2,6 +2,7 @@ export { DEMO_CLIENTS } from "./clients";
 export { DEMO_PRODUCTS } from "./products";
 export { DEMO_INVOICES } from "./invoices";
 export { DEMO_QUOTES } from "./quotes";
+export { DEMO_TAGS } from "./tags";
 export { DEMO_EXPENSES, DEMO_EXPENSE_CATEGORIES } from "./expenses";
 export { DEMO_SUPPLIERS } from "./suppliers";
 export { DEMO_DASHBOARD_STATS } from "./dashboard";

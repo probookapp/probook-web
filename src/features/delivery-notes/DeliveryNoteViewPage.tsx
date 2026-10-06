@@ -31,6 +31,7 @@ import { useCompanySettings, useLogoBase64 } from "@/features/settings/hooks/use
 import { PDFViewer } from "../pdf/PDFViewerLazy";
 import { formatDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { DocumentTagsRow } from "@/components/documents/DocumentTagsRow";
 import type { DeliveryNoteStatus } from "@/types";
 import { NUMERIC_CELL } from "@/components/ui";
 
@@ -154,6 +155,14 @@ export function DeliveryNoteViewPage() {
             <p className="text-(--color-text-secondary) text-sm">
               {t("delivery:createdOn")} {formatDate(deliveryNote.created_at)}
             </p>
+            <div className="mt-2">
+              <DocumentTagsRow
+                document="delivery-notes"
+                id={deliveryNote.id}
+                tags={deliveryNote.tags}
+                canEdit={canEdit}
+              />
+            </div>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">

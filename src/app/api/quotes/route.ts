@@ -9,6 +9,8 @@ import { createQuoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 import { parseArchivedFilter, parseStatusFilter, QUOTE_STATUSES } from "@/lib/document-status";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
+import { flattenTags, parseTagFilter, TAGS_INCLUDE } from "@/lib/document-tags";
+import { ownTagIds } from "@/lib/document-tags-server";
 
 interface LineInput {
   product_id?: string | null;
@@ -42,6 +44,9 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   // Archived documents are hidden from the working list by default; the
   // reports deliberately ignore this filter.
   const archivedFilter = parseArchivedFilter(new URL(req.url).searchParams.get("archived"));
+  // Labels are a second axis, so they combine with the state rather than
+  // replacing it: "the accepted ones on the Hydra site" is one query.
+  const tagFilter = parseTagFilter(new URL(req.url).searchParams.get("tag"));
 
   // Opt-in cursor pagination (audit SALE-23): lean rows — scalars + client
   // name, no line arrays.
@@ -53,24 +58,27 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
           select: { id: true },
         }))?.id ?? null
       : null;
-    const data = await prisma.quote.findMany({
-      where: { tenantId, ...statusFilter, ...archivedFilter },
+    const rows = await prisma.quote.findMany({
+      where: { tenantId, ...statusFilter, ...archivedFilter, ...tagFilter },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: page.limit,
       ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
-      include: { client: { select: { id: true, name: true } } },
+      // Labels ride along with the lean rows: they are five words, and a list
+      // that showed them only after a second request would flicker.
+      include: { client: { select: { id: true, name: true } }, ...TAGS_INCLUDE },
     });
+    const data = rows.map(flattenTags);
     return NextResponse.json(
       toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
     );
   }
 
   const quotes = await prisma.quote.findMany({
-    where: { tenantId, ...statusFilter, ...archivedFilter },
+    where: { tenantId, ...statusFilter, ...archivedFilter, ...tagFilter },
     orderBy: { createdAt: "desc" },
-    include: { lines: { orderBy: { position: "asc" } }, client: true },
+    include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE },
   });
-  return NextResponse.json(toSnakeCase(quotes));
+  return NextResponse.json(toSnakeCase(quotes.map(flattenTags)));
 });
 
 export const POST = withAuth(async (req, { tenantId, session }) => {
@@ -93,6 +101,10 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
 
   const settings = await prisma.companySettings.findFirst({ where: { tenantId } });
   const prefix = settings?.quotePrefix ?? "QT-";
+
+  // Resolved against the tenant's own tags: a stale cache or a copied link can
+  // name a label that was retired or never belonged here.
+  const tagIds = await ownTagIds(tenantId, body.tag_ids ?? []);
 
   const lines = body.lines || [];
   const totals = calculateDocumentTotals({
@@ -133,6 +145,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
             downPaymentAmount: body.down_payment_amount || 0,
             discountPercent: body.discount_percent || 0,
             discountAmount: body.discount_amount || 0,
+            tags: { create: tagIds.map((tagId) => ({ tagId })) },
             lines: {
               create: lines.map((line: LineInput, idx: number) => {
                 const lt = calculateLineTotals(line);
@@ -155,12 +168,12 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
               }),
             },
           },
-          include: { lines: { orderBy: { position: "asc" } }, client: true },
+          include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE },
         });
       });
 
       markOnboardingStep(tenantId, "first_quote");
-      return NextResponse.json(toSnakeCase(quote));
+      return NextResponse.json(toSnakeCase(flattenTags(quote)));
     } catch (err) {
       if (!isUniqueViolation(err) || attempt >= MAX_ATTEMPTS - 1) throw err;
     }

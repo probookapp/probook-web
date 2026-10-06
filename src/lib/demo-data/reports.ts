@@ -11,6 +11,11 @@ import { DEMO_EXPENSES } from "./expenses";
 import { DEMO_QUOTES } from "./quotes";
 import { DEMO_INVOICES } from "./invoices";
 import { DEMO_DELIVERY_NOTES } from "./delivery-notes";
+import {
+  DELIVERY_NOTE_STATUSES,
+  INVOICE_STATUSES,
+  QUOTE_STATUSES,
+} from "@/lib/document-status";
 
 export const DEMO_REVENUE_BY_MONTH: RevenueByPeriod[] = [
   { period: "2026-01", revenue_before_tax: 95000, revenue_total: 113050, invoice_count: 2 },
@@ -129,11 +134,14 @@ export const DEMO_PIPELINE: PipelineReport = (() => {
   });
 
   return {
-    quotes: bucket(DEMO_QUOTES, ["DRAFT", "SENT", "ACCEPTED", "EXPIRED"]),
-    invoices: bucket(DEMO_INVOICES, ["DRAFT", "ISSUED", "PAID"]),
+    // From the shared lists rather than literals: a state added to the product
+    // and forgotten here would be a quote that exists in the list and nowhere
+    // in the steering figures.
+    quotes: bucket(DEMO_QUOTES, QUOTE_STATUSES),
+    invoices: bucket(DEMO_INVOICES, INVOICE_STATUSES),
     delivery_notes: bucket(
       DEMO_DELIVERY_NOTES.map((n) => ({ status: n.status, total: 0 })),
-      ["DRAFT", "DELIVERED", "CANCELLED"]
+      DELIVERY_NOTE_STATUSES
     ),
     in_progress: {
       awaiting_invoice: awaitingInvoice,

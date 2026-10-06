@@ -12,6 +12,7 @@ import {
   Copy,
   Truck,
   FileText,
+  Tag as TagIcon,
 } from "lucide-react";
 import {
   Button,
@@ -28,6 +29,7 @@ import {
   TableCell,
   Input,
   Badge,
+  TagChip,
 } from "@/components/ui";
 import {
   useInfiniteDeliveryNotes,
@@ -43,6 +45,8 @@ import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { StatusFilterChips, statusQuery } from "@/components/shared/StatusFilterChips";
 import { ALL_STATUSES, DELIVERY_NOTE_STATUSES } from "@/lib/document-status";
 import { useStatusFilter } from "@/hooks/useStatusFilter";
+import { useTagListFilter } from "@/hooks/useTagListFilter";
+import { TagsModal } from "@/components/documents/TagsModal";
 import { useSelection } from "@/hooks/useSelection";
 import type { DeliveryNoteListItem, DeliveryNoteStatus } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -60,6 +64,7 @@ export function DeliveryNotesPage() {
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useStatusFilter(DELIVERY_NOTE_STATUSES);
+  const tagList = useTagListFilter();
 
   const statusConfig: Record<
     DeliveryNoteStatus,
@@ -76,7 +81,7 @@ export function DeliveryNotesPage() {
     hasNextPage,
     isFetchingNextPage,
     fetchNextPage,
-  } = useInfiniteDeliveryNotes(statusQuery(statusFilter));
+  } = useInfiniteDeliveryNotes(statusQuery(statusFilter), tagList.tagQuery);
   const deliveryNotes = useMemo(
     () => deliveryNotePages?.pages.flatMap((page) => page.data),
     [deliveryNotePages]
@@ -97,7 +102,7 @@ export function DeliveryNotesPage() {
   const selection = useSelection(filteredDeliveryNotes);
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { selection.clear(); }, [searchQuery, statusFilter]);
+  useEffect(() => { selection.clear(); }, [searchQuery, statusFilter, tagList.tagFilter]);
 
   const statusOptions = [
     { key: ALL_STATUSES, label: t("common:filters.all") },
@@ -166,6 +171,12 @@ export function DeliveryNotesPage() {
           <p className="text-sm sm:text-base text-(--color-text-secondary)">{t("delivery:subtitle", "Manage your delivery notes")}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+          {canEdit && (
+            <Button variant="secondary" onClick={tagList.openTagsModal} size="sm">
+              <TagIcon className="h-4 w-4 me-2" />
+              {tagList.manageLabel}
+            </Button>
+          )}
           {canCreate && (
             <Button onClick={() => router.push("/delivery-notes/new")} size="sm">
               <Plus className="h-4 w-4 me-2" />
@@ -198,6 +209,15 @@ export function DeliveryNotesPage() {
             onChange={setStatusFilter}
             label={t("common:filters.filterByStatus")}
           />
+          {/* Labels narrow whatever state is selected — see the quotes list. */}
+          {tagList.hasTags && (
+            <StatusFilterChips
+              options={tagList.tagOptions}
+              value={tagList.tagFilter}
+              onChange={tagList.setTagFilter}
+              label={tagList.filterLabel}
+            />
+          )}
         </CardHeader>
         <CardContent className="p-0">
           {/* Mobile card view */}
@@ -222,6 +242,13 @@ export function DeliveryNotesPage() {
                       </Badge>
                     </div>
                     <p className="text-sm text-(--color-text-secondary) mt-0.5">{note.client?.name || "-"}</p>
+                    {(note.tags?.length ?? 0) > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {note.tags?.map((tag) => (
+                          <TagChip key={tag.id} name={tag.name} color={tag.color} />
+                        ))}
+                      </div>
+                    )}
                     <div className="flex items-center justify-between mt-1">
                       <span className="text-xs text-(--color-text-secondary)">
                         {formatDate(note.issue_date)}
@@ -270,6 +297,7 @@ export function DeliveryNotesPage() {
                 <TableHead>{t("delivery:fields.issueDate")}</TableHead>
                 <TableHead>{t("delivery:fields.deliveryDate")}</TableHead>
                 <TableHead>{t("delivery:fields.status")}</TableHead>
+                <TableHead>{t("common:tags.label")}</TableHead>
                 <TableHead>{t("delivery:fields.linkedQuote")}</TableHead>
                 <TableHead className="w-32">{t("common:buttons.actions")}</TableHead>
               </TableRow>
@@ -301,6 +329,13 @@ export function DeliveryNotesPage() {
                         <Truck className="h-3 w-3 me-1" />
                         {statusConfig[note.status].label}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {note.tags?.map((tag) => (
+                          <TagChip key={tag.id} name={tag.name} color={tag.color} />
+                        ))}
+                      </div>
                     </TableCell>
                     <TableCell>
                       {note.quote_id ? (
@@ -361,7 +396,7 @@ export function DeliveryNotesPage() {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center text-gray-500 py-8">
+                  <TableCell colSpan={9} className="text-center text-gray-500 py-8">
                     {t("delivery:noDeliveryNotes")}
                   </TableCell>
                 </TableRow>
@@ -432,6 +467,12 @@ export function DeliveryNotesPage() {
         }}
         count={selection.selectedCount}
         isLoading={batchDeleteDNs.isPending}
+      />
+
+      <TagsModal
+        isOpen={tagList.tagsModalOpen}
+        onClose={tagList.closeTagsModal}
+        canEdit={canEdit}
       />
     </div>
   );

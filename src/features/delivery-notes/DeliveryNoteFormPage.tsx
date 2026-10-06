@@ -34,6 +34,8 @@ import {
 import type { DeliveryNoteStatus } from "@/types";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
+import { TagPicker } from "@/components/documents/TagPicker";
+import { TagsModal } from "@/components/documents/TagsModal";
 
 
 export function DeliveryNoteFormPage() {
@@ -84,6 +86,7 @@ export function DeliveryNoteFormPage() {
       delivery_date: "",
       delivery_address: "",
       notes: "",
+      tag_ids: [],
       lines: [{ description: "", quantity: 1, unit: "unit", product_id: null }],
     },
   });
@@ -121,6 +124,7 @@ export function DeliveryNoteFormPage() {
   // Seed the form from the note being edited — once per note, the way the
   // invoice and quote forms do it. As an effect keyed on the note itself it
   // re-ran on every refetch and overwrote whatever was being typed.
+  const [tagsModalOpen, setTagsModalOpen] = useState(false);
   const [lastResetNoteId, setLastResetNoteId] = useState<string | null>(null);
 
   // Seeded from an effect, not from the render itself.
@@ -297,6 +301,23 @@ export function DeliveryNoteFormPage() {
               rows={2}
               placeholder={t("delivery:addressPlaceholder")}
             />
+            {/* Only while creating: an existing note is labelled from its own
+                page, the same way an issued invoice is. */}
+            {!isEdit && (
+              <div className="mt-4">
+                <Controller
+                  name="tag_ids"
+                  control={control}
+                  render={({ field }) => (
+                    <TagPicker
+                      value={field.value ?? []}
+                      onChange={field.onChange}
+                      onManage={() => setTagsModalOpen(true)}
+                    />
+                  )}
+                />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -458,6 +479,8 @@ export function DeliveryNoteFormPage() {
         </div>
       </form>
       <UnsavedChangesDialog isBlocked={blocker.isBlocked} onProceed={blocker.proceed} onReset={blocker.reset} />
+      {/* Outside the form: a label created here must not submit the note. */}
+      <TagsModal isOpen={tagsModalOpen} onClose={() => setTagsModalOpen(false)} canEdit />
     </div>
   );
 }

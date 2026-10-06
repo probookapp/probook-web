@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/permissions-server";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
+import { flattenTags, TAGS_INCLUDE } from "@/lib/document-tags";
 
 /** Business-rule failure inside the create transaction → mapped to an HTTP error. */
 class ConvertError extends Error {
@@ -21,7 +22,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
   if (denied) return denied;
   const quote = await prisma.quote.findFirst({
     where: { tenantId, id: params?.id },
-    include: { lines: { orderBy: { position: "asc" } } },
+    include: { lines: { orderBy: { position: "asc" } }, ...TAGS_INCLUDE },
   });
   if (!quote) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -68,6 +69,16 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
               shippingTaxRate: quote.shippingTaxRate,
               downPaymentPercent: quote.downPaymentPercent,
               downPaymentAmount: quote.downPaymentAmount,
+              // The commercial discount was being dropped here, which is worse
+              // than it looks: the invoice inherited the quote's *discounted*
+              // subtotal and total while declaring no discount, so a document
+              // that goes to the client and to the accountant no longer
+              // reconstructed from its own lines (src/lib/document-totals.ts).
+              discountPercent: quote.discountPercent,
+              discountAmount: quote.discountAmount,
+              // The labels come along: the invoice for the Hydra site is still
+              // the Hydra site, and that is exactly when you need to find it.
+              tags: { create: quote.tags.map((row) => ({ tagId: row.tagId })) },
               lines: {
                 create: quote.lines.map((line) => ({
                   productId: line.productId,
@@ -82,11 +93,12 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
                   total: line.total,
                   position: line.position,
                   groupName: line.groupName,
+                  discountPercent: line.discountPercent,
                   isSubtotalLine: line.isSubtotalLine,
                 })),
               },
             },
-            include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
+            include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true, ...TAGS_INCLUDE },
           });
 
           // A converted quote is by definition accepted by the client.
@@ -98,7 +110,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
           return created;
         });
 
-        return NextResponse.json(toSnakeCase(invoice));
+        return NextResponse.json(toSnakeCase(flattenTags(invoice)));
       } catch (err) {
         if (!isUniqueViolation(err) || attempt >= MAX_ATTEMPTS - 1) throw err;
       }

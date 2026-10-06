@@ -1061,6 +1061,7 @@ export function ReportsPage() {
                       [
                         [t("reports:quoteConversion.totalQuotes"), String(conversionData.total_quotes)],
                         [t("reports:acceptedQuotes"), String(conversionData.converted_quotes)],
+                        [t("reports:quoteConversion.refusedQuotes"), String(conversionData.refused_quotes)],
                         [t("reports:quoteConversion.conversionRate"), `${conversionData.conversion_rate.toFixed(1)}%`],
                         [t("reports:quoteConversion.totalQuotedAmount"), formatCurrency(conversionData.total_quoted_amount)],
                         [t("reports:quoteConversion.convertedAmount"), formatCurrency(conversionData.converted_amount)],

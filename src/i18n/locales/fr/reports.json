@@ -90,6 +90,7 @@
   "quoteConversion": {
     "title": "Taux de conversion devis",
     "totalQuotes": "Total devis",
+    "refusedQuotes": "Devis refusés",
     "conversionRate": "Taux de conversion",
     "totalQuotedAmount": "Montant total devisé",
     "convertedAmount": "Montant converti",

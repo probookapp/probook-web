@@ -5,6 +5,7 @@
   },
   "buttons": {
     "save": "Enregistrer",
+    "done": "Terminé",
     "cancel": "Annuler",
     "delete": "Supprimer",
     "edit": "Modifier",
@@ -35,10 +36,37 @@
     "archive": "Archiver",
     "unarchive": "Désarchiver"
   },
+  "tags": {
+    "title": "Étiquettes",
+    "label": "Étiquettes",
+    "manage": "Gérer les étiquettes",
+    "addLabels": "Ajouter une étiquette",
+    "editLabels": "Modifier les étiquettes",
+    "description": "Vos propres mots pour classer vos documents, en plus de leur statut. Un document peut porter plusieurs étiquettes, et les étiquettes ne changent rien aux relances, à la conversion en facture ni aux rapports.",
+    "newPlaceholder": "Nom de l'étiquette",
+    "empty": "Aucune étiquette pour l'instant.",
+    "emptyHint": "Aucune étiquette. Créez-en une pour classer vos documents à votre façon.",
+    "filterByTag": "Filtrer par étiquette",
+    "color": "Couleur",
+    "created": "Étiquette créée",
+    "renamed": "Étiquette modifiée",
+    "deleted": "Étiquette supprimée",
+    "saveError": "Impossible d'enregistrer l'étiquette",
+    "deleteError": "Impossible de supprimer l'étiquette",
+    "deleteConfirmation": "Supprimer cette étiquette ? Elle disparaîtra des documents qui la portent, sans rien y changer d'autre.",
+    "colors": {
+      "gray": "Gris",
+      "blue": "Bleu",
+      "green": "Vert",
+      "amber": "Ambre",
+      "red": "Rouge"
+    }
+  },
   "status": {
     "draft": "Brouillon",
     "sent": "Envoyé",
     "accepted": "Accepté",
+    "refused": "Refusé",
     "expired": "Expiré",
     "issued": "Émise",
     "paid": "Payée",

@@ -95,6 +95,7 @@
     "DRAFT": "Brouillon",
     "SENT": "Envoyé",
     "ACCEPTED": "Accepté",
+    "REFUSED": "Refusé",
     "EXPIRED": "Expiré"
   },
   "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce devis ?",
@@ -109,6 +110,19 @@
     "label": "Marge",
     "cost": "Coût d'achat",
     "partial": "Marge partielle : certaines lignes n'ont pas de prix d'achat renseigné."
+  },
+  "restock": {
+    "banner_one": "{{count}} article à réapprovisionner pour les devis en cours",
+    "banner_other": "{{count}} articles à réapprovisionner pour les devis en cours",
+    "show": "Voir la liste",
+    "hide": "Masquer",
+    "article": "Article",
+    "missing": "Manquant",
+    "inStock": "En stock",
+    "quoted": "Demandé",
+    "quotes": "Devis concernés",
+    "toBuy": "{{count}} à commander",
+    "detail": "{{quoted}} demandé(s) sur les devis · {{inStock}} en stock"
   },
   "stock": {
     "none": "Rupture de stock : {{requested}} demandé(s), aucun en stock",

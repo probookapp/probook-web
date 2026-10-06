@@ -45,6 +45,7 @@
       "DRAFT": "DRAFT",
       "SENT": "SENT",
       "ACCEPTED": "ACCEPTED",
+      "REFUSED": "REFUSED",
       "EXPIRED": "EXPIRED"
     },
     "table": {

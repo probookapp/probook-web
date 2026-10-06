@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { calculateDocumentTotals, calculateLineTotals } from "@/lib/document-totals";
 import { requirePermission } from "@/lib/permissions-server";
+import { flattenTags, TAGS_INCLUDE } from "@/lib/document-tags";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
 import { updateInvoiceSchema } from "@/lib/validations";
@@ -32,10 +33,11 @@ export const GET = withAuth(async (req, { tenantId, session, params }) => {
       lines: { orderBy: { position: "asc" } },
       client: true,
       payments: true,
+      ...TAGS_INCLUDE,
     },
   });
   if (!invoice) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(toSnakeCase(invoice));
+  return NextResponse.json(toSnakeCase(flattenTags(invoice)));
 });
 
 export const PUT = withAuth(async (req, { session, tenantId, params }) => {
@@ -131,10 +133,10 @@ export const PUT = withAuth(async (req, { session, tenantId, params }) => {
         }),
       },
     },
-    include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
+    include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true, ...TAGS_INCLUDE },
   });
 
-  return NextResponse.json(toSnakeCase(invoice));
+  return NextResponse.json(toSnakeCase(flattenTags(invoice)));
 });
 
 export const DELETE = withAuth(async (req, { session, tenantId, params }) => {

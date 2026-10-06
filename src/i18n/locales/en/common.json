@@ -5,6 +5,7 @@
   },
   "buttons": {
     "save": "Save",
+    "done": "Done",
     "cancel": "Cancel",
     "delete": "Delete",
     "edit": "Edit",
@@ -35,10 +36,37 @@
     "archive": "Archive",
     "unarchive": "Unarchive"
   },
+  "tags": {
+    "title": "Labels",
+    "label": "Labels",
+    "manage": "Manage labels",
+    "addLabels": "Add a label",
+    "editLabels": "Edit labels",
+    "description": "Your own words for sorting documents, alongside their status. A document can wear several labels, and labels change nothing about reminders, conversion to an invoice or the reports.",
+    "newPlaceholder": "Label name",
+    "empty": "No labels yet.",
+    "emptyHint": "No labels yet. Create one to sort your documents your own way.",
+    "filterByTag": "Filter by label",
+    "color": "Colour",
+    "created": "Label created",
+    "renamed": "Label updated",
+    "deleted": "Label deleted",
+    "saveError": "Could not save the label",
+    "deleteError": "Could not delete the label",
+    "deleteConfirmation": "Delete this label? It will disappear from the documents that wear it, and change nothing else about them.",
+    "colors": {
+      "gray": "Grey",
+      "blue": "Blue",
+      "green": "Green",
+      "amber": "Amber",
+      "red": "Red"
+    }
+  },
   "status": {
     "draft": "Draft",
     "sent": "Sent",
     "accepted": "Accepted",
+    "refused": "Refused",
     "expired": "Expired",
     "issued": "Issued",
     "paid": "Paid",

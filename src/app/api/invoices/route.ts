@@ -5,6 +5,8 @@ import { calculateDocumentTotals, calculateLineTotals } from "@/lib/document-tot
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/permissions-server";
 import { parseArchivedFilter, parseStatusFilter, INVOICE_STATUSES } from "@/lib/document-status";
+import { flattenTags, parseTagFilter, TAGS_INCLUDE } from "@/lib/document-tags";
+import { ownTagIds } from "@/lib/document-tags-server";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
 import { createInvoiceSchema } from "@/lib/validations";
@@ -44,6 +46,9 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   // Archived documents are hidden from the working list by default; the
   // reports deliberately ignore this filter.
   const archivedFilter = parseArchivedFilter(new URL(req.url).searchParams.get("archived"));
+  // Labels are a second axis, so they combine with the state rather than
+  // replacing it: "the unpaid ones on the Hydra site" is one query.
+  const tagFilter = parseTagFilter(new URL(req.url).searchParams.get("tag"));
 
   // Opt-in cursor pagination (audit SALE-23): lean rows for the list UI —
   // scalars + client name + payments aggregate, no line arrays.
@@ -56,17 +61,18 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
         }))?.id ?? null
       : null;
     const rows = await prisma.invoice.findMany({
-      where: { tenantId, ...statusFilter, ...archivedFilter },
+      where: { tenantId, ...statusFilter, ...archivedFilter, ...tagFilter },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: page.limit,
       ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
       include: {
         client: { select: { id: true, name: true } },
         payments: { select: { amount: true } },
+        ...TAGS_INCLUDE,
       },
     });
     const data = rows.map(({ payments, ...rest }) => ({
-      ...rest,
+      ...flattenTags(rest),
       paidTotal: payments.reduce((sum, p) => sum + num(p.amount), 0),
     }));
     return NextResponse.json(
@@ -75,15 +81,16 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   }
 
   const invoices = await prisma.invoice.findMany({
-    where: { tenantId, ...statusFilter, ...archivedFilter },
+    where: { tenantId, ...statusFilter, ...archivedFilter, ...tagFilter },
     orderBy: { createdAt: "desc" },
     include: {
       lines: { orderBy: { position: "asc" } },
       client: true,
       payments: true,
+      ...TAGS_INCLUDE,
     },
   });
-  return NextResponse.json(toSnakeCase(invoices));
+  return NextResponse.json(toSnakeCase(invoices.map(flattenTags)));
 });
 
 export const POST = withAuth(async (req, { session, tenantId }) => {
@@ -102,9 +109,9 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
   if (idempotencyKey) {
     const existing = await prisma.invoice.findFirst({
       where: { tenantId, idempotencyKey },
-      include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
+      include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true, ...TAGS_INCLUDE },
     });
-    if (existing) return NextResponse.json(toSnakeCase(existing));
+    if (existing) return NextResponse.json(toSnakeCase(flattenTags(existing)));
   }
 
   // A stale offline cache can submit a deleted (or foreign) client id; without
@@ -150,6 +157,10 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
 
   // Number allocation + create happen in ONE transaction so concurrent creates
   // get distinct numbers and a failed create rolls the counter back (SALE-1).
+  // Resolved against the tenant's own tags; a label that no longer exists is
+  // dropped rather than failing the invoice.
+  const tagIds = await ownTagIds(tenantId, body.tag_ids ?? []);
+
   // Retried on a unique violation (e.g. counter manually rewound in settings).
   const MAX_ATTEMPTS = 3;
   for (let attempt = 0; ; attempt++) {
@@ -184,6 +195,7 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
             discountAmount: body.discount_amount || 0,
             isDownPaymentInvoice: body.is_down_payment_invoice || false,
             parentQuoteId: body.parent_quote_id || null,
+            tags: { create: tagIds.map((tagId) => ({ tagId })) },
             lines: {
               create: lines.map((line: LineInput, idx: number) => {
                 const lt = calculateLineTotals(line);
@@ -206,12 +218,12 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
               }),
             },
           },
-          include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
+          include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true, ...TAGS_INCLUDE },
         });
       });
 
       markOnboardingStep(tenantId, "first_invoice");
-      return NextResponse.json(toSnakeCase(invoice));
+      return NextResponse.json(toSnakeCase(flattenTags(invoice)));
     } catch (err) {
       if (!isUniqueViolation(err)) throw err;
       // A concurrent request may have committed this exact invoice (same
@@ -219,9 +231,9 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
       if (idempotencyKey) {
         const existing = await prisma.invoice.findFirst({
           where: { tenantId, idempotencyKey },
-          include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true },
+          include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true, ...TAGS_INCLUDE },
         });
-        if (existing) return NextResponse.json(toSnakeCase(existing));
+        if (existing) return NextResponse.json(toSnakeCase(flattenTags(existing)));
       }
       if (attempt >= MAX_ATTEMPTS - 1) throw err;
     }

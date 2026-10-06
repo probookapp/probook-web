@@ -4,6 +4,7 @@ import { REFERENCE_CURRENCY } from "./currencies";
 import { EXPENSE_CATEGORY_MAX_LENGTH } from "./expense-categories";
 import { POS_PAYMENT_METHODS } from "./pos-payment-methods";
 import { CASH_MOVEMENT_TYPES } from "./pos-cash-movements";
+import { TAG_COLORS, TAG_MAX_LENGTH, normalizeTagName } from "./tag-colors";
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────
 
@@ -208,6 +209,20 @@ export const categorySchema = z.object({
   parent_id: optionalString,
 });
 
+// ─── Tags ───────────────────────────────────────────────────────────────────
+
+// A free label the business invents for itself, on a second axis from the
+// document's status. The colour is a key from the fixed palette, never a hex:
+// a freely chosen colour has no dark-theme counterpart (src/lib/tag-colors.ts).
+export const tagSchema = z.object({
+  name: z
+    .string()
+    .transform(normalizeTagName)
+    .refine((v) => v.length > 0, "Tag name is required")
+    .refine((v) => v.length <= TAG_MAX_LENGTH, "Tag name is too long"),
+  color: z.enum(TAG_COLORS).default("gray"),
+});
+
 // ─── Suppliers ──────────────────────────────────────────────────────────────
 
 export const supplierSchema = z.object({
@@ -282,7 +297,7 @@ const documentLineSchema = z.object({
 // Statuses actually used by the app (audit SALE-13). PAID is deliberately NOT
 // accepted on create: it only ever comes from the payment/mark-paid endpoints.
 const invoiceStatusEnum = z.enum(["DRAFT", "ISSUED", "PAID"]);
-const quoteStatusEnum = z.enum(["DRAFT", "SENT", "ACCEPTED", "EXPIRED"]);
+const quoteStatusEnum = z.enum(["DRAFT", "SENT", "ACCEPTED", "REFUSED", "EXPIRED"]);
 const deliveryNoteStatusEnum = z.enum(["DRAFT", "DELIVERED", "CANCELLED"]);
 
 export const createInvoiceSchema = z.object({
@@ -310,6 +325,11 @@ export const createInvoiceSchema = z.object({
   // Client-minted dedupe key: offline replays / lost-response retries send the
   // same key and get the already-created invoice back instead of a duplicate.
   idempotency_key: optionalString,
+  // Free labels, resolved against the tenant's own tags by the route. Only on
+  // create: afterwards they change through PUT /api/<document>/[id]/tags, which
+  // works at any status — an issued invoice is immutable, and a document you
+  // cannot file is a document you cannot find.
+  tag_ids: z.array(z.string()).optional(),
   lines: z.array(documentLineSchema).min(1, "At least one line is required"),
 });
 
@@ -340,6 +360,10 @@ export const updateInvoiceSchema = z.object({
 export const createQuoteSchema = z.object({
   client_id: requiredString("Client ID"),
   status: quoteStatusEnum.default("DRAFT"),
+  // Free labels, resolved against the tenant's own tags by the route. Absent
+  // and empty mean different things on update: absent leaves the labels alone,
+  // [] clears them.
+  tag_ids: z.array(z.string()).optional(),
   issue_date: requiredString("Issue date"),
   validity_date: requiredString("Validity date"),
   notes: optionalString,
@@ -400,6 +424,8 @@ export const createDeliveryNoteSchema = z.object({
   delivery_address: optionalString,
   notes: optionalString,
   notes_html: optionalString,
+  // See createInvoiceSchema: labels on create, then through the tags route.
+  tag_ids: z.array(z.string()).optional(),
   lines: z.array(deliveryNoteLineSchema).min(1, "At least one line is required"),
 });
 

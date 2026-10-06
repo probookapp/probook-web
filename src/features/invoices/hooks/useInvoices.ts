@@ -6,6 +6,7 @@ import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_INVOICES } from "@/lib/demo-data";
 import { LIST_PAGE_SIZE } from "@/lib/pagination";
 import { filterByStatus } from "@/lib/document-status";
+import { filterByTag } from "@/lib/document-tags";
 import type {
   CreateInvoiceInput,
   UpdateInvoiceInput,
@@ -25,20 +26,22 @@ export function useInvoices() {
 
 /** Cursor-paginated invoices list (lean rows) for the invoices list page. */
 /** `status` is a comma-separated list of states, or undefined for every state. */
-export function useInfiniteInvoices(status?: string, archived?: string) {
+/** `tag` is one tag id — a second axis, so it narrows whatever state is chosen. */
+export function useInfiniteInvoices(status?: string, archived?: string, tag?: string) {
   const { isDemoMode } = useDemoMode();
   return useInfiniteQuery({
     // Shares the ["invoices"] prefix so existing invalidations refresh it too.
-    queryKey: ["invoices", "infinite", status ?? null, archived ?? null, { demo: isDemoMode }],
+    queryKey: ["invoices", "infinite", status ?? null, archived ?? null, tag ?? null, { demo: isDemoMode }],
     queryFn: isDemoMode
       ? (): CursorPage<InvoiceListItem> => ({
-          data: filterByStatus(DEMO_INVOICES, status).map((i) => ({
+          data: filterByTag(filterByStatus(DEMO_INVOICES, status), tag).map((i) => ({
             ...i,
             paid_total: i.payments?.reduce((sum, p) => sum + p.amount, 0) ?? 0,
           })),
           next_cursor: null,
         })
-      : ({ pageParam }) => invoiceApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam, status, archived }),
+      : ({ pageParam }) =>
+          invoiceApi.getPage({ limit: LIST_PAGE_SIZE, cursor: pageParam, status, archived, tag }),
     initialPageParam: null as string | null,
     getNextPageParam: (lastPage) => lastPage.next_cursor,
     staleTime: isDemoMode ? Infinity : undefined,

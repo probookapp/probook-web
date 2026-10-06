@@ -269,5 +269,11 @@
   "La désignation et le prix suivent le modèle choisi. À la facturation, c'est ce modèle précis qui sortira du stock.": "تتبع التسمية والسعر الطراز المختار. وعند الفوترة، هذا الطراز بالذات هو الذي يُخصم من المخزون.",
   "Le fournisseur propose aussi une nouveauté qui n'est pas encore au catalogue. Pas besoin de quitter la commande : on la crée d'ici.": "يقترح المورد أيضًا منتجًا جديدًا غير موجود بعد في الكتالوج. لا حاجة لمغادرة الطلب: ننشئه من هنا.",
   "Pas de quantité à saisir ici : le stock arrivera avec la réception de la commande.": "لا كمية لإدخالها هنا: سيدخل المخزون عند استلام الطلب.",
-  "Le produit est créé et déjà placé sur la ligne, avec son prix d'achat.": "أُنشئ المنتج ووُضع مباشرة على السطر، مع سعر شرائه."
+  "Le produit est créé et déjà placé sur la ligne, avec son prix d'achat.": "أُنشئ المنتج ووُضع مباشرة على السطر، مع سعر شرائه.",
+  "Avant de commencer : un devis a un statut, et il peut aussi porter vos propres étiquettes. Le statut dit où en est le document ; l'étiquette dit comment vous, vous le rangez.": "قبل البداية: لعرض السعر حالة، ويمكن أن يحمل أيضًا وسومك الخاصة. الحالة تقول في أي مرحلة هو المستند؛ والوسم يقول كيف ترتّبه أنت.",
+  "On crée ici le vocabulaire de la maison : un chantier, une priorité, ce qu'on veut. Autant d'étiquettes qu'on veut, et une couleur pour les repérer.": "هنا تُنشئ مصطلحات مؤسستك: ورشة، أولوية، ما تشاء. أي عدد من الوسوم، ولكل واحد لون لتمييزه.",
+  "Une étiquette ne touche à rien : ni aux relances, ni à la conversion en facture, ni aux rapports. C'est un classement, pas un état.": "الوسم لا يمسّ شيئًا: لا التذكيرات، ولا التحويل إلى فاتورة، ولا التقارير. إنه تصنيف، لا حالة.",
+  "Et on range tout de suite le devis sous son étiquette.": "ويُصنَّف عرض السعر تحت وسمه مباشرة.",
+  "Les statuts sont une liste fixe, et « Refusé » en fait partie : un client qui dit non, c'est enregistré comme tel, Probook arrête de relancer, et le rapport de conversion le compte à part des devis restés sans réponse.": "الحالات قائمة ثابتة، و«مرفوض» إحداها: العميل الذي يرفض يُسجَّل كذلك، فيتوقف Probook عن التذكير، ويحسبه تقرير التحويل منفصلًا عن العروض التي لم تتلقَّ ردًّا.",
+  "Et l'étiquette a suivi : le même mot sur le devis, sur la facture et sur le bon de livraison. Un chantier ne change pas de nom en changeant de document.": "وتبع الوسم المستند: الكلمة نفسها على عرض السعر وعلى الفاتورة وعلى سند التسليم. الورشة لا يتغيّر اسمها بتغيّر المستند."
 }

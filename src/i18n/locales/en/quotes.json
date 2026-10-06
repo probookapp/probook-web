@@ -95,6 +95,7 @@
     "DRAFT": "Draft",
     "SENT": "Sent",
     "ACCEPTED": "Accepted",
+    "REFUSED": "Refused",
     "EXPIRED": "Expired"
   },
   "confirmDelete": "Are you sure you want to delete this quote?",
@@ -109,6 +110,19 @@
     "label": "Margin",
     "cost": "Cost",
     "partial": "Partial margin: some lines have no purchase price recorded."
+  },
+  "restock": {
+    "banner_one": "{{count}} article to restock for the open quotes",
+    "banner_other": "{{count}} articles to restock for the open quotes",
+    "show": "See the list",
+    "hide": "Hide",
+    "article": "Article",
+    "missing": "Missing",
+    "inStock": "In stock",
+    "quoted": "Quoted",
+    "quotes": "Quotes concerned",
+    "toBuy": "{{count}} to order",
+    "detail": "{{quoted}} quoted · {{inStock}} in stock"
   },
   "stock": {
     "none": "Out of stock: {{requested}} requested, none on hand",

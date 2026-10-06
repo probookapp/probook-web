@@ -94,6 +94,7 @@
   "quoteConversion": {
     "title": "معدل تحويل العروض",
     "totalQuotes": "إجمالي العروض",
+    "refusedQuotes": "عروض مرفوضة",
     "conversionRate": "معدل التحويل",
     "totalQuotedAmount": "إجمالي المبلغ المعروض",
     "convertedAmount": "المبلغ المحول",

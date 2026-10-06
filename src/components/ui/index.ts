@@ -28,6 +28,7 @@ export {
   getInvoiceStatusLabelWithUrgency,
   type InvoiceUrgency,
 } from "./Badge";
+export { TagChip } from "./TagChip";
 // RichTextEditor and RichTextDisplay must be imported directly from
 // "@/components/ui/RichTextEditor" (client-only, uses dompurify which needs document)
 export { ToastContainer } from "./Toast";

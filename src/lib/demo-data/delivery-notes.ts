@@ -1,5 +1,6 @@
 import type { DeliveryNote } from "@/types";
 import { DEMO_CLIENTS } from "./clients";
+import { DEMO_TAGS } from "./tags";
 
 const now = "2026-03-20T10:00:00.000Z";
 
@@ -12,6 +13,7 @@ export const DEMO_DELIVERY_NOTES: DeliveryNote[] = [
     quote_id: null,
     invoice_id: "demo-invoice-001",
     status: "DELIVERED",
+    tags: [DEMO_TAGS[0]],
     issue_date: "2026-03-01",
     delivery_date: "2026-03-05",
     delivery_address: "123 Rue des Oliviers, Alger",

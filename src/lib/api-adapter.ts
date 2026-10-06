@@ -73,6 +73,9 @@ function listQuery(
     // Filtering by state is a server concern: see src/lib/document-status.ts.
     if (a.status) q.status = String(a.status);
     if (a.archived) q.archived = String(a.archived);
+    // And so is filtering by label, for the same reason — see
+    // src/lib/document-tags.ts. A second axis, not a replacement for the state.
+    if (a.tag) q.tag = String(a.tag);
     return q;
   };
 }
@@ -186,6 +189,18 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   delete_product_category: {
     method: "DELETE",
     path: (a) => `/api/categories/${a.id}`,
+  },
+
+  // Tags
+  get_tags: { method: "GET", path: "/api/tags" },
+  create_tag: { method: "POST", path: "/api/tags", body: (a) => a.input },
+  update_tag: { method: "PUT", path: (a) => `/api/tags/${a.id}`, body: (a) => a.input },
+  delete_tag: { method: "DELETE", path: (a) => `/api/tags/${a.id}` },
+  // One endpoint shape for the three document types that carry labels.
+  set_document_tags: {
+    method: "PUT",
+    path: (a) => `/api/${a.document}/${a.id}/tags`,
+    body: (a) => ({ tag_ids: a.tagIds }),
   },
 
   // Quotes
@@ -579,6 +594,7 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     method: "GET",
     path: "/api/reports/outstanding-payments",
   },
+  get_quote_restock: { method: "GET", path: "/api/quotes/restock" },
   get_low_stock: {
     method: "GET",
     path: "/api/reports/low-stock",

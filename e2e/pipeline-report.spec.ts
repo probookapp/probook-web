@@ -34,7 +34,13 @@ test.describe("Pipeline report", () => {
     expect(res.status).toBe(200);
     const report = res.body as unknown as Pipeline;
 
-    expect(report.quotes.map((b) => b.status)).toEqual(["DRAFT", "SENT", "ACCEPTED", "EXPIRED"]);
+    expect(report.quotes.map((b) => b.status)).toEqual([
+      "DRAFT",
+      "SENT",
+      "ACCEPTED",
+      "REFUSED",
+      "EXPIRED",
+    ]);
     expect(report.invoices.map((b) => b.status)).toEqual(["DRAFT", "ISSUED", "PAID"]);
     expect(report.delivery_notes.map((b) => b.status)).toEqual(["DRAFT", "DELIVERED", "CANCELLED"]);
     expect(report.quotes.every((b) => b.count === 0)).toBe(true);

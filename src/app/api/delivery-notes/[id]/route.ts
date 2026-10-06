@@ -5,6 +5,7 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
 import { updateDeliveryNoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { flattenTags, TAGS_INCLUDE } from "@/lib/document-tags";
 
 interface DeliveryLineInput {
   product_id?: string | null;
@@ -21,10 +22,10 @@ export const GET = withAuth(async (req, { tenantId, session, params }) => {
   if (denied) return denied;
   const note = await prisma.deliveryNote.findFirst({
     where: { tenantId, id: params?.id },
-    include: { lines: { orderBy: { position: "asc" } }, client: true },
+    include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE },
   });
   if (!note) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json(toSnakeCase(note));
+  return NextResponse.json(toSnakeCase(flattenTags(note)));
 });
 
 export const PUT = withAuth(async (req, { tenantId, params, session }) => {
@@ -70,10 +71,10 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
         })),
       },
     },
-    include: { lines: { orderBy: { position: "asc" } }, client: true },
+    include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE },
   });
 
-  return NextResponse.json(toSnakeCase(note));
+  return NextResponse.json(toSnakeCase(flattenTags(note)));
 });
 
 export const DELETE = withAuth(async (req, { tenantId, params, session }) => {

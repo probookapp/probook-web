@@ -16,6 +16,8 @@ export const createDeliveryNoteSchema = (t: (key: string) => string) => z.object
   delivery_date: z.string().nullable().optional(),
   delivery_address: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  // Labels, on creation only: afterwards they change from the note's own page.
+  tag_ids: z.array(z.string()).optional(),
   lines: z.array(createDeliveryNoteLineSchema(t)).min(1, t("validation:delivery.linesRequired")),
 });
 

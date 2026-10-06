@@ -1,5 +1,6 @@
 import { apiCall } from "./api-adapter";
 import { API_BASE_URL } from "./config";
+import type { TaggableDocument } from "./document-tags";
 import type {
   Client,
   CreateClientInput,
@@ -25,6 +26,8 @@ import type {
   SupplierPayment,
   CreateSupplierPaymentInput,
   SupplierCreditSummary,
+  Tag,
+  TagInput,
   ProductCategory,
   CreateProductCategoryInput,
   UpdateProductCategoryInput,
@@ -101,6 +104,7 @@ import type {
   CursorPageParams,
   InvoiceListItem,
   QuoteListItem,
+  QuoteRestockItem,
   DeliveryNoteListItem,
   CreditNoteListItem,
   PurchaseOrderListItem,
@@ -112,6 +116,7 @@ const pageArgs = (p: CursorPageParams): Record<string, unknown> => ({
   cursor: p.cursor ?? undefined,
   status: p.status ?? undefined,
   archived: p.archived ?? undefined,
+  tag: p.tag ?? undefined,
 });
 
 // Client commands
@@ -194,6 +199,23 @@ export const productCategoryApi = {
   delete: (id: string) => apiCall<void>("delete_product_category", { id }),
 };
 
+// Tag commands — free labels on documents, a second axis from the status.
+export const tagApi = {
+  getAll: () => apiCall<Tag[]>("get_tags"),
+  create: (input: TagInput) => apiCall<Tag>("create_tag", { input }),
+  update: (id: string, input: TagInput) => apiCall<Tag>("update_tag", { id, input }),
+  delete: (id: string) => apiCall<void>("delete_tag", { id }),
+  /**
+   * Replace the labels on an existing document, at any status.
+   *
+   * Its own call rather than part of the document update: an issued invoice is
+   * immutable, and labels are not document data — see
+   * src/lib/document-tags-server.ts.
+   */
+  setOn: (document: TaggableDocument, id: string, tagIds: string[]) =>
+    apiCall<{ tags: Tag[] }>("set_document_tags", { document, id, tagIds }),
+};
+
 // Quote commands
 export const quoteApi = {
   getAll: () => apiCall<Quote[]>("get_quotes"),
@@ -206,6 +228,8 @@ export const quoteApi = {
   convertToInvoice: (id: string) => apiCall<Invoice>("convert_quote_to_invoice", { id }),
   convertToDeliveryNote: (id: string) => apiCall<DeliveryNote>("convert_quote_to_delivery_note", { id }),
   duplicate: (id: string) => apiCall<Quote>("duplicate_quote", { id }),
+  /** Articles the live quotes ask for and the stock cannot cover. */
+  restock: () => apiCall<QuoteRestockItem[]>("get_quote_restock"),
   archive: (id: string) => apiCall<Quote>("archive_quote", { id }),
   unarchive: (id: string) => apiCall<Quote>("unarchive_quote", { id }),
 };

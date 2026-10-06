@@ -287,6 +287,26 @@ export interface LowStockItem {
   threshold: number;
 }
 
+/** An article the live quotes promise in greater quantity than the shelves hold. */
+export interface QuoteRestockItem {
+  product_id: string;
+  designation: string;
+  reference: string | null;
+  unit: string;
+  variant_id: string | null;
+  variant_name: string | null;
+  quantity_quoted: number;
+  quantity_in_stock: number;
+  missing: number;
+  quotes: {
+    id: string;
+    quote_number: string;
+    status: string;
+    client_name: string;
+    quantity: number;
+  }[];
+}
+
 export interface InventoryValuationRow {
   product_id: string;
   designation: string;
@@ -339,8 +359,32 @@ export interface SupplierCreditSummary {
   unpaid_orders: PurchaseOrder[];
 }
 
+// Tag types
+
+/**
+ * A label the business invents for itself, on a second axis from the status.
+ *
+ * The status is a state machine (see src/lib/document-status.ts); a tag is
+ * free. That is why there can be many per document and why deleting one is
+ * harmless. One vocabulary across quotes, invoices and delivery notes: the same
+ * job wears the same word whichever document is in front of you.
+ */
+export interface Tag {
+  id: string;
+  name: string;
+  /** A key from src/lib/tag-colors.ts, never a hex. */
+  color: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TagInput {
+  name: string;
+  color: string;
+}
+
 // Quote types
-export type QuoteStatus = "DRAFT" | "SENT" | "ACCEPTED" | "EXPIRED";
+export type QuoteStatus = "DRAFT" | "SENT" | "ACCEPTED" | "REFUSED" | "EXPIRED";
 
 export interface Quote {
   id: string;
@@ -367,6 +411,8 @@ export interface Quote {
   discount_amount: number;
   /** Set once the document is settled and put away. */
   archived_at?: string | null;
+  /** Free labels, flattened out of the join rows by the API. */
+  tags?: Tag[];
   lines: QuoteLine[];
   created_at: string;
   updated_at: string;
@@ -404,6 +450,8 @@ export interface CreateQuoteInput {
   down_payment_amount?: number;
   discount_percent?: number;
   discount_amount?: number;
+  /** Absent leaves the labels alone on update; `[]` clears them. */
+  tag_ids?: string[];
   lines: CreateQuoteLineInput[];
 }
 
@@ -463,6 +511,8 @@ export interface Invoice {
   archived_at?: string | null;
   is_down_payment_invoice: boolean;
   parent_quote_id: string | null;
+  /** Free labels, flattened out of the join rows by the API. */
+  tags?: Tag[];
   lines: InvoiceLine[];
   payments: Payment[];
   created_at: string;
@@ -506,6 +556,8 @@ export interface CreateInvoiceInput {
   is_cash_sale?: boolean;
   stamp_duty_exempt?: boolean;
   parent_quote_id?: string | null;
+  /** Labels to attach at creation; afterwards they go through `tagApi.setOn`. */
+  tag_ids?: string[];
   lines: CreateInvoiceLineInput[];
 }
 
@@ -788,6 +840,8 @@ export interface DeliveryNote {
   delivery_address: string | null;
   notes: string | null;
   notes_html: string | null;
+  /** Free labels, flattened out of the join rows by the API. */
+  tags?: Tag[];
   lines: DeliveryNoteLine[];
   created_at: string;
   updated_at: string;
@@ -815,6 +869,8 @@ export interface CreateDeliveryNoteInput {
   delivery_address?: string | null;
   notes?: string | null;
   notes_html?: string | null;
+  /** Labels to attach at creation; afterwards they go through `tagApi.setOn`. */
+  tag_ids?: string[];
   lines: CreateDeliveryNoteLineInput[];
 }
 
@@ -923,6 +979,8 @@ export interface OutstandingPayment {
 export interface QuoteConversionStats {
   total_quotes: number;
   converted_quotes: number;
+  /** Said no, as opposed to the silence the rest of the gap is made of. */
+  refused_quotes: number;
   conversion_rate: number;
   total_quoted_amount: number;
   converted_amount: number;
@@ -1537,6 +1595,8 @@ export interface CursorPageParams {
   status?: string | null;
   /** "true" for archived only, "all" for both. Omitted hides archived. */
   archived?: string | null;
+  /** A tag id, for the lists that carry free labels. Omitted means every tag. */
+  tag?: string | null;
 }
 
 /**
