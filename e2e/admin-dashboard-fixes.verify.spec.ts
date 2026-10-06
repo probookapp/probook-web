@@ -1,6 +1,5 @@
 import { test, expect, type Page } from "@playwright/test";
 import { signUp } from "./helpers";
-import { apiGet } from "./api-helpers";
 import { setupPlatformAdmin, adminGet, adminPost, adminPut, createTestPlan } from "./admin-helpers";
 
 /**

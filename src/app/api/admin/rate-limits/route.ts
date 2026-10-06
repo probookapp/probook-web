@@ -3,7 +3,7 @@ import { withPlatformAdmin } from "@/lib/admin-api-utils";
 import { prisma } from "@/lib/db";
 import { toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 
-export const GET = withPlatformAdmin(async (req: NextRequest, _ctx) => {
+export const GET = withPlatformAdmin(async (req: NextRequest) => {
   // Opt-in cursor pagination (audit ADM-13): flat lean log rows (scalars only,
   // newest first) — the client groups by tenant itself. The legacy path below
   // keeps the grouped shape unchanged.

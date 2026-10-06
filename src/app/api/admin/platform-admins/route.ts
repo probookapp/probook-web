@@ -6,7 +6,7 @@ import bcrypt from "bcryptjs";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createPlatformAdminSchema } from "@/lib/validations";
 
-export const GET = withPlatformAdmin(async (_req: NextRequest, _ctx) => {
+export const GET = withPlatformAdmin(async () => {
   const admins = await prisma.platformAdmin.findMany({
     orderBy: { createdAt: "desc" },
     select: {

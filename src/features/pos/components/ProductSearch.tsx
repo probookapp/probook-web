@@ -12,6 +12,7 @@ import type { Product, ProductVariant } from "@/types";
 import { VariantPickerModal } from "./VariantPickerModal";
 import { formatCurrency } from "@/lib/utils";
 import { useProductViewMode } from "../hooks/useProductViewMode";
+import Image from "next/image";
 
 const formatAmount = formatCurrency;
 
@@ -31,11 +32,18 @@ function ProductTile({
       className="text-start border border-(--color-border-primary) rounded-lg hover:bg-(--color-bg-secondary) transition-colors overflow-hidden flex flex-col"
     >
       {photoBase64 ? (
-        <img
-          src={photoBase64}
-          alt={product.designation}
-          className="w-full h-24 object-cover"
-        />
+        // A base64 photo from the local store: there is nothing for the image
+        // optimiser to fetch, so it is passed through as is.
+        <div className="relative w-full h-24">
+          <Image
+            src={photoBase64}
+            alt={product.designation}
+            fill
+            unoptimized
+            sizes="(min-width: 640px) 12rem, 50vw"
+            className="object-cover"
+          />
+        </div>
       ) : (
         <div className="w-full h-24 bg-(--color-bg-tertiary) flex items-center justify-center">
           <Package className="h-8 w-8 text-(--color-text-secondary) opacity-40" />

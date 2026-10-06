@@ -1,6 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { signUp } from "./helpers";
-import { apiGet, apiPost, setupClient, setupProduct } from "./api-helpers";
+import { apiPost, setupClient, setupProduct } from "./api-helpers";
 
 test.describe("Document conversions", () => {
   test.beforeEach(async ({ page }) => {

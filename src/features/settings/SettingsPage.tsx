@@ -2,7 +2,7 @@ import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
-import { useRouter, useLocale, usePathname } from "@/lib/navigation";
+import { useLocale, usePathname } from "@/lib/navigation";
 import { Save, Image, Trash2, Sun, Moon, Monitor, Globe, Upload, Users, ShoppingCart, AlertTriangle, Printer, LayoutDashboard } from "lucide-react";
 import { toast } from "@/stores/useToastStore";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -114,7 +114,6 @@ export function SettingsPage() {
   const { language, setCurrency } = useSettingsStore();
   const { theme, setTheme } = useTheme();
   const { currentUser } = useAuthStore();
-  const router = useRouter();
   const locale = useLocale();
   const pathname = usePathname();
 

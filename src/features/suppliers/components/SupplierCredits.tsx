@@ -22,7 +22,6 @@ import type { Supplier, SupplierPayment } from "@/types";
 
 interface SupplierCreditsProps {
   supplier: Supplier;
-  onClose: () => void;
 }
 
 function getPaymentStatusVariant(status: string): "default" | "success" | "warning" | "danger" {
@@ -38,9 +37,8 @@ function getPaymentStatusVariant(status: string): "default" | "success" | "warni
   }
 }
 
-export function SupplierCredits({ supplier, onClose }: SupplierCreditsProps) {
+export function SupplierCredits({ supplier }: SupplierCreditsProps) {
   const { t } = useTranslation("suppliers");
-  const { t: tCommon } = useTranslation("common");
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   // Recording a supplier payment is gated on the suppliers module (edit).
   const canRecordPayment = useAuthStore((s) => s.hasPermission("suppliers", "edit"));

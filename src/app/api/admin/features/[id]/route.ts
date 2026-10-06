@@ -34,7 +34,7 @@ export const PUT = withSuperAdmin(async (req, ctx) => {
     return NextResponse.json({ error: "Feature not found" }, { status: 404 });
   }
 
-  const feature = await prisma.featureFlag.update({
+  await prisma.featureFlag.update({
     where: { id },
     data: {
       key: body.key ?? existing.key,

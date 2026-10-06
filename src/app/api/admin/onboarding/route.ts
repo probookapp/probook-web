@@ -26,7 +26,7 @@ const TENANT_SELECT = {
   },
 } as const;
 
-export const GET = withPlatformAdmin(async (req: NextRequest, _ctx) => {
+export const GET = withPlatformAdmin(async (req: NextRequest) => {
   // Opt-in cursor pagination (audit ADM-13): same computed projection
   // (tenant scalars + step rows + completion %), keyset order.
   const page = parseListPagination(req);

@@ -5,7 +5,7 @@ import { toSnakeCase } from "@/lib/api-utils";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createAnnouncementSchema } from "@/lib/validations";
 
-export const GET = withPlatformAdmin(async (_req, _ctx) => {
+export const GET = withPlatformAdmin(async () => {
   const announcements = await prisma.announcement.findMany({
     orderBy: { createdAt: "desc" },
     include: { _count: { select: { dismissals: true } } },

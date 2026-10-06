@@ -387,7 +387,7 @@ export function SuppliersPage() {
         title={creditsSupplier ? `${t("credits.title")} - ${creditsSupplier.name}` : t("credits.title")}
         size="lg"
       >
-        {creditsSupplier && <SupplierCredits supplier={creditsSupplier} onClose={() => setCreditsSupplier(null)} />}
+        {creditsSupplier && <SupplierCredits supplier={creditsSupplier} />}
       </Modal>
 
       {canDelete && (

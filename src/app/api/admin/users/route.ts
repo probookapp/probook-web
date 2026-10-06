@@ -3,7 +3,7 @@ import { withPlatformAdmin } from "@/lib/admin-api-utils";
 import { prisma } from "@/lib/db";
 import { toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 
-export const GET = withPlatformAdmin(async (req: NextRequest, _ctx) => {
+export const GET = withPlatformAdmin(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const search = searchParams.get("search") || "";
 

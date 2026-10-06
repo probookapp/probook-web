@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect } from "@playwright/test";
 import { apiGet, apiPost, apiPut, setupClient, setupProduct, setupRegister, openSession } from "./api-helpers";
 import { signUpSubscribed } from "./subscription-setup";
 

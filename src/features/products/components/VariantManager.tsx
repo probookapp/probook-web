@@ -134,7 +134,8 @@ export function VariantManager({ productId }: VariantManagerProps) {
   };
 
   const removeAttribute = (key: string) => {
-    const { [key]: _, ...rest } = form.attributes;
+    const rest = { ...form.attributes };
+    delete rest[key];
     setForm({ ...form, attributes: rest });
   };
 

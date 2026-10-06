@@ -9,6 +9,7 @@ import {
   useUploadProductPhoto,
   useDeleteProductPhoto,
 } from "../hooks/useProducts";
+import Image from "next/image";
 
 interface ProductPhotoUploadProps {
   productId: string;
@@ -73,11 +74,17 @@ export function ProductPhotoUpload({ productId }: ProductPhotoUploadProps) {
       />
       {photoBase64 ? (
         <div className="relative group">
-          <img
-            src={photoBase64}
-            alt={t("photos.productPhoto")}
-            className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
-          />
+          {/* A base64 photo: nothing for the image optimiser to fetch. */}
+          <div className="relative w-full h-48">
+            <Image
+              src={photoBase64}
+              alt={t("photos.productPhoto")}
+              fill
+              unoptimized
+              sizes="(min-width: 640px) 32rem, 100vw"
+              className="object-cover rounded-lg border border-gray-200 dark:border-gray-700"
+            />
+          </div>
           <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center gap-3">
             <Button
               type="button"

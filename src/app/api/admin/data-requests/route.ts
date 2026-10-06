@@ -5,7 +5,7 @@ import { toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/api-utils"
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createDataRequestSchema } from "@/lib/validations";
 
-export const GET = withPlatformAdmin(async (req: NextRequest, _ctx) => {
+export const GET = withPlatformAdmin(async (req: NextRequest) => {
   const include = {
     tenant: {
       select: { id: true, name: true, slug: true },

@@ -81,7 +81,6 @@ export function LoginPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <Logo className="h-9 w-9" title="Probook" />
               Probook
             </h1>
@@ -138,7 +137,6 @@ export function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             <Logo className="h-9 w-9" title="Probook" />
             Probook
           </h1>

@@ -10,7 +10,7 @@ function generateReferralCode(): string {
   return `REF-${out}`;
 }
 
-export const GET = withPlatformAdmin(async (req: NextRequest, _ctx) => {
+export const GET = withPlatformAdmin(async (req: NextRequest) => {
   const include = {
     tenant: {
       select: {

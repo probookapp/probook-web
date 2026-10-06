@@ -8,7 +8,7 @@ import { couponDiscount, couponValueIn, resolvePlanPrice } from "@/lib/plan-pric
 
 // Requires tenant auth: an unauthenticated endpoint here is a coupon
 // enumeration oracle. Read-only — never increments coupon usage.
-export const POST = withAuth(async (req: NextRequest, _ctx) => {
+export const POST = withAuth(async (req: NextRequest) => {
   const body = await validateBody(req, validateCouponSchema);
   if (isValidationError(body)) return body;
   const { code, plan_id, billing_cycle, currency } = body;

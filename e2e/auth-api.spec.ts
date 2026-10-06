@@ -1,5 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { signUp, logOut, logIn } from "./helpers";
+import { signUp, logOut } from "./helpers";
 import { apiGet, apiPost } from "./api-helpers";
 
 test.describe("Auth API flows", () => {

@@ -4,7 +4,6 @@ import {
   logIn,
   logOut,
   createClientViaApi,
-  createInvoiceViaApi,
 } from "./helpers";
 
 test.describe("Cross-tenant data isolation", () => {
@@ -47,7 +46,7 @@ test.describe("Cross-tenant data isolation", () => {
     page,
   }) => {
     // ── Tenant A: create data ─────────────────────────────────────────
-    const tenantA = await signUp(page);
+    await signUp(page);
     const clientA = await createClientViaApi(page, "IsolationTest_Client");
     const clientAId = clientA.id;
     expect(clientAId).toBeTruthy();
