@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { useForm, Controller, useFieldArray, type Resolver } from "react-hook-form";
+import { useForm, useWatch, Controller, useFieldArray, type Resolver } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
@@ -65,7 +65,6 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
   const {
     register,
     handleSubmit,
-    watch,
     control,
     formState: { errors },
   } = useForm<ProductFormData>({
@@ -92,7 +91,11 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
     name: "prices",
   });
 
-  const isService = watch("is_service");
+  // useWatch rather than watch(): the subscription is what re-renders this form
+  // when the fields change, and the React Compiler can compile around it.
+  const isService = useWatch({ control, name: "is_service" });
+  const hasVariants = useWatch({ control, name: "has_variants" });
+  const watchedPrices = useWatch({ control, name: "prices" });
 
   const categoryOptions = [
     { value: "", label: t("fields.noCategory") },
@@ -219,7 +222,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
           </p>
         )}
         {priceFields.map((field, index) => {
-          const currentLabel = watch(`prices.${index}.label`);
+          const currentLabel = watchedPrices?.[index]?.label ?? "";
           const isPreset = priceTierLabelOptions.some((o) => o.value === currentLabel);
           const isCustom = currentLabel !== "" && !isPreset;
           return (
@@ -310,7 +313,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
         </div>
       )}
 
-      {product && watch("has_variants") && (
+      {product && hasVariants && (
         <VariantManager productId={product.id} />
       )}
 

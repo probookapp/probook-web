@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { useForm, useWatch, useFieldArray, Controller } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2 } from "lucide-react";
 import { toast } from "@/stores/useToastStore";
@@ -96,7 +96,6 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
     register,
     handleSubmit,
     control,
-    watch,
     setValue,
     formState: { errors },
   } = useForm<PurchaseFormData>({
@@ -134,7 +133,9 @@ export function PurchaseForm({ purchase, onSubmit, onCancel, isLoading }: Purcha
     name: "lines",
   });
 
-  const watchedLines = watch("lines");
+  // useWatch, not watch(): it hands the memo below a new array whenever a line
+  // changes, where watch() could give it the same one and leave totals stale.
+  const watchedLines = useWatch({ control, name: "lines" });
 
   const lineSubtotals = useMemo(
     () =>
