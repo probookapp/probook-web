@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Check, SlidersHorizontal } from "lucide-react";
 import { useLocale } from "@/lib/navigation";
+import { formatPriceTag } from "@/lib/price-tag";
 import { translatedName, type Translations } from "@/lib/translated-name";
 import {
   quote,
@@ -67,11 +68,6 @@ interface OfferComposerProps {
   submitLabel: string;
   /** Rendered instead of the submit button when there is nothing to submit to. */
   footer?: React.ReactNode;
-}
-
-function formatPrice(centimes: number, currency: string): string {
-  const amount = centimes / 100;
-  return `${amount.toLocaleString("en")} ${currency}`;
 }
 
 export function OfferComposer({
@@ -173,7 +169,7 @@ export function OfferComposer({
             {t("composer.title")}
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {t("composer.subtitle", { base: formatPrice(priced.base, currency) })}
+            {t("composer.subtitle", { base: formatPriceTag(priced.base, currency, locale) })}
           </p>
 
           <fieldset className="mt-6">
@@ -204,7 +200,7 @@ export function OfferComposer({
                       </span>
                     </span>
                     <span className="text-sm text-gray-500 dark:text-gray-400 font-mono tabular-nums whitespace-nowrap">
-                      +{formatPrice(m.unitPrice ?? 0, currency)}
+                      +{formatPriceTag(m.unitPrice ?? 0, currency, locale)}
                     </span>
                   </label>
                 );
@@ -251,7 +247,7 @@ export function OfferComposer({
                   : t("composer.totalYearly")}
               </span>
               <span className="text-3xl font-bold text-gray-900 dark:text-white font-mono tabular-nums">
-                {formatPrice(total, currency)}
+                {formatPriceTag(total, currency, locale)}
               </span>
             </div>
 
@@ -260,9 +256,10 @@ export function OfferComposer({
               <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
                 {t("composer.bundleBeatsIt", {
                   plan: beaten.name,
-                  price: formatPrice(
+                  price: formatPriceTag(
                     billingCycle === "monthly" ? beaten.monthlyPrice : beaten.yearlyPrice,
-                    currency
+                    currency,
+                    locale
                   ),
                 })}
               </p>

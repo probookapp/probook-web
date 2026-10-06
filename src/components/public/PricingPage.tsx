@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { PublicLayout } from "./PublicLayout";
 import { trackMetaEvent } from "@/components/analytics/MetaPixel";
-import { PlanCards, usePublicPlans, type BillingCycle } from "./PlanCards";
+import { PlanCards, usePublicPlans, yearlyMonthsFree, type BillingCycle } from "./PlanCards";
 import { OfferComposer } from "@/components/shared/OfferComposer";
 
 
@@ -29,6 +29,7 @@ export function PricingPage() {
   const { data: plansData, isLoading } = usePublicPlans();
 
   const plans = plansData?.plans;
+  const monthsFree = yearlyMonthsFree(plans);
 
   return (
     <PublicLayout>
@@ -85,7 +86,9 @@ export function PricingPage() {
           </span>
           <span className="hidden sm:inline absolute start-full top-1/2 -translate-y-1/2 ms-2 whitespace-nowrap">
             <span className="inline-flex items-center rounded-full bg-green-50 dark:bg-green-950 px-2 py-0.5 text-xs font-medium text-green-700 dark:text-green-300 ring-1 ring-inset ring-green-600/20">
-              {t("pricing.saveWithYearly")}
+              {monthsFree > 0
+                ? t("pricing.monthsFree", { count: monthsFree })
+                : t("pricing.saveWithYearly")}
             </span>
           </span>
         </span>

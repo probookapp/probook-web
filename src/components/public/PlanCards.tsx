@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Check } from "lucide-react";
 import { translatedName, type Translations } from "@/lib/translated-name";
+import { formatPriceTag } from "@/lib/price-tag";
 
 export interface PublicPlan {
   id: string;
@@ -79,14 +80,21 @@ function seatsOf(plan: PublicPlan): number | null {
   return quota ? quota.limit_value : null;
 }
 
-function formatPrice(centimes: number, currency: string): string {
-  const amount = centimes / 100;
-  if (currency === "DZD") {
-    // The dinar is not written with decimals, and a yearly price spread over
-    // twelve months rarely falls on a whole one (19,000 / 12 = 1,583.33).
-    return `${amount.toLocaleString("en", { maximumFractionDigits: 0 })} ${currency}`;
-  }
-  return `${amount.toLocaleString("en", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${currency}`;
+/**
+ * The whole months the yearly cycle gives away on every offer, or 0 when it
+ * does not give a full month on all of them.
+ *
+ * Computed from the prices rather than written into the badge, so the claim
+ * stays true when a price changes: the smallest saving is the one every offer
+ * can honour.
+ */
+export function yearlyMonthsFree(plans: PublicPlan[] | undefined): number {
+  const savings = (plans ?? [])
+    .filter((p) => p.monthly_price > 0 && p.yearly_price > 0)
+    .map((p) => (12 * p.monthly_price - p.yearly_price) / p.monthly_price);
+  if (savings.length === 0) return 0;
+  // The epsilon absorbs float noise on prices that divide exactly.
+  return Math.max(0, Math.floor(Math.min(...savings) + 1e-9));
 }
 
 /**
@@ -176,7 +184,7 @@ export function PlanCards({
                 reads at a glance. What is actually charged sits right under it. */}
             <div className="mt-6 flex items-baseline gap-1">
               <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                {formatPrice(monthlyFigure, plan.currency)}
+                {formatPriceTag(monthlyFigure, plan.currency, locale)}
               </span>
               <span className="text-gray-500 dark:text-gray-400">
                 {tc("landing.pricing.perMonth")}
@@ -184,7 +192,7 @@ export function PlanCards({
             </div>
             {billingCycle === "yearly" && plan.yearly_price > 0 && (
               <p dir={textDir} className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {t("pricing.billedYearly", { amount: formatPrice(plan.yearly_price, plan.currency) })}
+                {t("pricing.billedYearly", { amount: formatPriceTag(plan.yearly_price, plan.currency, locale) })}
               </p>
             )}
             {plan.trial_days > 0 && (

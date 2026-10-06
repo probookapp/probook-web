@@ -16,6 +16,8 @@
     "monthly": "Mensuel",
     "yearly": "Annuel",
     "saveWithYearly": "Économisez plus",
+    "monthsFree_one": "{{count}} mois offert",
+    "monthsFree_other": "{{count}} mois offerts",
     "billedYearly": "facturé {{amount}} par an",
     "questionsTitle": "Des questions ?",
     "questionsSubtitle": "Consultez notre FAQ pour des réponses aux questions courantes sur les forfaits et la facturation.",

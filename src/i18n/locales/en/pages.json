@@ -16,6 +16,8 @@
     "monthly": "Monthly",
     "yearly": "Yearly",
     "saveWithYearly": "Save more",
+    "monthsFree_one": "{{count}} month free",
+    "monthsFree_other": "{{count}} months free",
     "billedYearly": "billed {{amount}} yearly",
     "questionsTitle": "Have questions?",
     "questionsSubtitle": "Check out our FAQ for answers to common questions about plans and billing.",
