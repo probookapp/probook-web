@@ -7,9 +7,20 @@ interface NavigationGuard {
 }
 
 export function useUnsavedChangesGuard(when: boolean | (() => boolean)): NavigationGuard {
-  const shouldBlock = typeof when === "function" ? when : () => when;
   const [isBlocked, setIsBlocked] = useState(false);
   const pendingNavigation = useRef<(() => void) | null>(null);
+
+  // Read through a ref so the effects below install once. Depending on `when`
+  // directly re-ran them on every render — every keystroke in a form swapped
+  // history.pushState out and back and re-registered the unload listener.
+  const whenRef = useRef(when);
+  useEffect(() => {
+    whenRef.current = when;
+  });
+  const shouldBlock = useCallback(() => {
+    const current = whenRef.current;
+    return typeof current === "function" ? current() : current;
+  }, []);
 
   const proceed = useCallback(() => {
     setIsBlocked(false);
@@ -29,16 +40,17 @@ export function useUnsavedChangesGuard(when: boolean | (() => boolean)): Navigat
     const originalPushState = window.history.pushState.bind(window.history);
     const originalReplaceState = window.history.replaceState.bind(window.history);
 
-    const intercept = (original: typeof window.history.pushState) => {
-      return function (this: History, ...args: Parameters<typeof window.history.pushState>) {
+    // The originals are already bound to window.history, so the wrappers need
+    // no `this` of their own.
+    const intercept = (original: typeof window.history.pushState) =>
+      (...args: Parameters<typeof window.history.pushState>) => {
         if (shouldBlock()) {
           setIsBlocked(true);
-          pendingNavigation.current = () => original.apply(this, args);
+          pendingNavigation.current = () => original(...args);
           return;
         }
-        return original.apply(this, args);
+        return original(...args);
       };
-    };
 
     window.history.pushState = intercept(originalPushState);
     window.history.replaceState = intercept(originalReplaceState);
