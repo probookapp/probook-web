@@ -14,6 +14,7 @@ import { printReceiptWindow, type ReceiptData } from "@/lib/receipt-printer";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 const formatAmount = formatCurrency;
 
@@ -233,7 +234,7 @@ export function TransactionHistoryDrawer({
   const { data: transactions, isLoading } =
     useSessionTransactions(open ? sessionId : undefined);
   const { data: companySettings } = useCompanySettings();
-  const currency = useSettingsStore((state) => state.currency) || "EUR";
+  const currency = useSettingsStore((state) => state.currency) || DEFAULT_CURRENCY;
   const companyName = companySettings?.company_name || "Probook";
 
   if (!open) return null;

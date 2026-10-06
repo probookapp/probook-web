@@ -41,8 +41,9 @@ import {
   isFiscalProfileId,
   vatRateOptions,
 } from "@/lib/fiscal-profiles";
+import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from "@/lib/currencies";
 
-const FALLBACK_CURRENCY = getFiscalProfile(DEFAULT_FISCAL_PROFILE).defaultCurrency;
+const FALLBACK_CURRENCY = DEFAULT_CURRENCY;
 
 const createSettingsSchema = (t: (key: string) => string) => z.object({
   company_name: z.string().min(1, t("validation.companyNameRequired")),
@@ -93,16 +94,7 @@ const createSettingsSchema = (t: (key: string) => string) => z.object({
 
 type SettingsFormData = z.output<ReturnType<typeof createSettingsSchema>>;
 
-const currencyOptions = [
-  { value: "EUR", label: "EUR - Euro (\u20AC)" },
-  { value: "USD", label: "USD - US Dollar ($)" },
-  { value: "GBP", label: "GBP - British Pound (\u00A3)" },
-  { value: "DZD", label: "DZD - Dinar alg\u00E9rien (\u062F.\u062C)" },
-  { value: "MAD", label: "MAD - Dirham marocain (\u062F.\u0645.)" },
-  { value: "TND", label: "TND - Dinar tunisien (\u062F.\u062A)" },
-  { value: "CAD", label: "CAD - Dollar canadien (CA$)" },
-  { value: "CHF", label: "CHF - Franc suisse (CHF)" },
-];
+const currencyOptions = CURRENCY_OPTIONS;
 
 export function SettingsPage() {
   const { t } = useTranslation("settings");

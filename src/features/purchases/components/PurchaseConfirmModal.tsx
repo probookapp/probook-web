@@ -7,6 +7,7 @@ import {
   useActiveSession,
 } from "@/features/pos/hooks/usePosSession";
 import type { PurchaseOrder, ConfirmPurchaseOrderInput } from "@/types";
+import { formatCurrency } from "@/lib/utils";
 
 interface PurchaseConfirmModalProps {
   open: boolean;
@@ -123,10 +124,8 @@ export function PurchaseConfirmModal({
                 {t("fields.total")}
               </span>
               <span className="font-medium text-gray-900 dark:text-gray-100">
-                {new Intl.NumberFormat(undefined, {
-                  style: "currency",
-                  currency: "DZD",
-                }).format(purchaseOrder.total)}
+                {/* The business's own currency, not the dinar for everyone. */}
+                {formatCurrency(purchaseOrder.total)}
               </span>
             </div>
           </div>

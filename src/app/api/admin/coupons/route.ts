@@ -9,6 +9,7 @@ import {
 } from "@/lib/admin-api-utils";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createCouponSchema } from "@/lib/validations";
+import { REFERENCE_CURRENCY } from "@/lib/currencies";
 
 export const GET = withPlatformAdmin(async (req) => {
   const include = {
@@ -54,7 +55,7 @@ export const POST = withSuperAdmin(async (req, ctx) => {
       code: body.code,
       discountType: body.discount_type,
       discountValue: body.discount_value,
-      currency: body.currency || "DZD",
+      currency: body.currency || REFERENCE_CURRENCY,
       maxUses: body.max_uses ?? null,
       expiresAt: body.expires_at ? new Date(body.expires_at) : null,
       isActive: body.is_active ?? true,

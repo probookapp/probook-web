@@ -11,6 +11,7 @@ import {
 } from "@/lib/email";
 import { requirePermission } from "@/lib/permissions-server";
 import { reminderDocumentModule } from "../../reminders-shared";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 export const POST = withAuth(async (req, { tenantId, params, session }) => {
   const reminder = await prisma.reminder.findFirst({
@@ -38,7 +39,7 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
     where: { tenantId },
   });
   const companyName = settings?.companyName || "My Company";
-  const currency = settings?.currency || "DZD";
+  const currency = settings?.currency || DEFAULT_CURRENCY;
 
   let clientEmail: string | null = null;
   let emailContent: { subject: string; html: string };

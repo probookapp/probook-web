@@ -1,3 +1,4 @@
+import { REFERENCE_CURRENCY } from "./currencies";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://probookapp.net";
 
 // ─── JSON-LD structured data for SEO ─────────────────────────────────────────
@@ -51,7 +52,7 @@ export function SoftwareApplicationJsonLd() {
           "Invoicing, quotes, delivery notes, expense tracking, POS, and client management — all in one platform.",
         offers: {
           "@type": "AggregateOffer",
-          priceCurrency: "USD",
+          priceCurrency: REFERENCE_CURRENCY,
           availability: "https://schema.org/InStock",
         },
         featureList: [

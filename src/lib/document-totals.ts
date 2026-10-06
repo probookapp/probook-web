@@ -30,6 +30,7 @@
  */
 
 import { currencyMinorUnits, roundToUnits } from "./money";
+import { DEFAULT_CURRENCY } from "./currencies";
 
 /**
  * Rounding follows the CURRENCY, not a fixed two decimals: the dinar tunisien
@@ -38,7 +39,7 @@ import { currencyMinorUnits, roundToUnits } from "./money";
  * matches the dinar algérien and the euro.
  */
 const makeRound = (currency?: string | null) => {
-  const units = currencyMinorUnits(currency ?? "DZD");
+  const units = currencyMinorUnits(currency ?? DEFAULT_CURRENCY);
   return (n: number) => roundToUnits(n, units);
 };
 

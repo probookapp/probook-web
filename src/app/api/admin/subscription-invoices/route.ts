@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { withPlatformAdmin, withSuperAdmin, logAuditEvent, getClientIp } from "@/lib/admin-api-utils";
+import { REFERENCE_CURRENCY } from "@/lib/currencies";
 
 function generateSubInvoiceNumber(): string {
   const rand = Math.floor(Math.random() * 9000 + 1000);
@@ -89,7 +90,7 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
       tenantId: subscription.tenantId,
       invoiceNumber: generateSubInvoiceNumber(),
       amount: Math.round(body.amount),
-      currency: body.currency || subscription.currency || "DZD",
+      currency: body.currency || subscription.currency || REFERENCE_CURRENCY,
       status,
       paidAt: status === "paid" ? new Date() : null,
       periodStart: body.period_start ? new Date(body.period_start) : subscription.currentPeriodStart,

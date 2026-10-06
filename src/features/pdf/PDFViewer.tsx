@@ -14,6 +14,7 @@ import i18n from "@/i18n";
 import { documentLocale, SERVER_DOCUMENT_LOCALES } from "./text";
 import { registerClientFonts } from "./register-client-fonts";
 import { useSettingsStore } from "@/stores/useSettingsStore";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 /**
  * Whether a link with `download` actually saves a file here.
@@ -152,11 +153,11 @@ export function PDFViewer(props: PDFViewerProps) {
     if (type === "invoice") {
       return <InvoicePDF invoice={doc as Invoice} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES)}
           fontFamily={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES) === "ar" ? "IBM Plex Sans Arabic" : "IBM Plex Sans"}
-          currency={useSettingsStore.getState().currency || "DZD"} />;
+          currency={useSettingsStore.getState().currency || DEFAULT_CURRENCY} />;
     } else if (type === "quote") {
       return <QuotePDF quote={doc as Quote} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES)}
           fontFamily={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES) === "ar" ? "IBM Plex Sans Arabic" : "IBM Plex Sans"}
-          currency={useSettingsStore.getState().currency || "DZD"} />;
+          currency={useSettingsStore.getState().currency || DEFAULT_CURRENCY} />;
     } else {
       return <DeliveryNotePDF deliveryNote={doc as DeliveryNote} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES)}
           fontFamily={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES) === "ar" ? "IBM Plex Sans Arabic" : "IBM Plex Sans"} />;

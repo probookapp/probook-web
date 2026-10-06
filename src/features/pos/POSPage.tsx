@@ -39,6 +39,7 @@ import { locationsApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { formatCurrency } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 export function POSPage() {
   const { t } = useTranslation("pos");
@@ -266,7 +267,7 @@ export function POSPage() {
         chequeNumber: p.chequeNumber,
         chequeBank: p.chequeBank,
       })),
-      currency: currency || "DZD",
+      currency: currency || DEFAULT_CURRENCY,
       footerText: t("thankYou"),
     };
   };

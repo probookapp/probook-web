@@ -29,6 +29,7 @@ import { useAdminPlans } from "../plans/hooks/usePlans";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
 import { ListSearch, matchesQuery } from "@/features/admin/components/ListSearch";
+import { CURRENCY_CODES, REFERENCE_CURRENCY } from "@/lib/currencies";
 
 type Coupon = Record<string, unknown>;
 type PlanRestriction = { plan: { id: string; name: string; slug: string } };
@@ -48,7 +49,7 @@ const emptyForm: CouponFormState = {
   code: "",
   discount_type: "percentage",
   discount_value: "",
-  currency: "DZD",
+  currency: REFERENCE_CURRENCY,
   max_uses: "",
   expires_at: "",
   is_active: true,
@@ -104,7 +105,7 @@ export function CouponsPage() {
         coupon.discount_type === "fixed"
           ? String(Number(coupon.discount_value || 0) / 100)
           : String(coupon.discount_value || ""),
-      currency: String(coupon.currency || "DZD"),
+      currency: String(coupon.currency || REFERENCE_CURRENCY),
       max_uses: coupon.max_uses != null ? String(coupon.max_uses) : "",
       expires_at: coupon.expires_at
         ? String(coupon.expires_at).slice(0, 10)
@@ -259,7 +260,7 @@ export function CouponsPage() {
                       value: formatDiscountValue(
                         String(coupon.discount_type),
                         Number(coupon.discount_value || 0),
-                        String(coupon.currency || "DZD")
+                        String(coupon.currency || REFERENCE_CURRENCY)
                       ),
                     },
                     {
@@ -340,10 +341,10 @@ export function CouponsPage() {
                         {formatDiscountValue(
                           String(coupon.discount_type),
                           Number(coupon.discount_value || 0),
-                          String(coupon.currency || "DZD")
+                          String(coupon.currency || REFERENCE_CURRENCY)
                         )}
                       </TableCell>
-                      <TableCell>{String(coupon.currency || "DZD")}</TableCell>
+                      <TableCell>{String(coupon.currency || REFERENCE_CURRENCY)}</TableCell>
                       <TableCell>
                         {String(coupon.current_uses ?? 0)}
                         {coupon.max_uses != null
@@ -489,12 +490,7 @@ export function CouponsPage() {
               label={t("coupons.currencyLabel")}
               value={formData.currency}
               onChange={(e) => updateField("currency", e.target.value)}
-              options={[
-                { value: "DZD", label: "DZD" },
-                { value: "MAD", label: "MAD" },
-                { value: "EUR", label: "EUR" },
-                { value: "USD", label: "USD" },
-              ]}
+              options={CURRENCY_CODES.map((c) => ({ value: c, label: c }))}
             />
           </div>
 

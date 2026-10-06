@@ -12,6 +12,7 @@ import { renderIdentifiers, identifierSummary } from "./identifiers";
 import type { Invoice, CompanySettings } from "@/types";
 import { pdfCurrency } from "./text";
 import { pdfString } from "./strings";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 
 interface InvoicePDFProps {
@@ -44,7 +45,7 @@ export function InvoicePDF({
   company,
   logoBase64,
   locale = "fr",
-  currency = "DZD",
+  currency = DEFAULT_CURRENCY,
   fontFamily,
 }: InvoicePDFProps) {
   // Words resolved here, not at module scope: the server has no

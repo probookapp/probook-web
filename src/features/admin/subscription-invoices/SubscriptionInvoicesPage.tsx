@@ -37,17 +37,18 @@ import {
   useRowSelection,
 } from "@/features/admin/components/BulkSelection";
 import { toast } from "@/stores/useToastStore";
+import { CURRENCY_CODES, REFERENCE_CURRENCY } from "@/lib/currencies";
 
 type Invoice = Record<string, unknown>;
 
 // Same set the plan and coupon editors offer.
-const CURRENCIES = ["DZD", "EUR", "USD", "MAD"] as const;
+const CURRENCIES = CURRENCY_CODES;
 type Subscription = Record<string, unknown>;
 
 const emptyCreate = {
   subscription_id: "",
   amount: "",
-  currency: "DZD",
+  currency: REFERENCE_CURRENCY,
   status: "unpaid",
   period_start: "",
   period_end: "",
@@ -78,7 +79,7 @@ export function SubscriptionInvoicesPage() {
   const [createForm, setCreateForm] = useState(emptyCreate);
   const [createOpen, setCreateOpen] = useState(false);
   const [editInvoice, setEditInvoice] = useState<Invoice | null>(null);
-  const [editForm, setEditForm] = useState({ amount: "", currency: "DZD", status: "unpaid" });
+  const [editForm, setEditForm] = useState({ amount: "", currency: REFERENCE_CURRENCY, status: "unpaid" });
   const [refundTarget, setRefundTarget] = useState<Invoice | null>(null);
 
   // Status is forwarded to the route's server-side filter.
@@ -123,7 +124,7 @@ export function SubscriptionInvoicesPage() {
     setEditInvoice(invoice);
     setEditForm({
       amount: String(Number(invoice.amount || 0) / 100),
-      currency: String(invoice.currency || "DZD"),
+      currency: String(invoice.currency || REFERENCE_CURRENCY),
       status: String(invoice.status || "unpaid"),
     });
   };
@@ -300,7 +301,7 @@ export function SubscriptionInvoicesPage() {
                       label: t("subscriptionInvoices.amount"),
                       value: formatAmount(
                         Number(invoice.amount || 0),
-                        String(invoice.currency || "DZD")
+                        String(invoice.currency || REFERENCE_CURRENCY)
                       ),
                     },
                     {
@@ -412,7 +413,7 @@ export function SubscriptionInvoicesPage() {
                       <TableCell>
                         {formatAmount(
                           Number(invoice.amount || 0),
-                          String(invoice.currency || "DZD")
+                          String(invoice.currency || REFERENCE_CURRENCY)
                         )}
                       </TableCell>
                       <TableCell>

@@ -8,6 +8,7 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { backupFileSchema } from "./schema";
 import { getDefaultLocationId, recordInitialStock } from "@/lib/stock";
 import { computeInvoiceIntegrityHash } from "@/lib/invoice-integrity";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 /**
  * Tenant backup restore.
@@ -1247,7 +1248,7 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
           nextDeliveryNoteNumber: int(s, "next_delivery_note_number", 1),
           appLanguage: str(s, "app_language") ?? "en",
           appTheme: str(s, "app_theme") ?? "light",
-          currency: str(s, "currency") ?? "DZD",
+          currency: str(s, "currency") ?? DEFAULT_CURRENCY,
           posTicketPrefix: str(s, "pos_ticket_prefix") ?? "TK-",
           posAutoPrintReceipt: bool(s, "pos_auto_print_receipt", true),
           posShowStockWarning: bool(s, "pos_show_stock_warning", true),

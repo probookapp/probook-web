@@ -19,11 +19,12 @@ import { ListSearch, matchesQuery } from "@/features/admin/components/ListSearch
 import { exportToCsv } from "@/lib/csv-export";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 import { CurrencyRates } from "./CurrencyRates";
+import { CURRENCY_CODES, REFERENCE_CURRENCY } from "@/lib/currencies";
 
 type Plan = Record<string, unknown>;
 type Translations = Record<string, string>;
 
-const CURRENCIES = ["DZD", "EUR", "USD", "MAD"] as const;
+const CURRENCIES = CURRENCY_CODES;
 
 interface PriceEntry {
   currency: string;
@@ -65,7 +66,7 @@ const emptyForm: PlanFormState = {
   description_ar: "",
   trial_days: "0",
   sort_order: "0",
-  prices: [{ currency: "DZD", monthly_price: "", yearly_price: "" }],
+  prices: [{ currency: REFERENCE_CURRENCY, monthly_price: "", yearly_price: "" }],
   quotas: [],
   feature_ids: [],
 };
@@ -116,7 +117,7 @@ export function PlansPage() {
           yearly_price: String(p.yearly_price / 100),
         }))
       : [{
-          currency: String(plan.currency || "DZD"),
+          currency: String(plan.currency || REFERENCE_CURRENCY),
           monthly_price: String(plan.monthly_price != null ? Number(plan.monthly_price) / 100 : ""),
           yearly_price: String(plan.yearly_price != null ? Number(plan.yearly_price) / 100 : ""),
         }];
@@ -188,7 +189,7 @@ export function PlansPage() {
       description_translations: Object.keys(descriptionTranslations).length > 0 ? descriptionTranslations : null,
       monthly_price: Math.round(parseFloat(defaultPrice?.monthly_price || "0") * 100),
       yearly_price: Math.round(parseFloat(defaultPrice?.yearly_price || "0") * 100),
-      currency: defaultPrice?.currency || "DZD",
+      currency: defaultPrice?.currency || REFERENCE_CURRENCY,
       trial_days: parseInt(formData.trial_days || "0", 10),
       sort_order: parseInt(formData.sort_order || "0", 10),
       prices,
@@ -400,7 +401,7 @@ export function PlansPage() {
                         <span className="text-gray-500 dark:text-gray-400">{t("plans.monthly")}</span>
                         <span className="font-medium text-gray-900 dark:text-gray-100">
                           {plan.monthly_price != null
-                            ? formatPrice(Number(plan.monthly_price), String(plan.currency || "DZD"))
+                            ? formatPrice(Number(plan.monthly_price), String(plan.currency || REFERENCE_CURRENCY))
                             : "-"}
                         </span>
                       </div>
@@ -408,7 +409,7 @@ export function PlansPage() {
                         <span className="text-gray-500 dark:text-gray-400">{t("plans.yearly")}</span>
                         <span className="font-medium text-gray-900 dark:text-gray-100">
                           {plan.yearly_price != null
-                            ? formatPrice(Number(plan.yearly_price), String(plan.currency || "DZD"))
+                            ? formatPrice(Number(plan.yearly_price), String(plan.currency || REFERENCE_CURRENCY))
                             : "-"}
                         </span>
                       </div>

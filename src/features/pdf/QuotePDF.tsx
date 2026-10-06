@@ -12,6 +12,7 @@ import { renderIdentifiers, identifierSummary } from "./identifiers";
 import type { Quote, CompanySettings } from "@/types";
 import { pdfCurrency } from "./text";
 import { pdfString } from "./strings";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 
 interface QuotePDFProps {
@@ -40,7 +41,7 @@ export function QuotePDF({
   company,
   logoBase64,
   locale = "fr",
-  currency = "DZD",
+  currency = DEFAULT_CURRENCY,
   fontFamily,
 }: QuotePDFProps) {
   // Words resolved here, not at module scope: the server has no

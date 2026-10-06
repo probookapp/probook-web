@@ -1,3 +1,4 @@
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 /**
  * Text on its way into a PDF.
@@ -39,7 +40,7 @@ export function pdfSafe(text: string): string {
 export function pdfCurrency(
   amount: number | null | undefined,
   documentLanguage = "fr",
-  currency = "DZD"
+  currency = DEFAULT_CURRENCY
 ): string {
   const safe = typeof amount === "number" && !Number.isNaN(amount) ? amount : 0;
   // Passed in, not read from the settings store: that store imports the client

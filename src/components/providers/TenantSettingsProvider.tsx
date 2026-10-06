@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useTheme, type AppTheme } from '@/components/providers/ThemeContext';
 import { settingsApi } from '@/lib/api';
+import { DEFAULT_CURRENCY } from '@/lib/currencies';
 
 const THEME_STORAGE_KEY = "probook_theme";
 
@@ -25,7 +26,7 @@ export function TenantSettingsProvider() {
   useEffect(() => {
     if (settings && !isInitialized) {
       useSettingsStore.setState({
-        currency: settings.currency || 'DZD',
+        currency: settings.currency || DEFAULT_CURRENCY,
         isInitialized: true,
       });
 

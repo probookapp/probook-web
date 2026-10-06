@@ -9,6 +9,7 @@ import {
 } from "@/lib/admin-api-utils";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { createPlanSchema } from "@/lib/validations";
+import { REFERENCE_CURRENCY } from "@/lib/currencies";
 
 export const GET = withPlatformAdmin(async () => {
   const plans = await prisma.plan.findMany({
@@ -40,7 +41,7 @@ export const POST = withSuperAdmin(async (req, ctx) => {
       descriptionTranslations: body.description_translations || null,
       monthlyPrice: body.monthly_price,
       yearlyPrice: body.yearly_price,
-      currency: body.currency || "DZD",
+      currency: body.currency || REFERENCE_CURRENCY,
       trialDays: body.trial_days || 0,
       sortOrder: body.sort_order || 0,
       isActive: active,

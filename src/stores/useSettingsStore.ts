@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import i18n from '@/i18n';
+import { DEFAULT_CURRENCY } from '@/lib/currencies';
 
 export type AppLanguage = 'system' | 'fr' | 'en' | 'ar';
 export type AppTheme = 'system' | 'light' | 'dark';
@@ -128,7 +129,7 @@ export const useSettingsStore = create<SettingsState>()((set) => ({
   resolvedLanguage: 'en',
   theme: initialTheme.theme,
   resolvedTheme: initialTheme.resolvedTheme,
-  currency: 'DZD',
+  currency: DEFAULT_CURRENCY,
   isInitialized: false,
 
   setLanguage: (language) => {
@@ -165,7 +166,7 @@ export const useSettingsStore = create<SettingsState>()((set) => ({
     set({
       language: newLanguage,
       theme: newTheme,
-      currency: currency || 'DZD',
+      currency: currency || DEFAULT_CURRENCY,
       resolvedLanguage,
       resolvedTheme,
       isInitialized: true,

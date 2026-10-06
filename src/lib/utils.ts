@@ -2,6 +2,7 @@ import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import i18n from "@/i18n";
 import { useSettingsStore } from "@/stores/useSettingsStore";
+import { DEFAULT_CURRENCY } from "./currencies";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -21,7 +22,7 @@ function getLocale(): string {
 
 export function formatCurrency(amount: number | null | undefined): string {
   const safeAmount = typeof amount === "number" && !Number.isNaN(amount) ? amount : 0;
-  const currency = useSettingsStore.getState().currency || "DZD";
+  const currency = useSettingsStore.getState().currency || DEFAULT_CURRENCY;
   return new Intl.NumberFormat(getLocale(), {
     style: "currency",
     currency,
