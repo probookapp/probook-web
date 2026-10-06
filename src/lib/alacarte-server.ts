@@ -10,6 +10,7 @@ import {
   type PricingBasis,
   type Quote,
 } from "./alacarte";
+import { REFERENCE_CURRENCY } from "./currencies";
 
 /**
  * The database half of the composer.
@@ -20,6 +21,13 @@ import {
  * the page used, so the two can never disagree about what was bought.
  */
 
+/** The rate a currency is converted from the dinar by, or null when none is set. */
+export async function readRate(code: string | null | undefined): Promise<CurrencyRate | null> {
+  if (!code) return null;
+  const row = await prisma.currencyRate.findUnique({ where: { code } });
+  return row ? { code: row.code, perDzd: Number(row.perDzd), roundTo: row.roundTo } : null;
+}
+
 /** The entry offer everyone pays for, the seats it covers, and its currency. */
 async function readBasis(): Promise<{ basis: PricingBasis; currency: string }> {
   const base = await prisma.plan.findFirst({
@@ -27,7 +35,7 @@ async function readBasis(): Promise<{ basis: PricingBasis; currency: string }> {
     orderBy: { monthlyPrice: "asc" },
     include: { quotas: true },
   });
-  if (!base) return { basis: DEFAULT_BASIS, currency: "DZD" };
+  if (!base) return { basis: DEFAULT_BASIS, currency: REFERENCE_CURRENCY };
 
   const seatQuota = base.quotas.find((q) => q.quotaKey === QUOTA_KEYS.MAX_USERS);
   return {
@@ -84,10 +92,8 @@ export async function priceComposition(
   let workingModules = modules;
 
   if (requestedCurrency && requestedCurrency !== currency) {
-    const rateRow = await prisma.currencyRate.findUnique({
-      where: { code: requestedCurrency },
-    });
-    if (!rateRow) {
+    const rate = await readRate(requestedCurrency);
+    if (!rate) {
       return {
         error: `Composed offers cannot be priced in ${requestedCurrency}. Choose a listed offer, or compose in ${currency}.`,
         code: "CURRENCY_NOT_COMPOSABLE",
@@ -95,11 +101,6 @@ export async function priceComposition(
       };
     }
 
-    const rate: CurrencyRate = {
-      code: rateRow.code,
-      perDzd: Number(rateRow.perDzd),
-      roundTo: rateRow.roundTo,
-    };
     billing = rate.code;
     workingBasis = {
       ...basis,

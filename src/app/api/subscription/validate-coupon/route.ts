@@ -3,13 +3,15 @@ import { prisma } from "@/lib/db";
 import { withAuth } from "@/lib/api-utils";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { validateCouponSchema } from "@/lib/validations";
+import { readRate } from "@/lib/alacarte-server";
+import { couponDiscount, couponValueIn, resolvePlanPrice } from "@/lib/plan-pricing";
 
 // Requires tenant auth: an unauthenticated endpoint here is a coupon
 // enumeration oracle. Read-only — never increments coupon usage.
 export const POST = withAuth(async (req: NextRequest, _ctx) => {
   const body = await validateBody(req, validateCouponSchema);
   if (isValidationError(body)) return body;
-  const { code, plan_id } = body;
+  const { code, plan_id, billing_cycle, currency } = body;
 
   const coupon = await prisma.coupon.findUnique({
     where: { code },
@@ -42,30 +44,41 @@ export const POST = withAuth(async (req: NextRequest, _ctx) => {
     }
   }
 
-  // Calculate discount amount for the plan
   const plan = await prisma.plan.findUnique({
     where: { id: plan_id },
+    include: { prices: true },
   });
 
   if (!plan) {
     return NextResponse.json({ valid: false, reason: "Plan not found" });
   }
 
-  // Use yearly price as default for discount calculation display
-  const price = plan.yearlyPrice;
-  let discountAmount: number;
+  // Priced exactly as the offers were listed and as the approval will bill:
+  // the same resolution, the same currency, the same rounding.
+  const rate = await readRate(currency);
+  const price = resolvePlanPrice(plan, currency, rate);
+  const basePrice = billing_cycle === "monthly" ? price.monthly : price.yearly;
+  const discountAmount = couponDiscount(coupon, basePrice, price.currency, rate);
+  const value = couponValueIn(coupon, price.currency, rate);
 
-  if (coupon.discountType === "percentage") {
-    discountAmount = Math.floor(price * coupon.discountValue / 100);
-  } else {
-    discountAmount = Math.min(coupon.discountValue, price);
+  if (discountAmount === null || value === null) {
+    return NextResponse.json({
+      valid: false,
+      reason: `Coupon cannot be applied in ${price.currency}`,
+    });
   }
 
   return NextResponse.json({
     valid: true,
+    code: coupon.code,
     discount_type: coupon.discountType,
-    discount_value: coupon.discountValue,
-    currency: coupon.currency,
+    // A percentage, or the fixed amount already expressed in `currency`.
+    discount_value: value,
+    currency: price.currency,
     discount_amount: discountAmount,
+    // The offers the coupon applies to; null when it applies to all of them.
+    eligible_plan_ids: coupon.planRestrictions.length
+      ? coupon.planRestrictions.map((r) => r.planId)
+      : null,
   });
 });

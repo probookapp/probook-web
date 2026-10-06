@@ -4,9 +4,8 @@ import Link from "next/link";
 import { useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Check } from "lucide-react";
 import { translatedName, type Translations } from "@/lib/translated-name";
-import { formatPriceTag } from "@/lib/price-tag";
+import { OfferContents, OfferPrice, type BillingCycle } from "@/components/shared/OfferDetails";
 
 export interface PublicPlan {
   id: string;
@@ -41,7 +40,7 @@ export interface PlansResponse {
   detected_country: string | null;
 }
 
-export type BillingCycle = "monthly" | "yearly";
+export type { BillingCycle };
 
 /** The public catalogue, shared by the landing page and the pricing page. */
 export function usePublicPlans() {
@@ -54,30 +53,6 @@ export function usePublicPlans() {
     },
     staleTime: 5 * 60 * 1000,
   });
-}
-
-/**
- * What every offer contains, named.
- *
- * These are not feature flags and never will be: invoicing, quotes, credit
- * notes, the catalogue, the dashboard and the basic reports are the product,
- * and a legal obligation is not sold separately. But because they carry no
- * flag, the entry offer linked nothing and its card rendered no list at all —
- * a price with nothing under it, for the one offer that contains the most.
- */
-const CORE_INCLUSIONS = [
-  "pricing.core.invoicing",
-  "pricing.core.quotes",
-  "pricing.core.creditNotes",
-  "pricing.core.catalogue",
-  "pricing.core.dashboard",
-  "pricing.core.reports",
-] as const;
-
-/** The seats an offer covers, or null when it sets no ceiling. */
-function seatsOf(plan: PublicPlan): number | null {
-  const quota = plan.quotas?.find((q) => q.quota_key === "max_users");
-  return quota ? quota.limit_value : null;
 }
 
 /**
@@ -130,14 +105,6 @@ export function PlanCards({
     >
       {plans.map((plan, idx) => {
         const isPopular = idx === popularIdx && plans.length > 1;
-        const featureNames = plan.features
-          ?.map((f) =>
-            f.feature ? translatedName(f.feature.name, f.feature.name_translations ?? null, locale) : null
-          )
-          .filter(Boolean) as string[] || [];
-        const monthlyFigure =
-          billingCycle === "monthly" ? plan.monthly_price : plan.yearly_price / 12;
-        const seats = seatsOf(plan);
 
         return (
           <div
@@ -161,70 +128,18 @@ export function PlanCards({
                 {translatedName(plan.description, plan.description_translations, locale)}
               </p>
             )}
-            {/* Always a monthly figure, as the market prints it: on the yearly
-                cycle it is the yearly price spread over twelve months, so the
-                switch changes the number and not the unit, and the discount
-                reads at a glance. What is actually charged sits right under it. */}
-            <div className="mt-6 flex items-baseline gap-1">
-              <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                {formatPriceTag(monthlyFigure, plan.currency, locale)}
-              </span>
-              <span className="text-gray-500 dark:text-gray-400">
-                {tc("landing.pricing.perMonth")}
-              </span>
-            </div>
-            {billingCycle === "yearly" && plan.yearly_price > 0 && (
-              <p dir={textDir} className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {t("pricing.billedYearly", { amount: formatPriceTag(plan.yearly_price, plan.currency, locale) })}
-              </p>
-            )}
+            <OfferPrice
+              className="mt-6"
+              amount={billingCycle === "monthly" ? plan.monthly_price : plan.yearly_price}
+              currency={plan.currency}
+              billingCycle={billingCycle}
+            />
             {plan.trial_days > 0 && (
               <p className="mt-2 text-xs font-medium text-primary-600 dark:text-primary-400">
                 {tc("landing.pricing.trialDays", { days: plan.trial_days })}
               </p>
             )}
-            {/* Seats are half the difference between one offer and the
-                next, and the card said nothing about them. */}
-            <p
-              dir={textDir}
-              className="mt-6 text-sm font-medium text-gray-900 dark:text-gray-100"
-            >
-              {seats === null
-                ? t("pricing.seatsUnlimited")
-                : t("pricing.seats", { count: seats })}
-            </p>
-
-            <ul className="mt-6 space-y-3">
-              {CORE_INCLUSIONS.map((key) => (
-                <li key={key} className="flex items-start gap-3">
-                  <Check className="h-5 w-5 shrink-0 mt-0.5 text-primary-600 dark:text-primary-400" />
-                  <span dir={textDir} className="text-sm text-gray-600 dark:text-gray-300">
-                    {t(key)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-
-            {featureNames.length > 0 && (
-              <>
-                <p
-                  dir={textDir}
-                  className="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
-                >
-                  {t("pricing.andAlso")}
-                </p>
-                <ul className="mt-3 space-y-3">
-                  {featureNames.map((name, i) => (
-                    <li key={i} className="flex items-start gap-3">
-                      <Check className="h-5 w-5 shrink-0 mt-0.5 text-primary-600 dark:text-primary-400" />
-                      <span dir={textDir} className="text-sm text-gray-600 dark:text-gray-300">
-                        {name}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
+            <OfferContents plan={plan} />
             <Link
               href={`/${locale}/signup`}
               className={`mt-8 block w-full text-center py-3 rounded-xl font-semibold text-sm transition-colors ${

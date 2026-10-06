@@ -11,11 +11,23 @@ const NUMBER_LOCALES: Record<string, string> = {
   en: "en-US",
 };
 
-export function formatPriceTag(centimes: number, currency: string, locale: string): string {
+export function formatPriceTag(
+  centimes: number,
+  currency: string,
+  locale: string,
+  options: {
+    /**
+     * Round to the whole unit: for a figure derived from a whole price, such
+     * as a yearly price spread over twelve months (19 000 / 12 = 1 583.33).
+     */
+    whole?: boolean;
+  } = {}
+): string {
   const amount = centimes / 100;
-  // The dinar is not written with decimals, and a yearly price spread over
-  // twelve months rarely falls on a whole one (19,000 / 12 = 1,583.33).
-  const digits = currency === "DZD" ? 0 : 2;
+  // Decimals only where the price has them — decided by the figure, never by
+  // the currency's name, so every currency the catalogue is quoted in reads
+  // the same way: 19 000 DZD, 132 EUR, 199,99 USD.
+  const digits = options.whole || Number.isInteger(amount) ? 0 : 2;
   const figure = amount.toLocaleString(NUMBER_LOCALES[locale] ?? "fr-FR", {
     minimumFractionDigits: digits,
     maximumFractionDigits: digits,

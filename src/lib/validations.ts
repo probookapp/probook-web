@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FISCAL_PROFILE_IDS } from "./fiscal-profiles";
+import { REFERENCE_CURRENCY } from "./currencies";
 import { EXPENSE_CATEGORY_MAX_LENGTH } from "./expense-categories";
 import { POS_PAYMENT_METHODS } from "./pos-payment-methods";
 import { CASH_MOVEMENT_TYPES } from "./pos-cash-movements";
@@ -523,7 +524,7 @@ export const createPlanSchema = z.object({
   description_translations: z.any().optional(),
   monthly_price: z.coerce.number().int().min(0, "Monthly price must be non-negative"),
   yearly_price: z.coerce.number().int().min(0, "Yearly price must be non-negative"),
-  currency: z.string().default("DZD"),
+  currency: z.string().default(REFERENCE_CURRENCY),
   trial_days: z.coerce.number().int().min(0).default(0),
   sort_order: z.coerce.number().int().default(0),
   // Archiving a plan is a deactivation, never a delete: subscriptions and
@@ -547,7 +548,7 @@ const couponFields = z.object({
   code: requiredString("Code"),
   discount_type: z.enum(["percentage", "fixed"], { message: "Must be 'percentage' or 'fixed'" }),
   discount_value: z.coerce.number().int().min(1, "Discount value must be positive"),
-  currency: z.string().default("DZD"),
+  currency: z.string().default(REFERENCE_CURRENCY),
   max_uses: z.coerce.number().int().min(1).nullable().optional(),
   expires_at: optionalString,
   is_active: z.boolean().default(true),
@@ -729,7 +730,8 @@ export const subscriptionRequestSchema = z
     billing_cycle: requiredString("Billing cycle"),
     request_type: z.enum(["new", "upgrade", "downgrade", "renewal"], { message: "Invalid request type" }),
     coupon_code: optionalString,
-    currency: z.string().default("DZD"),
+    /** The currency the offer was quoted in; the offer's own when absent. */
+    currency: optionalString,
     /** An offer composed module by module. See lib/alacarte.ts. */
     custom: z
       .object({
@@ -746,6 +748,9 @@ export const subscriptionRequestSchema = z
 export const validateCouponSchema = z.object({
   code: requiredString("Coupon code"),
   plan_id: requiredString("Plan ID"),
+  billing_cycle: z.enum(["monthly", "yearly"]).default("yearly"),
+  /** The currency the offers were quoted in; the catalogue's own when absent. */
+  currency: optionalString,
 });
 
 // ─── Invoices: Additional ──────────────────────────────────────────────────

@@ -13,6 +13,7 @@ import { useLocale } from "@/lib/navigation";
 import { formatPriceTag, yearlyMonthsFree } from "@/lib/price-tag";
 import { translatedName, type Translations } from "@/lib/translated-name";
 import { OfferComposer } from "@/components/shared/OfferComposer";
+import { OfferContents, OfferPrice } from "@/components/shared/OfferDetails";
 
 interface PlanPrice {
   currency: string;
@@ -63,9 +64,12 @@ interface CouponResult {
   valid: boolean;
   code: string;
   discount_type: string;
+  /** A percentage, or a fixed amount already expressed in `currency`. */
   discount_value: number;
-  /** What a fixed discount is counted in; absent from older responses. */
-  currency?: string;
+  /** The currency the offers are billed in. */
+  currency: string;
+  /** The offers the coupon applies to; null when it applies to all of them. */
+  eligible_plan_ids: string[] | null;
   description?: string;
 }
 
@@ -107,7 +111,9 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
   });
 
   const plans = plansData?.plans;
-  const detectedCurrency = plansData?.detected_currency;
+  // The currency the offers were actually quoted in — not the one the visitor
+  // was guessed to want, which has no price when no rate covers it.
+  const quotedCurrency = plans?.[0]?.currency;
   const monthsFree = yearlyMonthsFree(plans);
   const formatPrice = (amount: number, currency: string) =>
     formatPriceTag(amount, currency, locale);
@@ -184,7 +190,12 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
     setCouponError("");
     setAppliedCoupon(null);
     try {
-      const result = await validateCoupon.mutateAsync({ code: couponCode.trim() });
+      const result = await validateCoupon.mutateAsync({
+        code: couponCode.trim(),
+        plan_id: selectedPlanId,
+        billing_cycle: billingCycle,
+        currency: quotedCurrency,
+      });
       if (result.valid) {
         setAppliedCoupon(result);
       } else {
@@ -202,7 +213,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
     const input: Record<string, unknown> = {
       billing_cycle: billingCycle,
       request_type: "new",
-      currency: detectedCurrency || "DZD",
+      currency: quotedCurrency,
     };
     // Either a listed offer or a composed one, never both: the server mints the
     // private offer for a composition and refuses a request carrying the two.
@@ -211,7 +222,9 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
     } else {
       input.plan_id = selectedPlanId;
     }
-    if (appliedCoupon?.valid) {
+    // Only where it applies: a coupon restricted to one offer, carried onto
+    // another, would be silently dropped at approval after being shown here.
+    if (appliedCoupon?.valid && couponAppliesTo(custom ? null : selectedPlanId)) {
       input.coupon_code = appliedCoupon.code;
     }
     try {
@@ -253,15 +266,22 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
     }
   };
 
-  const calculateDiscountedPrice = (price: number): number | null => {
-    if (!appliedCoupon?.valid) return null;
-    if (appliedCoupon.discount_type === "percentage") {
-      return price - (price * appliedCoupon.discount_value) / 100;
-    }
-    if (appliedCoupon.discount_type === "fixed") {
-      return Math.max(0, price - appliedCoupon.discount_value);
-    }
-    return null;
+  /** Whether the applied coupon covers an offer; null stands for a composed one. */
+  const couponAppliesTo = (planId: string | null): boolean => {
+    if (!appliedCoupon?.valid) return false;
+    if (!appliedCoupon.eligible_plan_ids) return true;
+    return planId !== null && appliedCoupon.eligible_plan_ids.includes(planId);
+  };
+
+  // The same arithmetic the approval bills with (lib/plan-pricing): a
+  // percentage rounded down, a fixed amount never more than the price.
+  const calculateDiscountedPrice = (planId: string, price: number): number | null => {
+    if (!appliedCoupon || !couponAppliesTo(planId)) return null;
+    const discount =
+      appliedCoupon.discount_type === "percentage"
+        ? Math.floor((price * appliedCoupon.discount_value) / 100)
+        : appliedCoupon.discount_value;
+    return price - Math.min(Math.max(0, discount), price);
   };
 
   if (plansLoading) {
@@ -457,10 +477,8 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
             }`}>
               {plans?.map((plan) => {
                 const isSelected = selectedPlanId === plan.id;
-                const price = billingCycle === "yearly"
-                  ? { amount: plan.yearly_price, currency: plan.currency }
-                  : { amount: plan.monthly_price, currency: plan.currency };
-                const discountedPrice = calculateDiscountedPrice(price.amount);
+                const amount = billingCycle === "yearly" ? plan.yearly_price : plan.monthly_price;
+                const discountedPrice = calculateDiscountedPrice(plan.id, amount);
 
                 return (
                   <Card
@@ -490,45 +508,23 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                         </p>
                       )}
 
-                      <div className="mb-4">
-                        {discountedPrice !== null ? (
-                          <div>
-                            <span className="text-sm line-through text-gray-400">
-                              {formatPrice(price.amount, price.currency)}
-                            </span>
-                            <div className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                              {formatPrice(discountedPrice, price.currency)}
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                            {formatPrice(price.amount, price.currency)}
-                          </div>
-                        )}
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {billingCycle === "yearly" ? t("subscriptionWall.perYear") : t("subscriptionWall.perMonth")}
-                        </span>
-                      </div>
+                      {/* The pricing page's own price and contents, so an offer reads
+                          the same in the shop window and at the till. */}
+                      <OfferPrice
+                        amount={discountedPrice ?? amount}
+                        original={discountedPrice !== null ? amount : null}
+                        currency={plan.currency}
+                        billingCycle={billingCycle}
+                        figureClassName="text-3xl"
+                      />
 
                       {plan.trial_days > 0 && (
-                        <p className="text-sm text-primary-600 dark:text-primary-400 mb-4">
+                        <p className="mt-2 text-sm text-primary-600 dark:text-primary-400">
                           {t("subscriptionWall.trialDays", { days: plan.trial_days })}
                         </p>
                       )}
 
-                      {plan.features && plan.features.length > 0 && (
-                        <ul className="space-y-2">
-                          {plan.features.map((f, idx) => (
-                            <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
-                              <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                              <span>
-                                {f.feature &&
-                                  translatedName(f.feature.name, f.feature.name_translations ?? null, locale)}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                      <OfferContents plan={plan} />
                     </CardContent>
                   </Card>
                 );
@@ -540,7 +536,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
               <OfferComposer
                 plans={plans}
                 billingCycle={billingCycle}
-                currency={detectedCurrency || plans[0].currency}
+                currency={plans[0].currency}
                 seatPrice={plansData?.seat_price}
                 onSubmit={(composition) => handleSubscribe(composition)}
                 isSubmitting={subscribeRequest.isPending}
@@ -586,7 +582,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                     <span>
                       {t("subscriptionWall.couponApplied")} {appliedCoupon.discount_type === "percentage"
                         ? t("subscriptionWall.percentOff", { value: appliedCoupon.discount_value })
-                        : t("subscriptionWall.amountOff", { amount: formatPrice(appliedCoupon.discount_value, appliedCoupon.currency ?? "DZD") })}
+                        : t("subscriptionWall.amountOff", { amount: formatPrice(appliedCoupon.discount_value, appliedCoupon.currency) })}
                       {appliedCoupon.description && ` - ${appliedCoupon.description}`}
                     </span>
                   </div>

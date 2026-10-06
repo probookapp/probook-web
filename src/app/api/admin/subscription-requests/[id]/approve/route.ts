@@ -3,6 +3,8 @@ import { prisma } from "@/lib/db";
 import { toSnakeCase } from "@/lib/api-utils";
 import { withSuperAdmin, logAuditEvent, getClientIp } from "@/lib/admin-api-utils";
 import { checkSeatCeiling, seatCeilingError } from "@/lib/plan-downgrade";
+import { readRate } from "@/lib/alacarte-server";
+import { couponDiscount, resolvePlanPrice } from "@/lib/plan-pricing";
 
 // Collision-free subscription-invoice numbering (same scheme as the manual
 // create route in /api/admin/subscription-invoices).
@@ -52,12 +54,16 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
     return NextResponse.json(seatCeilingError(seatCheck), { status: 409 });
   }
 
-  // Resolve price for the requested currency
+  // Resolve the price in the currency the request was quoted in, exactly as
+  // the price list did: a row typed by hand, the rate, or the catalogue. Billing
+  // the catalogue's dinars for an offer the customer was shown in euros is a
+  // price nobody agreed to.
   const requestCurrency = request.currency || plan.currency;
-  const priceRow = plan.prices.find((p) => p.currency === requestCurrency);
-  const monthlyPrice = priceRow?.monthlyPrice ?? plan.monthlyPrice;
-  const yearlyPrice = priceRow?.yearlyPrice ?? plan.yearlyPrice;
-  const resolvedCurrency = priceRow?.currency ?? plan.currency;
+  const rate = await readRate(requestCurrency);
+  const resolved = resolvePlanPrice(plan, requestCurrency, rate);
+  const monthlyPrice = resolved.monthly;
+  const yearlyPrice = resolved.yearly;
+  const resolvedCurrency = resolved.currency;
 
   // Calculate price based on billing cycle. Coupon redemption happens inside
   // the transaction below so a failed approval never consumes a use.
@@ -92,7 +98,11 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
           const hasRestrictions = coupon.planRestrictions.length > 0;
           const planAllowed = !hasRestrictions || coupon.planRestrictions.some((r) => r.planId === plan.id);
 
-          if (planAllowed) {
+          // A fixed amount the billing currency cannot express is not applied:
+          // subtracting dinars from euros is not a discount, it is noise.
+          const discount = couponDiscount(coupon, basePrice, resolvedCurrency, rate);
+
+          if (planAllowed && discount !== null) {
             // Increment coupon uses only while uses remain
             const redeemed = await tx.coupon.updateMany({
               where: {
@@ -106,14 +116,8 @@ export const POST = withSuperAdmin(async (req: NextRequest, ctx) => {
               throw new Error(COUPON_EXHAUSTED);
             }
 
-            if (coupon.discountType === "percentage") {
-              discountAmount = Math.floor(basePrice * coupon.discountValue / 100);
-            } else {
-              discountAmount = coupon.discountValue;
-            }
-
-            // Floor at 0
-            price = Math.max(0, basePrice - discountAmount);
+            discountAmount = discount;
+            price = basePrice - discountAmount;
             couponId = coupon.id;
           }
         }

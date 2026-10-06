@@ -70,11 +70,14 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
   }
 
   let targetPlanId: string;
+  // The currency the offer was quoted in, or the offer's own when the page did
+  // not say — never a currency assumed on the customer's behalf.
+  let quotedCurrency: string;
 
   if (composition) {
     // Priced from the catalogue, never from the figure the page sent: the total
     // arrives from a screen the customer can edit.
-    const priced = await priceComposition(composition, currency);
+    const priced = await priceComposition(composition, currency ?? undefined);
     if ("error" in priced) {
       return NextResponse.json(priced, { status: 400 });
     }
@@ -85,6 +88,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       priced.currency
     );
     targetPlanId = plan.id;
+    quotedCurrency = priced.currency;
   } else {
     // Validate plan exists and is active
     const plan = await prisma.plan.findUnique({
@@ -98,6 +102,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       );
     }
     targetPlanId = plan.id;
+    quotedCurrency = currency || plan.currency;
   }
 
   const request = await prisma.subscriptionRequest.create({
@@ -106,7 +111,7 @@ export const POST = withAuth(async (req: NextRequest, ctx) => {
       requestType: request_type,
       targetPlanId,
       billingCycle: billing_cycle,
-      currency: currency || "DZD",
+      currency: quotedCurrency,
       couponCode: coupon_code || null,
     },
   });
