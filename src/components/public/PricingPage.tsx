@@ -6,7 +6,8 @@ import { useTranslation } from "react-i18next";
 import { useEffect, useState } from "react";
 import { PublicLayout } from "./PublicLayout";
 import { trackMetaEvent } from "@/components/analytics/MetaPixel";
-import { PlanCards, usePublicPlans, yearlyMonthsFree, type BillingCycle } from "./PlanCards";
+import { PlanCards, usePublicPlans, type BillingCycle } from "./PlanCards";
+import { yearlyMonthsFree } from "@/lib/price-tag";
 import { OfferComposer } from "@/components/shared/OfferComposer";
 
 

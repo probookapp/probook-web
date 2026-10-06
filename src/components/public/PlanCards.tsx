@@ -81,23 +81,6 @@ function seatsOf(plan: PublicPlan): number | null {
 }
 
 /**
- * The whole months the yearly cycle gives away on every offer, or 0 when it
- * does not give a full month on all of them.
- *
- * Computed from the prices rather than written into the badge, so the claim
- * stays true when a price changes: the smallest saving is the one every offer
- * can honour.
- */
-export function yearlyMonthsFree(plans: PublicPlan[] | undefined): number {
-  const savings = (plans ?? [])
-    .filter((p) => p.monthly_price > 0 && p.yearly_price > 0)
-    .map((p) => (12 * p.monthly_price - p.yearly_price) / p.monthly_price);
-  if (savings.length === 0) return 0;
-  // The epsilon absorbs float noise on prices that divide exactly.
-  return Math.max(0, Math.floor(Math.min(...savings) + 1e-9));
-}
-
-/**
  * The offer cards. The landing page and the pricing page each kept a copy of
  * them, and every improvement landed in one copy only — so the home page showed
  * thinner offers than the pricing page for the same catalogue.

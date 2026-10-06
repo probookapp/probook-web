@@ -9,6 +9,9 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { tenantSubscriptionApi } from "@/lib/admin-api";
+import { useLocale } from "@/lib/navigation";
+import { formatPriceTag, yearlyMonthsFree } from "@/lib/price-tag";
+import { translatedName, type Translations } from "@/lib/translated-name";
 import { OfferComposer } from "@/components/shared/OfferComposer";
 
 interface PlanPrice {
@@ -33,6 +36,8 @@ interface Plan {
   slug: string;
   name: string;
   description: string;
+  name_translations?: Translations;
+  description_translations?: Translations;
   monthly_price: number;
   yearly_price: number;
   currency: string;
@@ -59,6 +64,8 @@ interface CouponResult {
   code: string;
   discount_type: string;
   discount_value: number;
+  /** What a fixed discount is counted in; absent from older responses. */
+  currency?: string;
   description?: string;
 }
 
@@ -69,19 +76,14 @@ interface SubscriptionStatus {
   rejection_reason?: string | null;
 }
 
-function formatPrice(amount: number, currency: string): string {
-  return (amount / 100).toLocaleString(undefined, {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }) + " " + currency;
-}
-
-
 export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { subscriptionStatus?: SubscriptionStatus; onRequestSuccess?: () => void }) {
   const { t } = useTranslation("admin");
   // The composer is shared with the public pricing page, so its wording lives
   // in `common` rather than being duplicated per namespace.
   const { t: tCommon } = useTranslation("common");
+  // The yearly badge says what the pricing page says, from the same keys.
+  const { t: tPages } = useTranslation("pages");
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [billingCycle, setBillingCycle] = useState<"yearly" | "monthly">("yearly");
@@ -106,6 +108,9 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
 
   const plans = plansData?.plans;
   const detectedCurrency = plansData?.detected_currency;
+  const monthsFree = yearlyMonthsFree(plans);
+  const formatPrice = (amount: number, currency: string) =>
+    formatPriceTag(amount, currency, locale);
 
   const subscribeRequest = useMutation({
     mutationFn: (input: Record<string, unknown>) => tenantSubscriptionApi.request(input),
@@ -434,7 +439,11 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                   {t("subscriptionWall.yearly")}
                 </span>
                 <span className="absolute start-full top-1/2 -translate-y-1/2 ms-2 whitespace-nowrap">
-                  <Badge variant="success">{t("subscriptionWall.saveWithYearly")}</Badge>
+                  <Badge variant="success">
+                    {monthsFree > 0
+                      ? tPages("pricing.monthsFree", { count: monthsFree })
+                      : t("subscriptionWall.saveWithYearly")}
+                  </Badge>
                 </span>
               </span>
             </div>
@@ -466,7 +475,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                     <CardContent className="p-6">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {plan.name}
+                          {translatedName(plan.name, plan.name_translations, locale)}
                         </h3>
                         {isSelected && (
                           <div className="w-6 h-6 rounded-full bg-primary-600 flex items-center justify-center">
@@ -477,7 +486,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
 
                       {plan.description && (
                         <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                          {plan.description}
+                          {translatedName(plan.description, plan.description_translations, locale)}
                         </p>
                       )}
 
@@ -512,7 +521,10 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                           {plan.features.map((f, idx) => (
                             <li key={idx} className="flex items-start gap-2 text-sm text-gray-700 dark:text-gray-300">
                               <Check className="h-4 w-4 text-green-500 mt-0.5 shrink-0" />
-                              <span>{f.feature?.name}</span>
+                              <span>
+                                {f.feature &&
+                                  translatedName(f.feature.name, f.feature.name_translations ?? null, locale)}
+                              </span>
                             </li>
                           ))}
                         </ul>
@@ -574,7 +586,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                     <span>
                       {t("subscriptionWall.couponApplied")} {appliedCoupon.discount_type === "percentage"
                         ? t("subscriptionWall.percentOff", { value: appliedCoupon.discount_value })
-                        : t("subscriptionWall.amountOff", { amount: formatPrice(appliedCoupon.discount_value, "MAD") })}
+                        : t("subscriptionWall.amountOff", { amount: formatPrice(appliedCoupon.discount_value, appliedCoupon.currency ?? "DZD") })}
                       {appliedCoupon.description && ` - ${appliedCoupon.description}`}
                     </span>
                   </div>

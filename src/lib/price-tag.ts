@@ -22,3 +22,22 @@ export function formatPriceTag(centimes: number, currency: string, locale: strin
   });
   return `${figure} ${currency}`;
 }
+
+/**
+ * The whole months the yearly cycle gives away on every offer, or 0 when it
+ * does not give a full month on all of them.
+ *
+ * Computed from the prices rather than written into the badge, so the claim
+ * stays true when a price changes: the smallest saving is the one every offer
+ * can honour.
+ */
+export function yearlyMonthsFree(
+  plans: { monthly_price: number; yearly_price: number }[] | undefined
+): number {
+  const savings = (plans ?? [])
+    .filter((p) => p.monthly_price > 0 && p.yearly_price > 0)
+    .map((p) => (12 * p.monthly_price - p.yearly_price) / p.monthly_price);
+  if (savings.length === 0) return 0;
+  // The epsilon absorbs float noise on prices that divide exactly.
+  return Math.max(0, Math.floor(Math.min(...savings) + 1e-9));
+}

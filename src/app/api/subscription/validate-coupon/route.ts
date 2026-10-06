@@ -65,6 +65,7 @@ export const POST = withAuth(async (req: NextRequest, _ctx) => {
     valid: true,
     discount_type: coupon.discountType,
     discount_value: coupon.discountValue,
+    currency: coupon.currency,
     discount_amount: discountAmount,
   });
 });
