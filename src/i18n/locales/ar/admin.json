@@ -715,6 +715,7 @@
     "apply": "تطبيق",
     "invalidCoupon": "رمز خصم غير صالح أو منتهي الصلاحية.",
     "couponApplied": "تم تطبيق القسيمة:",
+    "couponOtherOffers": "ينطبق هذا الرمز على: {{offers}}. اختر أحد هذه العروض للاستفادة منه.",
     "percentOff": "خصم {{value}}٪",
     "amountOff": "خصم {{amount}}",
     "subscribeNow": "اشترك الآن",

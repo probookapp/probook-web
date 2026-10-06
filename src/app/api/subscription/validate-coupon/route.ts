@@ -36,12 +36,20 @@ export const POST = withAuth(async (req: NextRequest) => {
     return NextResponse.json({ valid: false, reason: "Coupon has reached its maximum uses" });
   }
 
-  // Check plan restrictions
+  // A coupon kept to some offers is still a good code when another offer is
+  // selected: it is answered with the offers it covers, so the screen can say
+  // which ones instead of calling it invalid. It is invalid only when none of
+  // the offers it covers is still on sale.
+  let eligiblePlanIds: string[] | null = null;
   if (coupon.planRestrictions.length > 0) {
-    const planAllowed = coupon.planRestrictions.some((r) => r.planId === plan_id);
-    if (!planAllowed) {
-      return NextResponse.json({ valid: false, reason: "Coupon is not valid for this plan" });
+    const onSale = await prisma.plan.findMany({
+      where: { id: { in: coupon.planRestrictions.map((r) => r.planId) }, isActive: true },
+      select: { id: true },
+    });
+    if (onSale.length === 0) {
+      return NextResponse.json({ valid: false, reason: "Coupon is not valid for any offer on sale" });
     }
+    eligiblePlanIds = onSale.map((p) => p.id);
   }
 
   const plan = await prisma.plan.findUnique({
@@ -58,10 +66,9 @@ export const POST = withAuth(async (req: NextRequest) => {
   const rate = await readRate(currency);
   const price = resolvePlanPrice(plan, currency, rate);
   const basePrice = billing_cycle === "monthly" ? price.monthly : price.yearly;
-  const discountAmount = couponDiscount(coupon, basePrice, price.currency, rate);
   const value = couponValueIn(coupon, price.currency, rate);
 
-  if (discountAmount === null || value === null) {
+  if (value === null) {
     return NextResponse.json({
       valid: false,
       reason: `Coupon cannot be applied in ${price.currency}`,
@@ -75,10 +82,12 @@ export const POST = withAuth(async (req: NextRequest) => {
     // A percentage, or the fixed amount already expressed in `currency`.
     discount_value: value,
     currency: price.currency,
-    discount_amount: discountAmount,
+    // What it takes off the offer asked about, or null when it does not cover it.
+    discount_amount:
+      eligiblePlanIds === null || eligiblePlanIds.includes(plan_id)
+        ? couponDiscount(coupon, basePrice, price.currency, rate)
+        : null,
     // The offers the coupon applies to; null when it applies to all of them.
-    eligible_plan_ids: coupon.planRestrictions.length
-      ? coupon.planRestrictions.map((r) => r.planId)
-      : null,
+    eligible_plan_ids: eligiblePlanIds,
   });
 });

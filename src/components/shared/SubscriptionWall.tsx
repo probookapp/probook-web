@@ -576,7 +576,19 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                 {couponError && (
                   <p className="mt-2 text-sm text-red-600 dark:text-red-400">{couponError}</p>
                 )}
-                {appliedCoupon?.valid && (
+                {/* A code kept to other offers is still a good code: say which
+                    ones, rather than calling it invalid or applying nothing. */}
+                {appliedCoupon?.valid && !couponAppliesTo(selectedPlanId) && (
+                  <p className="mt-2 text-sm text-amber-700 dark:text-amber-400">
+                    {t("subscriptionWall.couponOtherOffers", {
+                      offers: (plans ?? [])
+                        .filter((p) => appliedCoupon.eligible_plan_ids?.includes(p.id))
+                        .map((p) => translatedName(p.name, p.name_translations, locale))
+                        .join(", "),
+                    })}
+                  </p>
+                )}
+                {appliedCoupon?.valid && couponAppliesTo(selectedPlanId) && (
                   <div className="mt-2 flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
                     <Check className="h-4 w-4" />
                     <span>

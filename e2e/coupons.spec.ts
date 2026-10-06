@@ -170,6 +170,48 @@ test.describe("coupons", () => {
     expect(subscription.discount_amount).toBe(0);
   });
 
+  test("a coupon kept to one offer says which, and is not taken off another", async ({ page }) => {
+    const otherPlanId = await setup(page);
+    const covered = await createTestPlan(page, {
+      slug: `coupon-covered-${Date.now()}`,
+      name: `Coupon Covered ${Date.now()}`,
+      monthly_price: 200_000,
+      yearly_price: 2_000_000,
+      currency: "DZD",
+    });
+    const coveredId = covered.body.id as string;
+    const code = await createCoupon(page, {
+      discount_type: "percentage",
+      discount_value: 10,
+      plan_ids: [coveredId],
+    });
+
+    // Asked about the other offer: a good code, which names the offer it covers
+    // instead of being called invalid.
+    const elsewhere = await apiPost(page, "/api/subscription/validate-coupon", {
+      code,
+      plan_id: otherPlanId,
+      billing_cycle: "yearly",
+    });
+    expect(elsewhere.body).toMatchObject({
+      valid: true,
+      eligible_plan_ids: [coveredId],
+      discount_amount: null,
+    });
+
+    const onIt = await apiPost(page, "/api/subscription/validate-coupon", {
+      code,
+      plan_id: coveredId,
+      billing_cycle: "yearly",
+    });
+    expect(onIt.body).toMatchObject({ valid: true, discount_amount: 200_000 });
+
+    // Sent with the other offer anyway, it is not applied to it.
+    const subscription = await subscribe(page, otherPlanId, "DZD", code);
+    expect(subscription.discount_amount).toBe(0);
+    expect(subscription.price_at_purchase).toBe(1_000_000);
+  });
+
   test("a percentage is taken off the chosen cycle's price", async ({ page }) => {
     const planId = await setup(page);
     const code = await createCoupon(page, {

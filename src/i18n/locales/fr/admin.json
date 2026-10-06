@@ -715,6 +715,7 @@
     "apply": "Appliquer",
     "invalidCoupon": "Code promo invalide ou expiré.",
     "couponApplied": "Coupon appliqué :",
+    "couponOtherOffers": "Ce code s'applique à : {{offers}}. Choisissez l'une de ces offres pour en profiter.",
     "percentOff": "{{value}} % de réduction",
     "amountOff": "{{amount}} de réduction",
     "subscribeNow": "S'abonner maintenant",
