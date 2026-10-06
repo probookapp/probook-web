@@ -146,4 +146,45 @@ test.describe("Purchase order workflow", () => {
     expect(credits.body.balance).toBe(1190);
     expect(credits.body.unpaid_orders).toHaveLength(1);
   });
+
+  test("a received order can still be opened to check it", async ({ page }) => {
+    const supplier = await setupSupplier(page, "Review Supplier");
+    const product = await setupProduct(page, "Review Product", 100, { quantity: 0 });
+
+    const po = await apiPost(page, "/api/purchases", {
+      supplier_id: supplier.id,
+      notes: "Check the invoice against this",
+      lines: [{ product_id: product.id, quantity: 10, unit_price: 100, tax_rate: 19 }],
+    });
+    const lineId = (po.body.lines as Array<{ id: string }>)[0].id;
+    await apiPost(page, `/api/purchases/${po.body.id}/confirm`, {
+      paid_from_register: false,
+      lines: [{ line_id: lineId, received_quantity: 8 }],
+    });
+
+    // Edit disappears once goods are in; the order must stay readable anyway.
+    await page.goto("/en/purchases");
+    const row = page.getByRole("row").filter({ hasText: po.body.order_number as string });
+    await row.getByRole("button", { name: "View" }).click();
+    const view = page.getByRole("dialog", { name: `Purchase Order ${po.body.order_number}` });
+    await expect(view.getByText("Review Supplier")).toBeVisible();
+    await expect(view.getByText("Review Product")).toBeVisible();
+    await expect(view.getByText("Ordered: 10")).toBeVisible();
+    await expect(view.getByText("Received: 8")).toBeVisible();
+    await expect(view.getByText("Check the invoice against this")).toBeVisible();
+    await view.getByRole("button", { name: "Close" }).last().click();
+    await expect(view).toHaveCount(0);
+
+    // The last 2 arrive. Once fully received, View is the only action left —
+    // and it shows the order as it now stands, not the copy opened before.
+    await row.getByRole("button", { name: "Confirm Receipt" }).click();
+    const receive = page.getByRole("dialog", { name: "Confirm Purchase Order" });
+    await receive.getByRole("button", { name: "Confirm Receipt" }).click();
+    await expect(receive).toHaveCount(0);
+    await expect(row.getByRole("button", { name: "Confirm Receipt" })).toHaveCount(0);
+    await expect(row.getByRole("button", { name: "Edit" })).toHaveCount(0);
+    await row.getByRole("button", { name: "View" }).click();
+    await expect(view.getByText("Received: 10")).toBeVisible();
+    await expect(view.getByText("Received on")).toBeVisible();
+  });
 });
