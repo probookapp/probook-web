@@ -16,6 +16,7 @@
     "monthly": "شهري",
     "yearly": "سنوي",
     "saveWithYearly": "وفّر أكثر",
+    "billedYearly": "تُفوتر {{amount}} سنويًا",
     "questionsTitle": "لديك أسئلة؟",
     "questionsSubtitle": "راجع الأسئلة الشائعة للحصول على إجابات حول الباقات والفواتير.",
     "viewFaq": "عرض الأسئلة الشائعة"

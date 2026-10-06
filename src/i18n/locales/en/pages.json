@@ -16,6 +16,7 @@
     "monthly": "Monthly",
     "yearly": "Yearly",
     "saveWithYearly": "Save more",
+    "billedYearly": "billed {{amount}} yearly",
     "questionsTitle": "Have questions?",
     "questionsSubtitle": "Check out our FAQ for answers to common questions about plans and billing.",
     "viewFaq": "View FAQ"

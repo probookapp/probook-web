@@ -400,7 +400,8 @@
       "contactSales": "Contact sales",
       "trialDays": "{{days}}-day free trial",
       "loading": "Loading plans...",
-      "noPlans": "No plans available at the moment."
+      "noPlans": "No plans available at the moment.",
+      "seeDetails": "Compare the offers and build your own"
     },
     "footer": {
       "product": "Product",

@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, useLocale } from "@/lib/navigation";
+import { useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
 import { Navbar } from "@/components/public/Navbar";
 import { Footer } from "@/components/public/Footer";
 import { WhatsAppCta } from "@/components/landing/WhatsAppCta";
 import { MetaPixel } from "@/components/analytics/MetaPixel";
-import { translatedName, type Translations } from "@/lib/translated-name";
+import { PlanCards, usePublicPlans } from "@/components/public/PlanCards";
 import {
   Receipt,
   Users,
@@ -16,7 +15,6 @@ import {
   BarChart3,
   Store,
   WifiOff,
-  Check,
   ArrowRight,
 } from "lucide-react";
 
@@ -39,58 +37,11 @@ const featureKeys = [
 ] as const;
 
 
-interface PlanPrice {
-  currency: string;
-  monthly_price: number;
-  yearly_price: number;
-}
-
-interface PublicPlan {
-  id: string;
-  slug: string;
-  name: string;
-  description: string | null;
-  name_translations: Translations;
-  description_translations: Translations;
-  monthly_price: number;
-  yearly_price: number;
-  currency: string;
-  trial_days: number;
-  sort_order: number;
-  prices?: PlanPrice[];
-  features?: { feature?: { name: string; name_translations?: Translations } }[];
-}
-
-interface PlansResponse {
-  plans: PublicPlan[];
-  detected_currency: string | null;
-  detected_country: string | null;
-}
-
-/** Pick the translated value for a locale, falling back to the default. */
-function formatPrice(centimes: number, currency: string): string {
-  const amount = centimes / 100;
-  if (currency === "DZD") {
-    return `${amount.toLocaleString("en")} ${currency}`;
-  }
-  return `${amount.toLocaleString("en", { minimumFractionDigits: 2 })} ${currency}`;
-}
-
 export function LandingPage() {
   const { t, ready } = useTranslation("common");
-  const router = useRouter();
   const locale = useLocale();
 
-  const { data: plansData, isLoading: plansLoading } = useQuery<PlansResponse>({
-    queryKey: ["public-plans"],
-    queryFn: async () => {
-      const res = await fetch("/api/subscription/plans");
-      if (!res.ok) return { plans: [], detected_currency: null, detected_country: null };
-      return res.json();
-    },
-    staleTime: 5 * 60 * 1000,
-  });
-
+  const { data: plansData, isLoading: plansLoading } = usePublicPlans();
   const plans = plansData?.plans;
 
   const isRtl = locale === "ar";
@@ -195,100 +146,18 @@ export function LandingPage() {
                 {t("landing.pricing.subtitle")}
               </p>
             </div>
-            {plansLoading ? (
-              <p className="text-center text-gray-500 dark:text-gray-400">
-                {t("landing.pricing.loading")}
-              </p>
-            ) : !plans || plans.length === 0 ? (
-              <p className="text-center text-gray-500 dark:text-gray-400">
-                {t("landing.pricing.noPlans")}
-              </p>
-            ) : (
-              <div
-                className={`grid grid-cols-1 gap-8 max-w-5xl mx-auto items-start ${
-                  plans.length === 1
-                    ? "md:grid-cols-1 max-w-md"
-                    : plans.length === 2
-                    ? "md:grid-cols-2 max-w-3xl"
-                    : "md:grid-cols-3"
-                }`}
-              >
-                {plans.map((plan, idx) => {
-                  // Mark the middle plan as popular (or the second one for 2 plans)
-                  const popularIdx = plans.length <= 2 ? plans.length - 1 : Math.floor(plans.length / 2);
-                  const isPopular = idx === popularIdx && plans.length > 1;
-                  const featureNames = plan.features
-                    ?.map((f) => f.feature ? translatedName(f.feature.name, f.feature.name_translations ?? null, locale) : null)
-                    .filter(Boolean) as string[] || [];
-                  const price = { monthly: plan.monthly_price, yearly: plan.yearly_price, currency: plan.currency };
-
-                  return (
-                    <div
-                      key={plan.id}
-                      className={`rounded-2xl p-8 relative bg-white dark:bg-gray-950 ${
-                        isPopular
-                          ? "border-2 border-primary-600 shadow-lg shadow-primary-600/15"
-                          : "border border-gray-200 dark:border-gray-800 shadow-sm"
-                      }`}
-                    >
-                      {isPopular && (
-                        <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 text-white text-xs font-semibold px-3 py-1 rounded-full bg-primary-600">
-                          {t("landing.pricing.popular")}
-                        </div>
-                      )}
-                      <h3 dir={textDir} className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {translatedName(plan.name, plan.name_translations, locale)}
-                      </h3>
-                      {(plan.description || plan.description_translations) && (
-                        <p dir={textDir} className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                          {translatedName(plan.description, plan.description_translations, locale)}
-                        </p>
-                      )}
-                      <div className="mt-6 flex items-baseline gap-1">
-                        <span className="text-4xl font-bold text-gray-900 dark:text-white">
-                          {formatPrice(price.monthly, price.currency)}
-                        </span>
-                        <span className="text-gray-500 dark:text-gray-400">
-                          {t("landing.pricing.perMonth")}
-                        </span>
-                      </div>
-                      {price.yearly > 0 && (
-                        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                          {formatPrice(price.yearly, price.currency)}{t("landing.pricing.perYear")}
-                        </p>
-                      )}
-                      {plan.trial_days > 0 && (
-                        <p className="mt-2 text-xs font-medium text-primary-600 dark:text-primary-400">
-                          {t("landing.pricing.trialDays", { days: plan.trial_days })}
-                        </p>
-                      )}
-                      {featureNames.length > 0 && (
-                        <ul className="mt-8 space-y-3">
-                          {featureNames.map((name, i) => (
-                            <li key={i} className="flex items-start gap-3">
-                              <Check className="h-5 w-5 shrink-0 mt-0.5 text-primary-600 dark:text-primary-400" />
-                              <span dir={textDir} className="text-sm text-gray-600 dark:text-gray-300">
-                                {name}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      <Link
-                        href={`/${locale}/signup`}
-                        className={`mt-8 block w-full text-center py-3 rounded-xl font-semibold text-sm transition-colors ${
-                          isPopular
-                            ? "bg-primary-600 hover:bg-primary-700 text-white"
-                            : "bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-900 dark:text-white"
-                        }`}
-                      >
-                        {plan.trial_days > 0
-                          ? t("landing.pricing.startTrial")
-                          : t("landing.pricing.getStarted")}
-                      </Link>
-                    </div>
-                  );
-                })}
+            {/* The same cards as the pricing page, at the same default cycle;
+                switching the cycle and composing an offer stay over there. */}
+            <PlanCards plans={plans} isLoading={plansLoading} billingCycle="yearly" />
+            {plans && plans.length > 0 && (
+              <div className="mt-10 text-center">
+                <Link
+                  href={`/${locale}/pricing`}
+                  className="inline-flex min-h-10 items-center gap-2 text-primary-600 dark:text-primary-400 font-medium hover:underline"
+                >
+                  {t("landing.pricing.seeDetails")}
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
               </div>
             )}
           </div>

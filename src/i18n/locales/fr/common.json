@@ -400,7 +400,8 @@
       "contactSales": "Contacter les ventes",
       "trialDays": "Essai gratuit de {{days}} jours",
       "loading": "Chargement des forfaits...",
-      "noPlans": "Aucun forfait disponible pour le moment."
+      "noPlans": "Aucun forfait disponible pour le moment.",
+      "seeDetails": "Comparer les offres et composer la vôtre"
     },
     "footer": {
       "product": "Produit",
