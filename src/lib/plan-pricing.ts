@@ -58,6 +58,47 @@ export function resolvePlanPrice(
   return { monthly: plan.monthlyPrice, yearly: plan.yearlyPrice, currency: plan.currency, via: "catalogue" };
 }
 
+export interface CatalogueQuote {
+  /** The one currency every offer below is quoted in. */
+  currency: string;
+  /** Each offer's price, in the order the offers were given. */
+  prices: ResolvedPrice[];
+  /**
+   * A reference-currency amount (a module, a seat) in `currency`, or null when
+   * there is no honest figure for it: a hand-typed offer price says nothing
+   * about what a module costs in that currency, only a rate does.
+   */
+  convert: (referenceAmount: number) => number | null;
+}
+
+/**
+ * The whole catalogue in one currency, or in its own.
+ *
+ * Resolving each offer on its own let one page quote Commerce in euros (a row
+ * typed by hand) beside Essentiel in dinars (no row, no rate), and price the
+ * composer's modules in a third way. A currency is offered only when every
+ * offer can be quoted in it; otherwise the visitor sees the catalogue as
+ * written, all of it.
+ */
+export function quoteCatalogue(
+  plans: PlanPriceSource[],
+  currency: string | null | undefined,
+  rate: CurrencyRate | null
+): CatalogueQuote {
+  const asked = plans.map((plan) => resolvePlanPrice(plan, currency, rate));
+  const single = asked.every((p) => p.currency === asked[0]?.currency);
+  const prices = single ? asked : plans.map((plan) => resolvePlanPrice(plan, null, null));
+  const quoted = prices[0]?.currency ?? REFERENCE_CURRENCY;
+
+  const convert = (referenceAmount: number): number | null => {
+    if (quoted === REFERENCE_CURRENCY) return referenceAmount;
+    if (rate && rate.code === quoted) return convertFromDzd(referenceAmount, rate);
+    return null;
+  };
+
+  return { currency: quoted, prices, convert };
+}
+
 export interface CouponTerms {
   /** "percentage", or anything else for a fixed amount. */
   discountType: string;

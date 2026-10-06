@@ -101,6 +101,44 @@ test.describe("publishing the grid in another currency", () => {
     await dropRate(page);
   });
 
+  test("one page is never quoted in two currencies", async ({ page }) => {
+    await signUp(page);
+    await setupPlatformAdmin(page);
+
+    // One offer with a price typed by hand in the test currency, the others
+    // with nothing in it. Without a rate, that used to show this card in XTS
+    // beside the rest in dinars.
+    const typed = await createTestPlan(page, {
+      slug: `typed-${Date.now()}`,
+      name: `Typed ${Date.now()}`,
+      monthly_price: 190_000,
+      yearly_price: 1_900_000,
+      currency: "DZD",
+      prices: [{ currency: CODE, monthly_price: 1_700, yearly_price: 17_000 }],
+      feature_ids: [],
+    });
+    expect(typed.status).toBe(201);
+    const slug = typed.body.slug as string;
+
+    try {
+      await dropRate(page);
+      const unrated = await windowIn(page, CODE);
+      const currencies = new Set(unrated.plans.map((p) => p.currency));
+      expect([...currencies], "the whole page falls back together").toEqual([
+        unrated.plans[0].base_currency,
+      ]);
+      expect(unrated.plans.find((p) => p.slug === slug)?.monthly_price).toBe(190_000);
+
+      // With a rate every offer can be quoted, and the typed price still wins.
+      await setRate(page, 0.01, 100);
+      const rated = await windowIn(page, CODE);
+      expect(new Set(rated.plans.map((p) => p.currency))).toEqual(new Set([CODE]));
+      expect(rated.plans.find((p) => p.slug === slug)?.monthly_price).toBe(1_700);
+    } finally {
+      await dropRate(page);
+    }
+  });
+
   test("the seat price travels with the offers", async ({ page }) => {
     await signUp(page);
     await setupPlatformAdmin(page);

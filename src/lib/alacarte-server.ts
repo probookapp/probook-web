@@ -2,15 +2,14 @@ import { prisma } from "./db";
 import { QUOTA_KEYS } from "./plan-quotas";
 import {
   quote,
-  convertFromDzd,
   DEFAULT_BASIS,
   type Composition,
   type CurrencyRate,
   type ModuleOption,
-  type PricingBasis,
   type Quote,
 } from "./alacarte";
 import { REFERENCE_CURRENCY } from "./currencies";
+import { quoteCatalogue } from "./plan-pricing";
 
 /**
  * The database half of the composer.
@@ -28,23 +27,38 @@ export async function readRate(code: string | null | undefined): Promise<Currenc
   return row ? { code: row.code, perDzd: Number(row.perDzd), roundTo: row.roundTo } : null;
 }
 
-/** The entry offer everyone pays for, the seats it covers, and its currency. */
-async function readBasis(): Promise<{ basis: PricingBasis; currency: string }> {
-  const base = await prisma.plan.findFirst({
-    where: { isActive: true },
-    orderBy: { monthlyPrice: "asc" },
-    include: { quotas: true },
-  });
-  if (!base) return { basis: DEFAULT_BASIS, currency: REFERENCE_CURRENCY };
+/**
+ * The catalogue as the page quoted it: every active offer in one currency, the
+ * entry offer's price and seats, and the rule for pricing a module or a seat in
+ * that currency. The page computes the same thing from the same function
+ * (quoteCatalogue), so a composition is billed exactly what it was shown at.
+ */
+async function readBasis(requestedCurrency: string | undefined) {
+  const [plans, rate] = await Promise.all([
+    prisma.plan.findMany({
+      where: { isActive: true },
+      include: { prices: true, quotas: true },
+    }),
+    readRate(requestedCurrency),
+  ]);
+  const quoted = quoteCatalogue(plans, requestedCurrency, rate);
+  if (plans.length === 0) {
+    return { basis: DEFAULT_BASIS, quoted };
+  }
 
-  const seatQuota = base.quotas.find((q) => q.quotaKey === QUOTA_KEYS.MAX_USERS);
+  // The entry offer is the cheapest one as quoted, not as written.
+  let cheapest = 0;
+  quoted.prices.forEach((price, i) => {
+    if (price.monthly < quoted.prices[cheapest].monthly) cheapest = i;
+  });
+  const seatQuota = plans[cheapest].quotas.find((q) => q.quotaKey === QUOTA_KEYS.MAX_USERS);
   return {
     basis: {
       ...DEFAULT_BASIS,
-      baseMonthlyPrice: base.monthlyPrice,
+      baseMonthlyPrice: quoted.prices[cheapest].monthly,
       baseSeats: seatQuota?.limitValue ?? DEFAULT_BASIS.baseSeats,
     },
-    currency: base.currency,
+    quoted,
   };
 }
 
@@ -78,40 +92,32 @@ export async function priceComposition(
   | { error: string; code: "MODULE_NOT_SOLD"; keys: string[] }
   | { error: string; code: "CURRENCY_NOT_COMPOSABLE"; currency: string }
 > {
-  const [modules, { basis, currency }] = await Promise.all([
+  const [modules, { basis, quoted }] = await Promise.all([
     sellableModules(),
-    readBasis(),
+    readBasis(requestedCurrency),
   ]);
 
-  // Composing in another currency is allowed exactly as far as a rate exists
-  // for it. Without one there is no honest figure to bill, and inventing one is
-  // how a price ends up disagreeing with itself — so this refuses and says in
-  // which currency composing does work.
-  let billing = currency;
-  let workingBasis = basis;
-  let workingModules = modules;
-
-  if (requestedCurrency && requestedCurrency !== currency) {
-    const rate = await readRate(requestedCurrency);
-    if (!rate) {
-      return {
-        error: `Composed offers cannot be priced in ${requestedCurrency}. Choose a listed offer, or compose in ${currency}.`,
-        code: "CURRENCY_NOT_COMPOSABLE",
-        currency,
-      };
-    }
-
-    billing = rate.code;
-    workingBasis = {
-      ...basis,
-      baseMonthlyPrice: convertFromDzd(basis.baseMonthlyPrice, rate),
-      seatUnitPrice: convertFromDzd(basis.seatUnitPrice, rate),
+  // Composing in a currency is allowed exactly as far as the page could quote
+  // it: every offer in it, and a rate to price the modules and seats by. Without
+  // that there is no honest figure to bill, and inventing one is how a price
+  // ends up disagreeing with itself — so this refuses and says in which
+  // currency composing does work.
+  const seatUnitPrice = quoted.convert(basis.seatUnitPrice);
+  const workingModules = modules.map((m) => ({
+    ...m,
+    unitPrice: m.unitPrice == null ? null : quoted.convert(m.unitPrice),
+  }));
+  // convert() answers for every amount or for none, so the seat stands for all.
+  if ((requestedCurrency && quoted.currency !== requestedCurrency) || seatUnitPrice === null) {
+    return {
+      error: `Composed offers cannot be priced in ${requestedCurrency ?? quoted.currency}. Choose a listed offer, or compose in ${REFERENCE_CURRENCY}.`,
+      code: "CURRENCY_NOT_COMPOSABLE",
+      currency: REFERENCE_CURRENCY,
     };
-    workingModules = modules.map((m) => ({
-      ...m,
-      unitPrice: m.unitPrice == null ? null : convertFromDzd(m.unitPrice, rate),
-    }));
   }
+
+  const billing = quoted.currency;
+  const workingBasis = { ...basis, seatUnitPrice };
 
   const priced = quote(composition, workingModules, workingBasis);
 

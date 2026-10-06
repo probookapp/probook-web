@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { toSnakeCase } from "@/lib/api-utils";
-import { convertFromDzd, DEFAULT_BASIS } from "@/lib/alacarte";
+import { DEFAULT_BASIS } from "@/lib/alacarte";
 import { readRate } from "@/lib/alacarte-server";
-import { resolvePlanPrice } from "@/lib/plan-pricing";
+import { quoteCatalogue } from "@/lib/plan-pricing";
 import { currencyForCountry } from "@/lib/currencies";
 
 /** Detect the visitor's country from CDN / proxy headers. */
@@ -47,35 +47,32 @@ export async function GET(req: NextRequest) {
       orderBy: { sortOrder: "asc" },
     });
 
-    const result = plans.map((plan) => {
+    // One currency for the whole page — every offer in the visitor's, or every
+    // offer in the catalogue's own. The same resolution the coupon check and the
+    // approval use, so what is listed is what is billed.
+    const quoted = quoteCatalogue(plans, effectiveCurrency, rate);
+
+    const result = plans.map((plan, i) => {
       const snaked = toSnakeCase(plan) as Record<string, unknown>;
 
       // The currency the catalogue itself is written in, kept even when the
-      // price below is resolved into the visitor's. Module unit prices carry no
-      // currency of their own, so the composer needs this to know whether it can
-      // quote at all — showing dinars under a euro label would be a lie the page
-      // tells confidently.
+      // price below is resolved into the visitor's.
       snaked.base_currency = plan.currency;
 
-      // If a currency is known (explicit or geo-detected), resolve the price for
-      // it: a row typed by hand first, the rate otherwise. The same resolution
-      // the coupon check and the approval use, so what is listed is what is billed.
-      const resolved = resolvePlanPrice(plan, effectiveCurrency, rate);
+      const resolved = quoted.prices[i];
       snaked.monthly_price = resolved.monthly;
       snaked.yearly_price = resolved.yearly;
       snaked.currency = resolved.currency;
 
-      if (resolved.via === "rate" && rate) {
-        // The modules travel with the offer. Leaving them in dinars while the
-        // offer reads in euros is the mismatch this whole mechanism exists to
-        // prevent — the composer would add francs to apples.
-        const features = snaked.features as
-          | { feature?: { unit_price?: number | null } }[]
-          | undefined;
-        for (const link of features ?? []) {
-          if (link.feature?.unit_price != null) {
-            link.feature.unit_price = convertFromDzd(link.feature.unit_price, rate);
-          }
+      // The modules travel with the offers, in the same currency or not at all.
+      // A module with no honest figure in it is listed without a price, which
+      // keeps it off the composer rather than adding dinars to euros.
+      const features = snaked.features as
+        | { feature?: { unit_price?: number | null } }[]
+        | undefined;
+      for (const link of features ?? []) {
+        if (link.feature?.unit_price != null) {
+          link.feature.unit_price = quoted.convert(link.feature.unit_price);
         }
       }
 
@@ -84,12 +81,8 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       plans: result,
-      // Quoted in whatever currency the offers above are quoted in, so the
-      // composer adds up numbers that already agree rather than converting a
-      // second time with a rate it would have to be told about.
-      seat_price: rate
-        ? convertFromDzd(DEFAULT_BASIS.seatUnitPrice, rate)
-        : DEFAULT_BASIS.seatUnitPrice,
+      // In the offers' currency too, or absent when there is no honest figure.
+      seat_price: quoted.convert(DEFAULT_BASIS.seatUnitPrice) ?? undefined,
       detected_currency: effectiveCurrency || null,
       detected_country: detectedCountry || null,
     });
