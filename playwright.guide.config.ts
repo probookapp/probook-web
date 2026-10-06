@@ -64,6 +64,8 @@ export default defineConfig({
   // after a cold build pays Next's on-demand compilation inside a chapter —
   // which fails a take, and during filming wastes the whole recording.
   globalSetup: require.resolve("./e2e/global-setup"),
+  // And after: see e2e/global-teardown.ts.
+  globalTeardown: require.resolve("./e2e/global-teardown"),
   outputDir: `./guide-output/${GUIDE_LOCALE}/raw`,
   fullyParallel: false,
   workers: 1,

@@ -29,6 +29,8 @@ export default defineConfig({
   // Compile every route once before the first test, so a cold Next.js dev
   // server does not charge its compile time to whichever test arrives first.
   globalSetup: require.resolve("./e2e/global-setup"),
+  // And after: see e2e/global-teardown.ts.
+  globalTeardown: require.resolve("./e2e/global-teardown"),
   fullyParallel: false,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
