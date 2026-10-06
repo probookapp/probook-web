@@ -4,11 +4,12 @@ import { prisma } from "@/lib/db";
 import { requirePermission } from "@/lib/permissions-server";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { settingsSchema } from "@/lib/validations";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 export const GET = withAuth(async (req, { tenantId }) => {
   let settings = await prisma.companySettings.findFirst({ where: { tenantId } });
   if (!settings) {
-    settings = await prisma.companySettings.create({ data: { tenantId } });
+    settings = await prisma.companySettings.create({ data: { tenantId, currency: DEFAULT_CURRENCY } });
   }
   return NextResponse.json(toSnakeCase(settings));
 });
@@ -59,7 +60,7 @@ export const PUT = withAuth(async (req, { tenantId, session }) => {
   const settings = await prisma.companySettings.upsert({
     where: { tenantId },
     update: updateData,
-    create: { tenantId, ...updateData },
+    create: { tenantId, currency: DEFAULT_CURRENCY, ...updateData },
   });
 
   markOnboardingStep(tenantId, "company_setup");

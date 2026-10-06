@@ -1,4 +1,5 @@
 import { Prisma } from "@/generated/prisma/client";
+import { DEFAULT_CURRENCY } from "./currencies";
 
 export type DocumentCounterField =
   | "nextInvoiceNumber"
@@ -23,7 +24,7 @@ export async function allocateDocumentNumber(
   const updated = await tx.companySettings.upsert({
     where: { tenantId },
     update: { [field]: { increment: 1 } },
-    create: { tenantId, [field]: 2 },
+    create: { tenantId, currency: DEFAULT_CURRENCY, [field]: 2 },
     select: { id: true, [field]: true },
   });
   const next = (updated as unknown as Record<DocumentCounterField, number | null>)[field];

@@ -8,6 +8,7 @@ import { signupSchema } from "@/lib/validations";
 import { getClientIp } from "@/lib/client-ip";
 import { isUsernameTaken } from "@/lib/usernames";
 import { rateLimitDurable } from "@/lib/rate-limit";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 // New signups get a free trial with full (non-demo) access, after which they
 // must subscribe (or contact us). Kept in sync with the admin default.
@@ -81,6 +82,7 @@ export async function POST(req: NextRequest) {
         data: {
           tenantId: tenant.id,
           companyName: company_name,
+          currency: DEFAULT_CURRENCY,
         },
       });
 

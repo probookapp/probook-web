@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { appSettingsSchema } from "@/lib/validations";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 export const PUT = withAuth(async (req, { tenantId }) => {
   const body = await validateBody(req, appSettingsSchema);
@@ -16,7 +17,7 @@ export const PUT = withAuth(async (req, { tenantId }) => {
   const settings = await prisma.companySettings.upsert({
     where: { tenantId },
     update: updateData,
-    create: { tenantId, ...updateData },
+    create: { tenantId, currency: DEFAULT_CURRENCY, ...updateData },
   });
 
   return NextResponse.json(toSnakeCase(settings));

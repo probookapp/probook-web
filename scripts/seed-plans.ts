@@ -22,6 +22,7 @@
  */
 import { Client } from "pg";
 import { FEATURE_KEYS, type FeatureKey } from "../src/lib/feature-keys";
+import { REFERENCE_CURRENCY } from "../src/lib/currencies";
 
 interface Offer {
   slug: string;
@@ -217,7 +218,7 @@ async function main() {
       const plan = await client.query<{ id: string }>(
         `INSERT INTO plans (id, slug, name, name_translations, monthly_price, yearly_price,
                             currency, trial_days, is_active, sort_order, created_at, updated_at)
-         VALUES (gen_random_uuid(), $1, $2, $6, $3, $4, 'DZD', 0, true, $5, now(), now())
+         VALUES (gen_random_uuid(), $1, $2, $6, $3, $4, $7, 0, true, $5, now(), now())
          ON CONFLICT (slug) DO UPDATE SET
            name = EXCLUDED.name,
            name_translations = EXCLUDED.name_translations,
@@ -228,7 +229,7 @@ async function main() {
            updated_at = now()
          RETURNING id`,
         [offer.slug, offer.name, offer.monthly, offer.yearly, offer.sortOrder,
-         JSON.stringify({ fr: offer.fr, ar: offer.ar })]
+         JSON.stringify({ fr: offer.fr, ar: offer.ar }), REFERENCE_CURRENCY]
       );
       const planId = plan.rows[0].id;
       planIds.set(offer.slug, planId);
@@ -274,7 +275,7 @@ async function main() {
       }
 
       console.log(
-        `  ${offer.name.padEnd(12)} ${(offer.monthly / 100).toLocaleString("fr-FR")} DZD/mois` +
+        `  ${offer.name.padEnd(12)} ${(offer.monthly / 100).toLocaleString("fr-FR")} ${REFERENCE_CURRENCY}/mois` +
           `  —  ${carried.length} module(s)` +
           `, ${offer.maxUsers ?? "∞"} utilisateur(s)`
       );

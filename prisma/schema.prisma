@@ -623,7 +623,7 @@ model CompanySettings {
   nextDeliveryNoteNumber Int?     @default(1) @map("next_delivery_note_number")
   appLanguage            String?  @default("fr") @map("app_language")
   appTheme               String?  @default("light") @map("app_theme")
-  currency               String?  @default("DZD")
+  currency               String?
   posTicketPrefix        String?  @default("TK-") @map("pos_ticket_prefix")
   posAutoPrintReceipt    Boolean? @default(true) @map("pos_auto_print_receipt")
   posShowStockWarning    Boolean? @default(true) @map("pos_show_stock_warning")
@@ -1092,7 +1092,7 @@ model Plan {
   descriptionTranslations Json?    @map("description_translations") // { "fr": "...", "ar": "..." }
   monthlyPrice            Int      @map("monthly_price") // centimes (e.g., 1600000 = 16,000 DZD)
   yearlyPrice             Int      @map("yearly_price")
-  currency                String   @default("DZD")
+  currency                String
   trialDays               Int      @default(0) @map("trial_days")
   isActive                Boolean  @default(true) @map("is_active")
   sortOrder               Int      @default(0) @map("sort_order")
@@ -1216,7 +1216,7 @@ model Subscription {
   status             String    @default("pending") // "pending" | "active" | "expired" | "suspended" | "cancelled"
   billingCycle       String    @default("yearly") @map("billing_cycle") // "monthly" | "yearly"
   priceAtPurchase    Int       @map("price_at_purchase") // centimes
-  currency           String    @default("DZD")
+  currency           String
   couponId           String?   @map("coupon_id")
   discountAmount     Int       @default(0) @map("discount_amount") // centimes
   /// Seats bought on top of — or instead of — the plan's `max_users` quota.
@@ -1251,7 +1251,7 @@ model SubscriptionRequest {
   requestType  String    @map("request_type") // "new" | "upgrade" | "downgrade" | "renewal"
   targetPlanId String    @map("target_plan_id")
   billingCycle String    @default("yearly") @map("billing_cycle")
-  currency     String    @default("DZD")
+  currency     String
   couponCode   String?   @map("coupon_code")
   status       String    @default("pending") // "pending" | "approved" | "rejected"
   adminNotes   String?   @map("admin_notes")
@@ -1273,7 +1273,7 @@ model Coupon {
   code          String    @unique
   discountType  String    @map("discount_type") // "percentage" | "fixed"
   discountValue Int       @map("discount_value") // percentage (0-100) or centimes
-  currency      String    @default("DZD")
+  currency      String
   maxUses       Int?      @map("max_uses")
   currentUses   Int       @default(0) @map("current_uses")
   expiresAt     DateTime? @map("expires_at")
@@ -1307,7 +1307,7 @@ model SubscriptionInvoice {
   invoiceNumber  String    @unique @map("invoice_number")
   tenantId       String    @map("tenant_id")
   amount         Int // centimes
-  currency       String    @default("DZD")
+  currency       String
   status         String    @default("unpaid") // "unpaid" | "paid"
   paymentMethod  String?   @map("payment_method") // "cash" | "bank_transfer" | "online"
   paidAt         DateTime? @map("paid_at")
