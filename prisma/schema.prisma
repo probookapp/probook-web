@@ -31,6 +31,7 @@ model Tenant {
   productCategories    ProductCategory[]
   productPrices        ProductPrice[]
   productVariants      ProductVariant[]
+  bundleComponents     BundleComponent[]
   purchaseOrders       PurchaseOrder[]
   supplierPayments     SupplierPayment[]
   quotes               Quote[]
@@ -273,6 +274,9 @@ model Product {
   photoPath       String?  @map("photo_path")
   purchasePrice   Decimal? @default(0) @map("purchase_price") @db.Decimal(16, 3)
   hasVariants     Boolean  @default(false) @map("has_variants")
+  // A pack: sold as one line, made of the products listed in bundle_components.
+  // It holds no stock of its own; selling it takes the components out.
+  isBundle        Boolean  @default(false) @map("is_bundle")
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -288,6 +292,8 @@ model Product {
   posTransactionLines PosTransactionLine[]
   stockMovements      StockMovement[]
   stockLevels         StockLevel[]
+  bundleComponents    BundleComponent[]    @relation("BundleComponents")
+  usedInBundles       BundleComponent[]    @relation("BundleComponentProduct")
 
   @@index([tenantId])
   @@index([barcode])
@@ -332,11 +338,39 @@ model ProductVariant {
   deliveryNoteLines   DeliveryNoteLine[]
   stockMovements      StockMovement[]
   stockLevels         StockLevel[]
+  bundleComponents    BundleComponent[]    @relation("BundleVariantComponents")
+  usedInBundles       BundleComponent[]    @relation("BundleComponentVariant")
 
   @@index([productId])
   @@index([tenantId])
   @@index([barcode])
   @@map("product_variants")
+}
+
+// One component of a pack: so many of this product (or of this variant of it)
+// in every pack sold. A pack with variants lists its components per variant
+// (bundle_variant_id), so the black pack can hold the black camera.
+model BundleComponent {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  bundleId        String   @map("bundle_id")
+  bundleVariantId String?  @map("bundle_variant_id")
+  productId       String   @map("product_id")
+  variantId       String?  @map("variant_id")
+  quantity        Float
+  position        Int      @default(0)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  tenant        Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  bundle        Product         @relation("BundleComponents", fields: [bundleId], references: [id], onDelete: Cascade)
+  bundleVariant ProductVariant? @relation("BundleVariantComponents", fields: [bundleVariantId], references: [id], onDelete: Cascade)
+  product       Product         @relation("BundleComponentProduct", fields: [productId], references: [id], onDelete: Restrict)
+  variant       ProductVariant? @relation("BundleComponentVariant", fields: [variantId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId])
+  @@index([bundleId])
+  @@index([productId])
+  @@map("bundle_components")
 }
 
 model ProductCategory {
@@ -418,6 +452,11 @@ model QuoteLine {
   position        Int      @default(0)
   groupName       String?  @map("group_name")
   isSubtotalLine  Boolean? @default(false) @map("is_subtotal_line")
+  // A pack sold on this document: its header line (is_bundle_header) carries no
+  // value of its own, the lines sharing its bundle_key are the components, each
+  // with its share of the pack price and its own VAT rate.
+  isBundleHeader  Boolean  @default(false) @map("is_bundle_header")
+  bundleKey       String?  @map("bundle_key")
 
   quote   Quote           @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   product Product?        @relation(fields: [productId], references: [id])
@@ -573,6 +612,8 @@ model InvoiceLine {
   position          Int      @default(0)
   groupName         String?  @map("group_name")
   isSubtotalLine    Boolean? @default(false) @map("is_subtotal_line")
+  isBundleHeader    Boolean  @default(false) @map("is_bundle_header")
+  bundleKey         String?  @map("bundle_key")
   // Snapshot of product.purchasePrice captured at sale time (invoice issue).
   // Frozen so later edits to the product's purchase price never rewrite history.
   costPriceSnapshot Decimal  @default(0) @map("cost_price_snapshot") @db.Decimal(16, 3)
@@ -656,6 +697,8 @@ model DeliveryNoteLine {
   quantity        Float
   unit            String?
   position        Int      @default(0)
+  isBundleHeader  Boolean  @default(false) @map("is_bundle_header")
+  bundleKey       String?  @map("bundle_key")
   createdAt       DateTime @default(now()) @map("created_at")
 
   deliveryNote DeliveryNote    @relation(fields: [deliveryNoteId], references: [id], onDelete: Cascade)
@@ -1038,6 +1081,8 @@ model PosTransactionLine {
   position          Int      @default(0)
   // Snapshot of product/variant purchase price captured at sale time (transaction creation).
   costPriceSnapshot Decimal  @default(0) @map("cost_price_snapshot") @db.Decimal(16, 3)
+  isBundleHeader    Boolean  @default(false) @map("is_bundle_header")
+  bundleKey         String?  @map("bundle_key")
   createdAt         DateTime @default(now()) @map("created_at")
 
   transaction PosTransaction  @relation(fields: [transactionId], references: [id], onDelete: Cascade)
