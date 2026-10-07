@@ -1,3 +1,5 @@
+import type { CatalogBundleComponent } from "@/lib/bundles";
+
 // Client types
 export interface Client {
   id: string;
@@ -117,8 +119,27 @@ export interface Product {
   // Variants
   has_variants: boolean;
   variants?: ProductVariant[];
+  /**
+   * A pack: sold as one line, made of the products in bundle_components. Its
+   * quantity (and its variants') is what its components can make up, or null
+   * when it is made of services only.
+   */
+  is_bundle?: boolean;
+  bundle_components?: CatalogBundleComponent[];
   created_at: string;
   updated_at: string;
+}
+
+export interface ProductBundle {
+  is_bundle: boolean;
+  components: CatalogBundleComponent[];
+}
+
+export interface BundleComponentInput {
+  bundle_variant_id: string | null;
+  product_id: string;
+  variant_id: string | null;
+  quantity: number;
 }
 
 export interface ProductVariant {
@@ -436,6 +457,10 @@ export interface QuoteLine {
   // Phase 2: Subtotals
   group_name: string | null;
   is_subtotal_line: boolean | null;
+  /** A pack on the document: see src/lib/bundles.ts. */
+  is_bundle_header?: boolean;
+  bundle_key?: string | null;
+  discount_percent?: number;
 }
 
 export interface CreateQuoteInput {
@@ -466,6 +491,8 @@ export interface CreateQuoteLineInput {
   group_name?: string | null;
   is_subtotal_line?: boolean;
   discount_percent?: number;
+  is_bundle_header?: boolean;
+  bundle_key?: string | null;
 }
 
 export interface UpdateQuoteInput extends CreateQuoteInput {
@@ -537,6 +564,10 @@ export interface InvoiceLine {
   // Phase 2: Subtotals
   group_name: string | null;
   is_subtotal_line: boolean | null;
+  /** A pack on the document: see src/lib/bundles.ts. */
+  is_bundle_header?: boolean;
+  bundle_key?: string | null;
+  discount_percent?: number;
 }
 
 export interface CreateInvoiceInput {
@@ -572,6 +603,8 @@ export interface CreateInvoiceLineInput {
   group_name?: string | null;
   is_subtotal_line?: boolean;
   discount_percent?: number;
+  is_bundle_header?: boolean;
+  bundle_key?: string | null;
 }
 
 export interface UpdateInvoiceInput {
@@ -857,6 +890,8 @@ export interface DeliveryNoteLine {
   quantity: number;
   unit: string | null;
   position: number;
+  is_bundle_header?: boolean;
+  bundle_key?: string | null;
   created_at: string;
 }
 
@@ -881,6 +916,8 @@ export interface CreateDeliveryNoteLineInput {
   description_html?: string | null;
   quantity: number;
   unit?: string | null;
+  is_bundle_header?: boolean;
+  bundle_key?: string | null;
 }
 
 export interface UpdateDeliveryNoteInput extends CreateDeliveryNoteInput {
@@ -1357,6 +1394,8 @@ export interface PosTransactionLine {
   total: number;
   discount_percent: number;
   position: number;
+  is_bundle_header?: boolean;
+  bundle_key?: string | null;
   created_at: string;
 }
 
@@ -1369,6 +1408,9 @@ export interface CreateTransactionLineInput {
   unit_price: number;
   tax_rate: number;
   discount_percent?: number;
+  /** A pack: its header and its components share bundle_key (src/lib/bundles.ts). */
+  is_bundle_header?: boolean;
+  bundle_key?: string | null;
 }
 
 /**

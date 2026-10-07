@@ -22,6 +22,8 @@ import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useClients } from "@/features/clients/hooks/useClients";
 import { useDocumentCatalog } from "@/hooks/useDocumentCatalog";
 import { stockShortfalls } from "@/lib/stock-shortfalls";
+import { collapseDocumentLines, expandEditorLines } from "@/lib/bundles";
+import { BundleContents } from "@/components/documents/BundleContents";
 import {
   useDeliveryNote,
   useCreateDeliveryNote,
@@ -36,6 +38,7 @@ import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { TagPicker } from "@/components/documents/TagPicker";
 import { TagsModal } from "@/components/documents/TagsModal";
+import { toDateInput } from "@/lib/utils";
 
 
 export function DeliveryNoteFormPage() {
@@ -107,9 +110,10 @@ export function DeliveryNoteFormPage() {
   const shortfalls = stockShortfalls(watchedLines, products);
   const getStockError = (index: number): string | null => {
     const shortfall = shortfalls[index];
-    return shortfall
-      ? t("common:validation.stockExceeded", { available: shortfall.available, total: shortfall.requested })
-      : null;
+    if (!shortfall) return null;
+    const message = t("common:validation.stockExceeded", { available: shortfall.available, total: shortfall.requested });
+    // On a pack line, say which component runs short.
+    return shortfall.item ? `${shortfall.item}: ${message}` : message;
   };
   const hasStockErrors = shortfalls.some(Boolean);
 
@@ -142,17 +146,20 @@ export function DeliveryNoteFormPage() {
       client_id: existingNote.client_id,
       quote_id: existingNote.quote_id,
       invoice_id: existingNote.invoice_id,
-      issue_date: existingNote.issue_date,
-      delivery_date: existingNote.delivery_date || "",
+      issue_date: toDateInput(existingNote.issue_date),
+      delivery_date: toDateInput(existingNote.delivery_date),
       delivery_address: existingNote.delivery_address || "",
       notes: existingNote.notes || "",
       status: existingNote.status,
-      lines: existingNote.lines.map((line) => ({
+      // A pack comes back as one line carrying its components.
+      lines: collapseDocumentLines(existingNote.lines).map((line) => ({
         product_id: line.product_id,
         variant_id: line.variant_id ?? null,
         description: line.description,
         quantity: line.quantity,
         unit: line.unit || "unit",
+        bundle_key: line.bundle_key ?? null,
+        bundle_components: line.bundle_components,
       })),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- once per document, never again on a refetch
@@ -164,6 +171,9 @@ export function DeliveryNoteFormPage() {
     if (product) {
       setValue(`lines.${index}.description`, product.designation);
       setValue(`lines.${index}.unit`, product.unit);
+      // A pack brings its composition along; anything else clears it.
+      setValue(`lines.${index}.bundle_key`, null);
+      setValue(`lines.${index}.bundle_components`, catalog.packComponents(productId, null));
     }
   };
 
@@ -171,7 +181,11 @@ export function DeliveryNoteFormPage() {
     const productId = watchedLines[index]?.product_id;
     const values = productId ? catalog.variantLine(productId, variantId) : null;
     setValue(`lines.${index}.variant_id`, variantId || null, { shouldDirty: true });
-    if (values) setValue(`lines.${index}.description`, values.description);
+    if (values) {
+      setValue(`lines.${index}.description`, values.description);
+      // A pack's variant has its own composition.
+      setValue(`lines.${index}.bundle_components`, values.bundle_components);
+    }
   };
 
   const onSubmit = async (data: DeliveryNoteFormData & { status?: DeliveryNoteStatus }) => {
@@ -186,12 +200,16 @@ export function DeliveryNoteFormPage() {
         delivery_date: data.delivery_date || null,
         delivery_address: data.delivery_address || null,
         notes: data.notes || null,
-        lines: data.lines.map((line) => ({
-          ...line,
-          product_id: line.product_id || null,
-          variant_id: line.variant_id || null,
-          unit: line.unit || null,
-        })),
+        // Each pack goes out as its header plus its components, quantities only.
+        lines: expandEditorLines(
+          data.lines.map((line) => ({
+            ...line,
+            product_id: line.product_id || null,
+            variant_id: line.variant_id || null,
+            unit: line.unit || null,
+          })),
+          { priced: false }
+        ),
       };
 
       if (isEdit && id) {
@@ -432,6 +450,12 @@ export function DeliveryNoteFormPage() {
                     />
                   </div>
                 </div>
+                {!!watchedLines[index]?.bundle_components?.length && (
+                  <BundleContents
+                    components={watchedLines[index]?.bundle_components ?? []}
+                    quantity={watchedLines[index]?.quantity}
+                  />
+                )}
               </div>
             ))}
             {errors.lines?.message && (

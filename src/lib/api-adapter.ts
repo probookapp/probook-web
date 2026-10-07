@@ -147,6 +147,15 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   },
 
   // Product Variants
+  get_product_bundle: {
+    method: "GET",
+    path: (a) => `/api/product-bundles/${a.productId}`,
+  },
+  set_product_bundle: {
+    method: "PUT",
+    path: (a) => `/api/product-bundles/${a.productId}`,
+    body: (a) => ({ components: a.components }),
+  },
   get_product_variants: {
     method: "GET",
     path: (a) => `/api/products/${a.productId}/variants`,

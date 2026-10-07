@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { calculateDocumentTotals, calculateLineTotals } from "@/lib/document-totals";
+import { expandEditorLines, type BundleComponentSnapshot } from "@/lib/bundles";
 import type { Product } from "@/types";
 
 /**
@@ -22,6 +23,8 @@ export interface TotalsFormLine {
   discount_percent?: number | string | null;
   group_name?: string | null;
   is_subtotal_line?: boolean | null;
+  /** A pack line: valued through its components, each at its own VAT rate. */
+  bundle_components?: BundleComponentSnapshot[] | null;
 }
 
 export interface GroupSubtotal {
@@ -65,6 +68,8 @@ export function useDocumentTotals(params: {
   downPaymentPercent?: number | string | null;
   downPaymentAmount?: number | string | null;
   products?: Product[];
+  /** Tenant currency: decides the rounding, and how a pack price is split. */
+  currency?: string | null;
 }): DocumentTotalsView {
   const {
     lines,
@@ -75,10 +80,12 @@ export function useDocumentTotals(params: {
     downPaymentPercent,
     downPaymentAmount,
     products,
+    currency,
   } = params;
 
   return useMemo(() => {
-    const rows = (lines ?? []).map((l) => ({
+    // Packs are computed the way they will be saved: as their components.
+    const rows = expandEditorLines(lines ?? [], { currency }).map((l) => ({
       product_id: l.product_id ?? null,
       quantity: n(l.quantity),
       unit_price: n(l.unit_price),
@@ -86,6 +93,7 @@ export function useDocumentTotals(params: {
       discount_percent: n(l.discount_percent),
       group_name: l.group_name ?? "",
       is_subtotal_line: !!l.is_subtotal_line,
+      is_bundle_header: l.is_bundle_header,
     }));
 
     const totals = calculateDocumentTotals({
@@ -94,6 +102,7 @@ export function useDocumentTotals(params: {
       shippingTaxRate: n(shippingTaxRate),
       discountPercent: n(discountPercent),
       discountAmount: n(discountAmount),
+      currency,
     });
 
     // Group subtotals are a presentation device: they show what a named block of
@@ -103,8 +112,8 @@ export function useDocumentTotals(params: {
     let costIncomplete = false;
 
     for (const row of rows) {
-      if (row.is_subtotal_line) continue;
-      const lt = calculateLineTotals(row);
+      if (row.is_subtotal_line || row.is_bundle_header) continue;
+      const lt = calculateLineTotals(row, currency);
 
       if (row.group_name) {
         const g = (groupSubtotals[row.group_name] ??= { beforeTax: 0, vat: 0, total: 0 });
@@ -158,5 +167,6 @@ export function useDocumentTotals(params: {
     downPaymentPercent,
     downPaymentAmount,
     products,
+    currency,
   ]);
 }

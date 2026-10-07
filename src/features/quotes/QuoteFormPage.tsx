@@ -19,7 +19,7 @@ import { RichTextEditor } from "@/components/ui/RichTextEditorLazy";
 import { useQuote, useCreateQuote, useUpdateQuote } from "./hooks/useQuotes";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useClients } from "@/features/clients";
-import { formatCurrency, formatDateISO, calculateLineTotal } from "@/lib/utils";
+import { formatCurrency, formatDateISO, toDateInput } from "@/lib/utils";
 import type { QuoteStatus } from "@/types";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { useDocumentTotals } from "@/hooks/useDocumentTotals";
@@ -35,6 +35,14 @@ import { stockShortfalls } from "@/lib/stock-shortfalls";
 import { useDocumentCatalog } from "@/hooks/useDocumentCatalog";
 import { TagPicker } from "@/components/documents/TagPicker";
 import { TagsModal } from "@/components/documents/TagsModal";
+import { BundleContents } from "@/components/documents/BundleContents";
+import {
+  collapseDocumentLines,
+  commonTaxRate,
+  editorLineTotals,
+  expandEditorLines,
+  type BundleComponentSnapshot,
+} from "@/lib/bundles";
 
 const createLineSchema = (t: (key: string) => string) => z.object({
   product_id: z.string().nullable().optional(),
@@ -46,6 +54,11 @@ const createLineSchema = (t: (key: string) => string) => z.object({
   tax_rate: z.coerce.number().min(0).max(100),
   group_name: z.string().nullable().optional(),
   is_subtotal_line: z.boolean().optional(),
+  discount_percent: z.coerce.number().min(0).max(100).optional(),
+  // A pack line carries its composition; it is saved as the pack plus one line
+  // per component (src/lib/bundles.ts).
+  bundle_key: z.string().nullable().optional(),
+  bundle_components: z.custom<BundleComponentSnapshot[]>().nullable().optional(),
 });
 
 const createQuoteFormSchema = (t: (key: string) => string) => z.object({
@@ -199,16 +212,21 @@ export function QuoteFormPage() {
     setLastResetQuoteId(quote.id);
     reset({
       client_id: quote.client_id,
-      issue_date: quote.issue_date,
-      validity_date: quote.validity_date,
+      issue_date: toDateInput(quote.issue_date),
+      validity_date: toDateInput(quote.validity_date),
       notes: quote.notes ?? "",
       status: quote.status,
       shipping_cost: quote.shipping_cost ?? 0,
       shipping_tax_rate: quote.shipping_tax_rate ?? 0,
       down_payment_percent: quote.down_payment_percent ?? 0,
       down_payment_amount: quote.down_payment_amount ?? 0,
+      // Left out, the form opened every document at no discount and saving it
+      // quietly dropped the one it had.
+      discount_percent: quote.discount_percent ?? 0,
+      discount_amount: quote.discount_amount ?? 0,
       tag_ids: (quote.tags ?? []).map((tag) => tag.id),
-      lines: quote.lines.map((line) => ({
+      // A pack comes back as one line carrying its components.
+      lines: collapseDocumentLines(quote.lines).map((line) => ({
         product_id: line.product_id,
         variant_id: line.variant_id ?? null,
         description: line.description,
@@ -218,6 +236,9 @@ export function QuoteFormPage() {
         tax_rate: line.tax_rate,
         group_name: line.group_name,
         is_subtotal_line: !!line.is_subtotal_line,
+        discount_percent: line.discount_percent ?? 0,
+        bundle_key: line.bundle_key ?? null,
+        bundle_components: line.bundle_components,
       })),
     });
     setNotesHtml(quote.notes_html || "");
@@ -241,6 +262,7 @@ export function QuoteFormPage() {
     downPaymentPercent: watchedDownPaymentPercent,
     downPaymentAmount: watchedDownPaymentAmount,
     products,
+    currency: settings?.currency,
   });
   const groupSubtotals = totals.groupSubtotals;
 
@@ -250,19 +272,25 @@ export function QuoteFormPage() {
   const getStockError = (index: number): string | null => {
     const shortfall = shortfalls[index];
     if (!shortfall) return null;
-    return shortfall.available <= 0
-      ? t("quotes:stock.none", { requested: shortfall.requested })
-      : t("quotes:stock.short", { ...shortfall });
+    const message =
+      shortfall.available <= 0
+        ? t("quotes:stock.none", { requested: shortfall.requested })
+        : t("quotes:stock.short", { available: shortfall.available, requested: shortfall.requested });
+    // On a pack line, say which component runs short.
+    return shortfall.item ? `${shortfall.item}: ${message}` : message;
   };
 
   const handleProductSelect = (index: number, productId: string) => {
-    const product = products?.find((p) => p.id === productId);
-    if (product) {
+    const values = catalog.productLine(productId);
+    if (values) {
       setValue(`lines.${index}.product_id`, productId);
       setValue(`lines.${index}.variant_id`, null);
-      setValue(`lines.${index}.description`, product.designation);
-      setValue(`lines.${index}.unit_price`, product.unit_price);
-      setValue(`lines.${index}.tax_rate`, product.tax_rate);
+      setValue(`lines.${index}.description`, values.description);
+      setValue(`lines.${index}.unit_price`, values.unit_price);
+      setValue(`lines.${index}.tax_rate`, values.tax_rate);
+      // A pack brings its composition along; anything else clears it.
+      setValue(`lines.${index}.bundle_key`, null);
+      setValue(`lines.${index}.bundle_components`, values.bundle_components);
     }
   };
 
@@ -273,6 +301,9 @@ export function QuoteFormPage() {
     if (values) {
       setValue(`lines.${index}.description`, values.description);
       setValue(`lines.${index}.unit_price`, values.unit_price);
+      // A pack's variant has its own composition.
+      setValue(`lines.${index}.tax_rate`, values.tax_rate);
+      setValue(`lines.${index}.bundle_components`, values.bundle_components);
     }
   };
 
@@ -299,6 +330,8 @@ export function QuoteFormPage() {
     const formData = {
       ...data,
       notes_html: notesHtml || null,
+      // Each pack goes out as its header plus its components (src/lib/bundles.ts).
+      lines: expandEditorLines(data.lines, { currency: settings?.currency }),
     };
     try {
       if (isEditing && id) {
@@ -471,6 +504,7 @@ export function QuoteFormPage() {
             {isNarrow ? (
               <DocumentLinesMobile
                 ns="quotes"
+                currency={settings?.currency}
                 fields={fields}
                 lines={watchedLines}
                 register={register}
@@ -492,11 +526,9 @@ export function QuoteFormPage() {
             <div className="space-y-4">
               {fields.map((field, index) => {
                 const line = watchedLines[index];
-                const lineTotal = calculateLineTotal(
-                  parseFloat(String(line?.quantity)) || 0,
-                  parseFloat(String(line?.unit_price)) || 0,
-                  parseFloat(String(line?.tax_rate)) || 0
-                );
+                // A pack line is worth its components, each at its own rate.
+                const lineTotal = editorLineTotals(line ?? {}, settings?.currency);
+                const packComponents = line?.bundle_components?.length ? line.bundle_components : null;
                 const isExpanded = expandedDescriptions.has(index);
                 const hasRichDescription = line?.description_html && line.description_html !== "<p></p>";
                 const isSubtotalLine = line?.is_subtotal_line;
@@ -640,14 +672,27 @@ export function QuoteFormPage() {
                         />
                       </div>
                       <div className="col-span-4 md:col-span-3 lg:col-span-1">
-                        <Input
-                          label={denseLines ? "" : t("quotes:lines.vatRate")}
-                          aria-label={t("quotes:lines.vatRate")}
-                          placeholder={denseLines ? t("quotes:lines.vatRate") : undefined}
-                          type="number"
-                          step="0.1"
-                          {...register(`lines.${index}.tax_rate`)}
-                        />
+                        {packComponents ? (
+                          // A pack has no rate of its own: each component keeps its own.
+                          <Input
+                            key="vat-pack"
+                            label={denseLines ? "" : t("quotes:lines.vatRate")}
+                            aria-label={t("quotes:lines.vatRate")}
+                            value={String(commonTaxRate(packComponents) ?? t("common:documentLines.packMixedVatShort"))}
+                            readOnly
+                            disabled
+                          />
+                        ) : (
+                          <Input
+                            key="vat-rate"
+                            label={denseLines ? "" : t("quotes:lines.vatRate")}
+                            aria-label={t("quotes:lines.vatRate")}
+                            placeholder={denseLines ? t("quotes:lines.vatRate") : undefined}
+                            type="number"
+                            step="0.1"
+                            {...register(`lines.${index}.tax_rate`)}
+                          />
+                        )}
                       </div>
                       <div className="col-span-6 md:col-span-2 lg:col-span-1 flex flex-col">
                         {!denseLines && (
@@ -671,6 +716,7 @@ export function QuoteFormPage() {
                         )}
                       </div>
                     </div>
+                    {packComponents && <BundleContents components={packComponents} quantity={line?.quantity} />}
                     {isExpanded && (
                       <div className="mt-2">
                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">

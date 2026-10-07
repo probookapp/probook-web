@@ -46,6 +46,15 @@ export function formatDateISO(date: Date): string {
   return date.toISOString().split("T")[0];
 }
 
+/**
+ * A stored date as a date field holds it. The API answers with a full
+ * timestamp ("2026-10-08T00:00:00.000Z"), which a date input does not accept:
+ * it showed empty, and the editor opened every document with no dates on screen.
+ */
+export function toDateInput(value: string | null | undefined): string {
+  return value ? value.slice(0, 10) : "";
+}
+
 export function calculateLineTotal(
   quantity: number,
   unitPrice: number,

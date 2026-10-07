@@ -20,7 +20,7 @@ import { useInvoice, useCreateInvoice, useUpdateInvoice } from "./hooks/useInvoi
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { useClients } from "@/features/clients";
-import { formatCurrency, formatDateISO, calculateLineTotal } from "@/lib/utils";
+import { formatCurrency, formatDateISO, toDateInput } from "@/lib/utils";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
 import { useDocumentTotals } from "@/hooks/useDocumentTotals";
 import { useLocalPreference } from "@/hooks/useLocalPreference";
@@ -30,6 +30,14 @@ import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import { TagPicker } from "@/components/documents/TagPicker";
 import { TagsModal } from "@/components/documents/TagsModal";
+import { BundleContents } from "@/components/documents/BundleContents";
+import {
+  collapseDocumentLines,
+  commonTaxRate,
+  editorLineTotals,
+  expandEditorLines,
+  type BundleComponentSnapshot,
+} from "@/lib/bundles";
 import { toast } from "@/stores/useToastStore";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
 import { getApiErrorMessage } from "@/lib/api-adapter";
@@ -47,6 +55,11 @@ const createLineSchema = (t: (key: string) => string) => z.object({
   tax_rate: z.coerce.number().min(0).max(100),
   group_name: z.string().nullable().optional(),
   is_subtotal_line: z.boolean().optional(),
+  discount_percent: z.coerce.number().min(0).max(100).optional(),
+  // A pack line carries its composition; it is saved as the pack plus one line
+  // per component (src/lib/bundles.ts).
+  bundle_key: z.string().nullable().optional(),
+  bundle_components: z.custom<BundleComponentSnapshot[]>().nullable().optional(),
 });
 
 const createInvoiceFormSchema = (t: (key: string) => string) => z.object({
@@ -223,8 +236,8 @@ export function InvoiceFormPage() {
     setLastResetInvoiceId(invoice.id);
     reset({
       client_id: invoice.client_id,
-      issue_date: invoice.issue_date,
-      due_date: invoice.due_date,
+      issue_date: toDateInput(invoice.issue_date),
+      due_date: toDateInput(invoice.due_date),
       notes: invoice.notes ?? "",
       // Only DRAFT invoices are editable (non-drafts redirect above).
       status: invoice.status === "ISSUED" ? "ISSUED" : "DRAFT",
@@ -232,9 +245,14 @@ export function InvoiceFormPage() {
       shipping_tax_rate: invoice.shipping_tax_rate ?? 0,
       down_payment_percent: invoice.down_payment_percent ?? 0,
       down_payment_amount: invoice.down_payment_amount ?? 0,
+      // Left out, the form opened every document at no discount and saving it
+      // quietly dropped the one it had.
+      discount_percent: invoice.discount_percent ?? 0,
+      discount_amount: invoice.discount_amount ?? 0,
       is_cash_sale: invoice.is_cash_sale ?? false,
       stamp_duty_exempt: invoice.stamp_duty_exempt ?? false,
-      lines: invoice.lines.map((line) => ({
+      // A pack comes back as one line carrying its components.
+      lines: collapseDocumentLines(invoice.lines).map((line) => ({
         product_id: line.product_id,
         variant_id: line.variant_id ?? null,
         description: line.description,
@@ -244,6 +262,9 @@ export function InvoiceFormPage() {
         tax_rate: line.tax_rate,
         group_name: line.group_name,
         is_subtotal_line: !!line.is_subtotal_line,
+        discount_percent: line.discount_percent ?? 0,
+        bundle_key: line.bundle_key ?? null,
+        bundle_components: line.bundle_components,
       })),
     });
     setNotesHtml(invoice.notes_html || "");
@@ -269,6 +290,7 @@ export function InvoiceFormPage() {
     downPaymentPercent: watchedDownPaymentPercent,
     downPaymentAmount: watchedDownPaymentAmount,
     products,
+    currency: settings?.currency,
   });
   const groupSubtotals = totals.groupSubtotals;
 
@@ -277,9 +299,10 @@ export function InvoiceFormPage() {
   const shortfalls = stockShortfalls(watchedLines, products);
   const getStockError = (index: number): string | null => {
     const shortfall = shortfalls[index];
-    return shortfall
-      ? t("common:validation.stockExceeded", { available: shortfall.available, total: shortfall.requested })
-      : null;
+    if (!shortfall) return null;
+    const message = t("common:validation.stockExceeded", { available: shortfall.available, total: shortfall.requested });
+    // On a pack line, say which component runs short.
+    return shortfall.item ? `${shortfall.item}: ${message}` : message;
   };
   const hasStockErrors = shortfalls.some(Boolean);
 
@@ -289,13 +312,16 @@ export function InvoiceFormPage() {
   const hasMissingVariant = watchedLines.some((_, index) => getVariantError(index) !== null);
 
   const handleProductSelect = (index: number, productId: string) => {
-    const product = products?.find((p) => p.id === productId);
-    if (product) {
+    const values = catalog.productLine(productId);
+    if (values) {
       setValue(`lines.${index}.product_id`, productId);
       setValue(`lines.${index}.variant_id`, null);
-      setValue(`lines.${index}.description`, product.designation);
-      setValue(`lines.${index}.unit_price`, product.unit_price);
-      setValue(`lines.${index}.tax_rate`, product.tax_rate);
+      setValue(`lines.${index}.description`, values.description);
+      setValue(`lines.${index}.unit_price`, values.unit_price);
+      setValue(`lines.${index}.tax_rate`, values.tax_rate);
+      // A pack brings its composition along; anything else clears it.
+      setValue(`lines.${index}.bundle_key`, null);
+      setValue(`lines.${index}.bundle_components`, values.bundle_components);
     }
   };
 
@@ -306,6 +332,9 @@ export function InvoiceFormPage() {
     if (values) {
       setValue(`lines.${index}.description`, values.description);
       setValue(`lines.${index}.unit_price`, values.unit_price);
+      // A pack's variant has its own composition.
+      setValue(`lines.${index}.tax_rate`, values.tax_rate);
+      setValue(`lines.${index}.bundle_components`, values.bundle_components);
     }
   };
 
@@ -328,6 +357,8 @@ export function InvoiceFormPage() {
     const formData = {
       ...data,
       notes_html: notesHtml || null,
+      // Each pack goes out as its header plus its components (src/lib/bundles.ts).
+      lines: expandEditorLines(data.lines, { currency: settings?.currency }),
     };
     try {
       if (isEditing && id) {
@@ -501,6 +532,7 @@ export function InvoiceFormPage() {
             {isNarrow ? (
               <DocumentLinesMobile
                 ns="invoices"
+                currency={settings?.currency}
                 fields={fields}
                 lines={watchedLines}
                 register={register}
@@ -522,11 +554,9 @@ export function InvoiceFormPage() {
             <div className="space-y-4">
               {fields.map((field, index) => {
                 const line = watchedLines[index];
-                const lineTotal = calculateLineTotal(
-                  parseFloat(String(line?.quantity)) || 0,
-                  parseFloat(String(line?.unit_price)) || 0,
-                  parseFloat(String(line?.tax_rate)) || 0
-                );
+                // A pack line is worth its components, each at its own rate.
+                const lineTotal = editorLineTotals(line ?? {}, settings?.currency);
+                const packComponents = line?.bundle_components?.length ? line.bundle_components : null;
                 const isExpanded = expandedDescriptions.has(index);
                 const hasRichDescription = line?.description_html && line.description_html !== "<p></p>";
                 const isSubtotalLine = line?.is_subtotal_line;
@@ -670,14 +700,27 @@ export function InvoiceFormPage() {
                         />
                       </div>
                       <div className="col-span-6 sm:col-span-4 md:col-span-3 lg:col-span-1">
-                        <Input
-                          label={denseLines ? "" : t("invoices:lines.vatRate")}
-                          aria-label={t("invoices:lines.vatRate")}
-                          placeholder={denseLines ? t("invoices:lines.vatRate") : undefined}
-                          type="number"
-                          step="0.1"
-                          {...register(`lines.${index}.tax_rate`)}
-                        />
+                        {packComponents ? (
+                          // A pack has no rate of its own: each component keeps its own.
+                          <Input
+                            key="vat-pack"
+                            label={denseLines ? "" : t("invoices:lines.vatRate")}
+                            aria-label={t("invoices:lines.vatRate")}
+                            value={String(commonTaxRate(packComponents) ?? t("common:documentLines.packMixedVatShort"))}
+                            readOnly
+                            disabled
+                          />
+                        ) : (
+                          <Input
+                            key="vat-rate"
+                            label={denseLines ? "" : t("invoices:lines.vatRate")}
+                            aria-label={t("invoices:lines.vatRate")}
+                            placeholder={denseLines ? t("invoices:lines.vatRate") : undefined}
+                            type="number"
+                            step="0.1"
+                            {...register(`lines.${index}.tax_rate`)}
+                          />
+                        )}
                       </div>
                       <div className="col-span-6 md:col-span-2 lg:col-span-1 flex flex-col">
                         {!denseLines && (
@@ -701,6 +744,7 @@ export function InvoiceFormPage() {
                         )}
                       </div>
                     </div>
+                    {packComponents && <BundleContents components={packComponents} quantity={line?.quantity} />}
                     {isExpanded && (
                       <div className="mt-2">
                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 block">

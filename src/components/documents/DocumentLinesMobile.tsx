@@ -5,8 +5,9 @@ import { useTranslation } from "react-i18next";
 import { Plus, Trash2, ChevronLeft, ChevronRight, Layers } from "lucide-react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
 import { Button, Input, Modal, SearchableSelect } from "@/components/ui";
-import { calculateLineTotals } from "@/lib/document-totals";
+import { commonTaxRate, editorLineTotals, type BundleComponentSnapshot } from "@/lib/bundles";
 import { formatCurrency } from "@/lib/utils";
+import { BundleContents } from "./BundleContents";
 
 /**
  * The line editor for phones.
@@ -39,6 +40,8 @@ export interface EditableLine {
   discount_percent?: number | string | null;
   group_name?: string | null;
   is_subtotal_line?: boolean | null;
+  /** A pack line: its components, priced and taxed each on their own. */
+  bundle_components?: BundleComponentSnapshot[] | null;
 }
 
 export interface DocumentLinesMobileProps {
@@ -68,6 +71,8 @@ export interface DocumentLinesMobileProps {
   withDiscount?: boolean;
   /** Delivery notes state quantities only — no money. */
   withPricing?: boolean;
+  /** Tenant currency: how a pack price is split and rounded. */
+  currency?: string | null;
 }
 
 const asNumber = (value: unknown): number => parseFloat(String(value ?? "")) || 0;
@@ -90,18 +95,13 @@ export function DocumentLinesMobile({
   variantError,
   withDiscount = true,
   withPricing = true,
+  currency,
 }: DocumentLinesMobileProps) {
   const { t } = useTranslation([ns, "common"]);
   const [editing, setEditing] = useState<number | null>(null);
 
-  const totalOf = (line: EditableLine | undefined) =>
-    calculateLineTotals({
-      quantity: asNumber(line?.quantity),
-      unit_price: asNumber(line?.unit_price),
-      tax_rate: asNumber(line?.tax_rate),
-      discount_percent: asNumber(line?.discount_percent),
-      is_subtotal_line: line?.is_subtotal_line,
-    }).total;
+  // A pack line is worth its components, each at its own VAT rate.
+  const totalOf = (line: EditableLine | undefined) => editorLineTotals(line ?? {}, currency).total;
 
   const documentTotal = lines.reduce(
     (sum, line) => (line?.is_subtotal_line ? sum : sum + totalOf(line)),
@@ -112,6 +112,7 @@ export function DocumentLinesMobile({
   const openError = editing === null ? null : stockError?.(editing) ?? null;
   const openVariants =
     openLine?.product_id && variantOptions ? variantOptions(openLine.product_id) : [];
+  const openPack = openLine?.bundle_components?.length ? openLine.bundle_components : null;
 
   /** A new line opens straight into the sheet: adding then hunting for it is two gestures. */
   const addAndOpen = () => {
@@ -260,14 +261,27 @@ export function DocumentLinesMobile({
 
             {withPricing && (
               <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label={t(`${ns}:lines.vatRate`)}
-                  type="number"
-                  step="0.1"
-                  inputMode="decimal"
-                  className="h-12 text-lg"
-                  {...register(`lines.${editing}.tax_rate`)}
-                />
+                {openPack ? (
+                  // A pack has no rate of its own: each component keeps its own.
+                  <Input
+                    key="vat-pack"
+                    label={t(`${ns}:lines.vatRate`)}
+                    className="h-12 text-lg"
+                    value={String(commonTaxRate(openPack) ?? t("common:documentLines.packMixedVatShort"))}
+                    readOnly
+                    disabled
+                  />
+                ) : (
+                  <Input
+                    key="vat-rate"
+                    label={t(`${ns}:lines.vatRate`)}
+                    type="number"
+                    step="0.1"
+                    inputMode="decimal"
+                    className="h-12 text-lg"
+                    {...register(`lines.${editing}.tax_rate`)}
+                  />
+                )}
                 {withDiscount && (
                   <Input
                     label={t(`${ns}:lines.discountPercent`)}
@@ -280,6 +294,8 @@ export function DocumentLinesMobile({
                 )}
               </div>
             )}
+
+            {openPack && <BundleContents components={openPack} quantity={openLine?.quantity} />}
 
             <Input
               label={t(`${ns}:lines.groupPlaceholder`)}

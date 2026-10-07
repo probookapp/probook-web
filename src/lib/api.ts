@@ -11,6 +11,8 @@ import type {
   CreateProductInput,
   UpdateProductInput,
   ProductVariant,
+  ProductBundle,
+  BundleComponentInput,
   CreateProductVariantInput,
   UpdateProductVariantInput,
   StockMovement,
@@ -186,6 +188,14 @@ export const productVariantApi = {
     apiCall<ProductVariant>("update_product_variant", { productId, variantId, input }),
   delete: (productId: string, variantId: string) =>
     apiCall<void>("delete_product_variant", { productId, variantId }),
+};
+
+// Pack compositions: their own route, because composing packs belongs to an offer.
+export const productBundleApi = {
+  get: (productId: string) =>
+    apiCall<ProductBundle>("get_product_bundle", { productId }),
+  set: (productId: string, components: BundleComponentInput[]) =>
+    apiCall<ProductBundle>("set_product_bundle", { productId, components }),
 };
 
 // Product Category commands

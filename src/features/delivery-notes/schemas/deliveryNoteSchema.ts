@@ -1,4 +1,5 @@
 import { z } from "zod";
+import type { BundleComponentSnapshot } from "@/lib/bundles";
 
 export const createDeliveryNoteLineSchema = (t: (key: string) => string) => z.object({
   product_id: z.string().nullable().optional(),
@@ -6,6 +7,10 @@ export const createDeliveryNoteLineSchema = (t: (key: string) => string) => z.ob
   description: z.string().min(1, t("validation:delivery.lineDescriptionRequired")),
   quantity: z.coerce.number().min(0.01, t("validation:delivery.lineQuantityPositive")),
   unit: z.string().nullable().optional(),
+  // A pack line carries its composition; it is saved as the pack plus one line
+  // per component (src/lib/bundles.ts).
+  bundle_key: z.string().nullable().optional(),
+  bundle_components: z.custom<BundleComponentSnapshot[]>().nullable().optional(),
 });
 
 export const createDeliveryNoteSchema = (t: (key: string) => string) => z.object({
