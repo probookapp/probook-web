@@ -8,6 +8,7 @@ import { useRouter } from "@/lib/navigation";
 import type { Invoice } from "@/types";
 import { useCreateCreditNote } from "../hooks/useCreditNotes";
 import { NUMERIC_CELL } from "@/components/ui";
+import { bundleRoles } from "@/lib/bundles";
 
 interface CreateCreditNoteModalProps {
   invoice: Invoice;
@@ -30,10 +31,21 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const createCreditNote = useCreateCreditNote();
 
-  const refundableLines = useMemo(
-    () => invoice.lines.filter((l) => !l.is_subtotal_line),
-    [invoice.lines]
-  );
+  // A pack is refunded through its components, which carry its value: its own
+  // line is worth their sum and would refund it twice. Each component says
+  // which pack it came in.
+  const refundableLines = useMemo(() => {
+    const roles = bundleRoles(invoice.lines);
+    const packNames = new Map(
+      invoice.lines.filter((_, i) => roles[i].role === "header").map((l) => [l.bundle_key, l.description])
+    );
+    return invoice.lines
+      .filter((l, i) => !l.is_subtotal_line && roles[i].role !== "header")
+      .map((l) => {
+        const pack = l.bundle_key ? packNames.get(l.bundle_key) : undefined;
+        return pack ? { ...l, description: `${pack} — ${l.description}` } : l;
+      });
+  }, [invoice.lines]);
 
   const [issueDate, setIssueDate] = useState(formatDateISO(new Date()));
   const [reason, setReason] = useState("");
@@ -51,7 +63,9 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
       variant_id: l.variant_id ?? null,
       description: l.description,
       quantity: quantities[l.id] ?? 0,
-      unit_price: l.unit_price,
+      // What was actually charged per unit: a line discount (a pack's, for
+      // its components) is not refunded on top of what the customer paid.
+      unit_price: l.quantity > 0 ? Math.round((l.subtotal / l.quantity) * 1000) / 1000 : l.unit_price,
       tax_rate: l.tax_rate,
     }));
 
