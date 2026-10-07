@@ -43,6 +43,7 @@ const TEXT = {
     mountFixed: "Fixe",
     mountSearch: "Support",
     soundbar: "Barre de son Condor 2.1",
+    pack: "Pack TV installé",
   },
   en: {
     tv: '43" Condor LED TV',
@@ -66,6 +67,7 @@ const TEXT = {
     mountFixed: "Fixed",
     mountSearch: "mount",
     soundbar: "Condor 2.1 soundbar",
+    pack: "Installed TV pack",
   },
   ar: {
     tv: "تلفزيون Condor LED 43 بوصة",
@@ -89,6 +91,7 @@ const TEXT = {
     mountFixed: "ثابت",
     mountSearch: "حامل",
     soundbar: "مكبر صوت شريطي Condor 2.1",
+    pack: "حزمة تلفزيون مع التركيب",
   },
 }[LOCALE];
 
@@ -169,6 +172,15 @@ export const PRODUCTS = {
     reference: "AUD-COND-21",
     salePrice: "18500",
     purchasePrice: "12900",
+  },
+  /**
+   * The television, its cable and its fitting sold as one offer (chapter 03):
+   * 48 800 bought separately, 45 000 as a pack.
+   */
+  pack: {
+    designation: TEXT.pack,
+    reference: "PACK-TV-43",
+    salePrice: "45000",
   },
   install: {
     designation: TEXT.install,

@@ -77,6 +77,7 @@ export interface GuideTopic {
 
 export const GUIDE_TOPICS: GuideTopic[] = [
   { label: "Création du compte", chapter: "01-demarrage", evidence: "goto(\"signup\")" },
+  { label: "Pack de produits", chapter: "03-produits", evidence: "products:bundle.addComponent" },
   { label: "Remise commerciale", chapter: "04-devis", evidence: "discount_percent" },
   { label: "Marge en direct", chapter: "04-devis", evidence: "quotes:margin.label" },
   { label: "Produit à variantes sur un devis", chapter: "04-devis", evidence: "common:documentLines.variant" },

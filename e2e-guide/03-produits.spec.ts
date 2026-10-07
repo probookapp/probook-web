@@ -116,5 +116,50 @@ test("Chapitre 3 — Construire son catalogue produits", async ({ page }) => {
   await tour.pause(1500);
   await tour.click(movements.locator('button[aria-label]').first(), { settleMs: 700 });
 
+  // ─── pack ───
+  // A client asked for it: an installer sells "the camera, its connectors and
+  // the fitting" as one priced offer. Each component keeps its own VAT rate
+  // and leaves the stock when the pack is sold (src/lib/bundles.ts).
+  await tour.say(
+    "On vend souvent un ensemble : le téléviseur, son câble et la pose. Un pack les réunit sous un seul prix."
+  );
+  await tour.click(tour.button(t("products:newProduct")));
+  const packForm = tour.dialog();
+  await tour.type(packForm.locator('input[name="designation"]'), PRODUCTS.pack.designation);
+  await tour.type(packForm.locator('input[name="reference"]'), PRODUCTS.pack.reference);
+  await tour.set(packForm.locator('input[name="unit_price"]'), PRODUCTS.pack.salePrice);
+  await tour.click(packForm.locator("#is_bundle"));
+  await tour.say("Un pack n'a ni stock ni taux de TVA à lui : ce sont ceux de ses composants.");
+  await expect(packForm.locator('input[name="quantity"]')).toHaveCount(0);
+  await tour.click(packForm.getByRole("button", { name: t("products:createProduct"), exact: true }), {
+    settleMs: 1500,
+  });
+
+  await tour.say("Le pack est créé, et sa fiche s'ouvre pour choisir ce qu'il contient.");
+  const composition = tour.dialog().getByTestId("bundle-manager");
+  await expect(composition).toBeVisible();
+  const components = [PRODUCTS.tv, PRODUCTS.cable, PRODUCTS.install];
+  for (const [i, component] of components.entries()) {
+    await tour.click(composition.getByRole("button", { name: t("products:bundle.addComponent") }));
+    await tour.pick(composition.getByTestId("bundle-component-row").nth(i), component.designation, {
+      search: component.reference,
+    });
+  }
+  await tour.click(composition.getByRole("button", { name: t("products:bundle.save") }), { settleMs: 1200 });
+  await tour.expectToast();
+
+  await tour.say(
+    "La fiche compare la valeur des composants au prix du pack : la remise se voit tout de suite."
+  );
+  await expect(composition.getByText(t("products:bundle.discount"))).toBeVisible();
+  await tour.pause(1500);
+  await tour.click(tour.dialog().getByRole("button", { name: t("common:buttons.cancel"), exact: true }), {
+    settleMs: 900,
+  });
+  await expect(tour.row(PRODUCTS.pack.designation)).toContainText(t("products:types.bundle"));
+  await tour.say(
+    "Dans la liste, le stock du pack est ce que ses composants permettent d'assembler. Vendu, il les sortira du stock un par un."
+  );
+
   await tour.say("Le catalogue est prêt : nous pouvons commencer à vendre.");
 });
