@@ -24,6 +24,7 @@ import { DocumentTagsRow } from "@/components/documents/DocumentTagsRow";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { NUMERIC_CELL } from "@/components/ui";
+import { bundleRoles } from "@/lib/bundles";
 import { apiErrorCode, getApiErrorMessage } from "@/lib/api-adapter";
 
 export function InvoiceViewPage() {
@@ -50,6 +51,9 @@ export function InvoiceViewPage() {
       </div>
     );
   }
+
+  // Packs: which lines are a pack, which are its components (src/lib/bundles.ts).
+  const roles = bundleRoles(invoice.lines);
 
   const handleMarkPaid = async () => {
     if (isDemoMode) { showSubscribePrompt(); return; }
@@ -194,18 +198,29 @@ export function InvoiceViewPage() {
 
               {/* Mobile line items */}
               <div className="md:hidden space-y-3">
-                {invoice.lines.map((line) => (
-                  <div key={line.id} className="border rounded-lg p-3 bg-(--color-bg-secondary)">
-                    <p className="text-sm font-medium">{line.description}</p>
-                    <div className="flex items-center justify-between mt-1.5 text-sm text-(--color-text-secondary)">
-                      <span>{line.quantity} × {formatCurrency(line.unit_price)} HT</span>
-                      <span>{line.tax_rate}% {t("common:labels.vat")}</span>
+                {invoice.lines.map((line, index) =>
+                  roles[index].role === "child" ? (
+                    // A pack component: listed under its pack, which carries the value.
+                    <p key={line.id} className="-mt-2 ps-4 text-xs text-(--color-text-secondary)">
+                      {line.quantity} × {line.description} · {line.tax_rate}% {t("common:labels.vat")}
+                    </p>
+                  ) : (
+                    <div key={line.id} className="border rounded-lg p-3 bg-(--color-bg-secondary)">
+                      <p className="text-sm font-medium">{line.description}</p>
+                      <div className="flex items-center justify-between mt-1.5 text-sm text-(--color-text-secondary)">
+                        <span>{line.quantity} × {formatCurrency(line.unit_price)} HT</span>
+                        <span>
+                          {roles[index].mixedRates
+                            ? t("common:documentLines.packMixedVat")
+                            : `${line.tax_rate}% ${t("common:labels.vat")}`}
+                        </span>
+                      </div>
+                      <div className="flex justify-end mt-1">
+                        <span className="text-sm font-medium">{formatCurrency(line.total)}</span>
+                      </div>
                     </div>
-                    <div className="flex justify-end mt-1">
-                      <span className="text-sm font-medium">{formatCurrency(line.total)}</span>
-                    </div>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
               {/* Desktop line items table */}
               <div className="hidden md:block border rounded-lg overflow-x-auto">
@@ -230,19 +245,38 @@ export function InvoiceViewPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-(--color-border-primary)">
-                    {invoice.lines.map((line) => (
-                      <tr key={line.id}>
-                        <td className="px-3 py-2 text-sm">{line.description}</td>
-                        <td className="px-3 py-2 text-center text-sm tabular-nums">{line.quantity}</td>
-                        <td className={`px-3 py-2 text-sm ${NUMERIC_CELL}`}>
-                          {formatCurrency(line.unit_price)}
-                        </td>
-                        <td className="px-3 py-2 text-center text-sm tabular-nums">{line.tax_rate}%</td>
-                        <td className={`px-3 py-2 text-sm font-medium ${NUMERIC_CELL}`}>
-                          {formatCurrency(line.total)}
-                        </td>
-                      </tr>
-                    ))}
+                    {invoice.lines.map((line, index) => {
+                      // A pack's components sit under it: their value is in the
+                      // pack's own line, so they show what and how many, and
+                      // the rate each one is taxed at.
+                      const { role, mixedRates } = roles[index];
+                      if (role === "child") {
+                        return (
+                          <tr key={line.id} className="text-(--color-text-secondary)">
+                            <td className="ps-8 pe-3 py-1.5 text-xs">{line.description}</td>
+                            <td className="px-3 py-1.5 text-center text-xs tabular-nums">{line.quantity}</td>
+                            <td />
+                            <td className="px-3 py-1.5 text-center text-xs tabular-nums">{line.tax_rate}%</td>
+                            <td />
+                          </tr>
+                        );
+                      }
+                      return (
+                        <tr key={line.id}>
+                          <td className="px-3 py-2 text-sm">{line.description}</td>
+                          <td className="px-3 py-2 text-center text-sm tabular-nums">{line.quantity}</td>
+                          <td className={`px-3 py-2 text-sm ${NUMERIC_CELL}`}>
+                            {formatCurrency(line.unit_price)}
+                          </td>
+                          <td className="px-3 py-2 text-center text-sm tabular-nums">
+                            {mixedRates ? t("common:documentLines.packMixedVatShort") : `${line.tax_rate}%`}
+                          </td>
+                          <td className={`px-3 py-2 text-sm font-medium ${NUMERIC_CELL}`}>
+                            {formatCurrency(line.total)}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

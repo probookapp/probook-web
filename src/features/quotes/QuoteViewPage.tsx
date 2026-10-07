@@ -24,6 +24,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { DocumentTagsRow } from "@/components/documents/DocumentTagsRow";
 import { NUMERIC_CELL } from "@/components/ui";
 import { useDocumentCatalog } from "@/hooks/useDocumentCatalog";
+import { bundleRoles } from "@/lib/bundles";
 import { stockShortfalls, type StockShortfall } from "@/lib/stock-shortfalls";
 
 export function QuoteViewPage() {
@@ -54,11 +55,13 @@ export function QuoteViewPage() {
   // Current stock, not stock on the day the quote was written: what matters is
   // whether it can be delivered now. Screen only — the PDF goes to the client.
   const shortfalls = stockShortfalls(quote.lines, products);
+  // Packs: which lines are a pack, which are its components (src/lib/bundles.ts).
+  const roles = bundleRoles(quote.lines);
   const shortCount = shortfalls.filter(Boolean).length;
   const shortfallLabel = (s: StockShortfall) =>
     s.available <= 0
       ? t("quotes:stock.none", { requested: s.requested })
-      : t("quotes:stock.short", { ...s });
+      : t("quotes:stock.short", { available: s.available, requested: s.requested });
 
   const handleConvert = async () => {
     if (isDemoMode) { showSubscribePrompt(); return; }
@@ -185,7 +188,19 @@ export function QuoteViewPage() {
 
               {/* Mobile line items */}
               <div className="md:hidden space-y-3">
-                {quote.lines.map((line, index) => (
+                {quote.lines.map((line, index) =>
+                  roles[index].role === "child" ? (
+                    // A pack component: listed under its pack, which carries the value.
+                    <p
+                      key={line.id}
+                      className={`-mt-2 ps-4 text-xs ${
+                        shortfalls[index] ? "text-red-600 dark:text-red-400" : "text-(--color-text-secondary)"
+                      }`}
+                    >
+                      {line.quantity} × {line.description} · {line.tax_rate}% {t("common:labels.vat")}
+                      {shortfalls[index] && <> · {shortfallLabel(shortfalls[index])}</>}
+                    </p>
+                  ) : (
                   <div
                     key={line.id}
                     className={`border rounded-lg p-3 ${
@@ -205,13 +220,18 @@ export function QuoteViewPage() {
                     )}
                     <div className="flex items-center justify-between mt-1.5 text-sm text-(--color-text-secondary)">
                       <span>{line.quantity} × {formatCurrency(line.unit_price)} HT</span>
-                      <span>{line.tax_rate}% {t("common:labels.vat")}</span>
+                      <span>
+                        {roles[index].mixedRates
+                          ? t("common:documentLines.packMixedVat")
+                          : `${line.tax_rate}% ${t("common:labels.vat")}`}
+                      </span>
                     </div>
                     <div className="flex justify-end mt-1">
                       <span className="text-sm font-medium">{formatCurrency(line.total)}</span>
                     </div>
                   </div>
-                ))}
+                  )
+                )}
               </div>
               {/* Desktop line items table */}
               <div className="hidden md:block border rounded-lg overflow-x-auto">
@@ -238,6 +258,34 @@ export function QuoteViewPage() {
                   <tbody className="divide-y divide-(--color-border-primary)">
                     {quote.lines.map((line, index) => {
                       const shortfall = shortfalls[index];
+                      // A pack's components sit under it: their value is in the
+                      // pack's own line, so they show what and how many, and the
+                      // rate each one is taxed at.
+                      const { role, mixedRates } = roles[index];
+                      if (role === "child") {
+                        return (
+                          <tr
+                            key={line.id}
+                            className={shortfall ? "bg-red-50 dark:bg-red-900/20" : "text-(--color-text-secondary)"}
+                          >
+                            <td className="ps-8 pe-3 py-1.5 text-xs">
+                              <span className={shortfall ? "font-medium text-red-700 dark:text-red-300" : undefined}>
+                                {line.description}
+                              </span>
+                              {shortfall && (
+                                <span className="mt-0.5 flex items-center gap-1 text-xs text-red-600 dark:text-red-400">
+                                  <PackageX className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                                  {shortfallLabel(shortfall)}
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-3 py-1.5 text-center text-xs tabular-nums">{line.quantity}</td>
+                            <td />
+                            <td className="px-3 py-1.5 text-center text-xs tabular-nums">{line.tax_rate}%</td>
+                            <td />
+                          </tr>
+                        );
+                      }
                       return (
                       <tr key={line.id} className={shortfall ? "bg-red-50 dark:bg-red-900/20" : undefined}>
                         <td className="px-3 py-2 text-sm">
@@ -261,7 +309,9 @@ export function QuoteViewPage() {
                         <td className={`px-3 py-2 text-sm ${NUMERIC_CELL}`}>
                           {formatCurrency(line.unit_price)}
                         </td>
-                        <td className="px-3 py-2 text-center text-sm tabular-nums">{line.tax_rate}%</td>
+                        <td className="px-3 py-2 text-center text-sm tabular-nums">
+                          {mixedRates ? t("common:documentLines.packMixedVatShort") : `${line.tax_rate}%`}
+                        </td>
                         <td className={`px-3 py-2 text-sm font-medium ${NUMERIC_CELL}`}>
                           {formatCurrency(line.total)}
                         </td>

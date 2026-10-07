@@ -7,11 +7,13 @@ import {
 } from "@react-pdf/renderer";
 import { styles } from "./styles";
 import { numberToFrenchWords, CURRENCY_WORDS } from "@/lib/number-words";
-import { renderHtmlToPdf } from "./htmlToPdf";
 import { renderIdentifiers, identifierSummary } from "./identifiers";
 import type { Invoice, CompanySettings } from "@/types";
 import { pdfCurrency } from "./text";
 import { pdfString } from "./strings";
+import { PdfLineRow } from "./LineRow";
+import { bundleRoles, isPresentationLine } from "@/lib/bundles";
+import { vatBreakdown } from "@/lib/document-totals";
 import { DEFAULT_CURRENCY } from "@/lib/currencies";
 
 
@@ -53,10 +55,20 @@ export function InvoicePDF({
   const t = (key: string) => pdfString(key, locale);
   // Lines carry their own (already line-discounted) subtotal; the document
   // discount is what separates their sum from the taxable base.
+  // A pack header is worth its components, which are lines of their own.
   const linesSubtotal = invoice.lines.reduce(
-    (sum, l) => sum + (l.is_subtotal_line ? 0 : l.subtotal),
+    (sum, l) => sum + (isPresentationLine(l) ? 0 : l.subtotal),
     0
   );
+  // Which lines are a pack and which its components (src/lib/bundles.ts).
+  const roles = new Map(bundleRoles(invoice.lines).map((r, i) => [invoice.lines[i].id, r]));
+  // Several VAT rates on one document: each base and each tax is stated.
+  const vatRates = vatBreakdown({
+    lines: invoice.lines,
+    discountPercent: invoice.discount_percent,
+    discountAmount: invoice.discount_amount,
+    currency,
+  });
   const documentDiscount = Math.max(
     0,
     linesSubtotal - (invoice.subtotal - (invoice.shipping_cost || 0))
@@ -199,28 +211,26 @@ export function InvoicePDF({
 
               // Lines in group
               lines.forEach(line => {
-                // Render rich text or plain description
-                const richTextContent = renderHtmlToPdf(line.description_html);
+                const { role, mixedRates } = roles.get(line.id) ?? { role: "plain" as const, mixedRates: false };
                 elements.push(
-                  <View
+                  <PdfLineRow
                     key={line.id}
-                    style={[styles.tableRow, rowIndex % 2 === 1 ? styles.tableRowAlt : {}]}
-                  >
-                    <View style={styles.colDescription}>
-                      {richTextContent || <Text>{line.description}</Text>}
-                    </View>
-                    <Text style={styles.colQuantity}>{line.quantity}</Text>
-                    <Text style={styles.colUnitPrice}>{pdfCurrency(line.unit_price, locale, currency)}</Text>
-                    <Text style={styles.colVat}>{line.tax_rate}%</Text>
-                    <Text style={styles.colTotal}>{pdfCurrency(line.total, locale, currency)}</Text>
-                  </View>
+                    line={line}
+                    role={role}
+                    mixedRates={mixedRates}
+                    alt={rowIndex % 2 === 1}
+                    locale={locale}
+                    currency={currency}
+                  />
                 );
                 rowIndex++;
               });
 
               // Subtotal for group
-              const groupTotalHt = lines.reduce((sum, l) => sum + l.subtotal, 0);
-              const groupTotalTtc = lines.reduce((sum, l) => sum + l.total, 0);
+              // A pack header is worth its components: counted once, through them.
+              const valued = lines.filter((l) => !isPresentationLine(l));
+              const groupTotalHt = valued.reduce((sum, l) => sum + l.subtotal, 0);
+              const groupTotalTtc = valued.reduce((sum, l) => sum + l.total, 0);
               elements.push(
                 <View key={`subtotal-${groupName}`} style={{ backgroundColor: "#f2f0ed", padding: 6, flexDirection: "row", justifyContent: "flex-end" }}>
                   <Text style={{ fontSize: 8, fontWeight: "bold", color: "#635e56", marginRight: 10 }}>
@@ -232,21 +242,17 @@ export function InvoicePDF({
 
             // Render ungrouped lines
             ungroupedLines.forEach(line => {
-              // Render rich text or plain description
-              const richTextContent = renderHtmlToPdf(line.description_html);
+              const { role, mixedRates } = roles.get(line.id) ?? { role: "plain" as const, mixedRates: false };
               elements.push(
-                <View
+                <PdfLineRow
                   key={line.id}
-                  style={[styles.tableRow, rowIndex % 2 === 1 ? styles.tableRowAlt : {}]}
-                >
-                  <View style={styles.colDescription}>
-                    {richTextContent || <Text>{line.description}</Text>}
-                  </View>
-                  <Text style={styles.colQuantity}>{line.quantity}</Text>
-                  <Text style={styles.colUnitPrice}>{pdfCurrency(line.unit_price, locale, currency)}</Text>
-                  <Text style={styles.colVat}>{line.tax_rate}%</Text>
-                  <Text style={styles.colTotal}>{pdfCurrency(line.total, locale, currency)}</Text>
-                </View>
+                  line={line}
+                  role={role}
+                  mixedRates={mixedRates}
+                  alt={rowIndex % 2 === 1}
+                  locale={locale}
+                  currency={currency}
+                />
               );
               rowIndex++;
             });
@@ -287,6 +293,15 @@ export function InvoicePDF({
                 {pdfCurrency(invoice.tax_amount, locale, currency)}
               </Text>
             </View>
+            {vatRates.length > 1 &&
+              vatRates.map((r) => (
+                <View key={`vat-${r.rate}`} style={styles.totalRow}>
+                  <Text style={[styles.totalLabel, { fontSize: 8 }]}>
+                    {pdfString("common.vatAtRate", locale, { rate: r.rate, base: pdfCurrency(r.base, locale, currency) })}
+                  </Text>
+                  <Text style={[styles.totalValue, { fontSize: 8 }]}>{pdfCurrency(r.tax, locale, currency)}</Text>
+                </View>
+              ))}
             {invoice.shipping_cost > 0 && (
               <>
                 <View style={styles.totalRow}>

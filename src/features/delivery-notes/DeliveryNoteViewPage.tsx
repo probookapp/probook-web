@@ -34,6 +34,7 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { DocumentTagsRow } from "@/components/documents/DocumentTagsRow";
 import type { DeliveryNoteStatus } from "@/types";
 import { NUMERIC_CELL } from "@/components/ui";
+import { bundleRoles } from "@/lib/bundles";
 
 export function DeliveryNoteViewPage() {
   const { t } = useTranslation(["delivery", "common"]);
@@ -83,6 +84,8 @@ export function DeliveryNoteViewPage() {
           description: l.description,
           quantity: l.quantity,
           unit: l.unit,
+          is_bundle_header: l.is_bundle_header ?? false,
+          bundle_key: l.bundle_key ?? null,
         })),
       });
     } catch {
@@ -132,6 +135,9 @@ export function DeliveryNoteViewPage() {
       </div>
     );
   }
+
+  // Packs: which lines are a pack, which are its components (src/lib/bundles.ts).
+  const roles = bundleRoles(deliveryNote.lines);
 
   return (
     <div className="space-y-6">
@@ -293,9 +299,12 @@ export function DeliveryNoteViewPage() {
         <CardContent className="p-0">
           {/* Mobile line items */}
           <div className="md:hidden divide-y divide-(--color-border-primary)">
-            {deliveryNote.lines.map((line) => (
-              <div key={line.id} className="px-4 py-3">
-                <p className="text-sm font-medium">{line.description}</p>
+            {deliveryNote.lines.map((line, index) => (
+              // A pack component is listed under its pack, indented.
+              <div key={line.id} className={roles[index].role === "child" ? "ps-8 pe-4 py-2" : "px-4 py-3"}>
+                <p className={roles[index].role === "child" ? "text-xs text-(--color-text-secondary)" : "text-sm font-medium"}>
+                  {line.description}
+                </p>
                 <div className="flex items-center gap-3 mt-1 text-sm text-(--color-text-secondary)">
                   <span>{line.quantity}</span>
                   <span>{line.unit || "-"}</span>
@@ -322,7 +331,9 @@ export function DeliveryNoteViewPage() {
             <tbody>
               {deliveryNote.lines.map((line, index) => (
                 <tr key={line.id} className={index % 2 === 1 ? "bg-(--color-bg-secondary)" : ""}>
-                  <td className="py-2 px-3 text-sm">{line.description}</td>
+                  <td className={roles[index].role === "child" ? "py-1.5 ps-8 pe-3 text-xs text-(--color-text-secondary)" : "py-2 px-3 text-sm"}>
+                    {line.description}
+                  </td>
                   <td className={`py-2 px-3 text-sm ${NUMERIC_CELL}`}>{line.quantity}</td>
                   <td className="py-2 px-3 text-sm">{line.unit || "-"}</td>
                 </tr>

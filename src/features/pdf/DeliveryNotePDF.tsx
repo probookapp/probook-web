@@ -9,6 +9,7 @@ import { styles } from "./styles";
 import { renderIdentifiers, identifierSummary } from "./identifiers";
 import type { DeliveryNote, CompanySettings } from "@/types";
 import { pdfString } from "./strings";
+import { bundleRoles } from "@/lib/bundles";
 
 
 interface DeliveryNotePDFProps {
@@ -39,6 +40,10 @@ export function DeliveryNotePDF({
   // Words resolved here, not at module scope: the server has no
   // react-i18next to import (see strings.ts).
   const t = (key: string) => pdfString(key, locale);
+  // A pack is a header over its components: the components are what is
+  // delivered, so they are what the summary counts.
+  const roles = bundleRoles(deliveryNote.lines);
+  const goods = deliveryNote.lines.filter((_, i) => roles[i].role !== "header");
   const getStatusStyle = () => {
     switch (deliveryNote.status) {
       case "DELIVERED":
@@ -154,7 +159,16 @@ export function DeliveryNotePDF({
               key={line.id}
               style={[styles.tableRow, index % 2 === 1 ? styles.tableRowAlt : {}]}
             >
-              <Text style={[styles.colDescription, { flex: 3 }]}>{line.description}</Text>
+              {/* A pack's components are listed under it, indented. */}
+              <Text
+                style={[
+                  styles.colDescription,
+                  { flex: 3 },
+                  roles[index].role === "child" ? { paddingLeft: 12, fontSize: 8, color: "#635e56" } : {},
+                ]}
+              >
+                {line.description}
+              </Text>
               <Text style={[styles.colQuantity, { flex: 1, textAlign: "right" }]}>{line.quantity}</Text>
               <Text style={[styles.colUnitPrice, { flex: 1 }]}>{line.unit || "-"}</Text>
             </View>
@@ -165,10 +179,10 @@ export function DeliveryNotePDF({
         <View style={{ marginTop: 20, alignItems: "flex-end" }}>
           <View style={{ backgroundColor: "#eaf4ee", padding: 15, borderRadius: 4, minWidth: 200 }}>
             <Text style={{ fontSize: 10, color: "#1d543d", fontWeight: "bold" }}>
-              {t("deliveryNote.totalItems")}: {deliveryNote.lines.length}
+              {t("deliveryNote.totalItems")}: {goods.length}
             </Text>
             <Text style={{ fontSize: 10, color: "#1d543d", marginTop: 4 }}>
-              {t("deliveryNote.totalQuantity")}: {deliveryNote.lines.reduce((sum, l) => sum + l.quantity, 0)}
+              {t("deliveryNote.totalQuantity")}: {goods.reduce((sum, l) => sum + l.quantity, 0)}
             </Text>
           </View>
         </View>
