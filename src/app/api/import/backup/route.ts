@@ -171,6 +171,7 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
       const products = list(src, "products");
       const variants = list(src, "product_variants");
       const prices = list(src, "product_prices");
+      const bundleComponents = list(src, "bundle_components");
       const clients = list(src, "clients");
       const contacts = list(src, "client_contacts");
       const suppliers = list(src, "suppliers");
@@ -254,6 +255,8 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
       await tx.supplier.deleteMany({ where: { tenantId } });
       await tx.clientContact.deleteMany({ where: { tenantId } });
       await tx.client.deleteMany({ where: { tenantId } });
+      // Before the products: a pack component holds a RESTRICT key to them.
+      await tx.bundleComponent.deleteMany({ where: { tenantId } });
       await tx.productPrice.deleteMany({ where: { tenantId } });
       await tx.productVariant.deleteMany({ where: { tenantId } });
       await tx.product.deleteMany({ where: { tenantId } });
@@ -432,6 +435,7 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
             // them, seeded from these quantities at the default location.
             purchasePrice: num(p, "purchase_price", 0),
             hasVariants: bool(p, "has_variants"),
+            isBundle: bool(p, "is_bundle"),
             // Photos only ship with ?include_photos=1.
             //  - includes_photos=true  -> the backup is authoritative: take it
             //    verbatim, so a deleted photo (or an orphaned asset ref) nulls.
@@ -483,6 +487,24 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
           })),
         });
         imported.product_prices = prices.length;
+      }
+
+      // ─── 6b. Pack compositions ───
+      if (bundleComponents.length) {
+        await tx.bundleComponent.createMany({
+          data: bundleComponents.map((c) => ({
+            id: idOf(c),
+            tenantId,
+            bundleId: reqStr(c, "bundle_id"),
+            bundleVariantId: str(c, "bundle_variant_id"),
+            productId: reqStr(c, "product_id"),
+            variantId: str(c, "variant_id"),
+            quantity: num(c, "quantity", 1),
+            position: int(c, "position", 0),
+            createdAt: reqDate(c, "created_at"),
+          })),
+        });
+        imported.bundle_components = bundleComponents.length;
       }
 
       // ─── 7. Clients ───
@@ -619,6 +641,10 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
             shippingTaxRate: num(q, "shipping_tax_rate", 20),
             downPaymentPercent: num(q, "down_payment_percent", 0),
             downPaymentAmount: num(q, "down_payment_amount", 0),
+            // The discount is part of how the stored totals were reached: lost
+            // here, the next edit would recompute the quote without it.
+            discountPercent: num(q, "discount_percent", 0),
+            discountAmount: num(q, "discount_amount", 0),
             // The logo frozen at send time — the document must re-render exactly
             // as it was issued, not with today's logo.
             logoSnapshot: media(q, "logo_snapshot", assets),
@@ -640,6 +666,9 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
                   position: int(l, "position", 0),
                   groupName: str(l, "group_name"),
                   isSubtotalLine: bool(l, "is_subtotal_line"),
+                  discountPercent: num(l, "discount_percent", 0),
+                  isBundleHeader: bool(l, "is_bundle_header"),
+                  bundleKey: str(l, "bundle_key"),
                 })),
               },
             },
@@ -729,6 +758,10 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
             shippingTaxRate: num(inv, "shipping_tax_rate", 20),
             downPaymentPercent: num(inv, "down_payment_percent", 0),
             downPaymentAmount: num(inv, "down_payment_amount", 0),
+            // The VAT report spreads this discount over the lines; lost here,
+            // it would declare a base higher than the invoice's own.
+            discountPercent: num(inv, "discount_percent", 0),
+            discountAmount: num(inv, "discount_amount", 0),
             isDownPaymentInvoice: bool(inv, "is_down_payment_invoice"),
             parentQuoteId: str(inv, "parent_quote_id"),
             // Droit de timbre snapshotted at issue time — must survive a restore.
@@ -753,6 +786,9 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
                   position: int(l, "position", 0),
                   groupName: str(l, "group_name"),
                   isSubtotalLine: bool(l, "is_subtotal_line"),
+                  discountPercent: num(l, "discount_percent", 0),
+                  isBundleHeader: bool(l, "is_bundle_header"),
+                  bundleKey: str(l, "bundle_key"),
                   // Frozen COGS basis captured at issue time — restoring it as
                   // 0 would silently rewrite every profit/margin report.
                   costPriceSnapshot: num(l, "cost_price_snapshot", 0),
@@ -811,6 +847,8 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
                   quantity: num(l, "quantity", 0),
                   unit: str(l, "unit"),
                   position: int(l, "position", 0),
+                  isBundleHeader: bool(l, "is_bundle_header"),
+                  bundleKey: str(l, "bundle_key"),
                   createdAt: reqDate(l, "created_at"),
                 })),
               },
@@ -1031,6 +1069,8 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
                     total: num(l, "total", 0),
                     discountPercent: num(l, "discount_percent", 0),
                     position: int(l, "position", 0),
+                    isBundleHeader: bool(l, "is_bundle_header"),
+                    bundleKey: str(l, "bundle_key"),
                     // Frozen COGS basis captured at sale time — restoring it as
                     // 0 would silently rewrite every POS margin report.
                     costPriceSnapshot: num(l, "cost_price_snapshot", 0),
