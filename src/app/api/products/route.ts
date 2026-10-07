@@ -5,6 +5,7 @@ import { getProductQuantities, recordInitialStock } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { productSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { withBundleDetails } from "@/lib/bundles-server";
 
 export const GET = withAuth(async (req, { tenantId }) => {
   const url = new URL(req.url);
@@ -37,7 +38,7 @@ export const GET = withAuth(async (req, { tenantId }) => {
     const { byProduct, byVariant } = await getProductQuantities(prisma, tenantId, {
       productIds: rows.map((p) => p.id),
     });
-    const data = rows.map((p) => {
+    const data = await withBundleDetails(prisma, tenantId, rows.map((p) => {
       const variants = (p as { variants?: { id: string }[] }).variants;
       return {
         ...p,
@@ -46,7 +47,7 @@ export const GET = withAuth(async (req, { tenantId }) => {
           ? { variants: variants.map((v) => ({ ...v, quantity: byVariant.get(v.id) ?? 0 })) }
           : {}),
       };
-    });
+    }));
     return NextResponse.json(
       toSnakeCase({ data, nextCursor: nextCursorOf(data, page.limit) })
     );
@@ -66,7 +67,8 @@ export const GET = withAuth(async (req, { tenantId }) => {
   // groupBy pair for the whole list, then attached so the response shape is
   // unchanged (`quantity` on products and, when included, on variants).
   const { byProduct, byVariant } = await getProductQuantities(prisma, tenantId);
-  const withQuantities = products.map((p) => {
+  // Packs hold no stock row: their count is what their components can make up.
+  const withQuantities = await withBundleDetails(prisma, tenantId, products.map((p) => {
     const variants = (p as { variants?: { id: string }[] }).variants;
     return {
       ...p,
@@ -75,7 +77,7 @@ export const GET = withAuth(async (req, { tenantId }) => {
         ? { variants: variants.map((v) => ({ ...v, quantity: byVariant.get(v.id) ?? 0 })) }
         : {}),
     };
-  });
+  }));
   return NextResponse.json(toSnakeCase(withQuantities));
 });
 

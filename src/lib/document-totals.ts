@@ -54,6 +54,11 @@ export interface TotalsLineInput {
   discount_percent?: number | null;
   /** Presentation-only rows carry no value of their own. */
   is_subtotal_line?: boolean | null;
+  /**
+   * A pack header: its components are the lines that carry the value, each at
+   * its own VAT rate (see src/lib/bundles.ts), so the header itself is skipped.
+   */
+  is_bundle_header?: boolean | null;
 }
 
 export interface LineTotals {
@@ -134,7 +139,7 @@ export function calculateDocumentTotals(input: DocumentTotalsInput): DocumentTot
   const shippingTaxRate = input.shippingTaxRate ?? 0;
 
   const priced = input.lines
-    .filter((l) => !l.is_subtotal_line)
+    .filter((l) => !l.is_subtotal_line && !l.is_bundle_header)
     .map((l) => ({ line: l, totals: calculateLineTotals(l, input.currency) }));
 
   const linesSubtotal = round(priced.reduce((s, p) => s + p.totals.subtotal, 0));
@@ -167,4 +172,43 @@ export function calculateDocumentTotals(input: DocumentTotalsInput): DocumentTot
 function clampPercent(value: number | null | undefined): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return 0;
   return Math.min(100, Math.max(0, value));
+}
+
+/** One VAT rate of a document: the base it is charged on and what it comes to. */
+export interface VatRateLine {
+  rate: number;
+  base: number;
+  tax: number;
+}
+
+/**
+ * The goods' VAT broken down by rate, after the document discount, computed
+ * exactly as calculateDocumentTotals computes the total: the per-rate taxes
+ * add up to the document's VAT less its shipping VAT, to the centime.
+ *
+ * A document with several rates has to state each base and each tax; a pack
+ * whose components are taxed differently is the usual way one gets there.
+ */
+export function vatBreakdown(input: Omit<DocumentTotalsInput, "shippingCost" | "shippingTaxRate">): VatRateLine[] {
+  const round = makeRound(input.currency);
+  const priced = input.lines
+    .filter((l) => !l.is_subtotal_line && !l.is_bundle_header)
+    .map((l) => ({ line: l, totals: calculateLineTotals(l, input.currency) }));
+  const linesSubtotal = round(priced.reduce((s, p) => s + p.totals.subtotal, 0));
+  const { keptRatio } = resolveDocumentDiscount(
+    linesSubtotal,
+    input.discountPercent,
+    input.discountAmount,
+    input.currency
+  );
+
+  const byRate = new Map<number, VatRateLine>();
+  for (const { line, totals } of priced) {
+    const base = round(totals.subtotal * keptRatio);
+    const row = byRate.get(line.tax_rate) ?? { rate: line.tax_rate, base: 0, tax: 0 };
+    row.base = round(row.base + base);
+    row.tax = round(row.tax + round(base * (line.tax_rate / 100)));
+    byRate.set(line.tax_rate, row);
+  }
+  return Array.from(byRate.values()).sort((a, b) => b.rate - a.rate);
 }

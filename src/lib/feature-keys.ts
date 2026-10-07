@@ -38,6 +38,11 @@ export const FEATURE_KEYS = {
   PHONEBOOK: "phonebook",
   /** Spreadsheet import, and backup export/restore. */
   IMPORT_EXPORT: "import_export",
+  /**
+   * Composing packs. Only the composition is gated: a pack already made stays
+   * sellable on every offer, because invoicing never is.
+   */
+  BUNDLES: "bundles",
 } as const;
 
 export type FeatureKey = (typeof FEATURE_KEYS)[keyof typeof FEATURE_KEYS];
@@ -68,6 +73,7 @@ const GATED_PREFIXES: ReadonlyArray<readonly [string, FeatureKey]> = [
   ["/api/contacts", FEATURE_KEYS.PHONEBOOK],
   ["/api/import", FEATURE_KEYS.IMPORT_EXPORT],
   ["/api/export", FEATURE_KEYS.IMPORT_EXPORT],
+  ["/api/product-bundles", FEATURE_KEYS.BUNDLES],
 ];
 
 /**

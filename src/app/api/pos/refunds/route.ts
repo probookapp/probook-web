@@ -53,6 +53,9 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   // representative original line for authoritative price/tax.
   const soldByKey = new Map<string, { qty: number; line: (typeof transaction.lines)[number] }>();
   for (const l of transaction.lines) {
+    // A pack is refunded through its components, which carry its value; its
+    // header line is worth their sum and would refund it twice.
+    if (l.isBundleHeader) continue;
     const k = lineKey(l.productId, l.variantId, l.designation);
     const cur = soldByKey.get(k);
     if (cur) cur.qty += l.quantity;

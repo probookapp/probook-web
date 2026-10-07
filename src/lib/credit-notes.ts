@@ -146,6 +146,16 @@ export async function createCreditNote(db: Db, input: CreateCreditNoteInput) {
   });
 
   if (input.restock) {
+    // Services and packs hold no stock; a pack comes back through its components.
+    const ids = Array.from(new Set(lines.map((l) => l.product_id).filter((id): id is string => !!id)));
+    const unstocked = new Set(
+      (
+        await db.product.findMany({
+          where: { tenantId: input.tenantId, id: { in: ids }, OR: [{ isService: true }, { isBundle: true }] },
+          select: { id: true },
+        })
+      ).map((p) => p.id)
+    );
     for (const line of lines) {
       // A variant-only line still restocks: resolve its parent product.
       let productId = line.product_id || null;
@@ -156,7 +166,7 @@ export async function createCreditNote(db: Db, input: CreateCreditNoteInput) {
         });
         productId = variant?.productId ?? null;
       }
-      if (!productId) continue;
+      if (!productId || unstocked.has(productId)) continue;
       await applyStockChange(db, {
         tenantId: input.tenantId,
         productId,

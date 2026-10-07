@@ -36,7 +36,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       // Lines only for their pre-tax value: re-deriving the commercial discount
       // needs the base it was taken from, and the invoice stores only the base
       // after it.
-      include: { client: true, lines: { select: { subtotal: true, isSubtotalLine: true } } },
+      include: { client: true, lines: { select: { subtotal: true, isSubtotalLine: true, isBundleHeader: true } } },
       orderBy: [{ issueDate: "asc" }, { invoiceNumber: "asc" }],
     }),
     prisma.posTransaction.findMany({
@@ -80,7 +80,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   const sales = [
     ...invoices.map((inv) => {
       const linesSubtotal = inv.lines.reduce(
-        (s, l) => (l.isSubtotalLine ? s : s + num(l.subtotal)),
+        // A pack header is worth its components, which are counted already.
+        (s, l) => (l.isSubtotalLine || l.isBundleHeader ? s : s + num(l.subtotal)),
         0
       );
       const { amount: discount } = resolveDocumentDiscount(

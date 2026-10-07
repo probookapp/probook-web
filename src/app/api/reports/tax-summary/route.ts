@@ -89,7 +89,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     // it kept. Summing raw line subtotals would report a taxable base higher
     // than the invoice's own — the VAT return would over-declare.
     const linesSubtotal = inv.lines.reduce(
-      (s, l) => (l.isSubtotalLine ? s : s + num(l.subtotal)),
+      (s, l) => (l.isSubtotalLine || l.isBundleHeader ? s : s + num(l.subtotal)),
       0
     );
     const { amount: discount, keptRatio } = resolveDocumentDiscount(
@@ -101,7 +101,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     salesDiscount += discount;
 
     for (const line of inv.lines) {
-      if (line.isSubtotalLine) continue;
+      // A pack is declared through its components, each at its own rate.
+      if (line.isSubtotalLine || line.isBundleHeader) continue;
       addToRate(
         salesByRate,
         num(line.taxRate),
@@ -141,6 +142,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     salesTtc += txFinalAmount;
     salesDiscount += num(tx.subtotal) * (1 - ratio);
     for (const line of tx.lines) {
+      // A pack is declared through its components, each at its own rate.
+      if (line.isBundleHeader) continue;
       addToRate(
         salesByRate,
         num(line.taxRate),

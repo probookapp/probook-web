@@ -70,6 +70,8 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
 
       // Restore stock through the inventory ledger (mirror of the sale decrement).
       for (const line of transaction.lines) {
+        // A pack header moved nothing: its components are their own lines.
+        if (line.isBundleHeader) continue;
         const qty = line.quantity;
         let productId = line.productId;
         if (!productId && line.variantId) {
@@ -81,6 +83,9 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
         }
         if (!productId) continue;
         const key = `${productId}:${line.variantId ?? ""}`;
+        // Only what the sale took out goes back: a service or a pack never
+        // left a shelf, so restoring it would create stock out of nothing.
+        if (!movementLocationByKey.has(key)) continue;
         const locationId = movementLocationByKey.get(key) ?? fallbackLocationId;
         await applyStockChange(tx, {
           tenantId,

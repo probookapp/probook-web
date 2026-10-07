@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
+import { normalizeBundleLines } from "@/lib/bundles-server";
 import { updateDeliveryNoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 import { flattenTags, TAGS_INCLUDE } from "@/lib/document-tags";
@@ -15,6 +16,8 @@ interface DeliveryLineInput {
   quantity: number;
   unit?: string;
   position?: number;
+  is_bundle_header?: boolean;
+  bundle_key?: string | null;
 }
 
 export const GET = withAuth(async (req, { tenantId, session, params }) => {
@@ -35,7 +38,10 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   if (isValidationError(body)) return body;
   const badVariant = await rejectInvalidLineVariants(tenantId, body.lines ?? []);
   if (badVariant) return badVariant;
-  const lines = body.lines || [];
+  // Packs arrive as a header plus its components; see src/lib/bundles-server.ts.
+  const bundleLines = await normalizeBundleLines(tenantId, body.lines ?? [], { priced: false });
+  if (bundleLines instanceof NextResponse) return bundleLines;
+  const lines = bundleLines;
 
   // Tenant-scoped existence check BEFORE any write: without it the old code's
   // unscoped line deleteMany let any tenant wipe another tenant's delivery
@@ -68,6 +74,8 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
           quantity: line.quantity,
           unit: line.unit || "unit",
           position: line.position ?? idx,
+          isBundleHeader: line.is_bundle_header || false,
+          bundleKey: line.bundle_key || null,
         })),
       },
     },

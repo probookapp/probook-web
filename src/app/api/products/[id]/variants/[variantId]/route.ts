@@ -55,7 +55,13 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   });
   const currentQuantity = baseline.get(existing.id) ?? 0;
   const newQuantity = body.quantity ?? currentQuantity;
-  const quantityDelta = newQuantity - currentQuantity;
+  // A pack variant holds no stock of its own: its count is what its
+  // components make up, never something to adjust.
+  const pack = await prisma.product.findFirst({
+    where: { tenantId, id: params?.id as string },
+    select: { isBundle: true },
+  });
+  const quantityDelta = pack?.isBundle ? 0 : newQuantity - currentQuantity;
 
   const variant = await prisma.$transaction(async (tx) => {
     if (quantityDelta !== 0) {
@@ -100,6 +106,15 @@ export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
     where: { tenantId, id: params?.variantId, productId: params?.id },
   });
   if (!existing) return NextResponse.json({ error: "Variant not found" }, { status: 404 });
+
+  // A pack sells this exact variant: deleting it would empty the pack of it.
+  const inPack = await prisma.bundleComponent.count({ where: { tenantId, variantId: existing.id } });
+  if (inPack > 0) {
+    return NextResponse.json(
+      { error: "Cannot delete a variant used in a pack", code: "PRODUCT_IN_BUNDLE" },
+      { status: 409 }
+    );
+  }
 
   await prisma.productVariant.delete({ where: { id: params?.variantId } });
 

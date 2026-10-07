@@ -14,7 +14,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   const locationId = searchParams.get("locationId");
 
   const products = await prisma.product.findMany({
-    where: { tenantId, isService: false },
+    // A pack holds no stock of its own; its components are valued on their own.
+    where: { tenantId, isService: false, isBundle: false },
     include: { variants: true },
     orderBy: { designation: "asc" },
   });

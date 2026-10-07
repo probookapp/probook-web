@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
+import { normalizeBundleLines } from "@/lib/bundles-server";
 import { createDeliveryNoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 import { flattenTags, parseTagFilter, TAGS_INCLUDE } from "@/lib/document-tags";
@@ -16,6 +17,8 @@ function isUniqueViolation(err: unknown): boolean {
 }
 
 interface DeliveryLineInput {
+  is_bundle_header?: boolean;
+  bundle_key?: string | null;
   product_id?: string | null;
   variant_id?: string | null;
   description: string;
@@ -76,6 +79,9 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   if (isValidationError(body)) return body;
   const badVariant = await rejectInvalidLineVariants(tenantId, body.lines ?? []);
   if (badVariant) return badVariant;
+  // Packs arrive as a header plus its components; see src/lib/bundles-server.ts.
+  const bundleLines = await normalizeBundleLines(tenantId, body.lines ?? [], { priced: false });
+  if (bundleLines instanceof NextResponse) return bundleLines;
 
   // Stale offline caches can submit a deleted/foreign client id; catch it here
   // instead of letting the FK violation surface as a 500.
@@ -90,7 +96,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   const settings = await prisma.companySettings.findFirst({ where: { tenantId } });
   const prefix = settings?.deliveryNotePrefix ?? "DN-";
 
-  const lines = body.lines || [];
+  const lines = bundleLines;
 
   // Atomic number allocation + create (audit SALE-2); retried on a unique
   // violation (e.g. counter manually rewound in settings).
@@ -125,6 +131,8 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
                 quantity: line.quantity,
                 unit: line.unit || "unit",
                 position: line.position ?? idx,
+                isBundleHeader: line.is_bundle_header || false,
+                bundleKey: line.bundle_key || null,
               })),
             },
           },

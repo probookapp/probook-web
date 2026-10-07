@@ -26,7 +26,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   }
 
   const products = await prisma.product.findMany({
-    where: { tenantId, isService: false },
+    // A pack has no shelf: its components are listed on their own.
+    where: { tenantId, isService: false, isBundle: false },
     include: { variants: true },
     orderBy: { designation: "asc" },
   });

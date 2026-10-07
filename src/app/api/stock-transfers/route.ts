@@ -3,6 +3,7 @@ import { withAuth, toSnakeCase, parseListPagination, nextCursorOf } from "@/lib/
 import { prisma } from "@/lib/db";
 import { applyStockChange } from "@/lib/stock";
 import { requirePermission } from "@/lib/permissions-server";
+import { rejectUnstockableProducts } from "@/lib/bundles-server";
 
 function generateTransferNumber(): string {
   const rand = Math.floor(Math.random() * 9000 + 1000);
@@ -102,14 +103,8 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   }
 
   // Validate every referenced product/variant belongs to the tenant.
-  const productIds = Array.from(new Set(lines.map((l) => l.product_id)));
-  const products = await prisma.product.findMany({
-    where: { tenantId, id: { in: productIds } },
-    select: { id: true },
-  });
-  if (products.length !== productIds.length) {
-    return NextResponse.json({ error: "One or more products do not exist" }, { status: 400 });
-  }
+  const unstockable = await rejectUnstockableProducts(tenantId, lines.map((l) => l.product_id));
+  if (unstockable) return unstockable;
   const variantIds = Array.from(
     new Set(lines.map((l) => l.variant_id).filter((id): id is string => !!id))
   );

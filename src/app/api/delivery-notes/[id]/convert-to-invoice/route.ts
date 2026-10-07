@@ -4,9 +4,9 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/permissions-server";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
-import { num } from "@/lib/money";
-
-const round2 = (n: number) => Math.round(n * 100) / 100;
+import { calculateDocumentTotals } from "@/lib/document-totals";
+import { documentLineRows } from "@/lib/bundles";
+import { priceDeliveryNoteLines } from "@/lib/bundles-server";
 
 /** Business-rule failure inside the create transaction → mapped to an HTTP error. */
 class ConvertError extends Error {
@@ -38,98 +38,18 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
   const paymentTerms = settings?.defaultPaymentTerms ?? 30;
   const defaultTaxRate = settings?.defaultTaxRate ?? 20;
 
-  // One tenant-scoped batch lookup instead of a per-line findFirst (SALE-24).
-  // A referenced product that no longer exists is an error — silently pricing
-  // the line at 0 would understate the invoice.
-  const productIds = [...new Set(note.lines.map((l) => l.productId).filter((id): id is string => !!id))];
-  const products = productIds.length
-    ? await prisma.product.findMany({
-        where: { tenantId, id: { in: productIds } },
-        select: { id: true, unitPrice: true, taxRate: true },
-      })
-    : [];
-  const productById = new Map(products.map((p) => [p.id, p]));
-  if (productIds.some((id) => !productById.has(id))) {
-    return NextResponse.json(
-      { error: "One or more products on the delivery note no longer exist" },
-      { status: 400 }
-    );
-  }
-  // A variant can carry its own price, as it does at the till.
-  const variantIds = [...new Set(note.lines.map((l) => l.variantId).filter((id): id is string => !!id))];
-  const variants = variantIds.length
-    ? await prisma.productVariant.findMany({
-        where: { tenantId, id: { in: variantIds } },
-        select: { id: true, priceOverride: true },
-      })
-    : [];
-  const variantById = new Map(variants.map((v) => [v.id, v]));
-
-  // Build invoice lines from delivery note lines with product pricing
-  const invoiceLines: {
-    productId: string | null;
-    variantId: string | null;
-    description: string;
-    descriptionHtml: string | null;
-    quantity: number;
-    unitPrice: number;
-    taxRate: number;
-    subtotal: number;
-    taxAmount: number;
-    total: number;
-    position: number;
-    groupName: string | null;
-    isSubtotalLine: boolean;
-  }[] = [];
-  let subtotal = 0;
-  let taxAmount = 0;
-
-  // A delivery note line carries a quantity but no price: what is billed comes
-  // from the product. A free-text line therefore has no price anywhere, and
-  // pricing it at 0 would hand the customer an invoice that under-bills without
-  // saying so. Refuse instead, and name the line.
-  const unpriceable = note.lines.filter((l) => !l.productId);
-  if (unpriceable.length > 0) {
-    return NextResponse.json(
-      {
-        error:
-          "These delivery note lines have no product to price them from: " +
-          unpriceable.map((l) => l.description).join(", "),
-      },
-      { status: 400 }
-    );
-  }
-
-  for (const line of note.lines) {
-    const product = line.productId ? productById.get(line.productId) : undefined;
-    const variant = line.variantId ? variantById.get(line.variantId) : undefined;
-    const unitPrice = num(variant?.priceOverride ?? product?.unitPrice);
-    const taxRate = product?.taxRate ?? defaultTaxRate;
-    const lineHt = round2(line.quantity * unitPrice);
-    const lineVat = round2(lineHt * (taxRate / 100));
-    subtotal += lineHt;
-    taxAmount += lineVat;
-
-    invoiceLines.push({
-      productId: line.productId,
-      variantId: line.variantId,
-      description: line.description,
-      descriptionHtml: line.descriptionHtml,
-      quantity: line.quantity,
-      unitPrice,
-      taxRate,
-      subtotal: lineHt,
-      taxAmount: lineVat,
-      total: round2(lineHt + lineVat),
-      position: line.position,
-      groupName: null,
-      isSubtotalLine: false,
-    });
-  }
-
-  subtotal = round2(subtotal);
-  taxAmount = round2(taxAmount);
-  const total = round2(subtotal + taxAmount);
+  // Prices come from the catalogue, packs split between their components; see
+  // src/lib/bundles-server.ts.
+  const priced = await priceDeliveryNoteLines(tenantId, [note], {
+    defaultTaxRate,
+    currency: settings?.currency,
+  });
+  if (priced instanceof NextResponse) return priced;
+  const { subtotal, taxAmount, total } = calculateDocumentTotals({
+    lines: priced,
+    currency: settings?.currency,
+  });
+  const invoiceLines = documentLineRows(priced, settings?.currency);
 
   // Numbering, invoice create and delivery-note re-pointing happen in ONE
   // transaction (audit SALE-2/SALE-4); retried on a unique violation.

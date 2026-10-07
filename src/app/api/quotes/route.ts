@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase, markOnboardingStep, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
-import { calculateDocumentTotals, calculateLineTotals } from "@/lib/document-totals";
+import { calculateDocumentTotals } from "@/lib/document-totals";
+import { documentLineRows } from "@/lib/bundles";
+import { normalizeBundleLines } from "@/lib/bundles-server";
 import { Prisma } from "@/generated/prisma/client";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
@@ -11,20 +13,6 @@ import { parseArchivedFilter, parseStatusFilter, QUOTE_STATUSES } from "@/lib/do
 import { allocateDocumentNumber } from "@/lib/document-numbering";
 import { flattenTags, parseTagFilter, TAGS_INCLUDE } from "@/lib/document-tags";
 import { ownTagIds } from "@/lib/document-tags-server";
-
-interface LineInput {
-  product_id?: string | null;
-  variant_id?: string | null;
-  description: string;
-  description_html?: string | null;
-  quantity: number;
-  unit_price: number;
-  tax_rate: number;
-  position?: number;
-  group_name?: string | null;
-  is_subtotal_line?: boolean;
-  discount_percent?: number | null;
-}
 
 
 function isUniqueViolation(err: unknown): boolean {
@@ -88,6 +76,9 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   if (isValidationError(body)) return body;
   const badVariant = await rejectInvalidLineVariants(tenantId, body.lines ?? []);
   if (badVariant) return badVariant;
+  // Packs arrive as a header plus its components; see src/lib/bundles-server.ts.
+  const bundleLines = await normalizeBundleLines(tenantId, body.lines ?? [], { priced: true });
+  if (bundleLines instanceof NextResponse) return bundleLines;
 
   // Stale offline caches can submit a deleted/foreign client id; catch it here
   // instead of letting the FK violation surface as a 500.
@@ -106,7 +97,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   // name a label that was retired or never belonged here.
   const tagIds = await ownTagIds(tenantId, body.tag_ids ?? []);
 
-  const lines = body.lines || [];
+  const lines = bundleLines;
   const totals = calculateDocumentTotals({
     lines,
     shippingCost: body.shipping_cost || 0,
@@ -147,25 +138,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
             discountAmount: body.discount_amount || 0,
             tags: { create: tagIds.map((tagId) => ({ tagId })) },
             lines: {
-              create: lines.map((line: LineInput, idx: number) => {
-                const lt = calculateLineTotals(line);
-                return {
-                  productId: line.product_id || null,
-                  variantId: line.variant_id || null,
-                  description: line.description,
-                  descriptionHtml: line.description_html || null,
-                  quantity: line.quantity,
-                  unitPrice: line.unit_price,
-                  taxRate: line.tax_rate,
-                  subtotal: lt.subtotal,
-                  taxAmount: lt.taxAmount,
-                  total: lt.total,
-                  position: line.position ?? idx,
-                  groupName: line.group_name || null,
-                  discountPercent: line.discount_percent || 0,
-                  isSubtotalLine: line.is_subtotal_line || false,
-                };
-              }),
+              create: documentLineRows(lines, settings?.currency),
             },
           },
           include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE },

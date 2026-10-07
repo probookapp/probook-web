@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
+import { rejectUnstockableProducts } from "@/lib/bundles-server";
 import { purchaseOrderSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 
@@ -45,6 +46,8 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   if (isValidationError(body)) return body;
 
   const lines = body.lines || [];
+  const unstockable = await rejectUnstockableProducts(tenantId, lines.map((l) => l.product_id));
+  if (unstockable) return unstockable;
   let subtotal = 0;
   let taxAmount = 0;
   for (const line of lines) {

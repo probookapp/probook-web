@@ -61,7 +61,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       status: true,
       client: { select: { name: true } },
       lines: {
-        where: { productId: { not: null }, isSubtotalLine: false },
+        // A pack header asks for nothing itself: its components are the lines.
+        where: { productId: { not: null }, isSubtotalLine: false, isBundleHeader: false },
         select: { productId: true, variantId: true, quantity: true },
       },
     },

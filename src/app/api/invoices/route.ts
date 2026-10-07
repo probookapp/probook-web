@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase, markOnboardingStep, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
-import { calculateDocumentTotals, calculateLineTotals } from "@/lib/document-totals";
+import { calculateDocumentTotals } from "@/lib/document-totals";
+import { documentLineRows } from "@/lib/bundles";
+import { normalizeBundleLines } from "@/lib/bundles-server";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/permissions-server";
 import { parseArchivedFilter, parseStatusFilter, INVOICE_STATUSES } from "@/lib/document-status";
@@ -13,20 +15,6 @@ import { createInvoiceSchema } from "@/lib/validations";
 import { computeStampDuty, DEFAULT_IS_CASH_SALE } from "@/lib/stamp-duty";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
 import { num } from "@/lib/money";
-
-interface LineInput {
-  product_id?: string | null;
-  variant_id?: string | null;
-  description: string;
-  description_html?: string | null;
-  quantity: number;
-  unit_price: number;
-  tax_rate: number;
-  position?: number;
-  group_name?: string | null;
-  is_subtotal_line?: boolean;
-  discount_percent?: number | null;
-}
 
 
 function isUniqueViolation(err: unknown): boolean {
@@ -101,6 +89,9 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
   if (isValidationError(body)) return body;
   const badVariant = await rejectInvalidLineVariants(tenantId, body.lines ?? []);
   if (badVariant) return badVariant;
+  // Packs arrive as a header plus its components; see src/lib/bundles-server.ts.
+  const bundleLines = await normalizeBundleLines(tenantId, body.lines ?? [], { priced: true });
+  if (bundleLines instanceof NextResponse) return bundleLines;
 
   const idempotencyKey = body.idempotency_key || null;
 
@@ -128,7 +119,7 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
   const prefix = settings?.invoicePrefix ?? "INV-";
   const paymentTerms = settings?.defaultPaymentTerms ?? 30;
 
-  const lines = body.lines || [];
+  const lines = bundleLines;
   const totals = calculateDocumentTotals({
     lines,
     shippingCost: body.shipping_cost || 0,
@@ -197,25 +188,7 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
             parentQuoteId: body.parent_quote_id || null,
             tags: { create: tagIds.map((tagId) => ({ tagId })) },
             lines: {
-              create: lines.map((line: LineInput, idx: number) => {
-                const lt = calculateLineTotals(line);
-                return {
-                  productId: line.product_id || null,
-                  variantId: line.variant_id || null,
-                  description: line.description,
-                  descriptionHtml: line.description_html || null,
-                  quantity: line.quantity,
-                  unitPrice: line.unit_price,
-                  taxRate: line.tax_rate,
-                  subtotal: lt.subtotal,
-                  taxAmount: lt.taxAmount,
-                  total: lt.total,
-                  position: line.position ?? idx,
-                  groupName: line.group_name || null,
-                  discountPercent: line.discount_percent || 0,
-                  isSubtotalLine: line.is_subtotal_line || false,
-                };
-              }),
+              create: documentLineRows(lines, settings?.currency),
             },
           },
           include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true, ...TAGS_INCLUDE },

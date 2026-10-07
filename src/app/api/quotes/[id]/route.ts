@@ -1,27 +1,15 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
-import { calculateDocumentTotals, calculateLineTotals } from "@/lib/document-totals";
+import { calculateDocumentTotals } from "@/lib/document-totals";
+import { documentLineRows } from "@/lib/bundles";
+import { normalizeBundleLines } from "@/lib/bundles-server";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { rejectInvalidLineVariants } from "@/lib/document-line-variants";
 import { updateQuoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 import { flattenTags, TAGS_INCLUDE } from "@/lib/document-tags";
 import { ownTagIds } from "@/lib/document-tags-server";
-
-interface LineInput {
-  product_id?: string | null;
-  variant_id?: string | null;
-  description: string;
-  description_html?: string | null;
-  quantity: number;
-  unit_price: number;
-  tax_rate: number;
-  position?: number;
-  group_name?: string | null;
-  is_subtotal_line?: boolean;
-  discount_percent?: number | null;
-}
 
 
 export const GET = withAuth(async (req, { tenantId, session, params }) => {
@@ -42,7 +30,10 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   if (isValidationError(body)) return body;
   const badVariant = await rejectInvalidLineVariants(tenantId, body.lines ?? []);
   if (badVariant) return badVariant;
-  const lines = body.lines || [];
+  // Packs arrive as a header plus its components; see src/lib/bundles-server.ts.
+  const bundleLines = await normalizeBundleLines(tenantId, body.lines ?? [], { priced: true });
+  if (bundleLines instanceof NextResponse) return bundleLines;
+  const lines = bundleLines;
   // Rounding follows the tenant's currency (millimes vs centimes).
   const settings = await prisma.companySettings.findFirst({
     where: { tenantId },
@@ -96,25 +87,7 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
       // longer leave the quote with its lines deleted (audit SALE-3).
       lines: {
         deleteMany: {},
-        create: lines.map((line: LineInput, idx: number) => {
-          const lt = calculateLineTotals(line);
-          return {
-            productId: line.product_id || null,
-            variantId: line.variant_id || null,
-            description: line.description,
-            descriptionHtml: line.description_html || null,
-            quantity: line.quantity,
-            unitPrice: line.unit_price,
-            taxRate: line.tax_rate,
-            subtotal: lt.subtotal,
-            taxAmount: lt.taxAmount,
-            total: lt.total,
-            position: line.position ?? idx,
-            groupName: line.group_name || null,
-            discountPercent: line.discount_percent || 0,
-            isSubtotalLine: line.is_subtotal_line || false,
-          };
-        }),
+        create: documentLineRows(lines, settings?.currency),
       },
     },
     include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE },

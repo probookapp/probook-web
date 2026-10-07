@@ -71,6 +71,8 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
                 groupName: line.groupName,
                 discountPercent: line.discountPercent,
                 isSubtotalLine: line.isSubtotalLine,
+                isBundleHeader: line.isBundleHeader,
+                bundleKey: line.bundleKey,
               })),
             },
           },

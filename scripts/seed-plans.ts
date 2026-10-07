@@ -69,6 +69,7 @@ const OFFERS: Offer[] = [
       FEATURE_KEYS.DELIVERY_NOTES,
       FEATURE_KEYS.EXPENSES,
       FEATURE_KEYS.IMPORT_EXPORT,
+      FEATURE_KEYS.BUNDLES,
     ],
     maxUsers: 3,
   },
@@ -132,6 +133,7 @@ const FEATURE_UNIT_PRICES: Record<FeatureKey, number> = {
   [FEATURE_KEYS.DELIVERY_NOTES]: COMMERCE_MODULE,
   [FEATURE_KEYS.EXPENSES]: COMMERCE_MODULE,
   [FEATURE_KEYS.IMPORT_EXPORT]: COMMERCE_MODULE,
+  [FEATURE_KEYS.BUNDLES]: COMMERCE_MODULE,
   [FEATURE_KEYS.MULTI_LOCATION]: ENTERPRISE_MODULE,
   [FEATURE_KEYS.ADVANCED_REPORTS]: ENTERPRISE_MODULE,
   [FEATURE_KEYS.REMINDERS]: ENTERPRISE_MODULE,
@@ -162,6 +164,7 @@ const FEATURE_NAMES: Record<FeatureKey, { en: string; fr: string; ar: string }> 
   [FEATURE_KEYS.IMPORT_EXPORT]: {
     en: "Import & Backup", fr: "Import et sauvegarde", ar: "الاستيراد والنسخ الاحتياطي",
   },
+  [FEATURE_KEYS.BUNDLES]: { en: "Product Packs", fr: "Packs de produits", ar: "حزم المنتجات" },
 };
 
 async function main() {

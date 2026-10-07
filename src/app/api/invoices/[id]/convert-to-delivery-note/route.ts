@@ -52,6 +52,8 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
                   quantity: line.quantity,
                   unit: "unit",
                   position: idx,
+                  isBundleHeader: line.isBundleHeader,
+                  bundleKey: line.bundleKey,
                 })),
             },
           },

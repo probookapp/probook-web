@@ -71,6 +71,7 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
           id: true,
           purchasePrice: true,
           isService: true,
+          isBundle: true,
           hasVariants: true,
           variants: { where: { isActive: true }, select: { id: true }, take: 1 },
         },
@@ -122,8 +123,11 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
     // The snapshot is what makes COGS / profit reports stable when product purchase prices change later.
     for (const line of inv.lines) {
       if (!line.productId) continue;
+      // Rows with no value of their own move nothing: a subtotal row, and a
+      // pack header, whose components are the lines that leave the shelves.
+      if (line.isBundleHeader || line.isSubtotalLine) continue;
       const product = productById.get(line.productId);
-      if (!product) continue;
+      if (!product || product.isBundle) continue;
 
       // Freeze the COGS basis before touching stock.
       await tx.invoiceLine.update({

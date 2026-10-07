@@ -5,6 +5,7 @@ import { applyStockChange, getProductQuantities } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { productSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { withBundleDetails } from "@/lib/bundles-server";
 
 export const GET = withAuth(async (req, { tenantId, params }) => {
   const product = await prisma.product.findFirst({
@@ -16,13 +17,14 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   const { byProduct, byVariant } = await getProductQuantities(prisma, tenantId, {
     productIds: [product.id],
   });
-  return NextResponse.json(
-    toSnakeCase({
+  const [withDetails] = await withBundleDetails(prisma, tenantId, [
+    {
       ...product,
       quantity: byProduct.get(product.id) ?? 0,
       variants: product.variants.map((v) => ({ ...v, quantity: byVariant.get(v.id) ?? 0 })),
-    })
-  );
+    },
+  ]);
+  return NextResponse.json(toSnakeCase(withDetails));
 });
 
 export const PUT = withAuth(async (req, { tenantId, params, session }) => {
@@ -44,7 +46,7 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
 
   const existing = await prisma.product.findFirst({
     where: { tenantId, id: productId },
-    select: { id: true },
+    select: { id: true, isBundle: true },
   });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
@@ -53,7 +55,10 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   const { byProduct: baseline } = await getProductQuantities(prisma, tenantId, {
     productIds: [productId],
   });
-  const quantityDelta = hasQuantity ? body.quantity - (baseline.get(productId) ?? 0) : 0;
+  // A pack has no shelf of its own: the count shown for it is what its
+  // components make up, never something to adjust.
+  const quantityDelta =
+    hasQuantity && !existing.isBundle ? body.quantity - (baseline.get(productId) ?? 0) : 0;
 
   const product = await prisma.$transaction(async (tx) => {
     // Delete existing prices and recreate atomically
@@ -84,7 +89,7 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
         unit: body.unit || "unit",
         reference: body.reference || null,
         barcode: body.barcode || null,
-        isService: body.is_service || false,
+        isService: existing.isBundle ? false : body.is_service || false,
         categoryId: body.category_id || null,
         purchasePrice: body.purchase_price ?? 0,
         hasVariants: body.has_variants || false,
@@ -105,13 +110,14 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
   const { byProduct, byVariant } = await getProductQuantities(prisma, tenantId, {
     productIds: [productId],
   });
-  return NextResponse.json(
-    toSnakeCase({
+  const [withDetails] = await withBundleDetails(prisma, tenantId, [
+    {
       ...product,
       quantity: byProduct.get(productId) ?? 0,
       variants: product.variants.map((v) => ({ ...v, quantity: byVariant.get(v.id) ?? 0 })),
-    })
-  );
+    },
+  ]);
+  return NextResponse.json(toSnakeCase(withDetails));
 });
 
 export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
@@ -126,6 +132,15 @@ export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
   if (poLineCount > 0) {
     return NextResponse.json(
       { error: "Cannot delete product with existing purchase orders" },
+      { status: 409 }
+    );
+  }
+
+  // Deleting a component would silently change what a pack is made of.
+  const packCount = await prisma.bundleComponent.count({ where: { tenantId, productId } });
+  if (packCount > 0) {
+    return NextResponse.json(
+      { error: "Cannot delete a product used in a pack", code: "PRODUCT_IN_BUNDLE" },
       { status: 409 }
     );
   }

@@ -35,6 +35,9 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
 
   for (const line of lines) {
     if (line.isSubtotalLine) continue;
+    // A pack sells as the pack: its header carries what its components add up
+    // to, so the components themselves are not counted a second time here.
+    if (line.bundleKey && !line.isBundleHeader) continue;
     const key = line.productId || line.description;
     if (!byProduct[key]) {
       byProduct[key] = {

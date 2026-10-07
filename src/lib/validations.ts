@@ -164,6 +164,27 @@ export const productVariantSchema = z.object({
   is_active: z.boolean().default(true),
 });
 
+// ─── Packs ──────────────────────────────────────────────────────────────────
+
+const bundleComponentSchema = z.object({
+  // The pack's own variant this component belongs to; absent means every variant.
+  bundle_variant_id: optionalString,
+  product_id: requiredString("Product ID"),
+  variant_id: optionalString,
+  quantity: z.coerce.number().positive("Quantity must be positive"),
+});
+
+export const productBundleSchema = z.object({
+  components: z.array(bundleComponentSchema).max(100, "A pack holds at most 100 components"),
+});
+
+// A pack on a document: the header line and its components share bundle_key.
+// See src/lib/bundles.ts.
+const bundleLineFields = {
+  is_bundle_header: z.boolean().default(false),
+  bundle_key: optionalString,
+};
+
 // ─── Purchase Orders ───────────────────────────────────────────────────────
 
 const purchaseOrderLineSchema = z.object({
@@ -290,6 +311,7 @@ const documentLineSchema = z.object({
   is_subtotal_line: z.boolean().default(false),
   // Commercial discount off this line's pre-tax base. See src/lib/document-totals.ts.
   discount_percent: percent.default(0),
+  ...bundleLineFields,
 });
 
 // ─── Invoices ───────────────────────────────────────────────────────────────
@@ -412,6 +434,7 @@ const deliveryNoteLineSchema = z.object({
   quantity: z.coerce.number().min(0.01, "Quantity must be positive"),
   unit: z.string().default("unit"),
   position: z.number().int().optional(),
+  ...bundleLineFields,
 });
 
 export const createDeliveryNoteSchema = z.object({
@@ -445,6 +468,7 @@ const posLineSchema = z.object({
   tax_rate: z.coerce.number().min(0).max(100).default(0),
   discount_percent: z.coerce.number().min(0).max(100).default(0),
   position: z.number().int().optional(),
+  ...bundleLineFields,
 });
 
 const posPaymentSchema = z.object({

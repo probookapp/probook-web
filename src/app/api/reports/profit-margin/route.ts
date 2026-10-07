@@ -73,29 +73,45 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     byProduct[key].cost += cost;
   };
 
+  // A pack reports as the pack, as in the sales report: its header carries the
+  // revenue its components add up to, and its cost is theirs. The components
+  // are not counted a second time.
+  const packCosts = (lines: ReadonlyArray<{ bundleKey: string | null; isBundleHeader: boolean; quantity: number; costPriceSnapshot: Parameters<typeof num>[0] }>) => {
+    const costs = new Map<string, number>();
+    for (const l of lines) {
+      if (!l.bundleKey || l.isBundleHeader) continue;
+      costs.set(l.bundleKey, (costs.get(l.bundleKey) ?? 0) + l.quantity * num(l.costPriceSnapshot));
+    }
+    return costs;
+  };
+
   for (const inv of invoices) {
+    const costs = packCosts(inv.lines);
     for (const line of inv.lines) {
       if (line.isSubtotalLine) continue;
+      if (line.bundleKey && !line.isBundleHeader) continue;
       const key = line.productId || line.description;
       bump(
         key,
         line.product?.designation || line.description,
         line.quantity,
         num(line.subtotal),
-        line.quantity * num(line.costPriceSnapshot)
+        line.isBundleHeader ? costs.get(line.bundleKey ?? "") ?? 0 : line.quantity * num(line.costPriceSnapshot)
       );
     }
   }
 
   for (const tx of transactions) {
+    const costs = packCosts(tx.lines);
     for (const line of tx.lines) {
+      if (line.bundleKey && !line.isBundleHeader) continue;
       const key = line.productId || line.designation;
       bump(
         key,
         line.product?.designation || line.designation,
         line.quantity,
         num(line.subtotal),
-        line.quantity * num(line.costPriceSnapshot)
+        line.isBundleHeader ? costs.get(line.bundleKey ?? "") ?? 0 : line.quantity * num(line.costPriceSnapshot)
       );
     }
   }

@@ -75,6 +75,8 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
                 // subtotal was reached.
                 discountPercent: line.discountPercent,
                 isSubtotalLine: line.isSubtotalLine,
+                isBundleHeader: line.isBundleHeader,
+                bundleKey: line.bundleKey,
               })),
             },
           },

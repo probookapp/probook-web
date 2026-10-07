@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { purchaseOrderSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { rejectUnstockableProducts } from "@/lib/bundles-server";
 
 interface LineInput {
   product_id: string;
@@ -79,6 +80,8 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   if (isValidationError(body)) return body;
 
   const lines = body.lines || [];
+  const unstockable = await rejectUnstockableProducts(tenantId, lines.map((l) => l.product_id));
+  if (unstockable) return unstockable;
   let subtotal = 0;
   let taxAmount = 0;
   for (const line of lines) {

@@ -10,6 +10,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { computeStampDuty, stampDutyApplies } from "@/lib/stamp-duty";
 import { movesTheDrawer } from "@/lib/pos-payment-methods";
 import { missingChequeMentions } from "@/lib/cheque-mentions";
+import { normalizeBundleLines } from "@/lib/bundles-server";
 
 interface PosLineInput {
   product_id?: string | null;
@@ -21,6 +22,8 @@ interface PosLineInput {
   tax_rate?: number;
   discount_percent?: number;
   position?: number;
+  is_bundle_header?: boolean;
+  bundle_key?: string | null;
 }
 
 interface PosPaymentInput {
@@ -101,18 +104,36 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
     if (existing) return NextResponse.json(toSnakeCase(existing));
   }
 
-  // Calculate totals from lines
-  const lines = body.lines || [];
-  let subtotal = 0;
-  let taxAmount = 0;
-  for (const line of lines) {
+  // A pack arrives as a header plus its components (src/lib/bundles.ts): the
+  // components carry the value, each at its own VAT rate, and leave the shelf.
+  const bundleLines = await normalizeBundleLines(tenantId, body.lines ?? [], { priced: true });
+  if (bundleLines instanceof NextResponse) return bundleLines;
+  const lines: PosLineInput[] = bundleLines;
+
+  // Calculate totals from lines. A pack header is worth what its components
+  // add up to, and is counted once: through them.
+  const lineAmounts = lines.map((line) => {
     const lineTotal = line.quantity * line.unit_price;
     const discount = lineTotal * (line.discount_percent || 0) / 100;
     const ht = lineTotal - discount;
-    const vat = ht * (line.tax_rate || 0) / 100;
-    subtotal += ht;
-    taxAmount += vat;
-  }
+    return { ht, vat: ht * (line.tax_rate || 0) / 100 };
+  });
+  const packAmounts = new Map<string, { ht: number; vat: number }>();
+  lines.forEach((line, i) => {
+    if (line.is_bundle_header || !line.bundle_key) return;
+    const acc = packAmounts.get(line.bundle_key) ?? { ht: 0, vat: 0 };
+    packAmounts.set(line.bundle_key, { ht: acc.ht + lineAmounts[i].ht, vat: acc.vat + lineAmounts[i].vat });
+  });
+  lines.forEach((line, i) => {
+    if (line.is_bundle_header) lineAmounts[i] = packAmounts.get(line.bundle_key ?? "") ?? { ht: 0, vat: 0 };
+  });
+  let subtotal = 0;
+  let taxAmount = 0;
+  lines.forEach((line, i) => {
+    if (line.is_bundle_header) return;
+    subtotal += lineAmounts[i].ht;
+    taxAmount += lineAmounts[i].vat;
+  });
   const total = subtotal + taxAmount;
 
   // Resolve the cost price for each line up-front so we can freeze it on the line.
@@ -133,8 +154,13 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
   const variantToProduct = new Map(variants.map((v) => [v.id, v.productId]));
   const allProductIds = Array.from(new Set([...directProductIds, ...variants.map((v) => v.productId)]));
   const products = allProductIds.length
-    ? await prisma.product.findMany({ where: { tenantId, id: { in: allProductIds } }, select: { id: true, purchasePrice: true } })
+    ? await prisma.product.findMany({
+        where: { tenantId, id: { in: allProductIds } },
+        select: { id: true, purchasePrice: true, isService: true, isBundle: true },
+      })
     : [];
+  // Services and packs hold no stock: a pack's components are their own lines.
+  const unstocked = new Set(products.filter((p) => p.isService || p.isBundle).map((p) => p.id));
   const foundProductIds = new Set(products.map((p) => p.id));
   if (allProductIds.some((id) => !foundProductIds.has(id))) {
     return NextResponse.json(
@@ -252,8 +278,7 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
               notes: body.notes || null,
               lines: {
                 create: lines.map((l: PosLineInput, i: number) => {
-                  const lineHt = l.quantity * l.unit_price * (1 - (l.discount_percent || 0) / 100);
-                  const lineVat = lineHt * (l.tax_rate || 0) / 100;
+                  const { ht: lineHt, vat: lineVat } = lineAmounts[i];
                   return {
                     productId: l.product_id || null,
                     variantId: l.variant_id || null,
@@ -267,7 +292,9 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
                     total: lineHt + lineVat,
                     discountPercent: l.discount_percent || 0,
                     position: i,
-                    costPriceSnapshot: resolveCost(l),
+                    costPriceSnapshot: l.is_bundle_header ? 0 : resolveCost(l),
+                    isBundleHeader: l.is_bundle_header || false,
+                    bundleKey: l.bundle_key || null,
                   };
                 }),
               },
@@ -290,6 +317,9 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
           // Update stock for product lines via the inventory ledger (clamps at zero).
           for (const line of lines) {
             const qty = line.quantity;
+            if (line.is_bundle_header) continue;
+            const stockedId = line.variant_id ? variantToProduct.get(line.variant_id) : line.product_id;
+            if (stockedId && unstocked.has(stockedId)) continue;
             if (line.variant_id) {
               const productId = variantToProduct.get(line.variant_id) ?? line.product_id;
               if (!productId) continue;

@@ -62,7 +62,8 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
   // the variant's stock level and its ledger row must never diverge (stock.ts
   // accounting keeps variant stock on the variant only; the parent product's
   // own levels are not part of variant stock).
-  const initialQuantity = body.quantity ?? 0;
+  // A pack variant holds no stock: what it is made of decides how many there are.
+  const initialQuantity = product.isBundle ? 0 : body.quantity ?? 0;
   const variant = await prisma.$transaction(async (tx) => {
     const created = await tx.productVariant.create({
       data: {

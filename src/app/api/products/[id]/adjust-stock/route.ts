@@ -33,6 +33,12 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
     where: { tenantId, id: productId },
   });
   if (!product) return NextResponse.json({ error: "Product not found" }, { status: 404 });
+  if (product.isBundle) {
+    return NextResponse.json(
+      { error: "A pack holds no stock: adjust its components instead", code: "BUNDLE_NO_STOCK" },
+      { status: 400 }
+    );
+  }
 
   // Validate the variant belongs to the product/tenant when supplied.
   if (body.variant_id) {
