@@ -512,6 +512,10 @@
     "selectVariant": "Choisir la variante…",
     "variantRequired": "Choisissez la variante : le stock est suivi pour chacune.",
     "variantRequiredToIssue": "Choisissez la variante de chaque produit à variantes avant d'émettre la facture (bouton Modifier).",
-    "outOfStock": "rupture"
+    "outOfStock": "rupture",
+    "pack": "pack",
+    "packContains": "Contient :",
+    "packMixedVat": "TVA mixte",
+    "packMixedVatShort": "Mixte"
   }
 }

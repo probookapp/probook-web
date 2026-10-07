@@ -512,6 +512,10 @@
     "selectVariant": "Choose the variant…",
     "variantRequired": "Choose the variant: stock is tracked for each one.",
     "variantRequiredToIssue": "Choose the variant of every product with variants before issuing the invoice (Edit button).",
-    "outOfStock": "out of stock"
+    "outOfStock": "out of stock",
+    "pack": "pack",
+    "packContains": "Contains:",
+    "packMixedVat": "Mixed VAT",
+    "packMixedVatShort": "Mixed"
   }
 }

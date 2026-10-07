@@ -520,6 +520,10 @@
     "selectVariant": "اختر المتغير…",
     "variantRequired": "اختر المتغير: يُتابَع المخزون لكل متغير على حدة.",
     "variantRequiredToIssue": "اختر المتغير لكل منتج ذي متغيرات قبل إصدار الفاتورة (زر التعديل).",
-    "outOfStock": "نفد المخزون"
+    "outOfStock": "نفد المخزون",
+    "pack": "حزمة",
+    "packContains": "يحتوي على:",
+    "packMixedVat": "ضريبة مختلطة",
+    "packMixedVatShort": "مختلطة"
   }
 }

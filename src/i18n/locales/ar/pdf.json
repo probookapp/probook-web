@@ -107,7 +107,9 @@
     "vatNumber": "الرقم الضريبي",
     "phone": "هاتف",
     "labelHt": "بدون ضريبة",
-    "labelTtc": "شامل الضريبة"
+    "labelTtc": "شامل الضريبة",
+    "mixedVat": "مختلطة",
+    "vatAtRate": "منها ضريبة {{rate}}٪ على {{base}}"
   },
   "numberToWords": {
     "and": "و",

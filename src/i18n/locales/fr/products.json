@@ -18,7 +18,8 @@
   },
   "types": {
     "product": "Produit",
-    "service": "Service"
+    "service": "Service",
+    "bundle": "Pack"
   },
   "fields": {
     "name": "Nom",
@@ -200,5 +201,39 @@
     "variant": "Variante",
     "quantity": "Quantité",
     "noData": "Aucun stock enregistré sur les emplacements"
+  },
+  "bundle": {
+    "title": "Composition du pack",
+    "hint": "Les produits et services vendus ensemble sous ce pack. Chacun garde son taux de TVA et sort du stock quand le pack est vendu.",
+    "chooseProduct": "Choisir un produit…",
+    "component": "Composant",
+    "quantity": "Qté / pack",
+    "addComponent": "Ajouter un composant",
+    "removeComponent": "Retirer ce composant",
+    "save": "Enregistrer la composition",
+    "saved": "Composition enregistrée",
+    "empty": "Aucun composant pour l'instant : le pack ne peut pas encore être vendu.",
+    "allVariants": "Toutes les variantes",
+    "componentsValue": "Valeur des composants (HT)",
+    "packPrice": "Prix du pack (HT)",
+    "discount": "Remise du pack",
+    "cost": "Coût des composants (HT)",
+    "mixedVatHint": "Les composants n'ont pas tous le même taux de TVA : le prix du pack est réparti entre eux au prorata de leur prix, et chaque part est taxée à son propre taux.",
+    "vatFromComponents": "Celle de chaque composant",
+    "isBundle": "C'est un pack (composé d'autres produits ou services)",
+    "isBundleHint": "Une fois le pack créé, vous choisissez ce qu'il contient.",
+    "created": "Pack créé : ajoutez maintenant ses composants.",
+    "available": "Disponibles",
+    "availableHint": "Nombre de packs que le stock des composants permet de constituer",
+    "locked": "Composer des packs ne fait pas partie de votre offre.",
+    "lockedWithOffer": "Composer des packs fait partie de l'offre {{offer}}.",
+    "errors": {
+      "BUNDLE_HAS_STOCK": "Ce produit a du stock : il ne peut pas devenir un pack.",
+      "BUNDLE_NESTED": "Un pack ne peut pas contenir un autre pack.",
+      "BUNDLE_SELF": "Un pack ne peut pas se contenir lui-même.",
+      "BUNDLE_DUPLICATE": "Ce composant figure deux fois : ajustez plutôt sa quantité.",
+      "VARIANT_REQUIRED": "Choisissez la variante de chaque composant qui en a.",
+      "PRODUCT_IN_BUNDLE": "Ce produit fait partie d'un pack : retirez-le d'abord du pack."
+    }
   }
 }

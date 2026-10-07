@@ -126,7 +126,8 @@
     "closeSessionFailed": "Failed to close session",
     "transactionFailed": "Failed to complete transaction",
     "cancelFailed": "Failed to cancel transaction",
-    "cashMovementFailed": "Failed to record cash movement"
+    "cashMovementFailed": "Failed to record cash movement",
+    "chooseVariant": "{{name}} has variants: choose one from the search."
   },
   "cheque": "Cheque",
   "transfer": "Bank transfer",

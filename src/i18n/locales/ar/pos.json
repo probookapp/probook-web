@@ -126,7 +126,8 @@
     "closeSessionFailed": "فشل اغلاق الجلسة",
     "transactionFailed": "فشل اتمام المعاملة",
     "cancelFailed": "فشل الغاء المعاملة",
-    "cashMovementFailed": "فشل تسجيل حركة النقد"
+    "cashMovementFailed": "فشل تسجيل حركة النقد",
+    "chooseVariant": "{{name}} له متغيرات: اختر أحدها من البحث."
   },
   "cheque": "شيك",
   "transfer": "تحويل بنكي",

@@ -18,7 +18,8 @@
   },
   "types": {
     "product": "Product",
-    "service": "Service"
+    "service": "Service",
+    "bundle": "Pack"
   },
   "fields": {
     "name": "Name",
@@ -200,5 +201,39 @@
     "variant": "Variant",
     "quantity": "Quantity",
     "noData": "No stock recorded across locations"
+  },
+  "bundle": {
+    "title": "Pack contents",
+    "hint": "The products and services sold together under this pack. Each keeps its own VAT rate and leaves the stock when the pack is sold.",
+    "chooseProduct": "Choose a product…",
+    "component": "Component",
+    "quantity": "Qty / pack",
+    "addComponent": "Add a component",
+    "removeComponent": "Remove this component",
+    "save": "Save contents",
+    "saved": "Pack contents saved",
+    "empty": "No components yet: the pack cannot be sold until it has some.",
+    "allVariants": "All variants",
+    "componentsValue": "Components' value (excl. tax)",
+    "packPrice": "Pack price (excl. tax)",
+    "discount": "Pack discount",
+    "cost": "Components' cost (excl. tax)",
+    "mixedVatHint": "The components do not all have the same VAT rate: the pack price is split between them in proportion to their prices, and each share is taxed at its own rate.",
+    "vatFromComponents": "Each component's own",
+    "isBundle": "This is a pack (made of other products or services)",
+    "isBundleHint": "Once the pack is created, you choose what it contains.",
+    "created": "Pack created: now add its components.",
+    "available": "Available",
+    "availableHint": "How many packs the components in stock can make up",
+    "locked": "Composing packs is not part of your plan.",
+    "lockedWithOffer": "Composing packs comes with the {{offer}} plan.",
+    "errors": {
+      "BUNDLE_HAS_STOCK": "This product has stock: it cannot become a pack.",
+      "BUNDLE_NESTED": "A pack cannot contain another pack.",
+      "BUNDLE_SELF": "A pack cannot contain itself.",
+      "BUNDLE_DUPLICATE": "This component is listed twice: change its quantity instead.",
+      "VARIANT_REQUIRED": "Choose the variant of every component that has variants.",
+      "PRODUCT_IN_BUNDLE": "This product is part of a pack: remove it from the pack first."
+    }
   }
 }

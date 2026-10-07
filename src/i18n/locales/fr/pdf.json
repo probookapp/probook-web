@@ -107,7 +107,9 @@
     "vatNumber": "N° TVA",
     "phone": "Tél",
     "labelHt": "HT",
-    "labelTtc": "TTC"
+    "labelTtc": "TTC",
+    "mixedVat": "Mixte",
+    "vatAtRate": "dont TVA {{rate}} % sur {{base}}"
   },
   "numberToWords": {
     "and": "et",

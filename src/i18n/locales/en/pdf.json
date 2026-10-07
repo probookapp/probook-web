@@ -107,7 +107,9 @@
     "vatNumber": "VAT No.",
     "phone": "Phone",
     "labelHt": "excl. VAT",
-    "labelTtc": "incl. VAT"
+    "labelTtc": "incl. VAT",
+    "mixedVat": "Mixed",
+    "vatAtRate": "of which VAT {{rate}}% on {{base}}"
   },
   "numberToWords": {
     "and": "and",

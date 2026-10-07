@@ -126,7 +126,8 @@
     "closeSessionFailed": "Échec de la fermeture de la session",
     "transactionFailed": "Échec de la transaction",
     "cancelFailed": "Échec de l'annulation de la transaction",
-    "cashMovementFailed": "Échec de l'enregistrement du mouvement"
+    "cashMovementFailed": "Échec de l'enregistrement du mouvement",
+    "chooseVariant": "{{name}} a des variantes : choisissez-la dans la recherche."
   },
   "cheque": "Chèque",
   "transfer": "Virement",
