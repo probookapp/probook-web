@@ -1,5 +1,23 @@
 import { create } from "zustand";
 import type { Product, ProductVariant, PosSession, PosRegister } from "@/types";
+import { useSettingsStore } from "@/stores/useSettingsStore";
+import {
+  commonTaxRate,
+  componentsFor,
+  snapshotComponents,
+  tillLineAmounts,
+  type BundleComponentSnapshot,
+} from "@/lib/bundles";
+
+/**
+ * A pack's composition for the till, or null for anything that is not a pack.
+ * A pack with variants has none until its variant is known.
+ */
+export function packComposition(product: Product, variantId: string | null): BundleComponentSnapshot[] | null {
+  if (!product.is_bundle) return null;
+  const list = componentsFor(product.bundle_components, variantId);
+  return list.length > 0 ? snapshotComponents(list) : null;
+}
 
 export interface CartItem {
   id: string; // Temporary ID for cart management
@@ -14,6 +32,11 @@ export interface CartItem {
   priceTier: string | null; // label of selected price tier, null = default price
   variantId: string | null;
   variantName: string | null;
+  /**
+   * A pack: sold as this one line, valued and taxed through its components, and
+   * sent to the server as its header plus one line per component.
+   */
+  bundleComponents: BundleComponentSnapshot[] | null;
 }
 
 interface PosState {
@@ -77,6 +100,9 @@ export const usePosStore = create<PosState>((set, get) => ({
   // Cart actions
   addItem: (product, quantity = 1, priceTier?: string) => {
     const { items } = get();
+    const bundleComponents = packComposition(product, null);
+    // A pack whose composition is empty (or depends on a variant) is not sellable as is.
+    if (product.is_bundle && !bundleComponents) return;
     // Determine unit price based on price tier
     let unitPrice = product.unit_price;
     if (priceTier && product.prices) {
@@ -104,12 +130,13 @@ export const usePosStore = create<PosState>((set, get) => ({
         designation: product.designation,
         quantity,
         unitPrice,
-        taxRate: product.tax_rate,
+        taxRate: bundleComponents ? commonTaxRate(bundleComponents) ?? 0 : product.tax_rate,
         unit: product.unit ?? "unit",
         discountPercent: 0,
         priceTier: priceTier || null,
         variantId: null,
         variantName: null,
+        bundleComponents,
       };
       set({ items: [...items, newItem] });
     }
@@ -117,6 +144,8 @@ export const usePosStore = create<PosState>((set, get) => ({
 
   addItemWithVariant: (product, variant, quantity = 1) => {
     const { items } = get();
+    const bundleComponents = packComposition(product, variant.id);
+    if (product.is_bundle && !bundleComponents) return;
     const unitPrice = variant.price_override ?? product.unit_price;
     const existingItem = items.find(
       (item) => item.productId === product.id && item.variantId === variant.id
@@ -138,12 +167,13 @@ export const usePosStore = create<PosState>((set, get) => ({
         designation: `${product.designation} — ${variant.name}`,
         quantity,
         unitPrice,
-        taxRate: product.tax_rate,
+        taxRate: bundleComponents ? commonTaxRate(bundleComponents) ?? 0 : product.tax_rate,
         unit: product.unit ?? "unit",
         discountPercent: 0,
         priceTier: null,
         variantId: variant.id,
         variantName: variant.name,
+        bundleComponents,
       };
       set({ items: [...items, newItem] });
     }
@@ -163,6 +193,7 @@ export const usePosStore = create<PosState>((set, get) => ({
       priceTier: null,
       variantId: null,
       variantName: null,
+      bundleComponents: null,
     };
     set((state) => ({ items: [...state.items, newItem] }));
   },
@@ -212,23 +243,16 @@ export const usePosStore = create<PosState>((set, get) => ({
     }),
 
   // Computed getters
+  // A pack is valued through its components, each at its own VAT rate; the
+  // currency decides how its price is split between them.
   getSubtotal: () => {
-    const { items } = get();
-    return items.reduce((total, item) => {
-      const baseHt = item.quantity * item.unitPrice;
-      const discountedHt = baseHt * (1 - item.discountPercent / 100);
-      return total + discountedHt;
-    }, 0);
+    const { currency } = useSettingsStore.getState();
+    return get().items.reduce((total, item) => total + tillLineAmounts(item, currency).ht, 0);
   },
 
   getTotalVat: () => {
-    const { items } = get();
-    return items.reduce((total, item) => {
-      const baseHt = item.quantity * item.unitPrice;
-      const discountedHt = baseHt * (1 - item.discountPercent / 100);
-      const vat = discountedHt * (item.taxRate / 100);
-      return total + vat;
-    }, 0);
+    const { currency } = useSettingsStore.getState();
+    return get().items.reduce((total, item) => total + tillLineAmounts(item, currency).vat, 0);
   },
 
   getTotal: () => {

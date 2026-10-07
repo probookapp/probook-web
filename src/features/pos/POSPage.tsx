@@ -40,6 +40,8 @@ import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { formatCurrency } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { DEFAULT_CURRENCY } from "@/lib/currencies";
+import { expandEditorLines, tillLineAmounts } from "@/lib/bundles";
+import type { Product, ProductVariant } from "@/types";
 
 export function POSPage() {
   const { t } = useTranslation("pos");
@@ -100,6 +102,23 @@ export function POSPage() {
   // Inline session opening
   const [openingFloat, setOpeningFloat] = useState("0");
 
+  // What a scan adds. A variant's own barcode adds that variant: stock is kept
+  // per variant, and the product alone would be taken out of a count that
+  // holds nothing. A product (or pack) with variants scanned by its own
+  // barcode cannot say which one, so it is chosen from the search instead.
+  const addScanned = (product: Product & { matched_variant?: ProductVariant }) => {
+    const variants = (product.variants ?? []).filter((v) => v.is_active);
+    if (product.matched_variant) {
+      addItemWithVariant(product, product.matched_variant);
+    } else if (product.has_variants && variants.length > 0) {
+      toast.error(t("errors.chooseVariant", { name: product.designation }));
+      return;
+    } else {
+      addItem(product);
+    }
+    toast.success(t("productAdded", { name: product.designation }));
+  };
+
   // Barcode scanner
   useBarcodeScanner({
     onScan: async (barcode) => {
@@ -117,8 +136,7 @@ export function POSPage() {
           product = lookupBarcodeOffline(queryClient, barcode);
         }
         if (product) {
-          addItem(product);
-          toast.success(t("productAdded", { name: product.designation }));
+          addScanned(product);
         } else {
           toast.error(t("errors.productNotFound", { barcode }));
         }
@@ -126,8 +144,7 @@ export function POSPage() {
         // If online lookup fails, try offline cache as fallback
         const offlineProduct = lookupBarcodeOffline(queryClient, barcode);
         if (offlineProduct) {
-          addItem(offlineProduct);
-          toast.success(t("productAdded", { name: offlineProduct.designation }));
+          addScanned(offlineProduct);
         } else {
           toast.error(t("errors.lookupFailed"));
         }
@@ -235,16 +252,24 @@ export function POSPage() {
       ticketNumber: currentSession?.id.slice(0, 8) || "",
       date: new Date().toLocaleString(),
       items: items.map((item) => {
-        const baseHt = item.quantity * item.unitPrice;
-        const discountedHt = baseHt * (1 - item.discountPercent / 100);
-        const vat = discountedHt * (item.taxRate / 100);
+        // A pack is valued through its components, each at its own rate.
+        const { ht, vat } = tillLineAmounts(item, currency);
+        const undiscounted = tillLineAmounts({ ...item, quantity: 1, discountPercent: 0 }, currency);
         return {
           designation: item.designation,
           quantity: item.quantity,
-          unitPrice: item.unitPrice * (1 + item.taxRate / 100),
-          total: discountedHt + vat,
+          unitPrice: undiscounted.ht + undiscounted.vat,
+          total: ht + vat,
           taxRate: item.taxRate,
           discountPercent: item.discountPercent,
+          ...(item.bundleComponents
+            ? {
+                components: item.bundleComponents.map((c) => ({
+                  designation: c.description,
+                  quantity: Math.round(c.quantity * item.quantity * 1000) / 1000,
+                })),
+              }
+            : {}),
         };
       }),
       subtotal: store.getSubtotal(),
@@ -297,16 +322,36 @@ export function POSPage() {
       // any later replay all send the SAME key, so the server records the sale
       // at most once even when a response is lost mid-flight.
       idempotency_key: crypto.randomUUID(),
-      lines: items.map((item) => ({
-        product_id: item.productId,
-        variant_id: item.variantId,
-        barcode: item.barcode,
-        designation: item.designation,
-        quantity: item.quantity,
-        unit_price: item.unitPrice,
-        tax_rate: item.taxRate,
-        discount_percent: item.discountPercent,
-      })),
+      // A pack goes out as its header plus one line per component, each with
+      // its share of the price and its own VAT rate (src/lib/bundles.ts).
+      lines: items.flatMap((item) =>
+        expandEditorLines(
+          [
+            {
+              product_id: item.productId,
+              variant_id: item.variantId,
+              description: item.designation,
+              quantity: item.quantity,
+              unit_price: item.unitPrice,
+              tax_rate: item.taxRate,
+              discount_percent: item.discountPercent,
+              bundle_components: item.bundleComponents,
+            },
+          ],
+          { currency }
+        ).map((line) => ({
+          product_id: line.product_id ?? null,
+          variant_id: line.variant_id ?? null,
+          barcode: line.is_bundle_header || !line.bundle_key ? item.barcode : null,
+          designation: line.description ?? item.designation,
+          quantity: Number(line.quantity),
+          unit_price: Number(line.unit_price),
+          tax_rate: Number(line.tax_rate),
+          discount_percent: Number(line.discount_percent ?? 0),
+          is_bundle_header: line.is_bundle_header,
+          bundle_key: line.bundle_key,
+        }))
+      ),
       payments: payments.map((p) => ({
         payment_method: p.method as PosPaymentMethod,
         amount: p.amount,

@@ -22,8 +22,14 @@ export function RefundModal({ transaction, sessionId, isOpen, onClose }: RefundM
 
   const [reason, setReason] = useState("");
   const [restock, setRestock] = useState(false);
+  // A pack is refunded through its components, which carry its value; its own
+  // line is worth their sum and would refund it twice.
+  const refundable = transaction.lines.filter((l) => !l.is_bundle_header);
+  const packNames = new Map(
+    transaction.lines.filter((l) => l.is_bundle_header).map((l) => [l.bundle_key, l.designation])
+  );
   const [quantities, setQuantities] = useState<Record<string, number>>(() =>
-    Object.fromEntries(transaction.lines.map((l) => [l.id, l.quantity]))
+    Object.fromEntries(refundable.map((l) => [l.id, l.quantity]))
   );
 
   // Effective per-unit price (excl. tax) the customer actually paid: line price
@@ -34,7 +40,7 @@ export function RefundModal({ transaction, sessionId, isOpen, onClose }: RefundM
   const unitPriceOf = (line: PosTransaction["lines"][number]) =>
     (line.quantity > 0 ? line.subtotal / line.quantity : line.unit_price) * discountRatio;
 
-  const selectedLines = transaction.lines
+  const selectedLines = refundable
     .filter((l) => (quantities[l.id] ?? 0) > 0)
     .map((l) => ({
       product_id: l.product_id,
@@ -86,8 +92,9 @@ export function RefundModal({ transaction, sessionId, isOpen, onClose }: RefundM
         </p>
 
         <div className="space-y-2">
-          {transaction.lines.map((line) => {
+          {refundable.map((line) => {
             const qty = quantities[line.id] ?? 0;
+            const pack = line.bundle_key ? packNames.get(line.bundle_key) : undefined;
             return (
               <div
                 key={line.id}
@@ -95,6 +102,7 @@ export function RefundModal({ transaction, sessionId, isOpen, onClose }: RefundM
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium truncate">{line.designation}</p>
+                  {pack && <p className="text-xs text-(--color-text-secondary) truncate">{pack}</p>}
                   <p className="text-xs text-(--color-text-secondary)">
                     {formatCurrency(unitPriceOf(line))} · {line.quantity} {t("refund.sold")}
                   </p>

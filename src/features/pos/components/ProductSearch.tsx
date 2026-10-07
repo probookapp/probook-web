@@ -13,6 +13,7 @@ import { VariantPickerModal } from "./VariantPickerModal";
 import { formatCurrency } from "@/lib/utils";
 import { useProductViewMode } from "../hooks/useProductViewMode";
 import Image from "next/image";
+import { isEmptyPack } from "@/lib/bundles";
 
 const formatAmount = formatCurrency;
 
@@ -185,7 +186,8 @@ export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearc
   const filteredProducts = useMemo(() => {
     if (!products) return [];
 
-    let result = products;
+    // A pack with nothing in it yet is not for sale.
+    let result = products.filter((p) => !isEmptyPack(p));
 
     if (selectedCategory) {
       result = result.filter((p) => p.category_id === selectedCategory);

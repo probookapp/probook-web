@@ -13,6 +13,8 @@ export interface ReceiptData {
     total: number;
     taxRate: number;
     discountPercent: number;
+    /** A pack: what it holds, printed under it without prices of their own. */
+    components?: Array<{ designation: string; quantity: number }>;
   }>;
   subtotal: number;
   taxAmount: number;
@@ -83,6 +85,15 @@ function chequeMentions(p: {
 
 // ─── Method 1: window.print() ───
 
+/** Product names are the business's own text, not markup: a "<" must print as one. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 export function printReceiptWindow(data: ReceiptData): void {
   const w = window.open("", "_blank", "width=320,height=600");
   if (!w) return;
@@ -91,10 +102,15 @@ export function printReceiptWindow(data: ReceiptData): void {
     .map(
       (item) =>
         `<tr>
-          <td style="padding:2px 0">${item.designation}</td>
+          <td style="padding:2px 0">${escapeHtml(item.designation)}</td>
           <td style="text-align:right;padding:2px 0;white-space:nowrap">${item.quantity} x ${fmt(item.unitPrice, data.currency)}</td>
           <td style="text-align:right;padding:2px 0;white-space:nowrap">${fmt(item.total, data.currency)}</td>
-        </tr>${item.discountPercent > 0 ? `<tr><td colspan="3" style="font-size:10px;color:#666;padding:0 0 2px 8px">-${item.discountPercent}%</td></tr>` : ""}`
+        </tr>${item.discountPercent > 0 ? `<tr><td colspan="3" style="font-size:10px;color:#666;padding:0 0 2px 8px">-${item.discountPercent}%</td></tr>` : ""}${(item.components ?? [])
+          .map(
+            (c) =>
+              `<tr><td colspan="3" style="font-size:10px;color:#666;padding:0 0 1px 8px">${c.quantity} x ${escapeHtml(c.designation)}</td></tr>`
+          )
+          .join("")}`
     )
     .join("");
 
@@ -255,6 +271,9 @@ export function buildEscPosReceipt(data: ReceiptData): Uint8Array {
     );
     if (item.discountPercent > 0) {
       add(textBytes(`    -${item.discountPercent}%`));
+    }
+    for (const c of item.components ?? []) {
+      add(textBytes(`    ${c.quantity} x ${c.designation}`));
     }
   }
 

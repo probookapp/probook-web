@@ -58,14 +58,24 @@ function TransactionRow({ tx, companyName, currency, sessionId }: { tx: PosTrans
       companyName,
       ticketNumber: tx.ticket_number,
       date: new Date(tx.transaction_date).toLocaleString(),
-      items: tx.lines.map((line) => ({
-        designation: line.designation,
-        quantity: line.quantity,
-        unitPrice: line.total / line.quantity,
-        total: line.total,
-        taxRate: line.tax_rate,
-        discountPercent: line.discount_percent,
-      })),
+      // A pack prints as one item with its components listed under it.
+      items: tx.lines
+        .filter((line) => !(line.bundle_key && !line.is_bundle_header))
+        .map((line) => ({
+          designation: line.designation,
+          quantity: line.quantity,
+          unitPrice: line.total / line.quantity,
+          total: line.total,
+          taxRate: line.tax_rate,
+          discountPercent: line.discount_percent,
+          ...(line.is_bundle_header
+            ? {
+                components: tx.lines
+                  .filter((c) => c.bundle_key === line.bundle_key && !c.is_bundle_header)
+                  .map((c) => ({ designation: c.designation, quantity: c.quantity })),
+              }
+            : {}),
+        })),
       subtotal: tx.subtotal,
       taxAmount: tx.tax_amount,
       total: tx.total,
@@ -123,17 +133,24 @@ function TransactionRow({ tx, companyName, currency, sessionId }: { tx: PosTrans
         <div className="border-t border-(--color-border-primary) p-3 bg-(--color-bg-secondary)/50 space-y-2">
           {/* Line items */}
           <div className="space-y-1">
-            {tx.lines.map((line) => (
-              <div
-                key={line.id}
-                className="flex justify-between text-sm"
-              >
-                <span className="text-(--color-text-secondary)">
+            {tx.lines.map((line) =>
+              line.bundle_key && !line.is_bundle_header ? (
+                // A pack component: listed under its pack, which carries the value.
+                <div key={line.id} className="ps-4 text-xs text-(--color-text-secondary)">
                   {line.quantity}x {line.designation}
-                </span>
-                <span>{formatAmount(line.total)}</span>
-              </div>
-            ))}
+                </div>
+              ) : (
+                <div
+                  key={line.id}
+                  className="flex justify-between text-sm"
+                >
+                  <span className="text-(--color-text-secondary)">
+                    {line.quantity}x {line.designation}
+                  </span>
+                  <span>{formatAmount(line.total)}</span>
+                </div>
+              )
+            )}
           </div>
 
           {/* Payments */}

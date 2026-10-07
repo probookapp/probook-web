@@ -3,6 +3,8 @@ import { useTranslation } from "react-i18next";
 import { Trash2, Plus, Minus, Tag } from "lucide-react";
 import { usePosStore } from "../stores/usePosStore";
 import { formatCurrency } from "@/lib/utils";
+import { tillLineAmounts } from "@/lib/bundles";
+import { useSettingsStore } from "@/stores/useSettingsStore";
 
 const formatAmount = formatCurrency;
 
@@ -79,6 +81,7 @@ function EditableCell({
 export function CartDisplay() {
   const { t } = useTranslation(["pos", "products"]);
   const { items, updateQuantity, updateItemPrice, removeItem } = usePosStore();
+  const currency = useSettingsStore((state) => state.currency);
 
   if (items.length === 0) {
     return (
@@ -91,11 +94,16 @@ export function CartDisplay() {
     );
   }
 
-  const lineTotalOf = (item: (typeof items)[number]) =>
-    item.quantity *
-    item.unitPrice *
-    (1 - item.discountPercent / 100) *
-    (1 + item.taxRate / 100);
+  // A pack is valued through its components, each at its own VAT rate.
+  const lineTotalOf = (item: (typeof items)[number]) => {
+    const { ht, vat } = tillLineAmounts(item, currency);
+    return ht + vat;
+  };
+  /** The price shown to the cashier is TTC: one unit at the given pre-tax price. */
+  const unitTtc = (item: (typeof items)[number], unitPrice: number) => {
+    const { ht, vat } = tillLineAmounts({ ...item, unitPrice, quantity: 1, discountPercent: 0 }, currency);
+    return ht + vat;
+  };
 
   const stepOf = (unit: string) => (isDecimalUnit(unit) ? 0.1 : 1);
 
@@ -109,6 +117,14 @@ export function CartDisplay() {
 
   const details = (item: (typeof items)[number]) => (
     <>
+      {item.bundleComponents && (
+        // What the pack holds, for the quantity in the basket.
+        <p className="text-xs text-(--color-text-secondary)" data-testid="cart-pack-contents">
+          {item.bundleComponents
+            .map((c) => `${Math.round(c.quantity * item.quantity * 1000) / 1000} × ${c.description}`)
+            .join(" · ")}
+        </p>
+      )}
       {item.barcode && (
         <p className="text-xs text-(--color-text-secondary)">
           {item.barcode}
@@ -192,7 +208,7 @@ export function CartDisplay() {
                 <EditableCell
                   value={item.unitPrice}
                   onCommit={(val) => updateItemPrice(item.id, val)}
-                  formatDisplay={(val) => formatAmount(val * (1 + item.taxRate / 100))}
+                  formatDisplay={(val) => formatAmount(unitTtc(item, val))}
                   step="0.01"
                   min="0"
                   className="text-xs text-(--color-text-secondary) font-mono tabular-nums whitespace-nowrap"
@@ -236,7 +252,7 @@ export function CartDisplay() {
                   <EditableCell
                     value={item.unitPrice}
                     onCommit={(val) => updateItemPrice(item.id, val)}
-                    formatDisplay={(val) => formatAmount(val * (1 + item.taxRate / 100))}
+                    formatDisplay={(val) => formatAmount(unitTtc(item, val))}
                     step="0.01"
                     min="0"
                     className="font-mono tabular-nums whitespace-nowrap"

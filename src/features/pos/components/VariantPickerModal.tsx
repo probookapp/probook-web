@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import { Modal } from "@/components/ui";
 import type { Product, ProductVariant } from "@/types";
 import { formatCurrency } from "@/lib/utils";
+import { sellableVariants } from "@/lib/bundles";
 
 interface VariantPickerModalProps {
   product: Product;
@@ -11,7 +12,8 @@ interface VariantPickerModalProps {
 
 export function VariantPickerModal({ product, onSelect, onClose }: VariantPickerModalProps) {
   const { t } = useTranslation(["pos", "products"]);
-  const variants = product.variants || [];
+  // A pack variant with nothing in it is not offered.
+  const variants = product.is_bundle ? sellableVariants(product) : product.variants || [];
 
   return (
     <Modal isOpen={true} onClose={onClose} title={t("pos:selectVariant")} size="sm">
@@ -19,7 +21,8 @@ export function VariantPickerModal({ product, onSelect, onClose }: VariantPicker
       <div className="space-y-2">
         {variants.map((v) => {
           const price = v.price_override ?? product.unit_price;
-          const outOfStock = v.quantity <= 0;
+          // A pack made of services only has no stock limit (null).
+          const outOfStock = v.quantity !== null && v.quantity <= 0;
           return (
             <button
               key={v.id}
