@@ -11,6 +11,9 @@ import { createProductSchema, type ProductFormData } from "../schemas/productSch
 import { useProductCategories } from "../hooks/useProductCategories";
 import { ProductPhotoUpload } from "./ProductPhotoUpload";
 import { VariantManager } from "./VariantManager";
+import { BundleManager } from "./BundleManager";
+import { useFeature, FEATURE_KEYS } from "@/hooks/useEntitlements";
+import { formatCurrency } from "@/lib/utils";
 import type { Product } from "@/types";
 
 interface ProductFormProps {
@@ -37,6 +40,8 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
   const defaultTaxRate = settings?.default_tax_rate ?? 0;
 
   const productSchema = useMemo(() => createProductSchema(t), [t]);
+  // Composing packs belongs to an offer; selling one never does.
+  const bundles = useFeature(FEATURE_KEYS.BUNDLES);
 
   // VAT scale of the tenant's fiscal regime, with the product's own rate kept
   // selectable so editing never silently resets it.
@@ -83,6 +88,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
       purchase_price: product?.purchase_price ?? 0,
       prices: product?.prices?.map((p) => ({ label: p.label, price: p.price })) ?? [],
       has_variants: product?.has_variants ?? false,
+      is_bundle: product?.is_bundle ?? false,
     },
   });
 
@@ -95,6 +101,8 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
   // when the fields change, and the React Compiler can compile around it.
   const isService = useWatch({ control, name: "is_service" });
   const hasVariants = useWatch({ control, name: "has_variants" });
+  // A pack has no stock, no rate and no cost of its own: its components carry them.
+  const isBundle = useWatch({ control, name: "is_bundle" });
   const watchedPrices = useWatch({ control, name: "prices" });
 
   const categoryOptions = [
@@ -150,22 +158,35 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
           {...register("unit_price")}
           error={errors.unit_price?.message}
         />
-        <Input
-          label={t("fields.purchasePriceHt")}
-          type="number"
-          step="0.01"
-          {...register("purchase_price")}
-          error={errors.purchase_price?.message}
-        />
+        {isBundle ? (
+          <Input
+            label={t("bundle.cost")}
+            value={product ? formatCurrency(product.purchase_price ?? 0) : "-"}
+            readOnly
+            disabled
+          />
+        ) : (
+          <Input
+            label={t("fields.purchasePriceHt")}
+            type="number"
+            step="0.01"
+            {...register("purchase_price")}
+            error={errors.purchase_price?.message}
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Select
-          label={t("fields.vatRateRequired")}
-          options={taxRateOptions}
-          {...register("tax_rate")}
-          error={errors.tax_rate?.message}
-        />
+        {isBundle ? (
+          <Input label={t("fields.vatRate")} value={t("bundle.vatFromComponents")} readOnly disabled />
+        ) : (
+          <Select
+            label={t("fields.vatRateRequired")}
+            options={taxRateOptions}
+            {...register("tax_rate")}
+            error={errors.tax_rate?.message}
+          />
+        )}
         <Select
           label={t("fields.unitRequired")}
           options={unitOptions}
@@ -189,7 +210,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
             />
           )}
         />
-        {!isService && !fromPurchase && (
+        {!isService && !isBundle && !fromPurchase && (
           <Input
             label={t("fields.quantity")}
             type="number"
@@ -287,17 +308,36 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
         })}
       </div>
 
-      <div className="flex items-center gap-2">
-        <input
-          type="checkbox"
-          id="is_service"
-          {...register("is_service")}
-          className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-        />
-        <label htmlFor="is_service" className="text-sm text-gray-700 dark:text-gray-300">
-          {t("fields.isServiceDescription")}
-        </label>
-      </div>
+      {/* A product becomes a pack when it is created; its composition is then
+          set on its own form, like its variants. */}
+      {!product && !fromPurchase && bundles.included && !isService && (
+        <div className="flex items-start gap-2">
+          <input
+            type="checkbox"
+            id="is_bundle"
+            {...register("is_bundle")}
+            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+          <label htmlFor="is_bundle" className="text-sm text-gray-700 dark:text-gray-300">
+            {t("bundle.isBundle")}
+            <span className="block text-xs text-gray-500 dark:text-gray-400">{t("bundle.isBundleHint")}</span>
+          </label>
+        </div>
+      )}
+
+      {!isBundle && (
+        <div className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            id="is_service"
+            {...register("is_service")}
+            className="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+          />
+          <label htmlFor="is_service" className="text-sm text-gray-700 dark:text-gray-300">
+            {t("fields.isServiceDescription")}
+          </label>
+        </div>
+      )}
 
       {!isService && !fromPurchase && (
         <div className="flex items-center gap-2">
@@ -314,8 +354,10 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
       )}
 
       {product && hasVariants && (
-        <VariantManager productId={product.id} />
+        <VariantManager productId={product.id} isBundle={!!product.is_bundle} />
       )}
+
+      {product?.is_bundle && <BundleManager product={product} />}
 
       {product && (
         <ProductPhotoUpload productId={product.id} />

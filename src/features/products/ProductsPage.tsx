@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Trash2, Search, Package, Briefcase, Tags, Upload, Folder, Truck, Download, SlidersHorizontal, History, AlertTriangle, MapPin } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Package, Briefcase, Tags, Upload, Folder, Truck, Download, SlidersHorizontal, History, AlertTriangle, MapPin, Boxes } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import {
@@ -46,8 +46,8 @@ import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { isApiError } from "@/lib/api-adapter";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
-import { getApiErrorMessage } from "@/lib/api-adapter";
-import { productSupplierApi, locationsApi } from "@/lib/api";
+import { apiErrorCode, getApiErrorMessage } from "@/lib/api-adapter";
+import { productSupplierApi, locationsApi, productBundleApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { Product } from "@/types";
 import type { ProductFormData } from "./schemas/productSchema";
@@ -179,11 +179,20 @@ export function ProductsPage() {
       category_id: data.category_id || null,
     };
 
+    const { is_bundle: makePack, ...fields } = input;
     try {
       if (selectedProduct) {
-        await updateProduct.mutateAsync({ ...input, id: selectedProduct.id });
+        await updateProduct.mutateAsync({ ...fields, id: selectedProduct.id });
       } else {
-        await createProduct.mutateAsync(input);
+        const created = await createProduct.mutateAsync(fields);
+        if (makePack) {
+          // The pack exists; what it is made of is set on its form, which
+          // reopens on it straight away.
+          await productBundleApi.set(created.id, []);
+          setSelectedProduct({ ...created, is_bundle: true });
+          toast.success(t("bundle.created"));
+          return;
+        }
       }
     } catch (err) {
       // Saved to the offline queue: treat as success, it syncs later.
@@ -202,7 +211,13 @@ export function ProductsPage() {
       await deleteProduct.mutateAsync(id);
       setDeleteConfirmId(null);
     } catch (err) {
-      toast.error(isApiError(err, 409) ? t("messages.deleteBlocked") : t("messages.deleteError"));
+      toast.error(
+        apiErrorCode(err) === "PRODUCT_IN_BUNDLE"
+          ? t("bundle.errors.PRODUCT_IN_BUNDLE")
+          : isApiError(err, 409)
+            ? t("messages.deleteBlocked")
+            : t("messages.deleteError")
+      );
     }
   };
 
@@ -359,7 +374,9 @@ export function ProductsPage() {
                     </label>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start gap-2">
-                        {product.is_service ? (
+                        {product.is_bundle ? (
+                          <Badge variant="warning" className="shrink-0"><Boxes className="h-3 w-3 me-1" />{t("types.bundle")}</Badge>
+                        ) : product.is_service ? (
                           <Badge variant="info" className="shrink-0"><Briefcase className="h-3 w-3 me-1" />{t("types.service")}</Badge>
                         ) : (
                           <Badge variant="default" className="shrink-0"><Package className="h-3 w-3 me-1" />{t("types.product")}</Badge>
@@ -374,7 +391,12 @@ export function ProductsPage() {
                       </div>
                       <div className="flex items-center justify-between mt-1.5">
                         <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatCurrency(product.unit_price)}</span>
-                        {!product.is_service && (
+                        {product.is_bundle && product.quantity !== null && (
+                          <Badge variant={(product.quantity ?? 0) > 0 ? "success" : "danger"} title={t("bundle.availableHint")}>
+                            {t("bundle.available")}: {product.quantity}
+                          </Badge>
+                        )}
+                        {!product.is_service && !product.is_bundle && (
                           <div className="flex items-center gap-1.5">
                             <Badge variant={(product.quantity ?? 0) > 0 ? "success" : "danger"}>
                               {t("fields.quantity")}: {product.quantity ?? 0}
@@ -395,13 +417,13 @@ export function ProductsPage() {
                       {/* Five icons beside the name left it a few letters wide:
                           on a phone they get a row of their own. */}
                       <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
-                        {!product.is_service && (
+                        {!product.is_service && !product.is_bundle && (
                           <>
                             {canEdit && <button onClick={() => handleAdjustStock(product)} className="p-3 rounded-md text-gray-500 hover:text-blue-600 dark:hover:text-blue-400" aria-label={t("adjustStock.title")} title={t("adjustStock.title")}><SlidersHorizontal className="h-4 w-4" /></button>}
                             <button onClick={() => setMovementsProduct(product)} className="p-3 rounded-md text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400" aria-label={t("movements.title")} title={t("movements.title")}><History className="h-4 w-4" /></button>
                           </>
                         )}
-                        <button onClick={() => setSupplierProductId(product.id)} className="p-3 rounded-md text-gray-500 hover:text-amber-600 dark:hover:text-amber-400" aria-label={t("fields.suppliers")} title={t("fields.suppliers")}><Truck className="h-4 w-4" /></button>
+                        {!product.is_bundle && <button onClick={() => setSupplierProductId(product.id)} className="p-3 rounded-md text-gray-500 hover:text-amber-600 dark:hover:text-amber-400" aria-label={t("fields.suppliers")} title={t("fields.suppliers")}><Truck className="h-4 w-4" /></button>}
                         {canEdit && <button onClick={() => handleOpenModal(product)} className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
                         {canDelete && <button onClick={() => setDeleteConfirmId(product.id)} className="p-3 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
                       </div>
@@ -443,7 +465,12 @@ export function ProductsPage() {
                         </label>
                       </TableCell>
                       <TableCell>
-                        {product.is_service ? (
+                        {product.is_bundle ? (
+                          <Badge variant="warning">
+                            <Boxes className="h-3 w-3 me-1" />
+                            {t("types.bundle")}
+                          </Badge>
+                        ) : product.is_service ? (
                           <Badge variant="info">
                             <Briefcase className="h-3 w-3 me-1" />
                             {t("types.service")}
@@ -489,7 +516,16 @@ export function ProductsPage() {
                       </TableNumericCell>
                       <TableNumericCell className="text-gray-600 dark:text-gray-400">{formatCurrency(product.unit_price)}</TableNumericCell>
                       <TableCell>
-                        {product.is_service ? (
+                        {product.is_bundle ? (
+                          // What its components can make up; a pack of services only has no limit.
+                          product.quantity === null ? (
+                            <span className="text-gray-400 dark:text-gray-500">-</span>
+                          ) : (
+                            <Badge variant={(product.quantity ?? 0) > 0 ? "success" : "danger"} title={t("bundle.availableHint")}>
+                              {product.quantity}
+                            </Badge>
+                          )
+                        ) : product.is_service ? (
                           <span className="text-gray-400 dark:text-gray-500">-</span>
                         ) : (
                           <div className="flex items-center gap-1.5">
@@ -511,7 +547,7 @@ export function ProductsPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2 lg:gap-1">
-                          {!product.is_service && (
+                          {!product.is_service && !product.is_bundle && (
                             <>
                               {canEdit && (
                               <button
@@ -533,6 +569,7 @@ export function ProductsPage() {
                               </button>
                             </>
                           )}
+                          {!product.is_bundle && (
                           <button
                             onClick={() => setSupplierProductId(product.id)}
                             aria-label={t("fields.suppliers")}
@@ -541,6 +578,7 @@ export function ProductsPage() {
                           >
                             <Truck className="h-4 w-4" />
                           </button>
+                          )}
                           {canEdit && (
                           <button
                             onClick={() => handleOpenModal(product)}

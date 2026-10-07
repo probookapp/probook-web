@@ -46,7 +46,8 @@ export function StockTransferForm({ locations, onSubmit, onCancel, isLoading }: 
 
   const productOptions = useMemo(
     () =>
-      (products ?? []).map((p) => ({
+      // A pack has no shelf of its own: its components are bought and moved instead.
+      (products ?? []).filter((p) => !p.is_bundle).map((p) => ({
         value: p.id,
         label: `${p.designation}${p.reference ? ` (${p.reference})` : ""}`,
       })),

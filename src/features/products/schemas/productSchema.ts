@@ -19,6 +19,8 @@ export const createProductSchema = (t: (key: string) => string) => z.object({
   purchase_price: z.coerce.number().min(0).nullable().optional(),
   prices: z.array(productPriceItemSchema).optional(),
   has_variants: z.boolean().optional(),
+  // A pack: made of other products, composed on its own form once it exists.
+  is_bundle: z.boolean().optional(),
 });
 
 export type ProductFormData = z.output<ReturnType<typeof createProductSchema>>;

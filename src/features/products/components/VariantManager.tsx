@@ -15,6 +15,8 @@ const SIZE_OPTIONS = ["S", "M", "L", "XL", "XXL", "2XL", "3XL"];
 
 interface VariantManagerProps {
   productId: string;
+  /** A pack's variants hold no stock: what each is made of decides how many there are. */
+  isBundle?: boolean;
 }
 
 interface VariantFormState {
@@ -35,7 +37,7 @@ const emptyForm: VariantFormState = {
   attributes: {},
 };
 
-export function VariantManager({ productId }: VariantManagerProps) {
+export function VariantManager({ productId, isBundle = false }: VariantManagerProps) {
   const { t } = useTranslation(["products", "common"]);
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const canCreate = useAuthStore((s) => s.hasPermission("products", "create"));
@@ -152,7 +154,7 @@ export function VariantManager({ productId }: VariantManagerProps) {
           <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {t("variants.title")}
           </h3>
-          {variants.length > 0 && (
+          {variants.length > 0 && !isBundle && (
             <p className="text-xs text-gray-500">
               {t("variants.totalStock")}: {totalStock}
             </p>
@@ -178,7 +180,7 @@ export function VariantManager({ productId }: VariantManagerProps) {
               <tr>
                 <th className="px-3 py-2 text-start font-medium">{t("variants.name")}</th>
                 <th className="px-3 py-2 text-start font-medium">{t("variants.attributes")}</th>
-                <th className={`px-3 py-2 font-medium ${NUMERIC_CELL}`}>{t("variants.quantity")}</th>
+                {!isBundle && <th className={`px-3 py-2 font-medium ${NUMERIC_CELL}`}>{t("variants.quantity")}</th>}
                 <th className={`px-3 py-2 font-medium ${NUMERIC_CELL}`}>{t("variants.barcode")}</th>
                 <th className="px-3 py-2 w-20"></th>
               </tr>
@@ -196,11 +198,13 @@ export function VariantManager({ productId }: VariantManagerProps) {
                       ))}
                     </div>
                   </td>
-                  <td className={`px-3 py-2 ${NUMERIC_CELL}`}>
-                    <span className={v.quantity === 0 ? "text-red-600 dark:text-red-400 font-medium" : ""}>
-                      {v.quantity}
-                    </span>
-                  </td>
+                  {!isBundle && (
+                    <td className={`px-3 py-2 ${NUMERIC_CELL}`}>
+                      <span className={v.quantity === 0 ? "text-red-600 dark:text-red-400 font-medium" : ""}>
+                        {v.quantity}
+                      </span>
+                    </td>
+                  )}
                   <td className={`px-3 py-2 text-xs text-gray-500 ${NUMERIC_CELL}`}>
                     {v.barcode || "-"}
                   </td>
@@ -262,13 +266,15 @@ export function VariantManager({ productId }: VariantManagerProps) {
               value={form.barcode}
               onChange={(e) => setForm({ ...form, barcode: e.target.value })}
             />
-            <Input
-              label={t("variants.quantity")}
-              type="number"
-              min="0"
-              value={form.quantity}
-              onChange={(e) => setForm({ ...form, quantity: parseInt(e.target.value) || 0 })}
-            />
+            {!isBundle && (
+              <Input
+                label={t("variants.quantity")}
+                type="number"
+                min="0"
+                value={form.quantity}
+                onChange={(e) => setForm({ ...form, quantity: parseInt(e.target.value) || 0 })}
+              />
+            )}
             <Input
               label={t("variants.priceOverride")}
               type="number"
