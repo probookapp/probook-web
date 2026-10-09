@@ -172,6 +172,10 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
       const variants = list(src, "product_variants");
       const prices = list(src, "product_prices");
       const bundleComponents = list(src, "bundle_components");
+      const tags = list(src, "tags");
+      const quoteTags = list(src, "quote_tags");
+      const invoiceTags = list(src, "invoice_tags");
+      const deliveryNoteTags = list(src, "delivery_note_tags");
       const clients = list(src, "clients");
       const contacts = list(src, "client_contacts");
       const suppliers = list(src, "suppliers");
@@ -241,6 +245,8 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
       await tx.invoice.deleteMany({ where: { tenantId } });
       await tx.quoteLine.deleteMany({ where: { quote: { tenantId } } });
       await tx.quote.deleteMany({ where: { tenantId } });
+      // Labels go with the documents; their join rows cascade.
+      await tx.tag.deleteMany({ where: { tenantId } });
       await tx.posPrinterConfig.deleteMany({ where: { tenantId } });
       // v3.0 could not delete registers: PosSession/PosTransaction hold a
       // REQUIRED FK to them (onDelete: Restrict) and were outside the backup, so
@@ -505,6 +511,42 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
           })),
         });
         imported.bundle_components = bundleComponents.length;
+      }
+
+      // ─── 6c. Labels ───
+      // Restored before the documents they are attached to. A tag id already
+      // owned by another business (a backup restored into a different account)
+      // cannot be reused, so that label gets a fresh id and its attachments
+      // follow it through `tagIdMap`.
+      const tagIdMap = new Map<string, string>();
+      if (tags.length) {
+        const incoming = tags.map((t) => str(t, "id")).filter((v): v is string => v !== null);
+        const claimed = new Set(
+          incoming.length
+            ? (
+                await tx.tag.findMany({
+                  where: { id: { in: incoming }, tenantId: { not: tenantId } },
+                  select: { id: true },
+                })
+              ).map((t) => t.id)
+            : []
+        );
+        for (const t of tags) {
+          const original = str(t, "id");
+          const id = original && !claimed.has(original) ? original : crypto.randomUUID();
+          if (original) tagIdMap.set(original, id);
+          await tx.tag.create({
+            data: {
+              id,
+              tenantId,
+              name: reqStr(t, "name"),
+              color: str(t, "color") ?? "gray",
+              createdAt: reqDate(t, "created_at"),
+              updatedAt: reqDate(t, "updated_at"),
+            },
+          });
+        }
+        imported.tags = tags.length;
       }
 
       // ─── 7. Clients ───
@@ -857,6 +899,41 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
         });
       }
       if (deliveryNotes.length) imported.delivery_notes = deliveryNotes.length;
+
+      // ─── 14b. Labels on documents ───
+      // Only attachments whose label and document both came back: a row naming
+      // anything else would fail its foreign key and roll the whole restore back.
+      const restoredIds = (rows: Row[]) =>
+        new Set(rows.map((r) => str(r, "id")).filter((v): v is string => v !== null));
+      const attach = (rowsIn: Row[], docKey: string, docs: Set<string>) =>
+        rowsIn
+          .map((r) => ({ doc: str(r, docKey), tag: tagIdMap.get(str(r, "tag_id") ?? "") }))
+          .filter((r): r is { doc: string; tag: string } => !!r.doc && !!r.tag && docs.has(r.doc));
+
+      const quoteLinks = attach(quoteTags, "quote_id", restoredIds(quotes));
+      if (quoteLinks.length) {
+        await tx.quoteTag.createMany({
+          data: quoteLinks.map((l) => ({ quoteId: l.doc, tagId: l.tag })),
+          skipDuplicates: true,
+        });
+        imported.quote_tags = quoteLinks.length;
+      }
+      const invoiceLinks = attach(invoiceTags, "invoice_id", restoredIds(invoices));
+      if (invoiceLinks.length) {
+        await tx.invoiceTag.createMany({
+          data: invoiceLinks.map((l) => ({ invoiceId: l.doc, tagId: l.tag })),
+          skipDuplicates: true,
+        });
+        imported.invoice_tags = invoiceLinks.length;
+      }
+      const noteLinks = attach(deliveryNoteTags, "delivery_note_id", restoredIds(deliveryNotes));
+      if (noteLinks.length) {
+        await tx.deliveryNoteTag.createMany({
+          data: noteLinks.map((l) => ({ deliveryNoteId: l.doc, tagId: l.tag })),
+          skipDuplicates: true,
+        });
+        imported.delivery_note_tags = noteLinks.length;
+      }
 
       // ─── 15. Credit notes (+lines) ───
       for (const cn of creditNotes) {

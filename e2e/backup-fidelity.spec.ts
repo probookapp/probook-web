@@ -1019,4 +1019,92 @@ test.describe("backup export/restore fidelity", () => {
       ).toBe(photoRef);
     }
   });
+
+  test("labels, discounts and packs come back from a restore", async ({ page }) => {
+    await signUp(page);
+    const client = await setupClient(page, "Client Étiquettes");
+    const tag = (await apiPost(page, "/api/tags", { name: "Chantier Hydra", color: "blue" })).body;
+
+    // A pack, so its composition and its document lines travel too.
+    const camera = await setupProduct(page, "Caméra", 20000, { tax_rate: 19, quantity: 5 });
+    const fitting = await setupProduct(page, "Pose", 8000, { tax_rate: 9, is_service: true });
+    const pack = await setupProduct(page, "Pack caméra", 25000);
+    expect(
+      (await apiPut(page, `/api/product-bundles/${pack.id}`, {
+        components: [
+          { product_id: camera.id, quantity: 1 },
+          { product_id: fitting.id, quantity: 1 },
+        ],
+      })).status
+    ).toBe(200);
+
+    const quote = await apiPost(page, "/api/quotes", {
+      client_id: client.id,
+      issue_date: "2026-10-01",
+      validity_date: "2026-11-01",
+      discount_percent: 10,
+      tag_ids: [tag.id],
+      lines: [
+        { product_id: pack.id, description: "Pack caméra", quantity: 1, unit_price: 25000, tax_rate: 0, discount_percent: 5, is_bundle_header: true, bundle_key: "k" },
+        { product_id: camera.id, description: "Caméra", quantity: 1, unit_price: 17857.14, tax_rate: 19, discount_percent: 5, bundle_key: "k" },
+        { product_id: fitting.id, description: "Pose", quantity: 1, unit_price: 7142.86, tax_rate: 9, discount_percent: 5, bundle_key: "k" },
+      ],
+    });
+    expect(quote.status).toBe(200);
+    const invoice = await apiPost(page, "/api/invoices", {
+      client_id: client.id,
+      issue_date: "2026-10-01",
+      discount_amount: 500,
+      tag_ids: [tag.id],
+      lines: [{ description: "Main d'oeuvre", quantity: 1, unit_price: 3000, tax_rate: 19 }],
+    });
+    expect(invoice.status).toBe(200);
+    const note = await apiPost(page, "/api/delivery-notes", {
+      client_id: client.id,
+      issue_date: "2026-10-01",
+      tag_ids: [tag.id],
+      lines: [{ product_id: camera.id, description: "Caméra", quantity: 1 }],
+    });
+    expect(note.status).toBe(200);
+
+    const before = await exportBackup(page);
+    expect((before.tags as Json[]).length).toBe(1);
+    expect((before.quote_tags as Json[]).length).toBe(1);
+    expect((before.invoice_tags as Json[]).length).toBe(1);
+    expect((before.delivery_note_tags as Json[]).length).toBe(1);
+
+    const result = await restoreBackup(page, before);
+    const counts = result.imported as Json;
+    expect(counts.tags).toBe(1);
+    expect(counts.quote_tags).toBe(1);
+    expect(counts.invoice_tags).toBe(1);
+    expect(counts.delivery_note_tags).toBe(1);
+    expect(counts.bundle_components).toBe(2);
+
+    const after = await exportBackup(page);
+    for (const table of ["tags", "quote_tags", "invoice_tags", "delivery_note_tags", "bundle_components"]) {
+      expect(after[table], `${table} changed across a restore`).toEqual(before[table]);
+    }
+
+    // What the screens read: the labels are back on each document…
+    const restoredQuote = (await apiGet(page, `/api/quotes/${quote.body.id}`)).body;
+    expect((restoredQuote.tags as Json[]).map((t) => t.name)).toEqual(["Chantier Hydra"]);
+    const restoredNote = (await apiGet(page, `/api/delivery-notes/${note.body.id}`)).body;
+    expect((restoredNote.tags as Json[]).map((t) => t.name)).toEqual(["Chantier Hydra"]);
+
+    // …the discounts that made the stored totals…
+    expect(restoredQuote.discount_percent).toBe(10);
+    expect((restoredQuote.lines as Json[])[1].discount_percent).toBe(5);
+    const restoredInvoice = (await apiGet(page, `/api/invoices/${invoice.body.id}`)).body;
+    expect(restoredInvoice.discount_amount).toBe(500);
+    expect((restoredInvoice.tags as Json[]).map((t) => t.name)).toEqual(["Chantier Hydra"]);
+
+    // …and the pack, header and components.
+    expect((restoredQuote.lines as Json[]).map((l) => [l.is_bundle_header, l.bundle_key])).toEqual([
+      [true, "k"],
+      [false, "k"],
+      [false, "k"],
+    ]);
+    expect((await apiGet(page, `/api/products/${pack.id}`)).body.is_bundle).toBe(true);
+  });
 });

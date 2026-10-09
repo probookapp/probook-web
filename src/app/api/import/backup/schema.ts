@@ -241,6 +241,24 @@ const TABLES: Record<string, TableSpec> = {
       created_at: "date",
     },
   },
+  tags: {
+    fields: {
+      id,
+      name: "string!",
+      color: "string",
+      created_at: "date",
+      updated_at: "date",
+    },
+  },
+  quote_tags: {
+    fields: { quote_id: "string!", tag_id: "string!" },
+  },
+  invoice_tags: {
+    fields: { invoice_id: "string!", tag_id: "string!" },
+  },
+  delivery_note_tags: {
+    fields: { delivery_note_id: "string!", tag_id: "string!" },
+  },
   bundle_components: {
     fields: {
       id,
