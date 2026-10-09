@@ -123,7 +123,9 @@ export function TenantsPage() {
     if (!impersonateTarget) return;
     await impersonateTenant.mutateAsync(String(impersonateTarget.id));
     setImpersonateTarget(null);
-    // Full navigation so the impersonation cookie is picked up by the tenant app
+    // Full navigation so the impersonation cookie is picked up by the tenant app,
+    // and nothing cached by the admin session leaks into it.
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = `/${locale}/dashboard`;
   };
 

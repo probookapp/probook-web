@@ -96,6 +96,10 @@ export function Navbar({ actions }: NavbarProps) {
                     onClick={() => {
                       setLangOpen(false);
                       if (l.code !== locale) {
+                        // A full load on purpose: the public pages are rendered
+                        // per language on the server, so a client-side push would
+                        // keep the old language's HTML until the next refresh.
+                        // eslint-disable-next-line @next/next/no-location-assign-relative-destination
                         window.location.href = `/${l.code}`;
                       }
                     }}
