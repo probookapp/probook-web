@@ -162,31 +162,32 @@ test.describe("Purchase order workflow", () => {
       lines: [{ line_id: lineId, received_quantity: 8 }],
     });
 
-    // Edit disappears once goods are in; the order must stay readable anyway.
+    // Edit disappears once goods are in; the order must stay readable anyway —
+    // on its own page, reached from the list.
     await page.goto("/en/purchases");
     const row = page.getByRole("row").filter({ hasText: po.body.order_number as string });
     await row.getByRole("button", { name: "More actions" }).click();
     await page.getByRole("menuitem", { name: "View" }).click();
-    const view = page.getByRole("dialog", { name: `Purchase Order ${po.body.order_number}` });
+    await expect(page).toHaveURL(new RegExp(`/en/purchases/${po.body.id}$`));
+    const view = page.locator("main");
+    await expect(
+      view.getByRole("heading", { name: `Purchase Order ${po.body.order_number}` })
+    ).toBeVisible();
     await expect(view.getByText("Review Supplier")).toBeVisible();
-    await expect(view.getByText("Review Product")).toBeVisible();
-    await expect(view.getByText("Ordered: 10")).toBeVisible();
-    await expect(view.getByText("Received: 8")).toBeVisible();
+    const line = view.getByRole("row").filter({ hasText: "Review Product" });
+    await expect(line.getByRole("cell").nth(1)).toHaveText("10");
+    await expect(line.getByRole("cell").nth(2)).toHaveText("8");
     await expect(view.getByText("Check the invoice against this")).toBeVisible();
-    await view.getByRole("button", { name: "Close" }).last().click();
-    await expect(view).toHaveCount(0);
+    await expect(view.getByRole("button", { name: "Edit" })).toHaveCount(0);
 
-    // The last 2 arrive. Once fully received, View is the only action left —
-    // and it shows the order as it now stands, not the copy opened before.
-    await row.getByRole("button", { name: "Confirm Receipt" }).click();
+    // The last 2 arrive, received from the order's own page — which then shows
+    // the order as it now stands.
+    await view.getByRole("button", { name: "Confirm Receipt" }).click();
     const receive = page.getByRole("dialog", { name: "Confirm Purchase Order" });
     await receive.getByRole("button", { name: "Confirm Receipt" }).click();
     await expect(receive).toHaveCount(0);
-    await expect(row.getByRole("button", { name: "Confirm Receipt" })).toHaveCount(0);
-    await row.getByRole("button", { name: "More actions" }).click();
-    await expect(page.getByRole("menuitem", { name: "Edit" })).toHaveCount(0);
-    await page.getByRole("menuitem", { name: "View" }).click();
-    await expect(view.getByText("Received: 10")).toBeVisible();
+    await expect(view.getByRole("button", { name: "Confirm Receipt" })).toHaveCount(0);
+    await expect(line.getByRole("cell").nth(2)).toHaveText("10");
     await expect(view.getByText("Received on")).toBeVisible();
   });
 });

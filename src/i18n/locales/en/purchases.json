@@ -35,7 +35,7 @@
     "tax": "Tax",
     "lineTotal": "Line Total",
     "lines": "Order Lines",
-    "addLine": "Add Product",
+    "addLine": "Add line",
     "receivingLocation": "Receiving location",
     "defaultLocation": "Default location"
   },
@@ -104,7 +104,7 @@
     "cancelled": "Cancelled"
   },
   "newProduct": {
-    "button": "New product",
+    "button": "Create product",
     "title": "New product",
     "offline": "Offline: the product will be created once you reconnect, but it can't be added to this order yet."
   }

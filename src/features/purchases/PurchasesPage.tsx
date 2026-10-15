@@ -31,9 +31,9 @@ import {
   type RowAction,
   ColumnPicker,
 } from "@/components/ui";
-import { PurchaseForm } from "./components/PurchaseForm";
 import { PurchaseConfirmModal } from "./components/PurchaseConfirmModal";
-import { PurchaseDetailModal } from "./components/PurchaseDetailModal";
+import { getPaymentBadgeVariant, getStatusBadgeVariant } from "./purchaseStatus";
+import { useRouter } from "@/lib/navigation";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
@@ -46,8 +46,6 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   useInfinitePurchases,
   usePurchase,
-  useCreatePurchase,
-  useUpdatePurchase,
   useDeletePurchase,
   useBatchDeletePurchases,
   useConfirmPurchase,
@@ -57,58 +55,26 @@ import type {
   PurchaseOrder,
   PurchaseOrderListItem,
   PurchaseOrderStatus,
-  PurchasePaymentStatus,
-  CreatePurchaseOrderInput,
   ConfirmPurchaseOrderInput,
 } from "@/types";
 
 type StatusFilter = "ALL" | PurchaseOrderStatus;
 
-function getStatusBadgeVariant(
-  status: PurchaseOrderStatus
-): "warning" | "success" | "danger" | "info" {
-  switch (status) {
-    case "PENDING":
-      return "warning";
-    case "PARTIALLY_RECEIVED":
-      return "info";
-    case "CONFIRMED":
-      return "success";
-    case "CANCELLED":
-      return "danger";
-  }
-}
-
-function getPaymentBadgeVariant(
-  status: PurchasePaymentStatus
-): "danger" | "warning" | "success" {
-  switch (status) {
-    case "UNPAID":
-      return "danger";
-    case "PARTIAL":
-      return "warning";
-    case "PAID":
-      return "success";
-  }
-}
-
 export function PurchasesPage() {
   const { t } = useTranslation("purchases");
   const { t: tCommon } = useTranslation("common");
+  const router = useRouter();
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const canCreate = useAuthStore((s) => s.hasPermission("purchases", "create"));
   const canEdit = useAuthStore((s) => s.hasPermission("purchases", "edit"));
   const canDelete = useAuthStore((s) => s.hasPermission("purchases", "delete"));
 
-  const [showForm, setShowForm] = useState(false);
-  const [editingPurchase, setEditingPurchase] = useState<PurchaseOrderListItem | undefined>();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [confirmingPurchase, setConfirmingPurchase] = useState<PurchaseOrderListItem | null>(null);
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
-  const [viewingPurchase, setViewingPurchase] = useState<PurchaseOrderListItem | null>(null);
 
   const {
     data: purchasePages,
@@ -121,22 +87,12 @@ export function PurchasesPage() {
     () => purchasePages?.pages.flatMap((page) => page.data),
     [purchasePages]
   );
-  // Lean list rows have no lines: edit/confirm fetch the full order by id.
+  // Lean list rows have no lines: receiving fetches the full order by id.
   // Demo mode skips the fetch — DEMO_PURCHASES rows already carry their lines.
-  const { data: editingFullData } = usePurchase(!isDemoMode ? editingPurchase?.id ?? "" : "");
-  const editingFull = isDemoMode
-    ? (editingPurchase as PurchaseOrder | undefined)
-    : editingFullData;
   const { data: confirmingFullData } = usePurchase(!isDemoMode ? confirmingPurchase?.id ?? "" : "");
   const confirmingFull = isDemoMode
     ? (confirmingPurchase as PurchaseOrder | null)
     : confirmingFullData ?? null;
-  const { data: viewingFullData } = usePurchase(!isDemoMode ? viewingPurchase?.id ?? "" : "");
-  const viewingFull = isDemoMode
-    ? (viewingPurchase as PurchaseOrder | null)
-    : viewingFullData ?? null;
-  const createPurchase = useCreatePurchase();
-  const updatePurchase = useUpdatePurchase();
   const deletePurchase = useDeletePurchase();
   const batchDeletePurchases = useBatchDeletePurchases();
   const confirmPurchase = useConfirmPurchase();
@@ -190,27 +146,14 @@ export function PurchasesPage() {
     filteredPurchases
   );
 
-  const handleOpenForm = (purchase?: PurchaseOrderListItem) => {
+  // A purchase order is a document with lines: written on its own page, like
+  // a quote or a delivery note, not in a dialog over the list.
+  const openForm = (purchase?: PurchaseOrderListItem) => {
     if (isDemoMode) {
       showSubscribePrompt();
       return;
     }
-    setEditingPurchase(purchase);
-    setShowForm(true);
-  };
-
-  const handleCloseForm = () => {
-    setEditingPurchase(undefined);
-    setShowForm(false);
-  };
-
-  const handleSubmit = async (input: CreatePurchaseOrderInput) => {
-    if (editingPurchase) {
-      await updatePurchase.mutateAsync({ ...input, id: editingPurchase.id });
-    } else {
-      await createPurchase.mutateAsync(input);
-    }
-    handleCloseForm();
+    router.push(purchase ? `/purchases/${purchase.id}/edit` : "/purchases/new");
   };
 
   const handleDelete = async (id: string) => {
@@ -254,9 +197,8 @@ export function PurchasesPage() {
     );
   }
 
-  /** Opening a purchase: the form while it is still pending and editable, its detail otherwise. */
-  const openPurchase = (purchase: PurchaseOrderListItem) =>
-    purchase.status === "PENDING" && canEdit ? handleOpenForm(purchase) : setViewingPurchase(purchase);
+  /** Opening a purchase: its page, whatever its status — the actions it allows are there. */
+  const openPurchase = (purchase: PurchaseOrderListItem) => router.push(`/purchases/${purchase.id}`);
 
   /** The row's actions, shared by the table row and the phone card. */
   const purchaseActions = (purchase: PurchaseOrderListItem): RowAction[] => {
@@ -276,13 +218,13 @@ export function PurchasesPage() {
         key: "view",
         label: tCommon("buttons.view"),
         icon: Eye,
-        onSelect: () => setViewingPurchase(purchase),
+        onSelect: () => openPurchase(purchase),
       },
       {
         key: "edit",
         label: tCommon("buttons.edit"),
         icon: Pencil,
-        onSelect: () => handleOpenForm(purchase),
+        onSelect: () => openForm(purchase),
         hidden: !(isPending && canEdit),
       },
       {
@@ -309,7 +251,7 @@ export function PurchasesPage() {
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
-        primaryAction={canCreate ? { label: t("newPurchase"), icon: Plus, onClick: () => handleOpenForm() } : undefined}
+        primaryAction={canCreate ? { label: t("newPurchase"), icon: Plus, onClick: () => openForm() } : undefined}
       />
 
       <Card>
@@ -503,28 +445,6 @@ export function PurchasesPage() {
         </CardContent>
       </Card>
 
-      {/* Purchase Form Modal */}
-      <Modal
-        isOpen={showForm}
-        onClose={handleCloseForm}
-        title={editingPurchase ? t("editPurchase") : t("newPurchase")}
-        size="lg"
-      >
-        {editingPurchase && !editingFull ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
-          </div>
-        ) : (
-          <PurchaseForm
-            key={editingPurchase?.id ?? "new"}
-            purchase={editingPurchase ? editingFull : undefined}
-            onSubmit={handleSubmit}
-            onCancel={handleCloseForm}
-            isLoading={createPurchase.isPending || updatePurchase.isPending}
-          />
-        )}
-      </Modal>
-
       {/* Delete confirm modal */}
       <Modal
         isOpen={!!deleteConfirmId}
@@ -578,16 +498,6 @@ export function PurchasesPage() {
           </Button>
         </div>
       </Modal>
-
-      {/* Read-only view, available whatever the status */}
-      <PurchaseDetailModal
-        open={!!viewingPurchase}
-        onClose={() => setViewingPurchase(null)}
-        purchaseOrder={viewingFull}
-        isLoading={!viewingFull}
-        statusVariant={getStatusBadgeVariant(viewingPurchase?.status ?? "PENDING")}
-        paymentVariant={getPaymentBadgeVariant(viewingPurchase?.payment_status ?? "UNPAID")}
-      />
 
       {/* Confirm purchase modal (opens once the full order — with lines — is loaded) */}
       <PurchaseConfirmModal

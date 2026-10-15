@@ -35,7 +35,7 @@
     "tax": "TVA",
     "lineTotal": "Total ligne",
     "lines": "Lignes de commande",
-    "addLine": "Ajouter un produit",
+    "addLine": "Ajouter une ligne",
     "receivingLocation": "Emplacement de réception",
     "defaultLocation": "Emplacement par défaut"
   },
@@ -104,7 +104,7 @@
     "cancelled": "Annulés"
   },
   "newProduct": {
-    "button": "Nouveau produit",
+    "button": "Créer un produit",
     "title": "Nouveau produit",
     "offline": "Hors ligne : le produit sera créé à la reconnexion, mais il ne peut pas encore être ajouté à cette commande."
   }

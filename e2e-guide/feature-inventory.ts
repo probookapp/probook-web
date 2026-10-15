@@ -41,6 +41,9 @@ export const GUIDE_FEATURES: GuideFeature[] = [
   { route: "pos", label: "Caisse", chapter: "06-caisse" },
   { route: "suppliers", label: "Fournisseurs", chapter: "07-achats" },
   { route: "purchases", label: "Bons de commande", chapter: "07-achats" },
+  { route: "purchases/new", label: "Rédaction d'un bon de commande", chapter: "07-achats" },
+  { route: "purchases/[id]", label: "Consultation d'un bon de commande", chapter: "07-achats" },
+  { route: "purchases/[id]/edit", label: "Modification d'un bon de commande", chapter: "07-achats" },
   { route: "locations", label: "Emplacements et transferts", chapter: "08-stock" },
   { route: "delivery-notes", label: "Bons de livraison", chapter: "09-livraisons-depenses" },
   {

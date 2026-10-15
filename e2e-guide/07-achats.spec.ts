@@ -28,7 +28,8 @@ test("Chapitre 7 — Fournisseurs et réapprovisionnement", async ({ page }) => 
   await tour.nav("/purchases");
   await tour.click(tour.button(t("purchases:newPurchase")), { settleMs: 1200 });
 
-  const order = tour.dialog();
+  // The order is written on its own page, like a quote or a delivery note.
+  const order = page.locator("main");
   await tour.pick(tour.fieldByLabel(`${t("purchases:fields.supplier")} *`, order), SUPPLIER.name);
 
   await tour.say("On commande des téléviseurs. Le prix d'achat connu est repris automatiquement.");
@@ -90,15 +91,13 @@ test("Chapitre 7 — Fournisseurs et réapprovisionnement", async ({ page }) => 
     settleMs: 1800,
   });
   await tour.say("Le bon de commande est enregistré, en attente de réception.");
-  await expect(tour.row(SUPPLIER.name)).toBeVisible();
+  await expect(order.getByText(SUPPLIER.name).first()).toBeVisible();
 
   // ─── réception ───
   await tour.say(
     "La marchandise arrive. La réception est l'étape qui fait entrer les quantités en stock."
   );
-  await tour.clickRowAction(SUPPLIER.name, t("purchases:actions.confirm"), {
-    settleMs: 1400,
-  });
+  await tour.click(tour.button(t("purchases:actions.confirm")), { settleMs: 1400 });
 
   const receive = tour.dialog();
   await tour.say(

@@ -51,10 +51,11 @@ test.describe("New product from a purchase order", () => {
 
     await page.goto("/en/purchases");
     await page.getByRole("button", { name: "New Purchase Order" }).first().click();
-    const order = page.getByRole("dialog", { name: "New Purchase Order" });
+    await expect(page).toHaveURL(/\/en\/purchases\/new$/);
+    const order = page.locator("main");
     await pick(page, field(order, "Supplier *"), "Fresh", "Fresh Goods Supplier");
 
-    await order.getByRole("button", { name: "New product" }).click();
+    await order.getByRole("button", { name: "Create product" }).click();
     const productDialog = page.getByRole("dialog", { name: "New product" });
     await field(productDialog, "Designation *").locator("input").fill("Brand New Drill");
     await field(productDialog, "Selling Price (excl. VAT) *").locator("input").fill("9000");
@@ -63,9 +64,9 @@ test.describe("New product from a purchase order", () => {
     await expect(field(productDialog, "Quantity")).toHaveCount(0);
     await productDialog.getByRole("button", { name: "Create", exact: true }).click();
 
-    // The product dialog closes; the order behind stays open and did not submit.
+    // The product dialog closes; the order behind stays as typed and did not submit.
     await expect(productDialog).toHaveCount(0);
-    await expect(order).toBeVisible();
+    await expect(page).toHaveURL(/\/en\/purchases\/new$/);
     await expect(field(order, "Product *").locator("button").first()).toContainText("Brand New Drill");
     await expect(field(order, "Unit Price *").locator("input")).toHaveValue("6500");
 
@@ -79,8 +80,9 @@ test.describe("New product from a purchase order", () => {
     );
     expect(drill?.quantity).toBe(0);
 
+    // Saved, the order opens on its own page.
     await order.getByRole("button", { name: "Create", exact: true }).click();
-    await expect(order).toHaveCount(0);
+    await expect(page).toHaveURL(/\/en\/purchases\/[0-9a-f-]{36}$/);
     await expect
       .poll(async () => {
         const res = await apiGet(page, "/api/purchases");

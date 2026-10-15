@@ -41,10 +41,19 @@ export function useInfinitePurchases() {
 }
 
 export function usePurchase(id: string) {
+  const { isDemoMode } = useDemoMode();
   return useQuery({
-    queryKey: ["purchases", id],
-    queryFn: () => purchaseApi.getById(id),
+    queryKey: ["purchases", id, { demo: isDemoMode }],
+    // The demo orders already carry their lines: the order page reads them as is.
+    queryFn: isDemoMode
+      ? () => {
+          const order = DEMO_PURCHASES.find((p) => p.id === id);
+          if (!order) throw new Error("Purchase order not found");
+          return order;
+        }
+      : () => purchaseApi.getById(id),
     enabled: !!id,
+    staleTime: isDemoMode ? Infinity : undefined,
   });
 }
 
