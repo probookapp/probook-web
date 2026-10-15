@@ -93,7 +93,7 @@ test("Chapitre 3 — Construire son catalogue produits", async ({ page }) => {
   await tour.say(
     "Le stock se corrige à tout moment : inventaire, casse, retour. Ici on reçoit 3 téléviseurs supplémentaires."
   );
-  await tour.click(tour.rowAction(PRODUCTS.tv.designation, t("products:adjustStock.title")));
+  await tour.clickRowAction(PRODUCTS.tv.designation, t("products:adjustStock.title"));
 
   const stock = tour.dialog();
   await tour.click(stock.getByRole("button", { name: t("products:adjustStock.deltaMode") }));
@@ -108,7 +108,7 @@ test("Chapitre 3 — Construire son catalogue produits", async ({ page }) => {
 
   // ─── historique des mouvements ───
   await tour.say("Chaque mouvement est tracé, avec son motif et son solde après opération.");
-  await tour.click(tour.rowAction(PRODUCTS.tv.designation, t("products:movements.title")), {
+  await tour.clickRowAction(PRODUCTS.tv.designation, t("products:movements.title"), {
     settleMs: 1200,
   });
   const movements = tour.dialog();

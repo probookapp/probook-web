@@ -96,7 +96,7 @@ test("Chapitre 7 — Fournisseurs et réapprovisionnement", async ({ page }) => 
   await tour.say(
     "La marchandise arrive. La réception est l'étape qui fait entrer les quantités en stock."
   );
-  await tour.click(tour.rowAction(SUPPLIER.name, t("purchases:actions.confirm")), {
+  await tour.clickRowAction(SUPPLIER.name, t("purchases:actions.confirm"), {
     settleMs: 1400,
   });
 
@@ -123,7 +123,7 @@ test("Chapitre 7 — Fournisseurs et réapprovisionnement", async ({ page }) => 
   // ─── crédit fournisseur ───
   await tour.say("Reste à suivre ce que l'on doit au fournisseur.");
   await tour.nav("/suppliers");
-  await tour.click(tour.rowAction(SUPPLIER.name, t("suppliers:credits.title")), {
+  await tour.clickRowAction(SUPPLIER.name, t("suppliers:credits.title"), {
     settleMs: 1800,
   });
 

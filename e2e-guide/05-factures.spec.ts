@@ -12,7 +12,7 @@ test("Chapitre 5 — Facturer, encaisser, corriger", async ({ page }) => {
   await tour.say(
     "La facture issue du devis est encore en brouillon : elle est modifiable et ne touche ni le stock ni la comptabilité."
   );
-  await tour.click(tour.rowAction(CLIENT.name, t("common:buttons.view")), { settleMs: 1500 });
+  await tour.clickRowAction(CLIENT.name, t("common:buttons.view"), { settleMs: 1500 });
 
   // ─── émission ───
   await tour.say(
@@ -96,7 +96,7 @@ test("Chapitre 5 — Facturer, encaisser, corriger", async ({ page }) => {
   await tour.pause(1400);
 
   await tour.say("Et une facture soldée peut être rangée sans jamais être supprimée.");
-  await tour.click(tour.action(t("common:buttons.archive")), { settleMs: 1600 });
+  await tour.clickRowAction(CLIENT.name, t("common:buttons.archive"), { settleMs: 1600 });
   await tour.say(
     "Elle quitte la liste de travail mais garde son numéro, son montant, et continue de compter dans la TVA et l'export comptable."
   );
@@ -106,14 +106,14 @@ test("Chapitre 5 — Facturer, encaisser, corriger", async ({ page }) => {
   // Ranger n'est pas supprimer : on la ressort, et la suite du guide la
   // retrouve à sa place.
   await tour.say("Et on la ressort quand on veut : archiver, ce n'est pas supprimer.");
-  await tour.click(tour.action(t("common:buttons.unarchive")), { settleMs: 1600 });
+  await tour.clickRowAction(CLIENT.name, t("common:buttons.unarchive"), { settleMs: 1600 });
   await tour.click(tour.button(t("common:filters.all")), { settleMs: 1200 });
   await expect(tour.row(CLIENT.name)).toBeVisible();
 
   // ─── relevé client ───
   await tour.say("Côté client, tout cela se retrouve dans le relevé de compte.");
   await tour.goto("clients");
-  await tour.click(tour.rowAction(CLIENT.name, t("clients:statement.title")), { settleMs: 2000 });
+  await tour.clickRowAction(CLIENT.name, t("clients:statement.title"), { settleMs: 2000 });
 
   await tour.say("Factures, règlements et avoirs, avec le solde dû en bas — prêt à être envoyé au client.");
   await tour.pause(2600);

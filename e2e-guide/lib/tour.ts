@@ -1,6 +1,7 @@
 import { type Page, type Locator, expect } from "@playwright/test";
 import { LOCALE, narrate } from "./locale";
 import { Inspector } from "./inspector";
+import { t } from "./i18n";
 
 export { LOCALE } from "./locale";
 
@@ -549,6 +550,24 @@ export class Tour {
     return this.row(rowText)
       .locator(`[aria-label="${label}"], [title="${label}"]`)
       .first();
+  }
+
+  /**
+   * Run a row's action wherever the row keeps it: the icon beside the menu when
+   * it is the row's primary action, otherwise an item of the "⋯" menu — which
+   * the viewer then sees being opened, as they would do it themselves.
+   */
+  async clickRowAction(rowText: string, label: string, opts: { settleMs?: number } = {}) {
+    const inline = this.rowAction(rowText, label);
+    if (await inline.count()) {
+      await this.click(inline, opts);
+      return;
+    }
+    await this.click(this.rowAction(rowText, t("common:buttons.moreActions")), { settleMs: 350 });
+    await this.click(
+      this.page.getByRole("menuitem", { name: label, exact: true }).filter({ visible: true }).first(),
+      opts
+    );
   }
 
   /**

@@ -109,7 +109,7 @@ test("Chapitre 11 — Paramétrer son entreprise", async ({ page }) => {
 
   await tour.click(tour.button(t("invoices:createInvoice")), { settleMs: 2600 });
   // Saving returns to the list; the new invoice is the first row for the client.
-  await tour.click(tour.rowAction(CLIENT.name, t("common:buttons.view")), { settleMs: 2000 });
+  await tour.clickRowAction(CLIENT.name, t("common:buttons.view"), { settleMs: 2000 });
   await tour.click(tour.button(t("invoices:actions.markAsIssued")), { settleMs: 2500 });
 
   await tour.say("Le droit de timbre s'ajoute au total à payer, sans entrer dans le chiffre d'affaires ni dans la TVA.");

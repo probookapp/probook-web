@@ -172,14 +172,16 @@ test("Chapitre 4 — Du devis à la facture", async ({ page }) => {
   await tour.say("Le devis est enregistré avec un numéro généré automatiquement.");
   const quoteRow = tour.row(CLIENT.name);
   await expect(quoteRow).toBeVisible();
-  await tour.click(tour.rowAction(CLIENT.name, t("common:buttons.view")), { settleMs: 2000 });
+  await tour.clickRowAction(CLIENT.name, t("common:buttons.view"), { settleMs: 2000 });
 
   await tour.say("Voici le document tel que le client le recevra, en PDF.");
   await tour.pause(2500);
 
   // ─── acceptation ───
   await tour.say("Le client accepte : on passe le devis au statut « Accepté ».");
-  await tour.click(tour.button(t("common:buttons.edit")), { settleMs: 1500 });
+  // Exact name: the labelled quote also shows "Modifier les étiquettes" first.
+  const editQuote = page.getByRole("button", { name: t("common:buttons.edit"), exact: true });
+  await tour.click(editQuote.filter({ visible: true }).first(), { settleMs: 1500 });
   await tour.say(
     "Les statuts sont une liste fixe, et « Refusé » en fait partie : un client qui dit non, c'est enregistré comme tel, Probook arrête de relancer, et le rapport de conversion le compte à part des devis restés sans réponse."
   );
@@ -190,7 +192,7 @@ test("Chapitre 4 — Du devis à la facture", async ({ page }) => {
 
   // ─── conversion ───
   await tour.say("Le bouton de conversion apparaît alors sur le devis accepté.");
-  await tour.click(tour.rowAction(CLIENT.name, t("common:buttons.view")), { settleMs: 1500 });
+  await tour.clickRowAction(CLIENT.name, t("common:buttons.view"), { settleMs: 1500 });
   await tour.click(tour.button(t("quotes:actions.convertToInvoice")), { settleMs: 900 });
 
   await tour.say("Une confirmation, et le devis devient une facture — sans ressaisie.");

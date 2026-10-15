@@ -19,7 +19,7 @@ test("Chapitre 8 — Plusieurs points de vente et transferts de stock", async ({
   await tour.say(
     "Probook a déjà créé un emplacement par défaut au nom de votre entreprise : c'est là que se trouve tout le stock saisi jusqu'ici. Renommons-le."
   );
-  await tour.click(tour.rowAction(BIZ.company, t("common:buttons.edit")), { settleMs: 1000 });
+  await tour.clickRowAction(BIZ.company, t("common:buttons.edit"), { settleMs: 1000 });
 
   const shopForm = tour.dialog();
   await tour.type(shopForm.locator("input").first(), LOCATIONS.shop);
@@ -66,7 +66,7 @@ test("Chapitre 8 — Plusieurs points de vente et transferts de stock", async ({
   // ─── stock par emplacement ───
   await tour.nav("/products");
   await tour.say("Sur la fiche produit, le stock se lit désormais emplacement par emplacement.");
-  await tour.click(tour.rowAction(PRODUCTS.cable.designation, t("products:stockLocations.title")), {
+  await tour.clickRowAction(PRODUCTS.cable.designation, t("products:stockLocations.title"), {
     settleMs: 2000,
   });
   await tour.pause(2400);

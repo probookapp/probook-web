@@ -57,7 +57,7 @@ test("Chapitre 2 — Gérer son fichier clients", async ({ page }) => {
   await tour.say(
     "Chaque client peut avoir plusieurs interlocuteurs : acheteur, comptable, responsable technique…"
   );
-  await tour.click(tour.rowAction(CLIENT.name, t("clients:viewContacts")), { settleMs: 900 });
+  await tour.clickRowAction(CLIENT.name, t("clients:viewContacts"), { settleMs: 900 });
 
   const details = tour.dialog();
   await tour.click(details.getByRole("button", { name: t("common:buttons.add"), exact: true }));
