@@ -6,7 +6,7 @@
   "viewPurchase": "Bon de commande {{number}}",
   "deletePurchase": "Supprimer le bon de commande",
   "noPurchases": "Aucun bon de commande trouvé",
-  "searchPlaceholder": "Rechercher un bon de commande...",
+  "searchPlaceholder": "Rechercher une commande...",
   "purchaseList": "Bons de commande",
   "createPurchase": "Créer",
   "updatePurchase": "Modifier",

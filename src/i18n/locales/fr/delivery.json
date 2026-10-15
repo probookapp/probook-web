@@ -10,7 +10,7 @@
   "deleteDeliveryNote": "Supprimer le bon de livraison",
   "deliveryNoteDetails": "Détails du bon de livraison",
   "noDeliveryNotes": "Aucun bon de livraison trouvé",
-  "searchPlaceholder": "Rechercher un bon de livraison...",
+  "searchPlaceholder": "Rechercher un BL...",
   "fields": {
     "deliveryNoteNumber": "Numéro",
     "client": "Client",
