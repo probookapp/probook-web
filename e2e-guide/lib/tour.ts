@@ -563,9 +563,15 @@ export class Tour {
       await this.click(inline, opts);
       return;
     }
-    // Phone lists fold the rarer actions into "⋯" too; the search has left one
-    // card on screen, so the first visible menu is that card's.
-    await this.click(this.action(t("common:buttons.moreActions")), { settleMs: 350 });
+    // Phone lists fold the rarer actions into "⋯" too. Looked for inside the
+    // card list: the page header has a "⋯" of its own, above the cards.
+    const more = t("common:buttons.moreActions");
+    const cardMenu = this.page
+      .locator("main .md\\:hidden.divide-y")
+      .locator(`[aria-label="${more}"], [title="${more}"]`)
+      .filter({ visible: true })
+      .first();
+    await this.click(cardMenu, { settleMs: 350 });
     await this.click(
       this.page.getByRole("menuitem", { name: label, exact: true }).filter({ visible: true }).first(),
       opts

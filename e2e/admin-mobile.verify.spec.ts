@@ -77,7 +77,9 @@ test.describe("Admin cards at 390 px", () => {
     await expect(name).toBeVisible({ timeout: 30_000 });
 
     // Same menu as the desktop row: Edit inline, the rest behind "More actions".
-    const menu = page.getByRole("button", { name: "More actions" }).filter({ visible: true }).first();
+    // Scoped to the cards: the page header has a "More actions" of its own (export).
+    const cards = page.locator("main .md\\:hidden.divide-y");
+    const menu = cards.getByRole("button", { name: "More actions" }).filter({ visible: true }).first();
     await menu.click();
     await expect(page.getByRole("menuitem", { name: /impersonate/i })).toBeVisible();
     await expect(page.getByRole("menuitem", { name: /delete/i })).toBeVisible();

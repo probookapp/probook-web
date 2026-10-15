@@ -91,7 +91,8 @@ test.describe("Table ergonomics", () => {
 
     // One inline action (edit, on a draft) and the rest behind "⋯".
     await expect(page.getByRole("button", { name: "Duplicate" }).filter({ visible: true })).toHaveCount(0);
-    await page.getByRole("button", { name: "More actions" }).filter({ visible: true }).click();
+    // The card's own "⋯" — the page header has one too on a phone.
+    await page.locator("main .md\\:hidden.divide-y").getByRole("button", { name: "More actions" }).first().click();
     await expect(page.getByRole("menuitem", { name: "Duplicate" })).toBeVisible();
     await page.keyboard.press("Escape");
     await page.screenshot({ path: test.info().outputPath("phone-quotes.png") });
