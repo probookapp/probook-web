@@ -1,82 +1,13 @@
 import { useState, useMemo, useCallback } from "react";
 import { useTranslation } from "react-i18next";
 import { pdf } from "@react-pdf/renderer";
-import * as Sentry from "@sentry/nextjs";
 import { toast } from "@/stores/useToastStore";
 import { Download, Eye, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui";
-import { InvoicePDF } from "./InvoicePDF";
-import { QuotePDF } from "./QuotePDF";
-import { DeliveryNotePDF } from "./DeliveryNotePDF";
 import { useLogoBase64 } from "@/features/settings";
 import type { Invoice, Quote, DeliveryNote, CompanySettings } from "@/types";
-import i18n from "@/i18n";
-import { documentLocale, SERVER_DOCUMENT_LOCALES } from "./text";
-import { registerClientFonts } from "./register-client-fonts";
-import { useSettingsStore } from "@/stores/useSettingsStore";
-import { DEFAULT_CURRENCY } from "@/lib/currencies";
-
-/**
- * Whether a link with `download` actually saves a file here.
- *
- * iOS ignores the attribute for blob: URLs — the tap does nothing at all, which
- * is what a customer reports as "the PDF doesn't work". iPadOS reports itself
- * as a Mac, so the touch count is what tells them apart.
- */
-/**
- * Put the finished document in the tab that was claimed for it.
- *
- * Not by pointing the tab at the blob: browsers refuse a top-level navigation to
- * a blob URL that another page created — Chromium leaves the tab blank, with no
- * error to catch. A frame may load it, so the tab gets a page of its own holding
- * the document, and a plain link above it for the case where even the frame is
- * refused: tapping that link is the reader's own gesture, which nothing blocks.
- */
-function showInTab(tab: Window | null, url: string, fileName: string, openLabel: string) {
-  if (!tab) {
-    // Popups refused altogether: show the document here rather than nowhere.
-    window.location.href = url;
-    return;
-  }
-  const escape = (value: string) =>
-    value.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
-  tab.document.write(
-    `<!doctype html><html><head><meta charset="utf-8">` +
-      `<meta name="viewport" content="width=device-width, initial-scale=1">` +
-      `<title>${escape(fileName)}</title>` +
-      `<style>html,body{margin:0;height:100%;font:16px/1.4 system-ui,sans-serif;background:#f5f4f1}` +
-      `a{display:block;padding:14px 16px;color:#12333a;font-weight:600;text-decoration:none}` +
-      `iframe{border:0;width:100%;height:calc(100% - 48px);display:block}</style></head><body>` +
-      `<a href="${url}" download="${escape(fileName)}">${escape(openLabel)}</a>` +
-      `<iframe src="${url}" title="${escape(fileName)}"></iframe></body></html>`
-  );
-  tab.document.close();
-}
-
-/**
- * What went wrong, said out loud.
- *
- * A PDF that fails says so in a toast, and until now that was all anyone knew —
- * a customer on Firefox could only report "an error appears", which is not
- * something to debug from. The reason now rides in the message and goes to
- * Sentry with the browser attached, so the next occurrence names itself.
- */
-function reportPdfFailure(err: unknown, what: "preview" | "download", fallback: string): string {
-  Sentry.captureException(err, {
-    tags: { feature: "pdf", action: what },
-    extra: { userAgent: typeof navigator === "undefined" ? "" : navigator.userAgent },
-  });
-  console.error(`PDF ${what} failed`, err);
-  const reason = err instanceof Error ? err.message : String(err ?? "");
-  return reason ? `${fallback} (${reason.slice(0, 120)})` : fallback;
-}
-
-function canDownloadFiles(): boolean {
-  if (typeof navigator === "undefined") return true;
-  const ua = navigator.userAgent;
-  const iPadOS = /Macintosh/.test(ua) && navigator.maxTouchPoints > 1;
-  return !(/iPhone|iPad|iPod/.test(ua) || iPadOS);
-}
+import { claimDownloadTab, deliverPdf, reportPdfFailure, showInTab } from "./pdf-delivery";
+import { documentElement, pdfFileName, pickLogo, type PdfDocument } from "./document-element";
 
 interface InvoicePDFViewerProps {
   type: "invoice";
@@ -106,63 +37,16 @@ export function PDFViewer(props: PDFViewerProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const { data: currentLogo, isLoading: isLoadingLogo } = useLogoBase64();
 
-  // Get filename based on document type
-  const fileName = useMemo(() => {
-    if (type === "invoice") {
-      return `${(doc as Invoice).invoice_number}.pdf`;
-    } else if (type === "quote") {
-      return `${(doc as Quote).quote_number}.pdf`;
-    } else {
-      return `${(doc as DeliveryNote).delivery_note_number}.pdf`;
-    }
-  }, [type, doc]);
+  const input = useMemo(() => ({ type, document: doc }) as PdfDocument, [type, doc]);
+  const fileName = useMemo(() => pdfFileName(input), [input]);
 
-  // Determine which logo to use:
-  // - For invoices: use stored logo_snapshot if issued/paid, otherwise use current logo
-  // - For quotes: use stored logo_snapshot if sent/accepted, otherwise use current logo
-  // - For delivery notes: use passed logoBase64 or current logo
-  const logoToUse = useMemo(() => {
-    if (type === "invoice") {
-      const invoice = doc as Invoice;
-      // Use stored snapshot for issued/paid invoices, current logo for drafts
-      if (invoice.status !== "DRAFT" && invoice.logo_snapshot) {
-        return invoice.logo_snapshot;
-      }
-    } else if (type === "quote") {
-      const quote = doc as Quote;
-      // Use stored snapshot for sent/accepted quotes, current logo for drafts
-      if (quote.status !== "DRAFT" && quote.logo_snapshot) {
-        return quote.logo_snapshot;
-      }
-    } else if (type === "delivery_note") {
-      // Use passed logo or current logo for delivery notes
-      const passedLogo = (props as DeliveryNotePDFViewerProps).logoBase64;
-      if (passedLogo !== undefined) {
-        return passedLogo;
-      }
-    }
-    return currentLogo;
-  }, [type, doc, currentLogo, props]);
-
-  // Memoize the PDF document
-  // Registered before the first document is built; a missing face makes the
-  // render hang rather than fail.
-  registerClientFonts();
-
-  const PDFDocument = useMemo(() => {
-    if (type === "invoice") {
-      return <InvoicePDF invoice={doc as Invoice} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES)}
-          fontFamily={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES) === "ar" ? "IBM Plex Sans Arabic" : "IBM Plex Sans"}
-          currency={useSettingsStore.getState().currency || DEFAULT_CURRENCY} />;
-    } else if (type === "quote") {
-      return <QuotePDF quote={doc as Quote} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES)}
-          fontFamily={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES) === "ar" ? "IBM Plex Sans Arabic" : "IBM Plex Sans"}
-          currency={useSettingsStore.getState().currency || DEFAULT_CURRENCY} />;
-    } else {
-      return <DeliveryNotePDF deliveryNote={doc as DeliveryNote} company={company} logoBase64={logoToUse} locale={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES)}
-          fontFamily={documentLocale(i18n.language, SERVER_DOCUMENT_LOCALES) === "ar" ? "IBM Plex Sans Arabic" : "IBM Plex Sans"} />;
-    }
-  }, [type, doc, company, logoToUse]);
+  // A delivery note shows the logo it was handed; anything else follows
+  // pickLogo (snapshot once issued or sent, current logo on a draft).
+  const passedLogo = type === "delivery_note" ? (props as DeliveryNotePDFViewerProps).logoBase64 : undefined;
+  const PDFDocument = useMemo(
+    () => documentElement(input, company, passedLogo !== undefined ? passedLogo : pickLogo(input, currentLogo)),
+    [input, company, passedLogo, currentLogo]
+  );
 
   // Open PDF in a new browser tab for preview/print
   const handleOpenPreview = useCallback(async () => {
@@ -187,29 +71,11 @@ export function PDFViewer(props: PDFViewerProps) {
   // Download PDF via browser download
   const handleDownload = useCallback(async () => {
     setIsDownloading(true);
-    // Same reason as the preview: the tab has to exist before the await. It is
-    // only used where a download link does nothing (iOS), and closed otherwise.
-    const tab = canDownloadFiles() ? null : window.open("", "_blank");
+    // Same reason as the preview: the tab has to exist before the await.
+    const tab = claimDownloadTab();
     try {
       const blob = await pdf(PDFDocument).toBlob();
-      const url = URL.createObjectURL(blob);
-
-      if (tab) {
-        // iOS ignores the download attribute on a blob: the file is shown
-        // instead, and "Share → Save to Files" is how it gets saved there.
-        showInTab(tab, url, fileName, t("pdfViewer.openPdf"));
-      } else {
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-
-      // Not revoked on the next line: Firefox and Safari read the blob after
-      // the click returns, and revoking it there cancelled the download.
-      setTimeout(() => URL.revokeObjectURL(url), 60_000);
+      deliverPdf(blob, fileName, tab, t("pdfViewer.openPdf"));
       toast.success(t("pdfViewer.downloadSuccess", { path: fileName }));
     } catch (err) {
       tab?.close();
