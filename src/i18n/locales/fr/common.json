@@ -34,7 +34,15 @@
     "loading": "Chargement...",
     "addLine": "Ajouter une ligne",
     "archive": "Archiver",
-    "unarchive": "Désarchiver"
+    "unarchive": "Désarchiver",
+    "moreActions": "Plus d'actions"
+  },
+  "table": {
+    "columns": "Colonnes",
+    "columnsTitle": "Colonnes affichées",
+    "showAllColumns": "Afficher toutes les colonnes",
+    "emptyColumn": "vide",
+    "emptyColumnHint": "Masquée automatiquement : vide sur toutes les lignes affichées"
   },
   "tags": {
     "title": "Étiquettes",

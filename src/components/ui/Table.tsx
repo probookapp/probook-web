@@ -24,14 +24,42 @@ export function TableBody({ className, ...props }: HTMLAttributes<HTMLTableSecti
   return <tbody className={cn("[&_tr:last-child]:border-0", className)} {...props} />;
 }
 
-export function TableRow({ className, ...props }: HTMLAttributes<HTMLTableRowElement>) {
+/** What a click on a row must leave alone: it belongs to a control inside it. */
+const INTERACTIVE = "a, button, input, select, textarea, label, [role=menuitem], [role=checkbox], [data-row-ignore]";
+
+interface TableRowProps extends HTMLAttributes<HTMLTableRowElement> {
+  /**
+   * Opens the row's record. Makes the whole row the target — an eye icon on
+   * every line was the widest way to say "click here" — while clicks on the
+   * row's own buttons, checkboxes and menus still do only what they say.
+   */
+  onActivate?: () => void;
+}
+
+export function TableRow({ className, onActivate, onClick, onKeyDown, ...props }: TableRowProps) {
   return (
     <tr
       className={cn(
         "border-b border-(--color-border-primary) transition-colors",
         "hover:bg-(--color-bg-secondary)",
+        onActivate && "cursor-pointer focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary-500",
         className
       )}
+      tabIndex={onActivate ? 0 : undefined}
+      onClick={(e) => {
+        onClick?.(e);
+        if (!onActivate || e.defaultPrevented) return;
+        const target = e.target as Element;
+        // A menu portalled out of the row still bubbles here through React.
+        if (!e.currentTarget.contains(target) || target.closest(INTERACTIVE)) return;
+        // Selecting a number to copy it is not a request to open the document.
+        if (window.getSelection()?.toString()) return;
+        onActivate();
+      }}
+      onKeyDown={(e) => {
+        onKeyDown?.(e);
+        if (onActivate && e.key === "Enter" && e.target === e.currentTarget) onActivate();
+      }}
       {...props}
     />
   );

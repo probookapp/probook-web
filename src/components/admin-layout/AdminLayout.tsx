@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import { AdminSidebar } from "./AdminSidebar";
 import { ToastContainer } from "@/components/ui";
 import { useAdminMutationErrors } from "./useAdminMutationErrors";
+import { TablePreferencesScope } from "@/hooks/useTableColumns";
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -39,8 +40,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <AdminSidebar onClose={() => setIsSidebarOpen(false)} />
       </div>
 
-      {/* Main content */}
-      <main className="flex-1 overflow-auto">
+      {/* Main content. --sticky-top is the height of the top bar below lg (see
+          PageHeader): 2.5rem button + 1.5rem padding + 1px rule. */}
+      <main className="flex-1 min-w-0 overflow-auto [--sticky-top:calc(4rem+1px)] lg:[--sticky-top:0px]">
         {/* Mobile header with hamburger */}
         <div className="sticky top-0 z-30 flex items-center gap-4 bg-gray-100 dark:bg-gray-900 px-4 py-3 lg:hidden border-b border-gray-200 dark:border-gray-800">
           <button
@@ -52,7 +54,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           </button>
           <span className="text-lg font-bold text-gray-900 dark:text-gray-100">{t("login.title")}</span>
         </div>
-        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+        {/* Lists here save their column choices to the admin's account, not to a tenant user's. */}
+        <TablePreferencesScope.Provider value="admin">
+          <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+        </TablePreferencesScope.Provider>
       </main>
     </div>
   );

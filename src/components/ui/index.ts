@@ -29,6 +29,10 @@ export {
   type InvoiceUrgency,
 } from "./Badge";
 export { TagChip } from "./TagChip";
+export { Menu, MenuTrigger, MenuContent, MenuItem, MenuCheckboxItem, MenuSeparator, MenuLabel } from "./Menu";
+export { RowActions, type RowAction } from "./RowActions";
+export { ColumnPicker } from "./ColumnPicker";
+export { PageHeader } from "./PageHeader";
 // RichTextEditor and RichTextDisplay must be imported directly from
 // "@/components/ui/RichTextEditor" (client-only, uses dompurify which needs document)
 export { ToastContainer } from "./Toast";

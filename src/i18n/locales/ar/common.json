@@ -34,7 +34,15 @@
     "loading": "جاري التحميل...",
     "addLine": "إضافة سطر",
     "archive": "أرشفة",
-    "unarchive": "إلغاء الأرشفة"
+    "unarchive": "إلغاء الأرشفة",
+    "moreActions": "إجراءات أخرى"
+  },
+  "table": {
+    "columns": "الأعمدة",
+    "columnsTitle": "الأعمدة المعروضة",
+    "showAllColumns": "عرض كل الأعمدة",
+    "emptyColumn": "فارغ",
+    "emptyColumnHint": "مخفي تلقائيًا: فارغ في كل الأسطر المعروضة"
   },
   "tags": {
     "title": "الوسوم",

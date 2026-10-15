@@ -34,7 +34,15 @@
     "loading": "Loading...",
     "addLine": "Add line",
     "archive": "Archive",
-    "unarchive": "Unarchive"
+    "unarchive": "Unarchive",
+    "moreActions": "More actions"
+  },
+  "table": {
+    "columns": "Columns",
+    "columnsTitle": "Visible columns",
+    "showAllColumns": "Show all columns",
+    "emptyColumn": "empty",
+    "emptyColumnHint": "Hidden automatically: empty on every row shown"
   },
   "tags": {
     "title": "Labels",

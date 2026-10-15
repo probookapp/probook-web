@@ -40,8 +40,10 @@ export function Layout({ children, topBanner }: LayoutProps) {
         <Sidebar onClose={() => setIsSidebarOpen(false)} />
       </div>
 
-      {/* Main content */}
-      <main className="flex-1 min-w-0 overflow-auto">
+      {/* Main content. --sticky-top is the height of the phone/tablet top bar
+          below, so a page's sticky header (PageHeader) settles under it rather
+          than behind it: safe-area top + 2.75rem button + 0.375rem + 1px rule. */}
+      <main className="flex-1 min-w-0 overflow-auto [--sticky-top:calc(max(0.375rem,env(safe-area-inset-top))+3.125rem+1px)] lg:[--sticky-top:0px]">
         {/* Mobile header with hamburger. The safe-area padding is zero unless the
             page is laid out under a notch, where it keeps the button tappable. */}
         <div className="sticky top-0 z-30 flex items-center gap-2 bg-gray-100 dark:bg-gray-900 px-2 sm:px-4 pt-[max(0.375rem,env(safe-area-inset-top))] pb-1.5 lg:hidden border-b border-gray-200 dark:border-gray-800">
