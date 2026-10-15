@@ -18,7 +18,10 @@ import {
   TableNumericCell,
   Input,
   Badge,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import { useInfiniteCreditNotes, useDeleteCreditNote } from "./hooks/useCreditNotes";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
@@ -50,6 +53,19 @@ export function CreditNotesPage() {
     (cn) =>
       cn.credit_note_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       cn.client?.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const columns = useTableColumns(
+    "credit-notes",
+    [
+      { key: "number", label: t("invoices:creditNotes.number"), hideable: false },
+      { key: "client", label: t("invoices:fields.client") },
+      { key: "issueDate", label: t("invoices:fields.issueDate") },
+      { key: "restocked", label: t("invoices:creditNotes.restocked") },
+      { key: "total", label: t("invoices:fields.totalTtc") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    filtered
   );
 
   const handleDelete = async (id: string) => {
@@ -92,17 +108,20 @@ export function CreditNotesPage() {
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("invoices:creditNotes.listTitle")}</CardTitle>
-            <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
-              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                id="credit-note-search"
-                name="credit-note-search"
-                placeholder={t("invoices:creditNotes.searchPlaceholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoComplete="off"
-                className="ps-9"
-              />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <ColumnPicker columns={columns} />
+              <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="credit-note-search"
+                  name="credit-note-search"
+                  placeholder={t("invoices:creditNotes.searchPlaceholder")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoComplete="off"
+                  className="ps-9"
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -150,53 +169,56 @@ export function CreditNotesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("invoices:creditNotes.number")}</TableHead>
-                  <TableHead>{t("invoices:fields.client")}</TableHead>
-                  <TableHead>{t("invoices:fields.issueDate")}</TableHead>
-                  <TableHead>{t("invoices:creditNotes.restocked")}</TableHead>
-                  <TableHead className="text-end">{t("invoices:fields.totalTtc")}</TableHead>
-                  <TableHead className="w-24">{t("common:buttons.actions")}</TableHead>
+                  {columns.show("client") && <TableHead>{t("invoices:fields.client")}</TableHead>}
+                  {columns.show("issueDate") && <TableHead>{t("invoices:fields.issueDate")}</TableHead>}
+                  {columns.show("restocked") && <TableHead>{t("invoices:creditNotes.restocked")}</TableHead>}
+                  {columns.show("total") && <TableHead className="text-end">{t("invoices:fields.totalTtc")}</TableHead>}
+                  <TableHead className="w-px text-end">{t("common:buttons.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered && filtered.length > 0 ? (
                   filtered.map((cn) => (
-                    <TableRow key={cn.id}>
+                    <TableRow key={cn.id} onActivate={() => router.push(`/invoices/credit-notes/${cn.id}`)}>
                       <TableCell className="font-mono font-medium">{cn.credit_note_number}</TableCell>
-                      <TableCell>{cn.client?.name || "-"}</TableCell>
-                      <TableCell>{formatDate(cn.issue_date)}</TableCell>
+                      {columns.show("client") && <TableCell>{cn.client?.name || "-"}</TableCell>}
+                      {columns.show("issueDate") && <TableCell>{formatDate(cn.issue_date)}</TableCell>}
+                      {columns.show("restocked") && (
+                        <TableCell>
+                          {cn.restocked ? (
+                            <Badge variant="success">{t("common:labels.yes")}</Badge>
+                          ) : (
+                            <Badge variant="default">{t("common:labels.no")}</Badge>
+                          )}
+                        </TableCell>
+                      )}
+                      {columns.show("total") && (
+                        <TableNumericCell className="font-medium">{formatCurrency(cn.total)}</TableNumericCell>
+                      )}
                       <TableCell>
-                        {cn.restocked ? (
-                          <Badge variant="success">{t("common:labels.yes")}</Badge>
-                        ) : (
-                          <Badge variant="default">{t("common:labels.no")}</Badge>
-                        )}
-                      </TableCell>
-                      <TableNumericCell className="font-medium">{formatCurrency(cn.total)}</TableNumericCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2 lg:gap-1">
-                          <button
-                            onClick={() => router.push(`/invoices/credit-notes/${cn.id}`)}
-                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 transition-colors"
-                            title={t("common:buttons.view")}
-                            aria-label={t("common:buttons.view")}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => setDeleteConfirmId(cn.id)}
-                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors"
-                            title={t("common:buttons.delete")}
-                            aria-label={t("common:buttons.delete")}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <RowActions
+                          actions={[
+                            {
+                              key: "view",
+                              label: t("common:buttons.view"),
+                              icon: Eye,
+                              onSelect: () => router.push(`/invoices/credit-notes/${cn.id}`),
+                            },
+                            {
+                              key: "delete",
+                              label: t("common:buttons.delete"),
+                              icon: Trash2,
+                              onSelect: () => setDeleteConfirmId(cn.id),
+                              danger: true,
+                            },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-gray-500 py-8">
+                    <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 py-8">
                       {t("invoices:creditNotes.noCreditNotes")}
                     </TableCell>
                   </TableRow>

@@ -12,6 +12,7 @@ import {
   Copy,
   Truck,
   FileText,
+  FileDown,
   Tag as TagIcon,
 } from "lucide-react";
 import {
@@ -30,6 +31,9 @@ import {
   Input,
   Badge,
   TagChip,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
 import {
   useInfiniteDeliveryNotes,
@@ -48,6 +52,8 @@ import { useStatusFilter } from "@/hooks/useStatusFilter";
 import { useTagListFilter } from "@/hooks/useTagListFilter";
 import { TagsModal } from "@/components/documents/TagsModal";
 import { useSelection } from "@/hooks/useSelection";
+import { useTableColumns } from "@/hooks/useTableColumns";
+import { useDocumentPdfDownload } from "@/features/pdf/useDocumentPdfDownload";
 import type { DeliveryNoteListItem, DeliveryNoteStatus } from "@/types";
 import { formatDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -103,6 +109,23 @@ export function DeliveryNotesPage() {
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { selection.clear(); }, [searchQuery, statusFilter, tagList.tagFilter]);
+
+  const pdfDownload = useDocumentPdfDownload();
+  const columns = useTableColumns(
+    "delivery-notes",
+    [
+      { key: "select", label: "", hideable: false },
+      { key: "number", label: t("delivery:fields.deliveryNoteNumber"), hideable: false },
+      { key: "client", label: t("delivery:fields.client") },
+      { key: "issueDate", label: t("delivery:fields.issueDate") },
+      { key: "deliveryDate", label: t("delivery:fields.deliveryDate"), isEmpty: (n) => !n.delivery_date },
+      { key: "status", label: t("delivery:fields.status") },
+      { key: "tags", label: t("common:tags.label"), isEmpty: (n) => !n.tags?.length },
+      { key: "linkedQuote", label: t("delivery:fields.linkedQuote"), isEmpty: (n) => !n.quote_id },
+      { key: "actions", label: "", hideable: false },
+    ],
+    filteredDeliveryNotes
+  );
 
   const statusOptions = [
     { key: ALL_STATUSES, label: t("common:filters.all") },
@@ -165,42 +188,45 @@ export function DeliveryNotesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-(--color-text-primary)">{t("delivery:title")}</h1>
-          <p className="text-sm sm:text-base text-(--color-text-secondary)">{t("delivery:subtitle", "Manage your delivery notes")}</p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {canEdit && (
-            <Button variant="secondary" onClick={tagList.openTagsModal} size="sm">
-              <TagIcon className="h-4 w-4 me-2" />
-              {tagList.manageLabel}
-            </Button>
-          )}
-          {canCreate && (
-            <Button onClick={() => router.push("/delivery-notes/new")} size="sm">
-              <Plus className="h-4 w-4 me-2" />
-              {t("delivery:newDeliveryNote")}
-            </Button>
-          )}
-        </div>
-      </div>
+      <PageHeader
+        title={t("delivery:title")}
+        subtitle={t("delivery:subtitle", "Manage your delivery notes")}
+        actions={
+          <>
+            {canEdit && (
+              <Button variant="secondary" onClick={tagList.openTagsModal} size="sm">
+                <TagIcon className="h-4 w-4 me-2" />
+                {tagList.manageLabel}
+              </Button>
+            )}
+            {canCreate && (
+              <Button onClick={() => router.push("/delivery-notes/new")} size="sm">
+                <Plus className="h-4 w-4 me-2" />
+                {t("delivery:newDeliveryNote")}
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("delivery:listTitle", "Delivery Note List")}</CardTitle>
-            <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
-              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                id="delivery-note-search"
-                name="delivery-note-search"
-                placeholder={t("delivery:searchPlaceholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoComplete="off"
-                className="ps-9"
-              />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <ColumnPicker columns={columns} />
+              <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="delivery-note-search"
+                  name="delivery-note-search"
+                  placeholder={t("delivery:searchPlaceholder")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoComplete="off"
+                  className="ps-9"
+                />
+              </div>
             </div>
           </div>
           <StatusFilterChips
@@ -293,19 +319,19 @@ export function DeliveryNotesPage() {
                   </label>
                 </TableHead>
                 <TableHead>{t("delivery:fields.deliveryNoteNumber")}</TableHead>
-                <TableHead>{t("delivery:fields.client")}</TableHead>
-                <TableHead>{t("delivery:fields.issueDate")}</TableHead>
-                <TableHead>{t("delivery:fields.deliveryDate")}</TableHead>
-                <TableHead>{t("delivery:fields.status")}</TableHead>
-                <TableHead>{t("common:tags.label")}</TableHead>
-                <TableHead>{t("delivery:fields.linkedQuote")}</TableHead>
-                <TableHead className="w-32">{t("common:buttons.actions")}</TableHead>
+                {columns.show("client") && <TableHead>{t("delivery:fields.client")}</TableHead>}
+                {columns.show("issueDate") && <TableHead>{t("delivery:fields.issueDate")}</TableHead>}
+                {columns.show("deliveryDate") && <TableHead>{t("delivery:fields.deliveryDate")}</TableHead>}
+                {columns.show("status") && <TableHead>{t("delivery:fields.status")}</TableHead>}
+                {columns.show("tags") && <TableHead>{t("common:tags.label")}</TableHead>}
+                {columns.show("linkedQuote") && <TableHead>{t("delivery:fields.linkedQuote")}</TableHead>}
+                <TableHead className="w-px text-end">{t("common:buttons.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredDeliveryNotes && filteredDeliveryNotes.length > 0 ? (
                 filteredDeliveryNotes.map((note) => (
-                  <TableRow key={note.id}>
+                  <TableRow key={note.id} onActivate={() => router.push(`/delivery-notes/${note.id}`)}>
                     <TableCell>
                       <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
                         <input
@@ -319,84 +345,92 @@ export function DeliveryNotesPage() {
                     <TableCell className="font-mono font-medium">
                       {note.delivery_note_number}
                     </TableCell>
-                    <TableCell>{note.client?.name || "-"}</TableCell>
-                    <TableCell>{formatDate(note.issue_date)}</TableCell>
-                    <TableCell>
-                      {note.delivery_date ? formatDate(note.delivery_date) : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={statusConfig[note.status].variant}>
-                        <Truck className="h-3 w-3 me-1" />
-                        {statusConfig[note.status].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {note.tags?.map((tag) => (
-                          <TagChip key={tag.id} name={tag.name} color={tag.color} />
-                        ))}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {note.quote_id ? (
-                        <Link
-                          href={`/quotes/${note.quote_id}`}
-                          className="text-primary-600 hover:underline inline-flex items-center gap-1"
-                        >
-                          <FileText className="h-3 w-3" />
-                          {t("common:buttons.view")}
-                        </Link>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2 lg:gap-1">
-                        <Link
-                          href={`/delivery-notes/${note.id}`}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 transition-colors"
-                          title={t("common:buttons.view")}
-                          aria-label={t("common:buttons.view")}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Link>
-                        {note.status === "DRAFT" && canEdit && (
+                    {columns.show("client") && <TableCell>{note.client?.name || "-"}</TableCell>}
+                    {columns.show("issueDate") && <TableCell>{formatDate(note.issue_date)}</TableCell>}
+                    {columns.show("deliveryDate") && (
+                      <TableCell>
+                        {note.delivery_date ? formatDate(note.delivery_date) : "-"}
+                      </TableCell>
+                    )}
+                    {columns.show("status") && (
+                      <TableCell>
+                        <Badge variant={statusConfig[note.status].variant}>
+                          <Truck className="h-3 w-3 me-1" />
+                          {statusConfig[note.status].label}
+                        </Badge>
+                      </TableCell>
+                    )}
+                    {columns.show("tags") && (
+                      <TableCell>
+                        <div className="flex flex-wrap gap-1">
+                          {note.tags?.map((tag) => (
+                            <TagChip key={tag.id} name={tag.name} color={tag.color} />
+                          ))}
+                        </div>
+                      </TableCell>
+                    )}
+                    {columns.show("linkedQuote") && (
+                      <TableCell>
+                        {note.quote_id ? (
                           <Link
-                            href={`/delivery-notes/${note.id}/edit`}
-                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 transition-colors"
-                            title={t("common:buttons.edit")}
-                            aria-label={t("common:buttons.edit")}
+                            href={`/quotes/${note.quote_id}`}
+                            className="text-primary-600 hover:underline inline-flex items-center gap-1"
                           >
-                            <Pencil className="h-4 w-4" />
+                            <FileText className="h-3 w-3" />
+                            {t("common:buttons.view")}
                           </Link>
+                        ) : (
+                          "-"
                         )}
-                        {canCreate && (
-                        <button
-                          onClick={() => handleDuplicate(note)}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 transition-colors"
-                          title={t("delivery:actions.duplicate", "Duplicate")}
-                          aria-label={t("delivery:actions.duplicate", "Duplicate")}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
-                        )}
-                        {canDelete && (
-                        <button
-                          onClick={() => setDeleteConfirmId(note.id)}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={t("common:buttons.delete")}
-                          aria-label={t("common:buttons.delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        )}
-                      </div>
+                      </TableCell>
+                    )}
+                    <TableCell>
+                      <RowActions
+                        actions={[
+                          {
+                            key: "edit",
+                            label: t("common:buttons.edit"),
+                            icon: Pencil,
+                            onSelect: () => router.push(`/delivery-notes/${note.id}/edit`),
+                            primary: true,
+                            hidden: !(note.status === "DRAFT" && canEdit),
+                          },
+                          {
+                            key: "view",
+                            label: t("common:buttons.view"),
+                            icon: Eye,
+                            onSelect: () => router.push(`/delivery-notes/${note.id}`),
+                          },
+                          {
+                            key: "pdf",
+                            label: t("delivery:actions.downloadPdf"),
+                            icon: FileDown,
+                            onSelect: () => pdfDownload.download("delivery_note", note.id),
+                            disabled: pdfDownload.pendingId === note.id,
+                          },
+                          {
+                            key: "duplicate",
+                            label: t("delivery:actions.duplicate", "Duplicate"),
+                            icon: Copy,
+                            onSelect: () => handleDuplicate(note),
+                            hidden: !canCreate,
+                          },
+                          {
+                            key: "delete",
+                            label: t("common:buttons.delete"),
+                            icon: Trash2,
+                            onSelect: () => setDeleteConfirmId(note.id),
+                            danger: true,
+                            hidden: !canDelete,
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center text-gray-500 py-8">
+                  <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 py-8">
                     {t("delivery:noDeliveryNotes")}
                   </TableCell>
                 </TableRow>

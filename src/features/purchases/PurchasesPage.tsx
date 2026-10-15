@@ -25,6 +25,9 @@ import {
   TableNumericCell,
   Input,
   Badge,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
 import { PurchaseForm } from "./components/PurchaseForm";
 import { PurchaseConfirmModal } from "./components/PurchaseConfirmModal";
@@ -33,6 +36,7 @@ import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import { StatusFilterChips } from "@/components/shared/StatusFilterChips";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -169,6 +173,21 @@ export function PurchasesPage() {
     selection.clear();
   }, [searchQuery, statusFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const columns = useTableColumns(
+    "purchases",
+    [
+      { key: "select", label: "", hideable: false },
+      { key: "number", label: t("fields.orderNumber"), hideable: false },
+      { key: "supplier", label: t("fields.supplier") },
+      { key: "date", label: t("fields.date") },
+      { key: "status", label: t("fields.status") },
+      { key: "paymentStatus", label: t("fields.paymentStatus") },
+      { key: "total", label: t("fields.total") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    filteredPurchases
+  );
+
   const handleOpenForm = (purchase?: PurchaseOrderListItem) => {
     if (isDemoMode) {
       showSubscribePrompt();
@@ -235,43 +254,37 @@ export function PurchasesPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {t("title")}
-          </h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-            {t("subtitle")}
-          </p>
-        </div>
-        {canCreate && (
-          <Button
-            onClick={() => handleOpenForm()}
-            size="sm"
-            className="self-start sm:self-auto"
-          >
-            <Plus className="h-4 w-4 me-2" />
-            {t("newPurchase")}
-          </Button>
-        )}
-      </div>
+      <PageHeader
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={
+          canCreate && (
+            <Button onClick={() => handleOpenForm()} size="sm">
+              <Plus className="h-4 w-4 me-2" />
+              {t("newPurchase")}
+            </Button>
+          )
+        }
+      />
 
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("purchaseList")}</CardTitle>
-            <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
-              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                id="purchase-search"
-                name="purchase-search"
-                placeholder={t("searchPlaceholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoComplete="off"
-                className="ps-9"
-              />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <ColumnPicker columns={columns} />
+              <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="purchase-search"
+                  name="purchase-search"
+                  placeholder={t("searchPlaceholder")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoComplete="off"
+                  className="ps-9"
+                />
+              </div>
             </div>
           </div>
 
@@ -415,12 +428,12 @@ export function PurchasesPage() {
                     </label>
                   </TableHead>
                   <TableHead>{t("fields.orderNumber")}</TableHead>
-                  <TableHead>{t("fields.supplier")}</TableHead>
-                  <TableHead>{t("fields.date")}</TableHead>
-                  <TableHead>{t("fields.status")}</TableHead>
-                  <TableHead>{t("fields.paymentStatus")}</TableHead>
-                  <TableHead className="text-end">{t("fields.total")}</TableHead>
-                  <TableHead className="w-32">
+                  {columns.show("supplier") && <TableHead>{t("fields.supplier")}</TableHead>}
+                  {columns.show("date") && <TableHead>{t("fields.date")}</TableHead>}
+                  {columns.show("status") && <TableHead>{t("fields.status")}</TableHead>}
+                  {columns.show("paymentStatus") && <TableHead>{t("fields.paymentStatus")}</TableHead>}
+                  {columns.show("total") && <TableHead className="text-end">{t("fields.total")}</TableHead>}
+                  <TableHead className="w-px text-end">
                     {tCommon("buttons.actions")}
                   </TableHead>
                 </TableRow>
@@ -431,7 +444,12 @@ export function PurchasesPage() {
                     const isPending = purchase.status === "PENDING";
                     const isReceivable = isPending || purchase.status === "PARTIALLY_RECEIVED";
                     return (
-                      <TableRow key={purchase.id}>
+                      <TableRow
+                        key={purchase.id}
+                        onActivate={() =>
+                          isPending && canEdit ? handleOpenForm(purchase) : setViewingPurchase(purchase)
+                        }
+                      >
                         <TableCell>
                           {isPending ? (
                             <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
@@ -449,94 +467,86 @@ export function PurchasesPage() {
                         <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                           {purchase.order_number}
                         </TableCell>
-                        <TableCell className="text-gray-600 dark:text-gray-400">
-                          {purchase.supplier?.name ?? "-"}
-                        </TableCell>
-                        <TableCell className="text-gray-600 dark:text-gray-400">
-                          {formatDate(purchase.order_date)}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={getStatusBadgeVariant(purchase.status)}
-                          >
-                            {t(`status.${purchase.status}`)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={getPaymentBadgeVariant(
-                              purchase.payment_status
-                            )}
-                          >
-                            {t(
-                              `paymentStatus.${purchase.payment_status}`
-                            )}
-                          </Badge>
-                        </TableCell>
-                        <TableNumericCell className="text-gray-600 dark:text-gray-400">
-                          {formatCurrency(purchase.total)}
-                        </TableNumericCell>
-                        <TableCell>
-                            <div className="flex items-center gap-2 lg:gap-1">
-                            <button
-                              onClick={() => setViewingPurchase(purchase)}
-                              className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                              title={tCommon("buttons.view")}
-                              aria-label={tCommon("buttons.view")}
+                        {columns.show("supplier") && (
+                          <TableCell className="text-gray-600 dark:text-gray-400">
+                            {purchase.supplier?.name ?? "-"}
+                          </TableCell>
+                        )}
+                        {columns.show("date") && (
+                          <TableCell className="text-gray-600 dark:text-gray-400">
+                            {formatDate(purchase.order_date)}
+                          </TableCell>
+                        )}
+                        {columns.show("status") && (
+                          <TableCell>
+                            <Badge
+                              variant={getStatusBadgeVariant(purchase.status)}
                             >
-                              <Eye className="h-4 w-4" />
-                            </button>
-                            {isPending && canEdit && (
-                              <button
-                                onClick={() => handleOpenForm(purchase)}
-                                className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                                title={tCommon("buttons.edit")}
-                                aria-label={tCommon("buttons.edit")}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </button>
-                            )}
-                            {isReceivable && canEdit && (
-                            <button
-                              onClick={() =>
-                                setConfirmingPurchase(purchase)
-                              }
-                              className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-green-600 dark:hover:text-green-400 transition-colors"
-                              title={t("actions.confirm")}
-                              aria-label={t("actions.confirm")}
+                              {t(`status.${purchase.status}`)}
+                            </Badge>
+                          </TableCell>
+                        )}
+                        {columns.show("paymentStatus") && (
+                          <TableCell>
+                            <Badge
+                              variant={getPaymentBadgeVariant(
+                                purchase.payment_status
+                              )}
                             >
-                              <CheckCircle className="h-4 w-4" />
-                            </button>
-                            )}
-                            {isPending && (
-                              <>
-                                {canEdit && (
-                                <button
-                                  onClick={() =>
-                                    setCancelConfirmId(purchase.id)
-                                  }
-                                  className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400 transition-colors"
-                                  title={t("actions.cancel")}
-                                  aria-label={t("actions.cancel")}
-                                >
-                                  <XCircle className="h-4 w-4" />
-                                </button>
-                                )}
-                                {canDelete && (
-                                <button
-                                  onClick={() =>
-                                    setDeleteConfirmId(purchase.id)
-                                  }
-                                  className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors"
-                                  title={tCommon("buttons.delete")}
-                                  aria-label={tCommon("buttons.delete")}
-                                >
-                                  <Trash2 className="h-4 w-4" />
-                                </button>
-                                )}
-                              </>
-                            )}
-                          </div>
+                              {t(
+                                `paymentStatus.${purchase.payment_status}`
+                              )}
+                            </Badge>
+                          </TableCell>
+                        )}
+                        {columns.show("total") && (
+                          <TableNumericCell className="text-gray-600 dark:text-gray-400">
+                            {formatCurrency(purchase.total)}
+                          </TableNumericCell>
+                        )}
+                        <TableCell>
+                          <RowActions
+                            actions={[
+                              {
+                                key: "confirm",
+                                label: t("actions.confirm"),
+                                icon: CheckCircle,
+                                onSelect: () => setConfirmingPurchase(purchase),
+                                primary: true,
+                                tone: "success",
+                                hidden: !(isReceivable && canEdit),
+                              },
+                              {
+                                key: "view",
+                                label: tCommon("buttons.view"),
+                                icon: Eye,
+                                onSelect: () => setViewingPurchase(purchase),
+                              },
+                              {
+                                key: "edit",
+                                label: tCommon("buttons.edit"),
+                                icon: Pencil,
+                                onSelect: () => handleOpenForm(purchase),
+                                hidden: !(isPending && canEdit),
+                              },
+                              {
+                                key: "cancel",
+                                label: t("actions.cancel"),
+                                icon: XCircle,
+                                onSelect: () => setCancelConfirmId(purchase.id),
+                                danger: true,
+                                hidden: !(isPending && canEdit),
+                              },
+                              {
+                                key: "delete",
+                                label: tCommon("buttons.delete"),
+                                icon: Trash2,
+                                onSelect: () => setDeleteConfirmId(purchase.id),
+                                danger: true,
+                                hidden: !(isPending && canDelete),
+                              },
+                            ]}
+                          />
                         </TableCell>
                       </TableRow>
                     );
@@ -544,7 +554,7 @@ export function PurchasesPage() {
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={8}
+                      colSpan={columns.visibleCount}
                       className="text-center text-gray-500 dark:text-gray-400 py-8"
                     >
                       {t("noPurchases")}
