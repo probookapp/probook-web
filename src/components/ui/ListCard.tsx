@@ -17,7 +17,7 @@ interface ListCardProps {
   meta?: ReactNode;
   /** The figure, on the last line beside the actions — total, balance, amount. */
   amount?: ReactNode;
-  /** Anything else, at the start of the last line: labels, a link. */
+  /** Anything else, on its own line under the meta: labels, a link. */
   children?: ReactNode;
   /** Selection checkbox, before everything. */
   leading?: ReactNode;
@@ -45,16 +45,22 @@ export function ListCard({ title, badge, meta, amount, children, leading, action
       {leading}
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2">
-          <p className="min-w-0 font-semibold text-(--color-text-primary) break-words">{title}</p>
+          {/* Two lines at most: a long company name should not push the figure off screen. */}
+          <p
+            className="min-w-0 font-semibold text-(--color-text-primary) break-words line-clamp-2"
+            title={typeof title === "string" ? title : undefined}
+          >
+            {title}
+          </p>
           {badge && <div className="shrink-0">{badge}</div>}
         </div>
         {meta && <p className="mt-0.5 text-xs text-(--color-text-secondary)">{meta}</p>}
+        {children && <div className="mt-1.5">{children}</div>}
         {/* The figure and the actions share the last line, so the name and the
             reference above keep the card's full width instead of wrapping
             beside a column of buttons. */}
-        {(children || amount || actions) && (
-          <div className="mt-1 flex items-center gap-3">
-            <div className="min-w-0 flex-1">{children}</div>
+        {(amount || actions) && (
+          <div className="mt-1 flex items-center justify-end gap-3">
             {amount && (
               <span className="shrink-0 font-semibold tabular-nums text-(--color-text-primary)">{amount}</span>
             )}

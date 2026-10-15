@@ -20,10 +20,18 @@ interface Props {
  * Purchases had one and quotes, invoices and delivery notes did not, which made
  * the same question ("what is still outstanding?") answerable in one module and
  * not the others. One component so they cannot drift apart again.
+ *
+ * On a phone the chips stay on one line that scrolls sideways, running to the
+ * card's edges: wrapped, seven states and a few labels took five lines, and the
+ * first document of the list started below the fold.
  */
 export function StatusFilterChips({ options, value, onChange, label }: Props) {
   return (
-    <div className="flex flex-wrap gap-2 mt-3" role="group" aria-label={label}>
+    <div
+      className="mt-3 flex gap-2 md:flex-wrap max-md:-mx-4 max-md:px-4 max-md:overflow-x-auto max-md:[scrollbar-width:none]"
+      role="group"
+      aria-label={label}
+    >
       {options.map((option) => {
         const active = value === option.key;
         return (
@@ -35,7 +43,7 @@ export function StatusFilterChips({ options, value, onChange, label }: Props) {
             // Squared and outlined rather than a filled capsule: these are a
             // row of buttons, and they should read like the buttons elsewhere
             // on the page instead of like a second, rounder vocabulary.
-            className={`px-3 py-1.5 rounded-md border text-sm font-medium transition-colors ${
+            className={`shrink-0 whitespace-nowrap px-3 py-1.5 rounded-md border text-sm font-medium transition-colors ${
               active
                 ? "bg-primary-600 border-primary-600 text-white"
                 : "bg-(--color-bg-primary) border-(--color-border-secondary) text-(--color-text-secondary) hover:bg-(--color-bg-tertiary) hover:text-(--color-text-primary)"

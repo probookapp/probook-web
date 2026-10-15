@@ -39,7 +39,9 @@ export function MobileCard({
       className={cn("p-4 space-y-2", onActivate && ACTIVATABLE, onActivate && "active:bg-(--color-bg-secondary)")}
       {...activateProps<HTMLDivElement>(onActivate)}
     >
-      <div className="flex items-start justify-between gap-2">
+      {/* Wraps: a title too long to share its line sends the badges under it,
+          rather than being broken into a narrow column beside them. */}
+      <div className="flex flex-wrap items-start justify-between gap-x-2 gap-y-1">
         <div className="min-w-0">
           <p className="font-medium text-gray-900 dark:text-gray-100 break-words">{title}</p>
           {subtitle ? (
@@ -54,7 +56,12 @@ export function MobileCard({
           {shown.map((field) => (
             <div key={field.label} className="flex justify-between gap-3">
               <dt className="text-gray-500 dark:text-gray-400 shrink-0">{field.label}</dt>
-              <dd className="text-gray-900 dark:text-gray-100 text-end break-words">
+              {/* Three lines at most: a feature offered on forty plans listed
+                  every one of them and filled the screen. */}
+              <dd
+                className="text-gray-900 dark:text-gray-100 text-end break-words line-clamp-3"
+                title={typeof field.value === "string" ? field.value : undefined}
+              >
                 {field.value}
               </dd>
             </div>
