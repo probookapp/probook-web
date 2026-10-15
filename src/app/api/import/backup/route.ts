@@ -1380,6 +1380,7 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
           // Was silently dropped before SALE-22: a restore reset the timbre
           // threshold to 0, turning the duty on for every cash sale.
           stampDutyThreshold: num(s, "stamp_duty_threshold", 0),
+          printBundleDetail: bool(s, "print_bundle_detail", true),
         };
         await tx.companySettings.upsert({
           where: { tenantId },

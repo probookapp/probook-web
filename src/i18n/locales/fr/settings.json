@@ -58,6 +58,11 @@
     "stampDutyThreshold": "Seuil du droit de timbre (montant min.)",
     "stampDutyScaleNote": "Le droit de timbre suit le barème légal progressif (1 % / 1,5 % / 2 % selon le montant, minimum 5 DA), appliqué automatiquement aux ventes réglées en espèces."
   },
+  "documents": {
+    "title": "Documents PDF",
+    "printBundleDetail": "Afficher le détail des packs sur les devis et factures",
+    "printBundleDetailHint": "Décoché, un pack tient sur une seule ligne. Son détail reste imprimé quand ses composants n'ont pas le même taux de TVA, et toujours sur les bons de livraison."
+  },
   "printers": {
     "title": "Imprimantes de tickets",
     "addPrinter": "Ajouter une imprimante",

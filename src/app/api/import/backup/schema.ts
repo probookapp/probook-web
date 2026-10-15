@@ -769,6 +769,7 @@ const SETTINGS_FIELDS: Record<string, FieldSpec> = {
   stamp_duty_enabled: "boolean",
   stamp_duty_rate: "number",
   stamp_duty_threshold: "number",
+  print_bundle_detail: "boolean",
 };
 
 function collectBackupIssues(data: unknown): Issue[] {

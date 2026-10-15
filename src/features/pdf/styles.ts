@@ -1,44 +1,66 @@
 import { StyleSheet } from "@react-pdf/renderer";
 
 export const styles = StyleSheet.create({
+  // Tight on purpose: the top of the page and the height of each line decide
+  // how many lines fit, and a customer reads a quote for its lines. The bottom
+  // margin leaves room for the footer, which is drawn over the page.
   page: {
-    padding: 40,
+    paddingTop: 28,
+    paddingHorizontal: 32,
+    paddingBottom: 64,
     fontSize: 10,
     fontFamily: "Helvetica",
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 30,
+    marginBottom: 14,
   },
   logo: {
-    width: 120,
-    height: 60,
+    width: 100,
+    height: 45,
     objectFit: "contain",
   },
   companyInfo: {
     textAlign: "right",
   },
   companyName: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: "bold",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   companyDetail: {
     fontSize: 9,
     color: "#635e56",
-    marginBottom: 2,
+    marginBottom: 1,
   },
   documentTitle: {
-    fontSize: 24,
+    fontSize: 18,
     fontWeight: "bold",
     color: "#1c5f68",
-    marginBottom: 20,
+  },
+  documentNumber: {
+    fontSize: 11,
+    fontWeight: "bold",
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  metaRow: {
+    flexDirection: "row",
+    marginBottom: 1,
+  },
+  metaLabel: {
+    fontSize: 9,
+    color: "#635e56",
+    marginRight: 4,
+  },
+  metaValue: {
+    fontSize: 9,
   },
   documentInfo: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 30,
+    marginBottom: 12,
   },
   infoBlock: {
     width: "48%",
@@ -49,34 +71,31 @@ export const styles = StyleSheet.create({
     marginBottom: 2,
     textTransform: "uppercase",
   },
-  infoValue: {
-    fontSize: 10,
-    marginBottom: 8,
-  },
   clientBox: {
     backgroundColor: "#f2f0ed",
-    padding: 15,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderRadius: 4,
   },
   clientName: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: "bold",
-    marginBottom: 4,
+    marginBottom: 2,
   },
   clientDetail: {
     fontSize: 9,
     color: "#4a4640",
-    marginBottom: 2,
+    marginBottom: 1,
   },
   table: {
-    marginTop: 20,
-    marginBottom: 20,
+    marginBottom: 10,
   },
   tableHeader: {
     flexDirection: "row",
     backgroundColor: "#1c5f68",
     color: "#fff",
-    padding: 8,
+    paddingVertical: 5,
+    paddingHorizontal: 6,
     fontWeight: "bold",
     fontSize: 9,
   },
@@ -84,7 +103,8 @@ export const styles = StyleSheet.create({
     flexDirection: "row",
     borderBottomWidth: 1,
     borderBottomColor: "#e5e2dc",
-    padding: 8,
+    paddingVertical: 4,
+    paddingHorizontal: 6,
     fontSize: 9,
   },
   tableRowAlt: {
@@ -112,7 +132,6 @@ export const styles = StyleSheet.create({
   totalsContainer: {
     flexDirection: "row",
     justifyContent: "flex-end",
-    marginTop: 20,
   },
   totalsBox: {
     // 230, not 200: Arabic says "المجموع (شامل الضريبة)" where French says
@@ -123,7 +142,7 @@ export const styles = StyleSheet.create({
   totalRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderBottomWidth: 1,
     borderBottomColor: "#e5e2dc",
   },
@@ -141,7 +160,7 @@ export const styles = StyleSheet.create({
   totalRowFinal: {
     flexDirection: "row",
     justifyContent: "space-between",
-    paddingVertical: 8,
+    paddingVertical: 6,
     backgroundColor: "#1c5f68",
     color: "#fff",
     paddingHorizontal: 8,
@@ -159,8 +178,9 @@ export const styles = StyleSheet.create({
     flexShrink: 0,
   },
   notes: {
-    marginTop: 30,
-    padding: 15,
+    marginTop: 14,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     backgroundColor: "#f6e5c8",
     borderRadius: 4,
   },
@@ -175,24 +195,24 @@ export const styles = StyleSheet.create({
   },
   footer: {
     position: "absolute",
-    bottom: 30,
-    left: 40,
-    right: 40,
+    bottom: 20,
+    left: 32,
+    right: 32,
     textAlign: "center",
     fontSize: 8,
     color: "#a8a299",
     borderTopWidth: 1,
     borderTopColor: "#e5e2dc",
-    paddingTop: 10,
+    paddingTop: 6,
   },
   footerText: {
     marginBottom: 2,
   },
   statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
     borderRadius: 4,
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: "bold",
     alignSelf: "flex-start",
   },
@@ -221,8 +241,9 @@ export const styles = StyleSheet.create({
     color: "#184331",
   },
   bankDetails: {
-    marginTop: 20,
-    padding: 10,
+    marginTop: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     backgroundColor: "#f2f0ed",
     borderRadius: 4,
   },

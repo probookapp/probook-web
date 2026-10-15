@@ -3,7 +3,6 @@ import {
   Page,
   Text,
   View,
-  Image,
 } from "@react-pdf/renderer";
 import { styles } from "./styles";
 import { numberToFrenchWords, CURRENCY_WORDS } from "@/lib/number-words";
@@ -12,6 +11,7 @@ import type { Quote, CompanySettings } from "@/types";
 import { pdfCurrency } from "./text";
 import { pdfString } from "./strings";
 import { PdfLineRow } from "./LineRow";
+import { DocumentHeading } from "./DocumentHeading";
 import { bundleRoles, isPresentationLine } from "@/lib/bundles";
 import { vatBreakdown } from "@/lib/document-totals";
 import { DEFAULT_CURRENCY } from "@/lib/currencies";
@@ -75,6 +75,9 @@ export function QuotePDF({
   );
   // Which lines are a pack and which its components (src/lib/bundles.ts).
   const roles = new Map(bundleRoles(quote.lines).map((r, i) => [quote.lines[i].id, r]));
+  // A pack may print as its one line. Its components still print when they
+  // carry different VAT rates: each rate's base must tie back to a line.
+  const showBundleDetail = company.print_bundle_detail ?? true;
   // Several VAT rates on one document: each base and each tax is stated.
   const vatRates = vatBreakdown({
     lines: quote.lines,
@@ -90,82 +93,37 @@ export function QuotePDF({
   return (
     <Document>
       <Page size="A4" style={fontFamily ? [styles.page, { fontFamily }] : styles.page}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 15 }}>
-            {logoBase64 && (
-              // eslint-disable-next-line jsx-a11y/alt-text
-              <Image src={logoBase64} style={styles.logo} />
-            )}
-            <View>
-              <Text style={styles.companyName}>{company.company_name}</Text>
-              {company.address && (
-                <Text style={styles.companyDetail}>{company.address}</Text>
-              )}
-              {(company.postal_code || company.city) && (
-                <Text style={styles.companyDetail}>
-                  {company.postal_code} {company.city}
-                </Text>
-              )}
-              {company.phone && (
-                <Text style={styles.companyDetail}>{t("common.phone")}: {company.phone}</Text>
-              )}
-              {company.email && (
-                <Text style={styles.companyDetail}>{company.email}</Text>
-              )}
-            </View>
-          </View>
-          <View style={styles.companyInfo}>
-            {renderIdentifiers(company, company).map((id) => (
-              <Text key={id.label} style={styles.companyDetail}>
-                {id.label}: {id.value}
-              </Text>
-            ))}
-          </View>
-        </View>
-
-        {/* Document Title */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <Text style={styles.documentTitle}>{t("quote.title")}</Text>
-          <View style={[styles.statusBadge, getStatusStyle()]}>
-            <Text>{getStatusLabel()}</Text>
-          </View>
-        </View>
-
-        {/* Document Info & Client */}
-        <View style={styles.documentInfo}>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>{t("quote.number")}</Text>
-            <Text style={styles.infoValue}>{quote.quote_number}</Text>
-
-            <Text style={styles.infoLabel}>{t("quote.issueDate")}</Text>
-            <Text style={styles.infoValue}>{formatDate(quote.issue_date, locale)}</Text>
-
-            <Text style={styles.infoLabel}>{t("quote.validityDate")}</Text>
-            <Text style={styles.infoValue}>{formatDate(quote.validity_date, locale)}</Text>
-          </View>
-
-          <View style={[styles.infoBlock, styles.clientBox]}>
-            <Text style={styles.infoLabel}>{t("quote.billTo")}</Text>
-            <Text style={styles.clientName}>{quote.client?.name}</Text>
-            {quote.client?.address && (
-              <Text style={styles.clientDetail}>{quote.client.address}</Text>
-            )}
-            {(quote.client?.postal_code || quote.client?.city) && (
-              <Text style={styles.clientDetail}>
-                {quote.client.postal_code} {quote.client.city}
-              </Text>
-            )}
-            {quote.client?.email && (
-              <Text style={styles.clientDetail}>{quote.client.email}</Text>
-            )}
-            {renderIdentifiers(company, quote.client).map((id) => (
-              <Text key={id.label} style={styles.clientDetail}>
-                {id.label}: {id.value}
-              </Text>
-            ))}
-          </View>
-        </View>
+        <DocumentHeading
+          company={company}
+          logoBase64={logoBase64}
+          locale={locale}
+          title={t("quote.title")}
+          number={quote.quote_number}
+          status={{ label: getStatusLabel(), style: getStatusStyle() }}
+          dates={[
+            { label: t("quote.issueDate"), value: formatDate(quote.issue_date, locale) },
+            { label: t("quote.validityDate"), value: formatDate(quote.validity_date, locale) },
+          ]}
+          recipientLabel={t("quote.billTo")}
+        >
+          <Text style={styles.clientName}>{quote.client?.name}</Text>
+          {quote.client?.address && (
+            <Text style={styles.clientDetail}>{quote.client.address}</Text>
+          )}
+          {(quote.client?.postal_code || quote.client?.city) && (
+            <Text style={styles.clientDetail}>
+              {quote.client.postal_code} {quote.client.city}
+            </Text>
+          )}
+          {quote.client?.email && (
+            <Text style={styles.clientDetail}>{quote.client.email}</Text>
+          )}
+          {renderIdentifiers(company, quote.client).map((id) => (
+            <Text key={id.label} style={styles.clientDetail}>
+              {id.label}: {id.value}
+            </Text>
+          ))}
+        </DocumentHeading>
 
         {/* Table */}
         <View style={styles.table}>
@@ -210,6 +168,7 @@ export function QuotePDF({
               // Lines in group
               lines.forEach(line => {
                 const { role, mixedRates } = roles.get(line.id) ?? { role: "plain" as const, mixedRates: false };
+                if (role === "child" && !mixedRates && !showBundleDetail) return;
                 elements.push(
                   <PdfLineRow
                     key={line.id}
@@ -241,6 +200,7 @@ export function QuotePDF({
             // Render ungrouped lines
             ungroupedLines.forEach(line => {
               const { role, mixedRates } = roles.get(line.id) ?? { role: "plain" as const, mixedRates: false };
+              if (role === "child" && !mixedRates && !showBundleDetail) return;
               elements.push(
                 <PdfLineRow
                   key={line.id}
@@ -311,7 +271,7 @@ export function QuotePDF({
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>{t("quote.totals.shippingVat")} ({quote.shipping_tax_rate}%)</Text>
                   <Text style={styles.totalValue}>
-                    {pdfCurrency(quote.shipping_cost * (quote.shipping_tax_rate / 100))}
+                    {pdfCurrency(quote.shipping_cost * (quote.shipping_tax_rate / 100), locale, currency)}
                   </Text>
                 </View>
               </>
@@ -323,7 +283,9 @@ export function QuotePDF({
                   quote.total +
                   (quote.shipping_cost > 0
                     ? quote.shipping_cost + quote.shipping_cost * (quote.shipping_tax_rate / 100)
-                    : 0)
+                    : 0),
+                  locale,
+                  currency
                 )}
               </Text>
             </View>
@@ -389,7 +351,7 @@ export function QuotePDF({
         </View>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <View style={styles.footer} fixed>
           {company.legal_mentions && (
             <Text style={styles.footerText}>{company.legal_mentions}</Text>
           )}

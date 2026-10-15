@@ -58,6 +58,11 @@
     "stampDutyThreshold": "Stamp duty threshold (min. amount)",
     "stampDutyScaleNote": "Stamp duty follows the legal progressive scale (1% / 1.5% / 2% by amount, 5 DA minimum), applied automatically to cash-settled sales."
   },
+  "documents": {
+    "title": "PDF documents",
+    "printBundleDetail": "Show pack contents on quotes and invoices",
+    "printBundleDetailHint": "Unchecked, a pack takes a single line. Its contents are still printed when its components carry different VAT rates, and always on delivery notes."
+  },
   "printers": {
     "title": "Receipt Printers",
     "addPrinter": "Add Printer",

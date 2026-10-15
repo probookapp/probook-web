@@ -43,7 +43,7 @@ export function PdfLineRow({
 }) {
   if (role === "child") {
     return (
-      <View style={[styles.tableRow, { paddingTop: 3, paddingBottom: 3 }, alt ? styles.tableRowAlt : {}]}>
+      <View style={[styles.tableRow, { paddingTop: 2, paddingBottom: 2 }, alt ? styles.tableRowAlt : {}]}>
         <View style={[styles.colDescription, { paddingLeft: 12 }]}>
           <Text style={childText}>{line.description}</Text>
         </View>

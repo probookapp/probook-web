@@ -698,6 +698,8 @@ export interface CompanySettings {
   stamp_duty_enabled: boolean | null;
   stamp_duty_rate: number | null;
   stamp_duty_threshold: number | null;
+  // Quote and invoice PDFs: a pack lists its components under it
+  print_bundle_detail: boolean;
   dashboard_layout: { order?: string[]; hidden?: string[] } | null;
   updated_at: string;
 }
@@ -737,6 +739,7 @@ export interface UpdateCompanySettingsInput {
   stamp_duty_enabled?: boolean;
   stamp_duty_rate?: number;
   stamp_duty_threshold?: number;
+  print_bundle_detail?: boolean;
 }
 
 export interface UpdateAppSettingsInput {

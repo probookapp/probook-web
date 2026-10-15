@@ -758,6 +758,7 @@ model CompanySettings {
   stampDutyEnabled       Boolean? @default(false) @map("stamp_duty_enabled") // droit de timbre on cash payments
   stampDutyRate          Float?   @default(1.0) @map("stamp_duty_rate") // percentage
   stampDutyThreshold     Decimal? @default(0) @map("stamp_duty_threshold") @db.Decimal(16, 3) // min TTC for timbre to apply
+  printBundleDetail      Boolean  @default(true) @map("print_bundle_detail") // packs list their components on quote/invoice PDFs
   updatedAt              DateTime @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)

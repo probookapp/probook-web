@@ -3,7 +3,6 @@ import {
   Page,
   Text,
   View,
-  Image,
 } from "@react-pdf/renderer";
 import { styles } from "./styles";
 import { numberToFrenchWords, CURRENCY_WORDS } from "@/lib/number-words";
@@ -12,6 +11,7 @@ import type { Invoice, CompanySettings } from "@/types";
 import { pdfCurrency } from "./text";
 import { pdfString } from "./strings";
 import { PdfLineRow } from "./LineRow";
+import { DocumentHeading } from "./DocumentHeading";
 import { bundleRoles, isPresentationLine } from "@/lib/bundles";
 import { vatBreakdown } from "@/lib/document-totals";
 import { DEFAULT_CURRENCY } from "@/lib/currencies";
@@ -62,6 +62,9 @@ export function InvoicePDF({
   );
   // Which lines are a pack and which its components (src/lib/bundles.ts).
   const roles = new Map(bundleRoles(invoice.lines).map((r, i) => [invoice.lines[i].id, r]));
+  // A pack may print as its one line. Its components still print when they
+  // carry different VAT rates: each rate's base must tie back to a line.
+  const showBundleDetail = company.print_bundle_detail ?? true;
   // Several VAT rates on one document: each base and each tax is stated.
   const vatRates = vatBreakdown({
     lines: invoice.lines,
@@ -92,82 +95,37 @@ export function InvoicePDF({
   return (
     <Document>
       <Page size="A4" style={fontFamily ? [styles.page, { fontFamily }] : styles.page}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 15 }}>
-            {logoBase64 && (
-              // eslint-disable-next-line jsx-a11y/alt-text
-              <Image src={logoBase64} style={styles.logo} />
-            )}
-            <View>
-              <Text style={styles.companyName}>{company.company_name}</Text>
-              {company.address && (
-                <Text style={styles.companyDetail}>{company.address}</Text>
-              )}
-              {(company.postal_code || company.city) && (
-                <Text style={styles.companyDetail}>
-                  {company.postal_code} {company.city}
-                </Text>
-              )}
-              {company.phone && (
-                <Text style={styles.companyDetail}>{t("common.phone")}: {company.phone}</Text>
-              )}
-              {company.email && (
-                <Text style={styles.companyDetail}>{company.email}</Text>
-              )}
-            </View>
-          </View>
-          <View style={styles.companyInfo}>
-            {renderIdentifiers(company, company).map((id) => (
-              <Text key={id.label} style={styles.companyDetail}>
-                {id.label}: {id.value}
-              </Text>
-            ))}
-          </View>
-        </View>
-
-        {/* Document Title */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <Text style={styles.documentTitle}>{t("invoice.title")}</Text>
-          <View style={[styles.statusBadge, getStatusStyle()]}>
-            <Text>{getStatusLabel()}</Text>
-          </View>
-        </View>
-
-        {/* Document Info & Client */}
-        <View style={styles.documentInfo}>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>{t("invoice.number")}</Text>
-            <Text style={styles.infoValue}>{invoice.invoice_number}</Text>
-
-            <Text style={styles.infoLabel}>{t("invoice.issueDate")}</Text>
-            <Text style={styles.infoValue}>{formatDate(invoice.issue_date, locale)}</Text>
-
-            <Text style={styles.infoLabel}>{t("invoice.dueDate")}</Text>
-            <Text style={styles.infoValue}>{formatDate(invoice.due_date, locale)}</Text>
-          </View>
-
-          <View style={[styles.infoBlock, styles.clientBox]}>
-            <Text style={styles.infoLabel}>{t("invoice.billTo")}</Text>
-            <Text style={styles.clientName}>{invoice.client?.name}</Text>
-            {invoice.client?.address && (
-              <Text style={styles.clientDetail}>{invoice.client.address}</Text>
-            )}
-            {(invoice.client?.postal_code || invoice.client?.city) && (
-              <Text style={styles.clientDetail}>
-                {invoice.client.postal_code} {invoice.client.city}
-              </Text>
-            )}
-            {invoice.client?.email && (
-              <Text style={styles.clientDetail}>{invoice.client.email}</Text>
-            )}
-            {renderIdentifiers(company, invoice.client).map((id) => (
-              <Text key={id.label} style={styles.clientDetail}>
-                {id.label}: {id.value}
-              </Text>
-            ))}
-          </View>
-        </View>
+        <DocumentHeading
+          company={company}
+          logoBase64={logoBase64}
+          locale={locale}
+          title={t("invoice.title")}
+          number={invoice.invoice_number}
+          status={{ label: getStatusLabel(), style: getStatusStyle() }}
+          dates={[
+            { label: t("invoice.issueDate"), value: formatDate(invoice.issue_date, locale) },
+            { label: t("invoice.dueDate"), value: formatDate(invoice.due_date, locale) },
+          ]}
+          recipientLabel={t("invoice.billTo")}
+        >
+          <Text style={styles.clientName}>{invoice.client?.name}</Text>
+          {invoice.client?.address && (
+            <Text style={styles.clientDetail}>{invoice.client.address}</Text>
+          )}
+          {(invoice.client?.postal_code || invoice.client?.city) && (
+            <Text style={styles.clientDetail}>
+              {invoice.client.postal_code} {invoice.client.city}
+            </Text>
+          )}
+          {invoice.client?.email && (
+            <Text style={styles.clientDetail}>{invoice.client.email}</Text>
+          )}
+          {renderIdentifiers(company, invoice.client).map((id) => (
+            <Text key={id.label} style={styles.clientDetail}>
+              {id.label}: {id.value}
+            </Text>
+          ))}
+        </DocumentHeading>
 
         {/* Table */}
         <View style={styles.table}>
@@ -212,6 +170,7 @@ export function InvoicePDF({
               // Lines in group
               lines.forEach(line => {
                 const { role, mixedRates } = roles.get(line.id) ?? { role: "plain" as const, mixedRates: false };
+                if (role === "child" && !mixedRates && !showBundleDetail) return;
                 elements.push(
                   <PdfLineRow
                     key={line.id}
@@ -243,6 +202,7 @@ export function InvoicePDF({
             // Render ungrouped lines
             ungroupedLines.forEach(line => {
               const { role, mixedRates } = roles.get(line.id) ?? { role: "plain" as const, mixedRates: false };
+              if (role === "child" && !mixedRates && !showBundleDetail) return;
               elements.push(
                 <PdfLineRow
                   key={line.id}
@@ -313,7 +273,7 @@ export function InvoicePDF({
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>{t("invoice.totals.shippingVat")} ({invoice.shipping_tax_rate}%)</Text>
                   <Text style={styles.totalValue}>
-                    {pdfCurrency(invoice.shipping_cost * (invoice.shipping_tax_rate / 100))}
+                    {pdfCurrency(invoice.shipping_cost * (invoice.shipping_tax_rate / 100), locale, currency)}
                   </Text>
                 </View>
               </>
@@ -325,7 +285,9 @@ export function InvoicePDF({
                   invoice.total +
                   (invoice.shipping_cost > 0
                     ? invoice.shipping_cost + invoice.shipping_cost * (invoice.shipping_tax_rate / 100)
-                    : 0)
+                    : 0),
+                  locale,
+                  currency
                 )}
               </Text>
             </View>
@@ -425,7 +387,7 @@ export function InvoicePDF({
         )}
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <View style={styles.footer} fixed>
           {company.legal_mentions && (
             <Text style={styles.footerText}>{company.legal_mentions}</Text>
           )}

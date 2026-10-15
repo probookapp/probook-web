@@ -554,6 +554,8 @@ export const settingsSchema = z.object({
   stamp_duty_enabled: z.boolean().optional(),
   stamp_duty_rate: z.coerce.number().min(0).max(100).optional(),
   stamp_duty_threshold: z.coerce.number().min(0).optional(),
+  // Whether a pack lists its components on quote and invoice PDFs.
+  print_bundle_detail: z.boolean().optional(),
   // Owner's dashboard card order/visibility (persisted cross-device).
   dashboard_layout: z.record(z.string(), z.unknown()).nullable().optional(),
 }).partial();

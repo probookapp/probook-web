@@ -55,6 +55,7 @@ export const PUT = withAuth(async (req, { tenantId, session }) => {
   if (body.stamp_duty_enabled !== undefined) updateData.stampDutyEnabled = body.stamp_duty_enabled;
   if (body.stamp_duty_rate !== undefined) updateData.stampDutyRate = body.stamp_duty_rate;
   if (body.stamp_duty_threshold !== undefined) updateData.stampDutyThreshold = body.stamp_duty_threshold;
+  if (body.print_bundle_detail !== undefined) updateData.printBundleDetail = body.print_bundle_detail;
   if (body.dashboard_layout !== undefined) updateData.dashboardLayout = body.dashboard_layout;
 
   const settings = await prisma.companySettings.upsert({

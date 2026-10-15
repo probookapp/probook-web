@@ -3,12 +3,12 @@ import {
   Page,
   Text,
   View,
-  Image,
 } from "@react-pdf/renderer";
 import { styles } from "./styles";
-import { renderIdentifiers, identifierSummary } from "./identifiers";
+import { identifierSummary } from "./identifiers";
 import type { DeliveryNote, CompanySettings } from "@/types";
 import { pdfString } from "./strings";
+import { DocumentHeading } from "./DocumentHeading";
 import { bundleRoles } from "@/lib/bundles";
 
 
@@ -62,87 +62,40 @@ export function DeliveryNotePDF({
   return (
     <Document>
       <Page size="A4" style={fontFamily ? [styles.page, { fontFamily }] : styles.page}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 15 }}>
-            {logoBase64 && (
-              // eslint-disable-next-line jsx-a11y/alt-text
-              <Image src={logoBase64} style={styles.logo} />
-            )}
-            <View>
-              <Text style={styles.companyName}>{company.company_name}</Text>
-              {company.address && (
-                <Text style={styles.companyDetail}>{company.address}</Text>
+        <DocumentHeading
+          company={company}
+          logoBase64={logoBase64}
+          locale={locale}
+          title={t("deliveryNote.title")}
+          number={deliveryNote.delivery_note_number}
+          status={{ label: getStatusLabel(), style: getStatusStyle() }}
+          dates={[
+            { label: t("deliveryNote.issueDate"), value: formatDate(deliveryNote.issue_date, locale) },
+            ...(deliveryNote.delivery_date
+              ? [{ label: t("deliveryNote.deliveryDate"), value: formatDate(deliveryNote.delivery_date, locale) }]
+              : []),
+          ]}
+          recipientLabel={t("deliveryNote.deliverTo")}
+        >
+          <Text style={styles.clientName}>{deliveryNote.client?.name}</Text>
+          {deliveryNote.delivery_address ? (
+            <Text style={styles.clientDetail}>{deliveryNote.delivery_address}</Text>
+          ) : (
+            <>
+              {deliveryNote.client?.address && (
+                <Text style={styles.clientDetail}>{deliveryNote.client.address}</Text>
               )}
-              {(company.postal_code || company.city) && (
-                <Text style={styles.companyDetail}>
-                  {company.postal_code} {company.city}
+              {(deliveryNote.client?.postal_code || deliveryNote.client?.city) && (
+                <Text style={styles.clientDetail}>
+                  {deliveryNote.client.postal_code} {deliveryNote.client.city}
                 </Text>
               )}
-              {company.phone && (
-                <Text style={styles.companyDetail}>{t("common.phone")}: {company.phone}</Text>
-              )}
-              {company.email && (
-                <Text style={styles.companyDetail}>{company.email}</Text>
-              )}
-            </View>
-          </View>
-          <View style={styles.companyInfo}>
-            {renderIdentifiers(company, company).map((id) => (
-              <Text key={id.label} style={styles.companyDetail}>
-                {id.label}: {id.value}
-              </Text>
-            ))}
-          </View>
-        </View>
-
-        {/* Document Title */}
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
-          <Text style={styles.documentTitle}>{t("deliveryNote.title")}</Text>
-          <View style={[styles.statusBadge, getStatusStyle()]}>
-            <Text>{getStatusLabel()}</Text>
-          </View>
-        </View>
-
-        {/* Document Info & Client */}
-        <View style={styles.documentInfo}>
-          <View style={styles.infoBlock}>
-            <Text style={styles.infoLabel}>{t("deliveryNote.number")}</Text>
-            <Text style={styles.infoValue}>{deliveryNote.delivery_note_number}</Text>
-
-            <Text style={styles.infoLabel}>{t("deliveryNote.issueDate")}</Text>
-            <Text style={styles.infoValue}>{formatDate(deliveryNote.issue_date, locale)}</Text>
-
-            {deliveryNote.delivery_date && (
-              <>
-                <Text style={styles.infoLabel}>{t("deliveryNote.deliveryDate")}</Text>
-                <Text style={styles.infoValue}>{formatDate(deliveryNote.delivery_date, locale)}</Text>
-              </>
-            )}
-          </View>
-
-          <View style={[styles.infoBlock, styles.clientBox]}>
-            <Text style={styles.infoLabel}>{t("deliveryNote.deliverTo")}</Text>
-            <Text style={styles.clientName}>{deliveryNote.client?.name}</Text>
-            {deliveryNote.delivery_address ? (
-              <Text style={styles.clientDetail}>{deliveryNote.delivery_address}</Text>
-            ) : (
-              <>
-                {deliveryNote.client?.address && (
-                  <Text style={styles.clientDetail}>{deliveryNote.client.address}</Text>
-                )}
-                {(deliveryNote.client?.postal_code || deliveryNote.client?.city) && (
-                  <Text style={styles.clientDetail}>
-                    {deliveryNote.client.postal_code} {deliveryNote.client.city}
-                  </Text>
-                )}
-              </>
-            )}
-            {deliveryNote.client?.phone && (
-              <Text style={styles.clientDetail}>{t("common.phone")}: {deliveryNote.client.phone}</Text>
-            )}
-          </View>
-        </View>
+            </>
+          )}
+          {deliveryNote.client?.phone && (
+            <Text style={styles.clientDetail}>{t("common.phone")}: {deliveryNote.client.phone}</Text>
+          )}
+        </DocumentHeading>
 
         {/* Table */}
         <View style={styles.table}>
@@ -215,7 +168,7 @@ export function DeliveryNotePDF({
         </View>
 
         {/* Footer */}
-        <View style={styles.footer}>
+        <View style={styles.footer} fixed>
           <Text style={styles.footerText}>
             {company.company_name}
             {identifierSummary(company, company) &&

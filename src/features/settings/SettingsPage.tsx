@@ -42,6 +42,7 @@ import {
   vatRateOptions,
 } from "@/lib/fiscal-profiles";
 import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from "@/lib/currencies";
+import { useFeature, FEATURE_KEYS } from "@/hooks/useEntitlements";
 
 const FALLBACK_CURRENCY = DEFAULT_CURRENCY;
 
@@ -90,6 +91,7 @@ const createSettingsSchema = (t: (key: string) => string) => z.object({
   stamp_duty_enabled: z.boolean(),
   stamp_duty_rate: z.coerce.number().min(0).max(100),
   stamp_duty_threshold: z.coerce.number().min(0),
+  print_bundle_detail: z.boolean(),
 });
 
 type SettingsFormData = z.output<ReturnType<typeof createSettingsSchema>>;
@@ -98,6 +100,7 @@ const currencyOptions = CURRENCY_OPTIONS;
 
 export function SettingsPage() {
   const { t } = useTranslation("settings");
+  const bundles = useFeature(FEATURE_KEYS.BUNDLES);
   const { t: tCommon } = useTranslation("common");
   const settingsSchema = createSettingsSchema(t);
   const { data: settings, isLoading } = useCompanySettings();
@@ -203,6 +206,7 @@ export function SettingsPage() {
       stamp_duty_enabled: false,
       stamp_duty_rate: 1,
       stamp_duty_threshold: 0,
+      print_bundle_detail: true,
     },
   });
 
@@ -255,6 +259,7 @@ export function SettingsPage() {
         stamp_duty_enabled: settings.stamp_duty_enabled ?? false,
         stamp_duty_rate: settings.stamp_duty_rate ?? 1,
         stamp_duty_threshold: settings.stamp_duty_threshold ?? 0,
+        print_bundle_detail: settings.print_bundle_detail ?? true,
       });
     }
     // Only when the form holds nothing of the user's: every refetch of the
@@ -640,6 +645,27 @@ export function SettingsPage() {
                 />
               </div>
             </div>
+
+            {bundles.included && (
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t("documents.title")}
+              </h3>
+              <label className="mt-2 flex items-center gap-3 py-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 shrink-0 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  {...register("print_bundle_detail")}
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                  {t("documents.printBundleDetail")}
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {t("documents.printBundleDetailHint")}
+              </p>
+            </div>
+            )}
 
             {activeProfile.hasStampDuty && (
             <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
