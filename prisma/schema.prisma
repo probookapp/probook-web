@@ -69,23 +69,26 @@ model Tenant {
 // ========== Auth ==========
 
 model User {
-  id            String   @id @default(uuid())
-  tenantId      String   @map("tenant_id")
-  username      String
-  displayName   String   @map("display_name")
-  email         String?
+  id               String   @id @default(uuid())
+  tenantId         String   @map("tenant_id")
+  username         String
+  displayName      String   @map("display_name")
+  email            String?
   /// At most one account may hold a given verified email. Enforced by a partial
   /// unique index on lower(email) WHERE email_verified — see the migration
   /// 20260913_verified_email_unique. Prisma cannot express an expression index,
   /// so it exists in SQL only: do not assume `prisma migrate dev` will recreate
   /// it from this schema.
-  emailVerified Boolean  @default(false) @map("email_verified")
-  passwordHash  String   @map("password_hash")
-  role          String   @default("employee")
-  isActive      Boolean  @default(true) @map("is_active")
-  totpEnabled   Boolean  @default(false) @map("totp_enabled")
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  emailVerified    Boolean  @default(false) @map("email_verified")
+  passwordHash     String   @map("password_hash")
+  role             String   @default("employee")
+  isActive         Boolean  @default(true) @map("is_active")
+  totpEnabled      Boolean  @default(false) @map("totp_enabled")
+  /// Per-table list preferences: `{ [tableKey]: { hidden: string[] } }`. See
+  /// src/lib/table-preferences.ts — the shape is validated there, not here.
+  tablePreferences Json?    @map("table_preferences")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   tenant              Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   permissions         UserPermission[]
@@ -1158,17 +1161,19 @@ model PosPrinterConfig {
 // ========== Platform Admin ==========
 
 model PlatformAdmin {
-  id           String   @id @default(uuid())
-  username     String   @unique
-  displayName  String   @map("display_name")
-  email        String   @unique
-  passwordHash String   @map("password_hash")
-  role         String   @default("super_admin") // "super_admin" | "support_agent"
-  isActive     Boolean  @default(true) @map("is_active")
-  totpSecret   String?  @map("totp_secret") // encrypted TOTP secret
-  totpEnabled  Boolean  @default(false) @map("totp_enabled")
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(uuid())
+  username         String   @unique
+  displayName      String   @map("display_name")
+  email            String   @unique
+  passwordHash     String   @map("password_hash")
+  role             String   @default("super_admin") // "super_admin" | "support_agent"
+  isActive         Boolean  @default(true) @map("is_active")
+  totpSecret       String?  @map("totp_secret") // encrypted TOTP secret
+  totpEnabled      Boolean  @default(false) @map("totp_enabled")
+  /// Same shape as User.tablePreferences, for the admin surface's tables.
+  tablePreferences Json?    @map("table_preferences")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   passwordResetTokens AdminPasswordResetToken[]
   backupCodes         AdminBackupCode[]
