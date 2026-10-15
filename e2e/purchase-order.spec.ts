@@ -165,7 +165,8 @@ test.describe("Purchase order workflow", () => {
     // Edit disappears once goods are in; the order must stay readable anyway.
     await page.goto("/en/purchases");
     const row = page.getByRole("row").filter({ hasText: po.body.order_number as string });
-    await row.getByRole("button", { name: "View" }).click();
+    await row.getByRole("button", { name: "More actions" }).click();
+    await page.getByRole("menuitem", { name: "View" }).click();
     const view = page.getByRole("dialog", { name: `Purchase Order ${po.body.order_number}` });
     await expect(view.getByText("Review Supplier")).toBeVisible();
     await expect(view.getByText("Review Product")).toBeVisible();
@@ -182,8 +183,9 @@ test.describe("Purchase order workflow", () => {
     await receive.getByRole("button", { name: "Confirm Receipt" }).click();
     await expect(receive).toHaveCount(0);
     await expect(row.getByRole("button", { name: "Confirm Receipt" })).toHaveCount(0);
-    await expect(row.getByRole("button", { name: "Edit" })).toHaveCount(0);
-    await row.getByRole("button", { name: "View" }).click();
+    await row.getByRole("button", { name: "More actions" }).click();
+    await expect(page.getByRole("menuitem", { name: "Edit" })).toHaveCount(0);
+    await page.getByRole("menuitem", { name: "View" }).click();
     await expect(view.getByText("Received: 10")).toBeVisible();
     await expect(view.getByText("Received on")).toBeVisible();
   });

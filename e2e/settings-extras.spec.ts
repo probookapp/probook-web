@@ -58,7 +58,8 @@ test.describe("Printer management (Settings)", () => {
     // ── Delete ───────────────────────────────────────────────────────────
     page.on("dialog", (dialog) => dialog.accept());
     const editedRow = page.getByRole("row").filter({ hasText: "Back Office Printer" });
-    await editedRow.getByRole("button", { name: "Delete" }).click();
+    await editedRow.getByRole("button", { name: "More actions" }).click();
+    await page.getByRole("menuitem", { name: "Delete" }).click();
 
     await expect
       .poll(async () => {

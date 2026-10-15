@@ -26,8 +26,13 @@ test.describe("Inventory adjustments", () => {
     await page.goto("/en/products");
     await expect(page.getByRole("cell", { name: "Adjust Widget" })).toBeVisible();
 
-    // Open the adjust-stock modal, switch to delta mode and add +5.
-    await page.getByRole("button", { name: "Adjust Stock" }).click();
+    // Open the adjust-stock modal (row's "More actions" menu), switch to delta mode and add +5.
+    await page
+      .getByRole("row")
+      .filter({ hasText: "Adjust Widget" })
+      .getByRole("button", { name: "More actions" })
+      .click();
+    await page.getByRole("menuitem", { name: "Adjust Stock" }).click();
     const dialog = modal(page);
     await dialog.getByRole("button", { name: "Add / Remove" }).click();
     await dialog.getByRole("spinbutton").fill("5");

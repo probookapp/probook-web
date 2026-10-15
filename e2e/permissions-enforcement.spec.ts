@@ -94,6 +94,17 @@ test.describe("Products permission enforcement", () => {
     await expect(page.getByRole("button", { name: "New Product" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Edit" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Delete" })).toHaveCount(0);
+    // Delete lives in the row's "More actions" menu: it must be absent there too,
+    // while the read-only actions (stock movements) remain.
+    await page
+      .getByRole("row")
+      .filter({ hasText: "Perm Widget" })
+      .getByRole("button", { name: "More actions" })
+      .click();
+    await expect(page.getByRole("menuitem", { name: "Stock Movements" })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: "Delete" })).toHaveCount(0);
+    await expect(page.getByRole("menuitem", { name: "Adjust Stock" })).toHaveCount(0);
+    await page.keyboard.press("Escape");
 
     // Server enforcement: products GET allowed (view granted), POST forbidden.
     expect((await apiGet(page, "/api/products")).status).toBe(200);

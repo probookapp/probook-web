@@ -161,12 +161,13 @@ test.describe("Admin data requests", () => {
 
     await page.goto("/en/admin/data-requests");
 
-    // Open the execute-deletion modal from our tenant's row.
+    // Open the execute-deletion modal from our tenant's row (it lives in the row's "⋯" menu).
     await page
       .locator("tr", { hasText: company })
-      .getByRole("button", { name: "Execute deletion" })
+      .getByRole("button", { name: "More actions" })
       .first()
       .click();
+    await page.getByRole("menuitem", { name: "Execute deletion" }).click();
 
     // The modal's confirm button is the last one in the DOM.
     const confirmBtn = page.getByRole("button", { name: "Execute deletion" }).last();

@@ -88,9 +88,11 @@ test.describe("Multi-location", () => {
     expect(locations.some((l) => l.name === "Warehouse North")).toBe(true);
 
     // ── Deleting the default location is blocked ────────────────────────
-    // The UI disables the delete button on the default row…
+    // The UI disables the delete action on the default row…
     const mainRow = page.getByRole("row", { name: company });
-    await expect(mainRow.getByRole("button", { name: "Delete" })).toBeDisabled();
+    await mainRow.getByRole("button", { name: "More actions" }).click();
+    await expect(page.getByRole("menuitem", { name: "Delete" })).toBeDisabled();
+    await page.keyboard.press("Escape");
     // …and the API surfaces the same rule as a 400 error.
     const defaultLocation = locations.find((l) => l.is_default);
     expect(defaultLocation).toBeTruthy();
@@ -151,8 +153,13 @@ test.describe("Multi-location", () => {
     // target the desktop table cell (role=cell) to avoid a duplicate-match.
     await expect(page.getByRole("cell", { name: "Adjust Loc Product" })).toBeVisible();
 
-    // Open the adjust-stock modal (SlidersHorizontal icon button).
-    await page.getByRole("button", { name: "Adjust Stock" }).click();
+    // Open the adjust-stock modal from the row's "More actions" menu.
+    await page
+      .getByRole("row")
+      .filter({ hasText: "Adjust Loc Product" })
+      .getByRole("button", { name: "More actions" })
+      .click();
+    await page.getByRole("menuitem", { name: "Adjust Stock" }).click();
 
     const dialog = modal(page);
     // The location picker only appears with 2+ locations. It's the only <select>

@@ -103,8 +103,9 @@ test.describe("Client statements", () => {
     const row = page.getByRole("row").filter({ hasText: "Ledger Client" }).first();
     await expect(row).toContainText(/1[\s,.]?000/);
 
-    // Open the statement modal via the row action.
-    await row.getByRole("button", { name: "Statement" }).click();
+    // Open the statement modal via the row's "More actions" menu.
+    await row.getByRole("button", { name: "More actions" }).click();
+    await page.getByRole("menuitem", { name: "Statement" }).click();
     await expect(page.getByText("Opening balance")).toBeVisible();
 
     // Ledger rows: the invoice/credit-note references are listed. inv1's number
