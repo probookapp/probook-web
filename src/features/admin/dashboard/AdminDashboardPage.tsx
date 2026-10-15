@@ -15,7 +15,7 @@ import {
   CalendarClock,
   Gift,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, Badge, Input, Button } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, Badge, Input, Button, FitAmount } from "@/components/ui";
 import {
   useAdminOverview,
   useAdminSignups,
@@ -60,13 +60,13 @@ function StatCard({
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
               {title}
             </p>
             <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              {value}
+              <FitAmount>{value}</FitAmount>
             </p>
             {description && (
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -74,7 +74,7 @@ function StatCard({
               </p>
             )}
           </div>
-          <div className="p-3 bg-primary-100 dark:bg-primary-900/30 rounded-full">
+          <div className="shrink-0 p-3 bg-primary-100 dark:bg-primary-900/30 rounded-full">
             <Icon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
           </div>
         </div>

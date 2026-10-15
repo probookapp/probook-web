@@ -38,3 +38,4 @@ export { FormActionBar } from "./FormActionBar";
 // "@/components/ui/RichTextEditor" (client-only, uses dompurify which needs document)
 export { ToastContainer } from "./Toast";
 export { ListCard } from "./ListCard";
+export { FitAmount } from "./FitAmount";

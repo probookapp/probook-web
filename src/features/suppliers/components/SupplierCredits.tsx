@@ -12,6 +12,7 @@ import {
   TableHead,
   TableCell,
   TableNumericCell,
+  FitAmount,
 } from "@/components/ui";
 import { Badge } from "@/components/ui/Badge";
 import { supplierCreditApi } from "@/lib/api";
@@ -73,22 +74,24 @@ export function SupplierCredits({ supplier }: SupplierCreditsProps) {
   const unpaidOrders = creditSummary?.unpaid_orders ?? [];
 
   return (
-    <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+    <div className="@container space-y-6">
+      {/* Summary Cards. Columns follow the modal's width, not the screen's: the
+          modal is far narrower than a desktop viewport, and three tiles in it
+          left each total about 110 px. */}
+      <div className="grid grid-cols-1 @lg:grid-cols-3 gap-4">
+        <div className="min-w-0 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">{t("credits.totalOwed")}</p>
           <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">
-            {formatCurrency(totalOwed)}
+            <FitAmount>{formatCurrency(totalOwed)}</FitAmount>
           </p>
         </div>
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className="min-w-0 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">{t("credits.totalPaid")}</p>
           <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">
-            {formatCurrency(totalPaid)}
+            <FitAmount>{formatCurrency(totalPaid)}</FitAmount>
           </p>
         </div>
-        <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+        <div className="min-w-0 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
           <p className="text-sm text-gray-500 dark:text-gray-400">{t("credits.balance")}</p>
           <p
             className={`text-xl font-semibold mt-1 ${
@@ -97,7 +100,7 @@ export function SupplierCredits({ supplier }: SupplierCreditsProps) {
                 : "text-green-600 dark:text-green-400"
             }`}
           >
-            {formatCurrency(balance)}
+            <FitAmount>{formatCurrency(balance)}</FitAmount>
           </p>
           {balance === 0 && (
             <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">

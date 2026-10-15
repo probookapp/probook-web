@@ -12,6 +12,7 @@ import {
   TableHead,
   TableCell,
   TableNumericCell,
+  FitAmount,
 } from "@/components/ui";
 import { type ReportPDFColumn } from "@/features/pdf";
 import { exportToCsv } from "@/lib/csv-export";
@@ -234,32 +235,34 @@ export function ClientStatement({ isOpen, onClose, clientId, clientName }: Clien
           </div>
         )}
 
-        {/* Totals */}
+        {/* Totals. Columns follow the modal's width, not the screen's. */}
         {statement && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-gray-200 dark:border-gray-700 pt-4">
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("statement.totalInvoiced")}</p>
-              <p className="font-semibold text-gray-900 dark:text-gray-100">
-                {formatCurrency(statement.totals.total_invoiced)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("statement.totalPaid")}</p>
-              <p className="font-semibold text-gray-900 dark:text-gray-100">
-                {formatCurrency(statement.totals.total_paid)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("statement.totalCredited")}</p>
-              <p className="font-semibold text-gray-900 dark:text-gray-100">
-                {formatCurrency(statement.totals.total_credited)}
-              </p>
-            </div>
-            <div>
-              <p className="text-xs text-gray-500 dark:text-gray-400">{t("statement.closingBalance")}</p>
-              <p className="font-semibold text-primary-700 dark:text-primary-300">
-                {formatCurrency(statement.totals.closing_balance)}
-              </p>
+          <div className="@container border-t border-gray-200 dark:border-gray-700 pt-4">
+            <div className="grid grid-cols-2 @xl:grid-cols-4 gap-3">
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t("statement.totalInvoiced")}</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">
+                  <FitAmount>{formatCurrency(statement.totals.total_invoiced)}</FitAmount>
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t("statement.totalPaid")}</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">
+                  <FitAmount>{formatCurrency(statement.totals.total_paid)}</FitAmount>
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t("statement.totalCredited")}</p>
+                <p className="font-semibold text-gray-900 dark:text-gray-100">
+                  <FitAmount>{formatCurrency(statement.totals.total_credited)}</FitAmount>
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{t("statement.closingBalance")}</p>
+                <p className="font-semibold text-primary-700 dark:text-primary-300">
+                  <FitAmount>{formatCurrency(statement.totals.closing_balance)}</FitAmount>
+                </p>
+              </div>
             </div>
           </div>
         )}

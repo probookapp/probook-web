@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X, AlertCircle, CheckCircle2 } from "lucide-react";
+import { FitAmount } from "@/components/ui";
 import { formatCurrency } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 import { useSessionSummary } from "../hooks/usePosSession";
@@ -90,7 +91,7 @@ export function CloseSessionModal({
                         {t("totalSales")}
                       </p>
                       <p className="text-2xl font-bold">
-                        {formatAmount(summary.total_sales)}
+                        <FitAmount>{formatAmount(summary.total_sales)}</FitAmount>
                       </p>
                     </div>
                     {/* One tile per method actually used: a cheque is revenue
@@ -100,7 +101,7 @@ export function CloseSessionModal({
                         <p className="text-(--color-text-secondary)">
                           {t(row.method.toLowerCase(), { defaultValue: row.method })}
                         </p>
-                        <p className="text-xl font-bold">{formatAmount(row.amount)}</p>
+                        <p className="text-xl font-bold"><FitAmount>{formatAmount(row.amount)}</FitAmount></p>
                       </div>
                     ))}
                   </div>
@@ -175,7 +176,7 @@ export function CloseSessionModal({
                     ) : (
                       <AlertCircle className="h-5 w-5 shrink-0" />
                     )}
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium">
                         {Math.abs(difference) < 0.01
                           ? t("cashBalanced")
@@ -185,7 +186,7 @@ export function CloseSessionModal({
                       </p>
                       {Math.abs(difference) >= 0.01 && (
                         <p className="text-2xl font-bold">
-                          {formatAmount(Math.abs(difference))}
+                          <FitAmount>{formatAmount(Math.abs(difference))}</FitAmount>
                         </p>
                       )}
                     </div>

@@ -11,7 +11,7 @@ import {
   Wallet,
   PiggyBank,
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui";
+import { Card, CardContent, CardHeader, CardTitle, FitAmount } from "@/components/ui";
 import { formatCurrency } from "@/lib/utils";
 import { dashboardApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
@@ -60,7 +60,7 @@ function StatCard({
         {title}
       </p>
       <p className="mt-2 font-mono text-3xl sm:text-4xl font-semibold tabular-nums text-(--color-text-primary)">
-        {value}
+        <FitAmount>{value}</FitAmount>
       </p>
       {description && (
         <p className="mt-1 text-sm text-(--color-text-tertiary)">{description}</p>
@@ -75,17 +75,14 @@ function StatCard({
       {/* The description repeats the title at this size, so it is dropped
           rather than shrunk into an unreadable second line.
 
-          The figure is smaller on a phone and allowed to wrap: two columns at
-          390 px leave about 139 px of text, and "198 968,00 DZD" set at 20 px
-          in a monospaced face needs 168 px. It did not overflow the page — it
-          was clipped inside its own card, which is worse, because a total that
-          reads "198,968.0" is not obviously wrong.
-
-          It wraps at spaces only. Breaking anywhere sent the final dot of the
-          Arabic currency mark "د.ج." onto a line of its own, which looks like a
-          rendering fault rather than a long number. */}
+          The figure is smaller on a phone and shrinks further to its card: two
+          columns at 390 px leave about 139 px of text, and "198 968,00 DZD" set
+          at 20 px in a monospaced face needs 168 px. It did not overflow the
+          page — it was clipped inside its own card, which is worse, because a
+          total that reads "198,968.0" is not obviously wrong. It cannot wrap:
+          Intl's separators are all no-break spaces. */}
       <p className="mt-1.5 font-mono text-base sm:text-xl font-semibold tabular-nums text-(--color-text-primary)">
-        {value}
+        <FitAmount>{value}</FitAmount>
       </p>
     </CardContent>
   );

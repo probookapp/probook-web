@@ -39,6 +39,7 @@ import {
   Badge,
   PageHeader,
   ColumnPicker,
+  FitAmount,
 } from "@/components/ui";
 import { useTableColumns, type TableColumnsState } from "@/hooks/useTableColumns";
 import { useRouter } from "@/lib/navigation";
@@ -450,7 +451,7 @@ export function ReportsPage() {
                   {t("reports:pipeline.awaitingInvoice")}
                 </p>
                 <p className="text-lg sm:text-2xl font-bold">
-                  {formatCurrency(progress?.awaiting_invoice_total ?? 0)}
+                  <FitAmount>{formatCurrency(progress?.awaiting_invoice_total ?? 0)}</FitAmount>
                 </p>
                 <p className="text-xs text-(--color-text-secondary) mt-1">
                   {t("reports:pipeline.documentCount", {
@@ -463,7 +464,7 @@ export function ReportsPage() {
                   {t("reports:pipeline.awaitingPayment")}
                 </p>
                 <p className="text-lg sm:text-2xl font-bold">
-                  {formatCurrency(progress?.awaiting_payment_total ?? 0)}
+                  <FitAmount>{formatCurrency(progress?.awaiting_payment_total ?? 0)}</FitAmount>
                 </p>
                 <p className="text-xs text-(--color-text-secondary) mt-1">
                   {t("reports:pipeline.documentCount", {
@@ -476,7 +477,7 @@ export function ReportsPage() {
                   {t("reports:pipeline.overdue")}
                 </p>
                 <p className="text-lg sm:text-2xl font-bold text-amber-700 dark:text-amber-300">
-                  {formatCurrency(progress?.overdue_total ?? 0)}
+                  <FitAmount>{formatCurrency(progress?.overdue_total ?? 0)}</FitAmount>
                 </p>
                 <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                   {t("reports:pipeline.documentCount", { count: progress?.overdue_count ?? 0 })}
@@ -663,17 +664,17 @@ export function ReportsPage() {
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:totalHt")}</p>
                   <p className="text-lg sm:text-2xl font-bold">
-                    {formatCurrency(
-                      revenueData.reduce((sum, r) => sum + r.revenue_before_tax, 0)
-                    )}
+                    <FitAmount>
+                      {formatCurrency(revenueData.reduce((sum, r) => sum + r.revenue_before_tax, 0))}
+                    </FitAmount>
                   </p>
                 </div>
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:totalTtc")}</p>
                   <p className="text-lg sm:text-2xl font-bold">
-                    {formatCurrency(
-                      revenueData.reduce((sum, r) => sum + r.revenue_total, 0)
-                    )}
+                    <FitAmount>
+                      {formatCurrency(revenueData.reduce((sum, r) => sum + r.revenue_total, 0))}
+                    </FitAmount>
                   </p>
                 </div>
               </div>
@@ -909,16 +910,16 @@ export function ReportsPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-(--color-border-primary)">
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:profitMargin.revenue")}</p>
-                  <p className="text-lg sm:text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
+                  <p className="text-lg sm:text-2xl font-bold"><FitAmount>{formatCurrency(totalRevenue)}</FitAmount></p>
                 </div>
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:profitMargin.cost")}</p>
-                  <p className="text-lg sm:text-2xl font-bold">{formatCurrency(totalCost)}</p>
+                  <p className="text-lg sm:text-2xl font-bold"><FitAmount>{formatCurrency(totalCost)}</FitAmount></p>
                 </div>
                 <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
                   <p className="text-sm text-green-600 dark:text-green-400">{t("reports:profitMargin.margin")}</p>
                   <p className="text-lg sm:text-2xl font-bold text-green-700 dark:text-green-300">
-                    {formatCurrency(totalMargin)}
+                    <FitAmount>{formatCurrency(totalMargin)}</FitAmount>
                   </p>
                 </div>
                 <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
@@ -1000,7 +1001,7 @@ export function ReportsPage() {
               <div className="pt-4 border-t border-(--color-border-primary)">
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:supplierSpend.total")}</p>
-                  <p className="text-lg sm:text-2xl font-bold">{formatCurrency(totalSpend)}</p>
+                  <p className="text-lg sm:text-2xl font-bold"><FitAmount>{formatCurrency(totalSpend)}</FitAmount></p>
                 </div>
               </div>
             )}
@@ -1159,7 +1160,7 @@ export function ReportsPage() {
                 <div className="p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
                   <p className="text-sm text-primary-600 dark:text-primary-400">{t("reports:quoteConversion.convertedAmount")}</p>
                   <p className="text-lg sm:text-2xl font-bold text-primary-700 dark:text-primary-300">
-                    {formatCurrency(conversionData.converted_amount)}
+                    <FitAmount>{formatCurrency(conversionData.converted_amount)}</FitAmount>
                   </p>
                 </div>
               </div>
@@ -1497,7 +1498,7 @@ export function ReportsPage() {
               <div className="pt-4 border-t border-(--color-border-primary)">
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                   <p className="text-sm text-(--color-text-secondary)">{t("reports:inventoryValuation.totalValue")}</p>
-                  <p className="text-lg sm:text-2xl font-bold">{formatCurrency(totalValue)}</p>
+                  <p className="text-lg sm:text-2xl font-bold"><FitAmount>{formatCurrency(totalValue)}</FitAmount></p>
                 </div>
               </div>
             )}
@@ -1588,7 +1589,7 @@ export function ReportsPage() {
                   <p className="text-sm text-(--color-text-secondary)">
                     {t("reports:expensesByCategory.total")}
                   </p>
-                  <p className="text-lg sm:text-2xl font-bold">{formatCurrency(report?.total ?? 0)}</p>
+                  <p className="text-lg sm:text-2xl font-bold"><FitAmount>{formatCurrency(report?.total ?? 0)}</FitAmount></p>
                 </div>
               </div>
             )}
@@ -1671,11 +1672,11 @@ export function ReportsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                 <p className="text-sm text-(--color-text-secondary)">{t("reports:taxSummary.salesVat")}</p>
-                <p className="text-lg sm:text-2xl font-bold">{formatCurrency(ts.sales.total_vat)}</p>
+                <p className="text-lg sm:text-2xl font-bold"><FitAmount>{formatCurrency(ts.sales.total_vat)}</FitAmount></p>
               </div>
               <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
                 <p className="text-sm text-(--color-text-secondary)">{t("reports:taxSummary.purchasesVat")}</p>
-                <p className="text-lg sm:text-2xl font-bold">{formatCurrency(ts.purchases.total_vat)}</p>
+                <p className="text-lg sm:text-2xl font-bold"><FitAmount>{formatCurrency(ts.purchases.total_vat)}</FitAmount></p>
               </div>
               <div
                 className={
@@ -1686,14 +1687,14 @@ export function ReportsPage() {
               >
                 <p className="text-sm text-primary-600 dark:text-primary-400">{t("reports:taxSummary.netVat")}</p>
                 <p className="text-lg sm:text-2xl font-bold text-primary-700 dark:text-primary-300">
-                  {formatCurrency(ts.net_vat)}
+                  <FitAmount>{formatCurrency(ts.net_vat)}</FitAmount>
                 </p>
               </div>
               {ts.stamp_duty.enabled && (
                 <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
                   <p className="text-sm text-amber-600 dark:text-amber-400">{t("reports:taxSummary.stampDutyDue")}</p>
                   <p className="text-lg sm:text-2xl font-bold text-amber-700 dark:text-amber-300">
-                    {formatCurrency(ts.stamp_duty.amount_due)}
+                    <FitAmount>{formatCurrency(ts.stamp_duty.amount_due)}</FitAmount>
                   </p>
                 </div>
               )}

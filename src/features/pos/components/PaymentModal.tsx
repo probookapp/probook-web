@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Banknote, CreditCard, FileCheck, Landmark, UserRound } from "lucide-react";
+import { FitAmount } from "@/components/ui";
 import { formatCurrency } from "@/lib/utils";
 import { computeStampDuty, stampDutyApplies } from "@/lib/stamp-duty";
 import { missingChequeMentions } from "@/lib/cheque-mentions";
@@ -261,7 +262,7 @@ export function PaymentModal({
           {/* Total */}
           <div className="text-center">
             <p className="text-sm text-(--color-text-secondary)">{t("totalToPay")}</p>
-            <p className="text-4xl font-bold">{formatAmount(dueNow)}</p>
+            <p className="text-4xl font-bold"><FitAmount>{formatAmount(dueNow)}</FitAmount></p>
             {stampDuty > 0 && (
               // Named and itemised: the customer is paying a tax on top of the
               // goods, not a higher price for them.
@@ -365,7 +366,7 @@ export function PaymentModal({
                 <div className="p-4 bg-green-100 dark:bg-green-900/30 rounded-lg text-center">
                   <p className="text-sm text-green-700 dark:text-green-300">{t("change")}</p>
                   <p className="text-3xl font-bold text-green-700 dark:text-green-300">
-                    {formatAmount(change)}
+                    <FitAmount>{formatAmount(change)}</FitAmount>
                   </p>
                 </div>
               )}
@@ -482,7 +483,7 @@ export function PaymentModal({
               }`}
             >
               <p className="text-sm">{t("leftOnAccount")}</p>
-              <p className="text-2xl font-bold">{formatAmount(remaining)}</p>
+              <p className="text-2xl font-bold"><FitAmount>{formatAmount(remaining)}</FitAmount></p>
               {!hasClient && <p className="mt-1 text-xs">{t("creditNeedsClient")}</p>}
             </div>
           )}
