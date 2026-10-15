@@ -69,4 +69,34 @@ test.describe("Table ergonomics", () => {
     await issuedRow.getByText("Ergonomie SARL").click();
     await expect(page).toHaveURL(new RegExp(`/en/invoices/${issued.body.id}$`));
   });
+
+  test("a phone card leads with the client, and tapping it opens the quote", async ({ page }) => {
+    const client = await setupClient(page, "Entreprise Benali Frères Import Export");
+    const quote = await apiPost(page, "/api/quotes", {
+      client_id: client.id,
+      issue_date: "2026-10-08",
+      validity_date: "2026-11-08",
+      lines: LINE,
+    });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/en/quotes");
+
+    // The client is the card's title; the number sits in the small grey line.
+    const title = page.getByText(client.name as string, { exact: true }).filter({ visible: true });
+    const number = page.getByText(quote.body.quote_number as string).filter({ visible: true });
+    await expect(title).toHaveCSS("font-weight", "600");
+    expect(parseFloat(await number.evaluate((el) => getComputedStyle(el).fontSize))).toBeLessThan(
+      parseFloat(await title.evaluate((el) => getComputedStyle(el).fontSize))
+    );
+
+    // One inline action (edit, on a draft) and the rest behind "⋯".
+    await expect(page.getByRole("button", { name: "Duplicate" }).filter({ visible: true })).toHaveCount(0);
+    await page.getByRole("button", { name: "More actions" }).filter({ visible: true }).click();
+    await expect(page.getByRole("menuitem", { name: "Duplicate" })).toBeVisible();
+    await page.keyboard.press("Escape");
+    await page.screenshot({ path: test.info().outputPath("phone-quotes.png") });
+
+    await title.click();
+    await expect(page).toHaveURL(new RegExp(`/en/quotes/${quote.body.id}$`));
+  });
 });

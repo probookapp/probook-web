@@ -19,6 +19,11 @@ const PAGES: { path: string; heading: RegExp }[] = [
   { path: "/en/admin/referrals", heading: /referral/i },
   { path: "/en/admin/rate-limits", heading: /rate limit/i },
   { path: "/en/admin/subscription-invoices", heading: /invoice/i },
+  { path: "/en/admin/tenants", heading: /tenants/i },
+  { path: "/en/admin/users", heading: /users/i },
+  { path: "/en/admin/subscriptions", heading: /subscriptions/i },
+  { path: "/en/admin/subscriptions/requests", heading: /subscription requests/i },
+  { path: "/en/admin/audit-logs", heading: /audit logs/i },
 ];
 
 /** Width the document actually needs vs the width it has. */
@@ -41,7 +46,9 @@ test.describe("Admin dashboard at 390 px", () => {
       await expect(page.getByRole("heading", { name: target.heading }).first()).toBeVisible({
         timeout: 30_000,
       });
-      // Tables are desktop-only now; the card list is what a phone gets.
+      // Tables are desktop-only now; the card list is what a phone gets. Waiting
+      // for it also keeps the overflow check off the loading spinner.
+      await expect(page.locator(".md\\:hidden.divide-y").first()).toBeVisible({ timeout: 30_000 });
       await expect(page.locator(".hidden.md\\:block").first()).toBeHidden();
 
       const { scrollWidth, clientWidth } = await horizontalOverflow(page);
@@ -54,6 +61,32 @@ test.describe("Admin dashboard at 390 px", () => {
         path: `test-results/verify-mobile-${target.path.split("/").pop()}.png`,
       });
     }
+  });
+});
+
+test.describe("Admin cards at 390 px", () => {
+  test.use({ viewport: MOBILE });
+
+  test("a tenant card opens the tenant and folds its actions into the row menu", async ({ page }) => {
+    const { company } = await signUp(page);
+    await setupPlatformAdmin(page);
+
+    await page.goto("/en/admin/tenants");
+    await page.locator('input[name="tenant-search"]').fill(company);
+    const name = page.getByText(company, { exact: true }).filter({ visible: true }).first();
+    await expect(name).toBeVisible({ timeout: 30_000 });
+
+    // Same menu as the desktop row: Edit inline, the rest behind "More actions".
+    const menu = page.getByRole("button", { name: "More actions" }).filter({ visible: true }).first();
+    await menu.click();
+    await expect(page.getByRole("menuitem", { name: /impersonate/i })).toBeVisible();
+    await expect(page.getByRole("menuitem", { name: /delete/i })).toBeVisible();
+    await page.keyboard.press("Escape");
+    // The menu closing does not count as a tap on the card.
+    await expect(page).toHaveURL(/\/admin\/tenants$/);
+
+    await name.click();
+    await expect(page).toHaveURL(/\/admin\/tenants\/[^/]+$/, { timeout: 30_000 });
   });
 });
 

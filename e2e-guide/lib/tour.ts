@@ -553,10 +553,26 @@ export class Tour {
   }
 
   /**
-   * Run a row's action wherever the row keeps it: the icon beside the menu when
-   * it is the row's primary action, otherwise an item of the "⋯" menu — which
+   * Run a list action wherever the list keeps it: the icon beside the menu when
+   * it is the primary action, otherwise an item of the "⋯" menu — which
    * the viewer then sees being opened, as they would do it themselves.
    */
+  async clickAction(label: string, opts: { settleMs?: number } = {}) {
+    const inline = this.action(label);
+    if (await inline.count()) {
+      await this.click(inline, opts);
+      return;
+    }
+    // Phone lists fold the rarer actions into "⋯" too; the search has left one
+    // card on screen, so the first visible menu is that card's.
+    await this.click(this.action(t("common:buttons.moreActions")), { settleMs: 350 });
+    await this.click(
+      this.page.getByRole("menuitem", { name: label, exact: true }).filter({ visible: true }).first(),
+      opts
+    );
+  }
+
+  /** As clickAction, inside the desktop table row containing `rowText`. */
   async clickRowAction(rowText: string, label: string, opts: { settleMs?: number } = {}) {
     const inline = this.rowAction(rowText, label);
     if (await inline.count()) {

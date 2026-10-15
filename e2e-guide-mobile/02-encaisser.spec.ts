@@ -63,7 +63,7 @@ test("Mobile 2 — Retrouver une facture et encaisser", async ({ page }) => {
   await tour.type(page.locator('input[name="invoice-search"]'), "Atlas");
   await tour.pause(1200);
   // La recherche ne laisse qu'une entrée : l'action visible est la sienne.
-  await tour.click(tour.action(t("common:buttons.view")), { settleMs: 2000 });
+  await tour.clickAction(t("common:buttons.view"), { settleMs: 2000 });
 
   await tour.say("Le client règle : on enregistre le versement.");
   await tour.click(page.getByRole("button", { name: t("common:buttons.add"), exact: true }), {
