@@ -33,8 +33,7 @@ import { formatDate } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { DocumentTagsRow } from "@/components/documents/DocumentTagsRow";
 import type { DeliveryNoteStatus } from "@/types";
-import { NUMERIC_CELL } from "@/components/ui";
-import { bundleRoles } from "@/lib/bundles";
+import { DocumentLinesTable } from "@/components/documents/DocumentLinesTable";
 
 export function DeliveryNoteViewPage() {
   const { t } = useTranslation(["delivery", "common"]);
@@ -135,9 +134,6 @@ export function DeliveryNoteViewPage() {
       </div>
     );
   }
-
-  // Packs: which lines are a pack, which are its components (src/lib/bundles.ts).
-  const roles = bundleRoles(deliveryNote.lines);
 
   return (
     <div className="space-y-6">
@@ -297,50 +293,15 @@ export function DeliveryNoteViewPage() {
           <CardTitle className="text-base">{t("delivery:lines.title")}</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
-          {/* Mobile line items */}
-          <div className="md:hidden divide-y divide-(--color-border-primary)">
-            {deliveryNote.lines.map((line, index) => (
-              // A pack component is listed under its pack, indented.
-              <div key={line.id} className={roles[index].role === "child" ? "ps-8 pe-4 py-2" : "px-4 py-3"}>
-                <p className={roles[index].role === "child" ? "text-xs text-(--color-text-secondary)" : "text-sm font-medium"}>
-                  {line.description}
-                </p>
-                <div className="flex items-center gap-3 mt-1 text-sm text-(--color-text-secondary)">
-                  <span>{line.quantity}</span>
-                  <span>{line.unit || "-"}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-          {/* Desktop line items table */}
-          <div className="hidden md:block overflow-x-auto">
-          <table className="w-full min-w-80">
-            <thead className="bg-(--color-bg-secondary) border-b border-(--color-border-primary)">
-              <tr>
-                <th className="text-start py-2 px-3 text-sm font-medium text-(--color-text-secondary)">
-                  {t("delivery:lines.description")}
-                </th>
-                <th className="text-end py-2 px-3 text-sm font-medium text-(--color-text-secondary) w-20">
-                  {t("delivery:lines.quantity")}
-                </th>
-                <th className="text-start py-2 px-3 text-sm font-medium text-(--color-text-secondary) w-20">
-                  {t("delivery:lines.unit")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {deliveryNote.lines.map((line, index) => (
-                <tr key={line.id} className={index % 2 === 1 ? "bg-(--color-bg-secondary)" : ""}>
-                  <td className={roles[index].role === "child" ? "py-1.5 ps-8 pe-3 text-xs text-(--color-text-secondary)" : "py-2 px-3 text-sm"}>
-                    {line.description}
-                  </td>
-                  <td className={`py-2 px-3 text-sm ${NUMERIC_CELL}`}>{line.quantity}</td>
-                  <td className="py-2 px-3 text-sm">{line.unit || "-"}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          </div>
+          <DocumentLinesTable
+            lines={deliveryNote.lines}
+            variant="delivery"
+            labels={{
+              description: t("delivery:lines.description"),
+              quantity: t("delivery:lines.quantity"),
+              unit: t("delivery:lines.unit"),
+            }}
+          />
         </CardContent>
       </Card>
 
