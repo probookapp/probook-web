@@ -257,7 +257,11 @@ export function SearchableSelect({
             cn(FIELD_HEIGHT, "flex items-center gap-2 text-start", clearable && "pe-10")
           )}
         >
-          <span className={cn("flex-1 truncate", !selectedOption && "text-(--color-text-tertiary)")}>
+          <span
+            className={cn("flex-1 truncate", !selectedOption && "text-(--color-text-tertiary)")}
+            // A long label is cut by the field width: the full text on hover.
+            title={selectedOption?.label}
+          >
             {selectedOption?.label || placeholder || ""}
           </span>
           {!clearable && (
