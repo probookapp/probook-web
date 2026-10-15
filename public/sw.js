@@ -260,9 +260,14 @@ self.addEventListener("fetch", (event) => {
           // Extract locale from URL path (e.g. /fr/dashboard → "fr")
           const pathLocale = new URL(request.url).pathname.split("/")[1];
           const locale = SUPPORTED_LOCALES.includes(pathLocale) ? pathLocale : "en";
-          return caches.match(request).then(
-            (cached) => cached || caches.match(`/${locale}/offline`) || caches.match("/")
-          );
+          // Each match resolves to undefined on a miss, so they are chained —
+          // `a || caches.match(b)` stopped at the first promise, truthy even
+          // when empty, and respondWith(undefined) is a network error.
+          return caches
+            .match(request)
+            .then((cached) => cached || caches.match(`/${locale}/offline`))
+            .then((cached) => cached || caches.match("/"))
+            .then((cached) => cached || Response.error());
         })
     );
     return;

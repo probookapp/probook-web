@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { RefreshCw } from "lucide-react";
 
@@ -8,8 +8,21 @@ export function ServiceWorkerRegistration() {
   const { t } = useTranslation("common");
   const [showUpdateBanner, setShowUpdateBanner] = useState(false);
   const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
+  // Set when the user clicks "update": only then is a controller change ours to
+  // reload for. sw.js calls clients.claim(), so the very first visit also fires
+  // controllerchange (no controller → this worker), and reloading on that
+  // wiped whatever the visitor had started typing, the sign-up form included.
+  const updateRequested = useRef(false);
 
   useEffect(() => {
+    // Not in development: dev chunk URLs are not content-hashed, so the
+    // worker's cache-first rule for /_next/static/ serves yesterday's code
+    // after an edit. Drop a worker an earlier dev session left behind.
+    if (process.env.NODE_ENV !== "production") {
+      navigator.serviceWorker?.getRegistrations().then((regs) => regs.forEach((r) => r.unregister()));
+      return;
+    }
+
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker
         .register("/sw.js")
@@ -47,7 +60,7 @@ export function ServiceWorkerRegistration() {
       // Listen for controller change (after skipWaiting)
       let refreshing = false;
       navigator.serviceWorker.addEventListener("controllerchange", () => {
-        if (refreshing) return;
+        if (refreshing || !updateRequested.current) return;
         refreshing = true;
         window.location.reload();
       });
@@ -61,6 +74,7 @@ export function ServiceWorkerRegistration() {
 
   const handleUpdate = useCallback(() => {
     if (waitingWorker) {
+      updateRequested.current = true;
       waitingWorker.postMessage({ type: "SKIP_WAITING" });
     }
   }, [waitingWorker]);
