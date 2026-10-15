@@ -34,6 +34,8 @@ import {
   TagChip,
   PageHeader,
   RowActions,
+  ListCard,
+  type RowAction,
   ColumnPicker,
   getQuoteStatusVariant,
   getStatusLabel,
@@ -175,6 +177,67 @@ export function QuotesPage() {
     );
   }
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const quoteActions = (quote: QuoteListItem): RowAction[] => [
+    {
+      key: "convert",
+      label: t("quotes:actions.convertToInvoice"),
+      icon: ArrowRight,
+      onSelect: () => setConvertConfirm(quote),
+      primary: true,
+      tone: "success",
+      hidden: !(quote.status === "ACCEPTED" && canConvertToInvoice),
+    },
+    {
+      key: "view",
+      label: t("common:buttons.view"),
+      icon: Eye,
+      onSelect: () => router.push(`/quotes/${quote.id}`),
+    },
+    {
+      key: "edit",
+      label: t("common:buttons.edit"),
+      icon: Pencil,
+      onSelect: () => router.push(`/quotes/${quote.id}/edit`),
+      primary: quote.status === "DRAFT",
+      hidden: !canEdit,
+    },
+    {
+      key: "pdf",
+      label: t("quotes:actions.downloadPdf"),
+      icon: FileDown,
+      onSelect: () => pdfDownload.download("quote", quote.id),
+      disabled: pdfDownload.pendingId === quote.id,
+    },
+    {
+      key: "duplicate",
+      label: t("quotes:actions.duplicate"),
+      icon: Copy,
+      onSelect: () => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateQuote.mutate(quote.id); },
+      disabled: duplicateQuote.isPending,
+      hidden: !canCreate,
+    },
+    {
+      key: "archive",
+      label: t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive"),
+      icon: quote.archived_at ? ArchiveRestore : Archive,
+      onSelect: () => {
+        if (isDemoMode) { showSubscribePrompt(); return; }
+        archiveQuote.mutate({ id: quote.id, archived: !quote.archived_at });
+      },
+      disabled: archiveQuote.isPending,
+      hidden: !canEdit,
+    },
+    {
+      key: "delete",
+      label: t("common:buttons.delete"),
+      icon: Trash2,
+      onSelect: () => setDeleteConfirmId(quote.id),
+      danger: true,
+      hidden: !canDelete,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -248,46 +311,35 @@ export function QuotesPage() {
           <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
             {filteredQuotes && filteredQuotes.length > 0 ? (
               filteredQuotes.map((quote) => (
-                <div key={quote.id} className="p-4 flex items-start gap-3">
-                  <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selection.isSelected(quote.id)}
-                      onChange={() => selection.toggle(quote.id)}
-                      className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
-                  </label>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono font-medium text-(--color-text-primary)">{quote.quote_number}</span>
-                      <Badge variant={getQuoteStatusVariant(quote.status)}>
-                        {getStatusLabel(quote.status)}
-                      </Badge>
+                <ListCard
+                  key={quote.id}
+                  onActivate={() => router.push(`/quotes/${quote.id}`)}
+                  leading={
+                    <>
+                      <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selection.isSelected(quote.id)}
+                          onChange={() => selection.toggle(quote.id)}
+                          className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        />
+                      </label>
+                    </>
+                  }
+                  title={quote.client?.name || "-"}
+                  badge={<Badge variant={getQuoteStatusVariant(quote.status)}>{getStatusLabel(quote.status)}</Badge>}
+                  meta={<><span className="font-mono">{quote.quote_number}</span> · {formatDate(quote.issue_date)} → {formatDate(quote.validity_date)}</>}
+                  amount={formatCurrency(quote.total)}
+                  actions={<RowActions actions={quoteActions(quote)} />}
+                >
+                  {(quote.tags?.length ?? 0) > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {quote.tags?.map((tag) => (
+                        <TagChip key={tag.id} name={tag.name} color={tag.color} />
+                      ))}
                     </div>
-                    <p className="text-sm text-(--color-text-secondary) mt-0.5">{quote.client?.name || "-"}</p>
-                    {(quote.tags?.length ?? 0) > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {quote.tags?.map((tag) => (
-                          <TagChip key={tag.id} name={tag.name} color={tag.color} />
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-(--color-text-secondary)">{formatDate(quote.issue_date)} → {formatDate(quote.validity_date)}</span>
-                      <span className="font-medium text-(--color-text-primary)">{formatCurrency(quote.total)}</span>
-                    </div>
-                    <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
-                      <button onClick={() => router.push(`/quotes/${quote.id}`)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600" title={t("common:buttons.view")} aria-label={t("common:buttons.view")}><Eye className="h-4 w-4" /></button>
-                      {canEdit && <button onClick={() => router.push(`/quotes/${quote.id}/edit`)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600" title={t("common:buttons.edit")} aria-label={t("common:buttons.edit")}><Pencil className="h-4 w-4" /></button>}
-                      {canCreate && <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateQuote.mutate(quote.id); }} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-blue-600" title={t("quotes:actions.duplicate")} aria-label={t("quotes:actions.duplicate")} disabled={duplicateQuote.isPending}><Copy className="h-4 w-4" /></button>}
-                      {quote.status === "ACCEPTED" && canConvertToInvoice && (
-                        <button onClick={() => setConvertConfirm(quote)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-green-600" title={t("quotes:actions.convertToInvoice")} aria-label={t("quotes:actions.convertToInvoice")}><ArrowRight className="h-4 w-4" /></button>
-                      )}
-                      {canEdit && <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } archiveQuote.mutate({ id: quote.id, archived: !quote.archived_at }); }} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-amber-600" title={t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")} aria-label={t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive")} disabled={archiveQuote.isPending}>{quote.archived_at ? <ArchiveRestore className="h-4 w-4" /> : <Archive className="h-4 w-4" />}</button>}
-                      {canDelete && <button onClick={() => setDeleteConfirmId(quote.id)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
-                    </div>
-                  </div>
-                </div>
+                  )}
+                </ListCard>
               ))
             ) : (
               <div className="py-8 text-center text-gray-500">
@@ -371,67 +423,7 @@ export function QuotesPage() {
                       </TableNumericCell>
                     )}
                     <TableCell>
-                      <RowActions
-                        actions={[
-                          {
-                            key: "convert",
-                            label: t("quotes:actions.convertToInvoice"),
-                            icon: ArrowRight,
-                            onSelect: () => setConvertConfirm(quote),
-                            primary: true,
-                            tone: "success",
-                            hidden: !(quote.status === "ACCEPTED" && canConvertToInvoice),
-                          },
-                          {
-                            key: "view",
-                            label: t("common:buttons.view"),
-                            icon: Eye,
-                            onSelect: () => router.push(`/quotes/${quote.id}`),
-                          },
-                          {
-                            key: "edit",
-                            label: t("common:buttons.edit"),
-                            icon: Pencil,
-                            onSelect: () => router.push(`/quotes/${quote.id}/edit`),
-                            primary: quote.status === "DRAFT",
-                            hidden: !canEdit,
-                          },
-                          {
-                            key: "pdf",
-                            label: t("quotes:actions.downloadPdf"),
-                            icon: FileDown,
-                            onSelect: () => pdfDownload.download("quote", quote.id),
-                            disabled: pdfDownload.pendingId === quote.id,
-                          },
-                          {
-                            key: "duplicate",
-                            label: t("quotes:actions.duplicate"),
-                            icon: Copy,
-                            onSelect: () => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateQuote.mutate(quote.id); },
-                            disabled: duplicateQuote.isPending,
-                            hidden: !canCreate,
-                          },
-                          {
-                            key: "archive",
-                            label: t(quote.archived_at ? "common:buttons.unarchive" : "common:buttons.archive"),
-                            icon: quote.archived_at ? ArchiveRestore : Archive,
-                            onSelect: () => {
-                              if (isDemoMode) { showSubscribePrompt(); return; }
-                              archiveQuote.mutate({ id: quote.id, archived: !quote.archived_at });
-                            },
-                            disabled: archiveQuote.isPending,
-                            hidden: !canEdit,
-                          },
-                          {
-                            key: "delete",
-                            label: t("common:buttons.delete"),
-                            icon: Trash2,
-                            onSelect: () => setDeleteConfirmId(quote.id),
-                            danger: true,
-                            hidden: !canDelete,
-                          },
-                        ]}
-                      />
+                      <RowActions actions={quoteActions(quote)} />
                     </TableCell>
                   </TableRow>
                 ))

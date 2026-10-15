@@ -27,6 +27,8 @@ import {
   Badge,
   PageHeader,
   RowActions,
+  ListCard,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { PurchaseForm } from "./components/PurchaseForm";
@@ -252,6 +254,56 @@ export function PurchasesPage() {
     );
   }
 
+  /** Opening a purchase: the form while it is still pending and editable, its detail otherwise. */
+  const openPurchase = (purchase: PurchaseOrderListItem) =>
+    purchase.status === "PENDING" && canEdit ? handleOpenForm(purchase) : setViewingPurchase(purchase);
+
+  /** The row's actions, shared by the table row and the phone card. */
+  const purchaseActions = (purchase: PurchaseOrderListItem): RowAction[] => {
+    const isPending = purchase.status === "PENDING";
+    const isReceivable = isPending || purchase.status === "PARTIALLY_RECEIVED";
+    return [
+      {
+        key: "confirm",
+        label: t("actions.confirm"),
+        icon: CheckCircle,
+        onSelect: () => setConfirmingPurchase(purchase),
+        primary: true,
+        tone: "success",
+        hidden: !(isReceivable && canEdit),
+      },
+      {
+        key: "view",
+        label: tCommon("buttons.view"),
+        icon: Eye,
+        onSelect: () => setViewingPurchase(purchase),
+      },
+      {
+        key: "edit",
+        label: tCommon("buttons.edit"),
+        icon: Pencil,
+        onSelect: () => handleOpenForm(purchase),
+        hidden: !(isPending && canEdit),
+      },
+      {
+        key: "cancel",
+        label: t("actions.cancel"),
+        icon: XCircle,
+        onSelect: () => setCancelConfirmId(purchase.id),
+        danger: true,
+        hidden: !(isPending && canEdit),
+      },
+      {
+        key: "delete",
+        label: tCommon("buttons.delete"),
+        icon: Trash2,
+        onSelect: () => setDeleteConfirmId(purchase.id),
+        danger: true,
+        hidden: !(isPending && canDelete),
+      },
+    ];
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -300,12 +352,12 @@ export function PurchasesPage() {
           {/* Mobile card view */}
           <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
             {filteredPurchases.length > 0 ? (
-              filteredPurchases.map((purchase) => {
-                const isPending = purchase.status === "PENDING";
-                const isReceivable = isPending || purchase.status === "PARTIALLY_RECEIVED";
-                return (
-                  <div key={purchase.id} className="p-4 flex items-start gap-3">
-                    {isPending && (
+              filteredPurchases.map((purchase) => (
+                <ListCard
+                  key={purchase.id}
+                  onActivate={() => openPurchase(purchase)}
+                  leading={
+                    purchase.status === "PENDING" && (
                       <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
                         <input
                           type="checkbox"
@@ -314,94 +366,23 @@ export function PurchasesPage() {
                           className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
                         />
                       </label>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {purchase.order_number}
-                        </p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100 shrink-0">
-                          {formatCurrency(purchase.total)}
-                        </p>
-                      </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {purchase.supplier?.name ?? "-"}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {formatDate(purchase.order_date)}
-                      </p>
-                      <div className="flex gap-2 mt-1">
-                        <Badge variant={getStatusBadgeVariant(purchase.status)}>
-                          {t(`status.${purchase.status}`)}
-                        </Badge>
-                        <Badge
-                          variant={getPaymentBadgeVariant(
-                            purchase.payment_status
-                          )}
-                        >
-                          {t(
-                            `paymentStatus.${purchase.payment_status}`
-                          )}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
-                        <button
-                          onClick={() => setViewingPurchase(purchase)}
-                          className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400"
-                          title={tCommon("buttons.view")}
-                          aria-label={tCommon("buttons.view")}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        {isPending && canEdit && (
-                          <button
-                            onClick={() => handleOpenForm(purchase)}
-                            className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400"
-                            title={tCommon("buttons.edit")}
-                            aria-label={tCommon("buttons.edit")}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                        )}
-                        {isReceivable && canEdit && (
-                        <button
-                          onClick={() => setConfirmingPurchase(purchase)}
-                          className="p-3 rounded-md text-gray-500 hover:text-green-600 dark:hover:text-green-400"
-                          title={t("actions.confirm")}
-                          aria-label={t("actions.confirm")}
-                        >
-                          <CheckCircle className="h-4 w-4" />
-                        </button>
-                        )}
-                        {isPending && (
-                          <>
-                            {canEdit && (
-                            <button
-                              onClick={() => setCancelConfirmId(purchase.id)}
-                              className="p-3 rounded-md text-gray-500 hover:text-yellow-600 dark:hover:text-yellow-400"
-                              title={t("actions.cancel")}
-                              aria-label={t("actions.cancel")}
-                            >
-                              <XCircle className="h-4 w-4" />
-                            </button>
-                            )}
-                            {canDelete && (
-                            <button
-                              onClick={() => setDeleteConfirmId(purchase.id)}
-                              className="p-3 rounded-md text-gray-500 hover:text-red-600"
-                              title={tCommon("buttons.delete")}
-                              aria-label={tCommon("buttons.delete")}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </button>
-                            )}
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
+                    )
+                  }
+                  title={purchase.supplier?.name ?? "-"}
+                  badge={
+                    <Badge variant={getStatusBadgeVariant(purchase.status)}>
+                      {t(`status.${purchase.status}`)}
+                    </Badge>
+                  }
+                  meta={<><span className="font-mono">{purchase.order_number}</span> · {formatDate(purchase.order_date)}</>}
+                  amount={formatCurrency(purchase.total)}
+                  actions={<RowActions actions={purchaseActions(purchase)} />}
+                >
+                  <Badge variant={getPaymentBadgeVariant(purchase.payment_status)}>
+                    {t(`paymentStatus.${purchase.payment_status}`)}
+                  </Badge>
+                </ListCard>
+              ))
             ) : (
               <div className="py-8 text-center text-gray-500 dark:text-gray-400">
                 {t("noPurchases")}
@@ -442,13 +423,10 @@ export function PurchasesPage() {
                 {filteredPurchases.length > 0 ? (
                   filteredPurchases.map((purchase) => {
                     const isPending = purchase.status === "PENDING";
-                    const isReceivable = isPending || purchase.status === "PARTIALLY_RECEIVED";
                     return (
                       <TableRow
                         key={purchase.id}
-                        onActivate={() =>
-                          isPending && canEdit ? handleOpenForm(purchase) : setViewingPurchase(purchase)
-                        }
+                        onActivate={() => openPurchase(purchase)}
                       >
                         <TableCell>
                           {isPending ? (
@@ -505,48 +483,7 @@ export function PurchasesPage() {
                           </TableNumericCell>
                         )}
                         <TableCell>
-                          <RowActions
-                            actions={[
-                              {
-                                key: "confirm",
-                                label: t("actions.confirm"),
-                                icon: CheckCircle,
-                                onSelect: () => setConfirmingPurchase(purchase),
-                                primary: true,
-                                tone: "success",
-                                hidden: !(isReceivable && canEdit),
-                              },
-                              {
-                                key: "view",
-                                label: tCommon("buttons.view"),
-                                icon: Eye,
-                                onSelect: () => setViewingPurchase(purchase),
-                              },
-                              {
-                                key: "edit",
-                                label: tCommon("buttons.edit"),
-                                icon: Pencil,
-                                onSelect: () => handleOpenForm(purchase),
-                                hidden: !(isPending && canEdit),
-                              },
-                              {
-                                key: "cancel",
-                                label: t("actions.cancel"),
-                                icon: XCircle,
-                                onSelect: () => setCancelConfirmId(purchase.id),
-                                danger: true,
-                                hidden: !(isPending && canEdit),
-                              },
-                              {
-                                key: "delete",
-                                label: tCommon("buttons.delete"),
-                                icon: Trash2,
-                                onSelect: () => setDeleteConfirmId(purchase.id),
-                                danger: true,
-                                hidden: !(isPending && canDelete),
-                              },
-                            ]}
-                          />
+                          <RowActions actions={purchaseActions(purchase)} />
                         </TableCell>
                       </TableRow>
                     );

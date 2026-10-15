@@ -35,6 +35,8 @@ import {
   TagChip,
   PageHeader,
   RowActions,
+  ListCard,
+  type RowAction,
   ColumnPicker,
   getInvoiceStatusVariantWithUrgency,
   getInvoiceStatusLabelWithUrgency,
@@ -55,6 +57,7 @@ import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { exportToCsv } from "@/lib/csv-export";
+import type { InvoiceListItem } from "@/types";
 
 export function InvoicesPage() {
   const { t } = useTranslation(["invoices", "common"]);
@@ -175,6 +178,67 @@ export function InvoicesPage() {
     );
   }
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const invoiceActions = (invoice: InvoiceListItem): RowAction[] => [
+    {
+      key: "edit",
+      label: t("common:buttons.edit"),
+      icon: Pencil,
+      onSelect: () => router.push(`/invoices/${invoice.id}/edit`),
+      primary: true,
+      hidden: !(canEdit && invoice.status === "DRAFT"),
+    },
+    {
+      key: "markPaid",
+      label: t("invoices:actions.markAsPaid"),
+      icon: CheckCircle,
+      onSelect: () => setMarkPaidId(invoice.id),
+      primary: true,
+      tone: "success",
+      hidden: !(canEdit && invoice.status === "ISSUED"),
+    },
+    {
+      key: "view",
+      label: t("common:buttons.view"),
+      icon: Eye,
+      onSelect: () => router.push(`/invoices/${invoice.id}`),
+    },
+    {
+      key: "pdf",
+      label: t("invoices:actions.downloadPdf"),
+      icon: FileDown,
+      onSelect: () => pdfDownload.download("invoice", invoice.id),
+      disabled: pdfDownload.pendingId === invoice.id,
+    },
+    {
+      key: "duplicate",
+      label: t("invoices:actions.duplicate"),
+      icon: Copy,
+      onSelect: () => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateInvoice.mutate(invoice.id); },
+      disabled: duplicateInvoice.isPending,
+      hidden: !canCreate,
+    },
+    {
+      key: "archive",
+      label: t(invoice.archived_at ? "common:buttons.unarchive" : "common:buttons.archive"),
+      icon: invoice.archived_at ? ArchiveRestore : Archive,
+      onSelect: () => {
+        if (isDemoMode) { showSubscribePrompt(); return; }
+        archiveInvoice.mutate({ id: invoice.id, archived: !invoice.archived_at });
+      },
+      disabled: archiveInvoice.isPending,
+      hidden: !canEdit,
+    },
+    {
+      key: "delete",
+      label: t("common:buttons.delete"),
+      icon: Trash2,
+      onSelect: () => setDeleteConfirmId(invoice.id),
+      danger: true,
+      hidden: !(canDelete && invoice.status === "DRAFT"),
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -248,53 +312,41 @@ export function InvoicesPage() {
           <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
             {filteredInvoices && filteredInvoices.length > 0 ? (
               filteredInvoices.map((invoice) => (
-                <div key={invoice.id} className="p-4 flex items-start gap-3">
-                  {canDelete && invoice.status === "DRAFT" && (
-                    <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selection.isSelected(invoice.id)}
-                        onChange={() => selection.toggle(invoice.id)}
-                        className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                      />
-                    </label>
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="font-mono font-medium text-(--color-text-primary)">{invoice.invoice_number}</span>
-                      <Badge variant={getInvoiceStatusVariantWithUrgency(invoice.status, invoice.due_date)}>
-                        {getInvoiceStatusLabelWithUrgency(invoice.status, invoice.due_date)}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-(--color-text-secondary) mt-0.5">{invoice.client?.name || "-"}</p>
-                    {(invoice.tags?.length ?? 0) > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {invoice.tags?.map((tag) => (
-                          <TagChip key={tag.id} name={tag.name} color={tag.color} />
-                        ))}
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between mt-1">
-                      <span className="text-xs text-(--color-text-secondary)">{formatDate(invoice.issue_date)} → {formatDate(invoice.due_date)}</span>
-                      <span className="font-medium text-(--color-text-primary)">{formatCurrency(invoice.total)}</span>
-                    </div>
-                    <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
-                      <button onClick={() => router.push(`/invoices/${invoice.id}`)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600" title={t("common:buttons.view")} aria-label={t("common:buttons.view")}><Eye className="h-4 w-4" /></button>
-                      {canEdit && invoice.status === "DRAFT" && (
-                        <button onClick={() => router.push(`/invoices/${invoice.id}/edit`)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600" title={t("common:buttons.edit")} aria-label={t("common:buttons.edit")}><Pencil className="h-4 w-4" /></button>
-                      )}
-                      {canEdit && invoice.status === "ISSUED" && (
-                        <button onClick={() => setMarkPaidId(invoice.id)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-green-600" title={t("invoices:actions.markAsPaid")} aria-label={t("invoices:actions.markAsPaid")}><CheckCircle className="h-4 w-4" /></button>
-                      )}
-                      {canCreate && (
-                        <button onClick={() => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateInvoice.mutate(invoice.id); }} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-blue-600" title={t("invoices:actions.duplicate")} aria-label={t("invoices:actions.duplicate")} disabled={duplicateInvoice.isPending}><Copy className="h-4 w-4" /></button>
-                      )}
+                <ListCard
+                  key={invoice.id}
+                  onActivate={() => router.push(`/invoices/${invoice.id}`)}
+                  leading={
+                    <>
                       {canDelete && invoice.status === "DRAFT" && (
-                        <button onClick={() => setDeleteConfirmId(invoice.id)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={t("common:buttons.delete")} aria-label={t("common:buttons.delete")}><Trash2 className="h-4 w-4" /></button>
+                        <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={selection.isSelected(invoice.id)}
+                            onChange={() => selection.toggle(invoice.id)}
+                            className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                          />
+                        </label>
                       )}
+                    </>
+                  }
+                  title={invoice.client?.name || "-"}
+                  badge={(
+                    <Badge variant={getInvoiceStatusVariantWithUrgency(invoice.status, invoice.due_date)}>
+                      {getInvoiceStatusLabelWithUrgency(invoice.status, invoice.due_date)}
+                    </Badge>
+                  )}
+                  meta={<><span className="font-mono">{invoice.invoice_number}</span> · {formatDate(invoice.issue_date)} → {formatDate(invoice.due_date)}</>}
+                  amount={formatCurrency(invoice.total)}
+                  actions={<RowActions actions={invoiceActions(invoice)} />}
+                >
+                  {(invoice.tags?.length ?? 0) > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {invoice.tags?.map((tag) => (
+                        <TagChip key={tag.id} name={tag.name} color={tag.color} />
+                      ))}
                     </div>
-                  </div>
-                </div>
+                  )}
+                </ListCard>
               ))
             ) : (
               <div className="py-8 text-center text-gray-500">
@@ -380,67 +432,7 @@ export function InvoicesPage() {
                       </TableNumericCell>
                     )}
                     <TableCell>
-                      <RowActions
-                        actions={[
-                          {
-                            key: "edit",
-                            label: t("common:buttons.edit"),
-                            icon: Pencil,
-                            onSelect: () => router.push(`/invoices/${invoice.id}/edit`),
-                            primary: true,
-                            hidden: !(canEdit && invoice.status === "DRAFT"),
-                          },
-                          {
-                            key: "markPaid",
-                            label: t("invoices:actions.markAsPaid"),
-                            icon: CheckCircle,
-                            onSelect: () => setMarkPaidId(invoice.id),
-                            primary: true,
-                            tone: "success",
-                            hidden: !(canEdit && invoice.status === "ISSUED"),
-                          },
-                          {
-                            key: "view",
-                            label: t("common:buttons.view"),
-                            icon: Eye,
-                            onSelect: () => router.push(`/invoices/${invoice.id}`),
-                          },
-                          {
-                            key: "pdf",
-                            label: t("invoices:actions.downloadPdf"),
-                            icon: FileDown,
-                            onSelect: () => pdfDownload.download("invoice", invoice.id),
-                            disabled: pdfDownload.pendingId === invoice.id,
-                          },
-                          {
-                            key: "duplicate",
-                            label: t("invoices:actions.duplicate"),
-                            icon: Copy,
-                            onSelect: () => { if (isDemoMode) { showSubscribePrompt(); return; } duplicateInvoice.mutate(invoice.id); },
-                            disabled: duplicateInvoice.isPending,
-                            hidden: !canCreate,
-                          },
-                          {
-                            key: "archive",
-                            label: t(invoice.archived_at ? "common:buttons.unarchive" : "common:buttons.archive"),
-                            icon: invoice.archived_at ? ArchiveRestore : Archive,
-                            onSelect: () => {
-                              if (isDemoMode) { showSubscribePrompt(); return; }
-                              archiveInvoice.mutate({ id: invoice.id, archived: !invoice.archived_at });
-                            },
-                            disabled: archiveInvoice.isPending,
-                            hidden: !canEdit,
-                          },
-                          {
-                            key: "delete",
-                            label: t("common:buttons.delete"),
-                            icon: Trash2,
-                            onSelect: () => setDeleteConfirmId(invoice.id),
-                            danger: true,
-                            hidden: !(canDelete && invoice.status === "DRAFT"),
-                          },
-                        ]}
-                      />
+                      <RowActions actions={invoiceActions(invoice)} />
                     </TableCell>
                   </TableRow>
                 ))

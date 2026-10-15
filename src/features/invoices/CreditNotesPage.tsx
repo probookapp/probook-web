@@ -19,6 +19,8 @@ import {
   Input,
   Badge,
   RowActions,
+  ListCard,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { useTableColumns } from "@/hooks/useTableColumns";
@@ -85,6 +87,23 @@ export function CreditNotesPage() {
     );
   }
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const creditNoteActions = (id: string): RowAction[] => [
+    {
+      key: "view",
+      label: t("common:buttons.view"),
+      icon: Eye,
+      onSelect: () => router.push(`/invoices/credit-notes/${id}`),
+    },
+    {
+      key: "delete",
+      label: t("common:buttons.delete"),
+      icon: Trash2,
+      onSelect: () => setDeleteConfirmId(id),
+      danger: true,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
@@ -130,32 +149,15 @@ export function CreditNotesPage() {
           <ul className="md:hidden divide-y divide-(--color-border-primary)">
             {filtered && filtered.length > 0 ? (
               filtered.map((cn) => (
-                <li key={cn.id} className="flex items-start gap-3 px-4 py-3">
-                  <button
-                    type="button"
-                    onClick={() => router.push(`/invoices/credit-notes/${cn.id}`)}
-                    className="min-w-0 flex-1 text-start"
-                  >
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="font-mono text-sm font-medium">{cn.credit_note_number}</span>
-                      <span className="text-sm font-medium tabular-nums whitespace-nowrap">{formatCurrency(cn.total)}</span>
-                    </span>
-                    <span className="mt-0.5 block truncate text-sm text-(--color-text-secondary)">
-                      {cn.client?.name || "-"}
-                    </span>
-                    <span className="mt-1 flex flex-wrap items-center gap-2 text-xs text-(--color-text-secondary)">
-                      {formatDate(cn.issue_date)}
-                      {cn.restocked && <Badge variant="success">{t("invoices:creditNotes.restocked")}</Badge>}
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirmId(cn.id)}
-                    className="-me-2 shrink-0 p-3 rounded-md text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
-                    title={t("common:buttons.delete")}
-                    aria-label={t("common:buttons.delete")}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                <li key={cn.id}>
+                  <ListCard
+                    onActivate={() => router.push(`/invoices/credit-notes/${cn.id}`)}
+                    title={cn.client?.name || "-"}
+                    badge={cn.restocked && <Badge variant="success">{t("invoices:creditNotes.restocked")}</Badge>}
+                    meta={<><span className="font-mono">{cn.credit_note_number}</span> · {formatDate(cn.issue_date)}</>}
+                    amount={formatCurrency(cn.total)}
+                    actions={<RowActions actions={creditNoteActions(cn.id)} />}
+                  />
                 </li>
               ))
             ) : (
@@ -196,23 +198,7 @@ export function CreditNotesPage() {
                         <TableNumericCell className="font-medium">{formatCurrency(cn.total)}</TableNumericCell>
                       )}
                       <TableCell>
-                        <RowActions
-                          actions={[
-                            {
-                              key: "view",
-                              label: t("common:buttons.view"),
-                              icon: Eye,
-                              onSelect: () => router.push(`/invoices/credit-notes/${cn.id}`),
-                            },
-                            {
-                              key: "delete",
-                              label: t("common:buttons.delete"),
-                              icon: Trash2,
-                              onSelect: () => setDeleteConfirmId(cn.id),
-                              danger: true,
-                            },
-                          ]}
-                        />
+                        <RowActions actions={creditNoteActions(cn.id)} />
                       </TableCell>
                     </TableRow>
                   ))
