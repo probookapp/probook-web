@@ -309,14 +309,7 @@ export function PurchasesPage() {
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
-        actions={
-          canCreate && (
-            <Button onClick={() => handleOpenForm()} size="sm">
-              <Plus className="h-4 w-4 me-2" />
-              {t("newPurchase")}
-            </Button>
-          )
-        }
+        primaryAction={canCreate ? { label: t("newPurchase"), icon: Plus, onClick: () => handleOpenForm() } : undefined}
       />
 
       <Card>

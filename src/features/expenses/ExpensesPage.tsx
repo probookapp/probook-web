@@ -224,20 +224,10 @@ export function ExpensesPage() {
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
-        actions={
-          <>
-            <Button variant="secondary" size="sm" onClick={() => setCategoriesOpen(true)}>
-              <Tags className="h-4 w-4 me-2" />
-              {t("categories.manage")}
-            </Button>
-            {canCreate && (
-              <Button onClick={() => handleOpenModal()} size="sm">
-                <Plus className="h-4 w-4 me-2" />
-                {t("newExpense")}
-              </Button>
-            )}
-          </>
-        }
+        secondaryActions={[
+          { key: "categories", label: t("categories.manage"), icon: Tags, onSelect: () => setCategoriesOpen(true) },
+        ]}
+        primaryAction={canCreate ? { label: t("newExpense"), icon: Plus, onClick: () => handleOpenModal() } : undefined}
       />
 
       <Card>

@@ -178,22 +178,15 @@ export function LocationsPage() {
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
-        actions={
-          tab === "locations" ? (
-            <Button onClick={() => handleOpenLocationModal()} size="sm">
-              <Plus className="h-4 w-4 me-2" />
-              {t("newLocation")}
-            </Button>
-          ) : (
-            <Button
-              onClick={() => (isDemoMode ? showSubscribePrompt() : setIsTransferModalOpen(true))}
-              size="sm"
-              disabled={(locations?.length ?? 0) < 2}
-            >
-              <Plus className="h-4 w-4 me-2" />
-              {t("transfers.newTransfer")}
-            </Button>
-          )
+        primaryAction={
+          tab === "locations"
+            ? { label: t("newLocation"), icon: Plus, onClick: () => handleOpenLocationModal() }
+            : {
+                label: t("transfers.newTransfer"),
+                icon: Plus,
+                onClick: () => (isDemoMode ? showSubscribePrompt() : setIsTransferModalOpen(true)),
+                disabled: (locations?.length ?? 0) < 2,
+              }
         }
       />
 

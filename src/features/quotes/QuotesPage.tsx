@@ -243,25 +243,26 @@ export function QuotesPage() {
       <PageHeader
         title={t("quotes:title")}
         subtitle={t("quotes:subtitle")}
-        actions={
-          <>
-            {canEdit && (
-              <Button variant="secondary" onClick={tagList.openTagsModal} size="sm">
-                <TagIcon className="h-4 w-4 me-2" />
-                {tagList.manageLabel}
-              </Button>
-            )}
-            <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredQuotes?.length}>
-              <Download className="h-4 w-4 me-2" />
-              {t("common:buttons.exportCsv")}
-            </Button>
-            {canCreate && (
-              <Button onClick={() => router.push("/quotes/new")} size="sm">
-                <Plus className="h-4 w-4 me-2" />
-                {t("quotes:newQuote")}
-              </Button>
-            )}
-          </>
+        secondaryActions={[
+          {
+            key: "labels",
+            label: tagList.manageLabel,
+            icon: TagIcon,
+            onSelect: tagList.openTagsModal,
+            hidden: !canEdit,
+          },
+          {
+            key: "export",
+            label: t("common:buttons.exportCsv"),
+            icon: Download,
+            onSelect: handleExportCsv,
+            disabled: !filteredQuotes?.length,
+          },
+        ]}
+        primaryAction={
+          canCreate
+            ? { label: t("quotes:newQuote"), icon: Plus, onClick: () => router.push("/quotes/new") }
+            : undefined
         }
       />
 

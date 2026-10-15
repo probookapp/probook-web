@@ -233,21 +233,19 @@ export function DeliveryNotesPage() {
       <PageHeader
         title={t("delivery:title")}
         subtitle={t("delivery:subtitle", "Manage your delivery notes")}
-        actions={
-          <>
-            {canEdit && (
-              <Button variant="secondary" onClick={tagList.openTagsModal} size="sm">
-                <TagIcon className="h-4 w-4 me-2" />
-                {tagList.manageLabel}
-              </Button>
-            )}
-            {canCreate && (
-              <Button onClick={() => router.push("/delivery-notes/new")} size="sm">
-                <Plus className="h-4 w-4 me-2" />
-                {t("delivery:newDeliveryNote")}
-              </Button>
-            )}
-          </>
+        secondaryActions={[
+          {
+            key: "labels",
+            label: tagList.manageLabel,
+            icon: TagIcon,
+            onSelect: tagList.openTagsModal,
+            hidden: !canEdit,
+          },
+        ]}
+        primaryAction={
+          canCreate
+            ? { label: t("delivery:newDeliveryNote"), icon: Plus, onClick: () => router.push("/delivery-notes/new") }
+            : undefined
         }
       />
 

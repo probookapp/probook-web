@@ -244,29 +244,32 @@ export function InvoicesPage() {
       <PageHeader
         title={t("invoices:title")}
         subtitle={t("invoices:subtitle")}
-        actions={
-          <>
-            <Button variant="secondary" onClick={() => router.push("/invoices/credit-notes")} size="sm">
-              <Undo2 className="h-4 w-4 me-2" />
-              {t("invoices:creditNotes.title")}
-            </Button>
-            {canEdit && (
-              <Button variant="secondary" onClick={tagList.openTagsModal} size="sm">
-                <TagIcon className="h-4 w-4 me-2" />
-                {tagList.manageLabel}
-              </Button>
-            )}
-            <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredInvoices?.length}>
-              <Download className="h-4 w-4 me-2" />
-              {t("common:buttons.exportCsv")}
-            </Button>
-            {canCreate && (
-              <Button onClick={() => router.push("/invoices/new")} size="sm">
-                <Plus className="h-4 w-4 me-2" />
-                {t("invoices:newInvoice")}
-              </Button>
-            )}
-          </>
+        secondaryActions={[
+          {
+            key: "credit-notes",
+            label: t("invoices:creditNotes.title"),
+            icon: Undo2,
+            onSelect: () => router.push("/invoices/credit-notes"),
+          },
+          {
+            key: "labels",
+            label: tagList.manageLabel,
+            icon: TagIcon,
+            onSelect: tagList.openTagsModal,
+            hidden: !canEdit,
+          },
+          {
+            key: "export",
+            label: t("common:buttons.exportCsv"),
+            icon: Download,
+            onSelect: handleExportCsv,
+            disabled: !filteredInvoices?.length,
+          },
+        ]}
+        primaryAction={
+          canCreate
+            ? { label: t("invoices:newInvoice"), icon: Plus, onClick: () => router.push("/invoices/new") }
+            : undefined
         }
       />
 

@@ -305,25 +305,27 @@ export function ProductsPage() {
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
-        actions={
-          activeTab === "products" ? (
-            <>
-              <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredProducts?.length}>
-                <Download className="h-4 w-4 me-2" />
-                {tCommon("buttons.exportCsv")}
-              </Button>
-              <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
-                <Upload className="h-4 w-4 me-2" />
-                {tCommon("buttons.import")}
-              </Button>
-              {canCreate && (
-                <Button onClick={() => handleOpenModal()} size="sm">
-                  <Plus className="h-4 w-4 me-2" />
-                  {t("newProduct")}
-                </Button>
-              )}
-            </>
-          ) : undefined
+        secondaryActions={[
+          {
+            key: "export",
+            label: tCommon("buttons.exportCsv"),
+            icon: Download,
+            onSelect: handleExportCsv,
+            disabled: !filteredProducts?.length,
+            hidden: activeTab !== "products",
+          },
+          {
+            key: "import",
+            label: tCommon("buttons.import"),
+            icon: Upload,
+            onSelect: () => (isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)),
+            hidden: activeTab !== "products",
+          },
+        ]}
+        primaryAction={
+          activeTab === "products" && canCreate
+            ? { label: t("newProduct"), icon: Plus, onClick: () => handleOpenModal() }
+            : undefined
         }
       />
 

@@ -208,20 +208,15 @@ export function SuppliersPage() {
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
-        actions={
-          <>
-            <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
-              <Upload className="h-4 w-4 me-2" />
-              {tCommon("buttons.import")}
-            </Button>
-            {canCreate && (
-              <Button onClick={() => handleOpenModal()} size="sm">
-                <Plus className="h-4 w-4 me-2" />
-                {t("newSupplier")}
-              </Button>
-            )}
-          </>
-        }
+        secondaryActions={[
+          {
+            key: "import",
+            label: tCommon("buttons.import"),
+            icon: Upload,
+            onSelect: () => (isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)),
+          },
+        ]}
+        primaryAction={canCreate ? { label: t("newSupplier"), icon: Plus, onClick: () => handleOpenModal() } : undefined}
       />
 
       <Card>

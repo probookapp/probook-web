@@ -107,12 +107,19 @@ export function CreditNotesPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" onClick={() => router.push("/invoices")}>
-            <ArrowLeft className="h-4 w-4 me-2" />
-            {t("common:buttons.back")}
+        {/* Phone: the back button shrinks to its arrow, so the title keeps the width. */}
+        <div className="flex items-start gap-2 sm:items-center sm:gap-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.push("/invoices")}
+            aria-label={t("common:buttons.back")}
+            className="max-sm:-ms-2 max-sm:px-2"
+          >
+            <ArrowLeft className="h-4 w-4 sm:me-2" />
+            <span className="max-sm:hidden">{t("common:buttons.back")}</span>
           </Button>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-xl sm:text-2xl font-bold text-(--color-text-primary)">
               {t("invoices:creditNotes.title")}
             </h1>

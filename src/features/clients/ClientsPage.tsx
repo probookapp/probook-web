@@ -229,24 +229,22 @@ export function ClientsPage() {
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
-        actions={
-          <>
-            <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredClients?.length}>
-              <Download className="h-4 w-4 me-2" />
-              {tCommon("buttons.exportCsv")}
-            </Button>
-            <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
-              <Upload className="h-4 w-4 me-2" />
-              {tCommon("buttons.import")}
-            </Button>
-            {canCreate && (
-              <Button onClick={() => handleOpenModal()} size="sm">
-                <Plus className="h-4 w-4 me-2" />
-                {t("newClient")}
-              </Button>
-            )}
-          </>
-        }
+        secondaryActions={[
+          {
+            key: "export",
+            label: tCommon("buttons.exportCsv"),
+            icon: Download,
+            onSelect: handleExportCsv,
+            disabled: !filteredClients?.length,
+          },
+          {
+            key: "import",
+            label: tCommon("buttons.import"),
+            icon: Upload,
+            onSelect: () => (isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)),
+          },
+        ]}
+        primaryAction={canCreate ? { label: t("newClient"), icon: Plus, onClick: () => handleOpenModal() } : undefined}
       />
 
       <Card>
