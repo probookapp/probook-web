@@ -383,9 +383,7 @@
     "later": "Later",
     "autoUpdating": "Installing update...",
     "autoUpdatingProgress": "Updating... {{progress}}% complete",
-    "autoUpdatingPleaseWait": "Updating... Please wait.",
-    "newVersionAvailable": "A new version is available.",
-    "updateNow": "Update Now"
+    "autoUpdatingPleaseWait": "Updating... Please wait."
   },
   "landing": {
     "hero": {

@@ -1,6 +1,16 @@
 // Probook Service Worker — offline-first PWA support
 const CACHE_VERSION = "v6";
-const STATIC_CACHE = `probook-static-${CACHE_VERSION}`;
+// One static cache per build, named after the ?build= the app registers this
+// worker with. Hashed chunks never change, but every deploy adds new ones, so a
+// single cache only grew; per-build caches let the old ones be dropped.
+const BUILD_ID = new URL(self.location.href).searchParams.get("build") || "unversioned";
+const STATIC_CACHE_PREFIX = `probook-static-${CACHE_VERSION}-`;
+const STATIC_CACHE = `${STATIC_CACHE_PREFIX}${BUILD_ID}`;
+// Build ids that have activated, newest last. The previous build's cache is
+// kept: a tab opened before the deploy still runs that build and may yet
+// lazy-load one of its chunks, offline included.
+const BUILDS_KEY = "static-builds";
+const KEEP_BUILDS = 2;
 // API responses are cached per user ("cache scope") so a shared device can
 // never serve one tenant's cached data to another. The scope is sent by the
 // app on login/logout (SET_CACHE_SCOPE) and persisted in IndexedDB so it
@@ -21,7 +31,7 @@ function openScopeDb() {
   });
 }
 
-function idbGetScope() {
+function idbGet(key) {
   return openScopeDb()
     .then(
       (db) =>
@@ -29,7 +39,7 @@ function idbGetScope() {
           const req = db
             .transaction(SCOPE_STORE, "readonly")
             .objectStore(SCOPE_STORE)
-            .get(SCOPE_KEY);
+            .get(key);
           req.onsuccess = () => resolve(req.result);
           req.onerror = () => resolve(undefined);
         })
@@ -37,13 +47,13 @@ function idbGetScope() {
     .catch(() => undefined);
 }
 
-function idbSetScope(scope) {
+function idbSet(key, value) {
   return openScopeDb()
     .then(
       (db) =>
         new Promise((resolve) => {
           const tx = db.transaction(SCOPE_STORE, "readwrite");
-          tx.objectStore(SCOPE_STORE).put(scope, SCOPE_KEY);
+          tx.objectStore(SCOPE_STORE).put(value, key);
           tx.oncomplete = () => resolve(undefined);
           tx.onerror = () => resolve(undefined);
         })
@@ -51,12 +61,34 @@ function idbSetScope(scope) {
     .catch(() => undefined);
 }
 
+// Read-modify-write in one transaction, so two workers activating back to back
+// cannot both read the old value and each drop the other's entry.
+function idbUpdate(key, fn) {
+  return openScopeDb()
+    .then(
+      (db) =>
+        new Promise((resolve) => {
+          const tx = db.transaction(SCOPE_STORE, "readwrite");
+          const store = tx.objectStore(SCOPE_STORE);
+          let next;
+          const req = store.get(key);
+          req.onsuccess = () => {
+            next = fn(req.result);
+            store.put(next, key);
+          };
+          tx.oncomplete = () => resolve(next);
+          tx.onerror = () => resolve(fn(undefined));
+        })
+    )
+    .catch(() => fn(undefined));
+}
+
 // Memoized in-memory copy; re-read from IndexedDB after a SW restart.
 let cachedScope = null;
 
 function getCacheScope() {
   if (cachedScope !== null) return Promise.resolve(cachedScope);
-  return idbGetScope().then((scope) => {
+  return idbGet(SCOPE_KEY).then((scope) => {
     cachedScope = scope || "anon";
     return cachedScope;
   });
@@ -89,21 +121,42 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE_URLS))
   );
-  // Don't call self.skipWaiting() here — we wait for user confirmation via the update banner
+  // Take over without asking: nothing reloads the page, and the build it runs
+  // keeps its cache (KEEP_BUILDS), so there is nothing for the user to confirm.
+  self.skipWaiting();
 });
 
-// Activate: clean old caches (incl. the pre-v6 un-namespaced API cache)
+// Activate: record this build and drop the static caches of the build that
+// falls out of the last KEEP_BUILDS, plus any cache from another scheme (the
+// old single static cache, pre-v6 API caches). A per-build cache missing from
+// the list either belongs to a newer worker still installing — left alone — or,
+// when none is, to a build superseded before it ever activated: an orphan.
 self.addEventListener("activate", (event) => {
+  let kept = [];
   event.waitUntil(
-    caches.keys().then((keys) =>
-      Promise.all(
-        keys
-          .filter((k) => k !== STATIC_CACHE && !k.startsWith(API_CACHE_PREFIX))
-          .map((k) => caches.delete(k))
+    idbUpdate(BUILDS_KEY, (builds) => {
+      kept = [...(Array.isArray(builds) ? builds : []).filter((b) => b !== BUILD_ID), BUILD_ID].slice(
+        -KEEP_BUILDS
+      );
+      return kept;
+    })
+      .then(() =>
+        caches.keys().then((keys) =>
+          Promise.all(
+            keys
+              .filter((k) => {
+                if (k.startsWith(API_CACHE_PREFIX)) return false;
+                if (!k.startsWith(STATIC_CACHE_PREFIX)) return true;
+                if (kept.includes(k.slice(STATIC_CACHE_PREFIX.length))) return false;
+                // Unlisted: an orphan unless a newer worker is on its way.
+                return !self.registration.installing && !self.registration.waiting;
+              })
+              .map((k) => caches.delete(k))
+          )
+        )
       )
-    )
+      .then(() => self.clients.claim())
   );
-  self.clients.claim();
 });
 
 // Delete every API cache bucket, regardless of scope.
@@ -117,9 +170,6 @@ function deleteAllApiCaches() {
 
 // Listen for messages from the client
 self.addEventListener("message", (event) => {
-  if (event.data?.type === "SKIP_WAITING") {
-    self.skipWaiting();
-  }
   // Clear tenant-specific API caches on logout/login
   if (event.data?.type === "CLEAR_API_CACHE") {
     event.waitUntil(deleteAllApiCaches());
@@ -131,7 +181,7 @@ self.addEventListener("message", (event) => {
     cachedScope = scope;
     event.waitUntil(
       Promise.all([
-        idbSetScope(scope),
+        idbSet(SCOPE_KEY, scope),
         caches.keys().then((keys) =>
           Promise.all(
             keys

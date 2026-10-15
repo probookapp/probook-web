@@ -383,9 +383,7 @@
     "later": "Plus tard",
     "autoUpdating": "Installation de la mise à jour...",
     "autoUpdatingProgress": "Mise à jour... {{progress}}% terminé",
-    "autoUpdatingPleaseWait": "Mise à jour en cours... Veuillez patienter.",
-    "newVersionAvailable": "Une nouvelle version est disponible.",
-    "updateNow": "Mettre à jour"
+    "autoUpdatingPleaseWait": "Mise à jour en cours... Veuillez patienter."
   },
   "landing": {
     "hero": {

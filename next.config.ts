@@ -9,6 +9,13 @@ const nextConfig: NextConfig = {
   // failing on a route Next was still compiling, not on the product.
   devIndicators: process.env.GUIDE_RECORDING === "1" ? false : undefined,
 
+  // Names the offline worker's static cache, so each deploy gets a fresh one
+  // (see ServiceWorkerRegistration). Inlined into the bundle at build time.
+  env: {
+    SW_BUILD_ID:
+      process.env.VERCEL_DEPLOYMENT_ID || process.env.VERCEL_GIT_COMMIT_SHA || String(Date.now()),
+  },
+
   async headers() {
     return [
       {

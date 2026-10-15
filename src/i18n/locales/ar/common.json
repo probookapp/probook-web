@@ -391,9 +391,7 @@
     "later": "لاحقاً",
     "autoUpdating": "جاري تثبيت التحديث...",
     "autoUpdatingProgress": "جاري التحديث... {{progress}}% مكتمل",
-    "autoUpdatingPleaseWait": "جاري التحديث... يرجى الانتظار.",
-    "newVersionAvailable": "يتوفر إصدار جديد.",
-    "updateNow": "تحديث الآن"
+    "autoUpdatingPleaseWait": "جاري التحديث... يرجى الانتظار."
   },
   "landing": {
     "hero": {
