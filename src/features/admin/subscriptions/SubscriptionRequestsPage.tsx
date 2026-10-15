@@ -204,12 +204,13 @@ export function SubscriptionRequestsPage() {
       <PageHeader
         title={t("subscriptionRequests.title")}
         subtitle={t("subscriptionRequests.subtitle")}
-        actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={requestList.length === 0}
-            onClick={() =>
+        secondaryActions={[
+          {
+            key: "export",
+            label: t("subscriptionRequests.exportCsv"),
+            icon: Download,
+            disabled: requestList.length === 0,
+            onSelect: () =>
               exportToCsv(
                 requestList,
                 [
@@ -230,13 +231,9 @@ export function SubscriptionRequestsPage() {
                   },
                 ],
                 "subscription-requests"
-              )
-            }
-          >
-            <Download className="h-4 w-4 me-2" />
-            {t("subscriptionRequests.exportCsv")}
-          </Button>
-        }
+              ),
+          },
+        ]}
       />
 
       <Card>

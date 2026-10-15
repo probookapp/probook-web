@@ -189,7 +189,7 @@ export function AnnouncementsPage() {
         title={t("announcements.title")}
         subtitle={t("announcements.description")}
         actions={
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2 max-sm:w-full sm:flex-row sm:items-center">
           <ListSearch
             name="announcement-search"
             value={search}
@@ -197,11 +197,15 @@ export function AnnouncementsPage() {
             placeholder={t("announcements.searchPlaceholder")}
           />
           <ColumnPicker columns={columns} />
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={list.length === 0}
-            onClick={() =>
+        </div>
+        }
+        secondaryActions={[
+          {
+            key: "export",
+            label: t("announcements.exportCsv"),
+            icon: Download,
+            disabled: list.length === 0,
+            onSelect: () =>
               exportToCsv(
                 list,
                 [
@@ -218,18 +222,10 @@ export function AnnouncementsPage() {
                   { header: t("announcements.dismissals"), accessor: (r) => Number(r.dismissal_count ?? 0) },
                 ],
                 "announcements"
-              )
-            }
-          >
-            <Download className="h-4 w-4 me-2" />
-            {t("announcements.exportCsv")}
-          </Button>
-          <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
-            <Plus className="h-4 w-4 me-2" />
-            {t("announcements.create")}
-          </Button>
-        </div>
-        }
+              ),
+          },
+        ]}
+        primaryAction={{ label: t("announcements.create"), icon: Plus, onClick: handleOpenCreate, ...superOnly.button }}
       />
 
       <Card>

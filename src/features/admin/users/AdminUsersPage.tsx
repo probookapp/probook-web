@@ -134,12 +134,13 @@ export function AdminUsersPage() {
       <PageHeader
         title={t("users.title")}
         subtitle={t("users.description")}
-        actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={filteredUsers.length === 0}
-            onClick={() =>
+        secondaryActions={[
+          {
+            key: "export",
+            label: t("users.exportCsv"),
+            icon: Download,
+            disabled: filteredUsers.length === 0,
+            onSelect: () =>
               exportToCsv(
                 filteredUsers,
                 [
@@ -151,13 +152,9 @@ export function AdminUsersPage() {
                   { header: t("users.status"), accessor: (r) => (r.is_active ? "active" : "inactive") },
                 ],
                 "users"
-              )
-            }
-          >
-            <Download className="h-4 w-4 me-2" />
-            {t("users.exportCsv")}
-          </Button>
-        }
+              ),
+          },
+        ]}
       />
 
       <Card>

@@ -244,7 +244,7 @@ export function FeaturesPage() {
         title={t("features.title")}
         subtitle={t("features.subtitle")}
         actions={
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2 max-sm:w-full sm:flex-row sm:items-center">
           <ListSearch
             name="feature-search"
             value={search}
@@ -252,11 +252,15 @@ export function FeaturesPage() {
             placeholder={t("features.searchPlaceholder")}
           />
           <ColumnPicker columns={columns} />
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={featureList.length === 0}
-            onClick={() =>
+        </div>
+        }
+        secondaryActions={[
+          {
+            key: "export",
+            label: t("features.exportCsv"),
+            icon: Download,
+            disabled: featureList.length === 0,
+            onSelect: () =>
               exportToCsv(
                 featureList,
                 [
@@ -272,18 +276,10 @@ export function FeaturesPage() {
                   },
                 ],
                 "features"
-              )
-            }
-          >
-            <Download className="h-4 w-4 me-2" />
-            {t("features.exportCsv")}
-          </Button>
-          <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
-            <Plus className="h-4 w-4 me-2" />
-            {t("features.create")}
-          </Button>
-        </div>
-        }
+              ),
+          },
+        ]}
+        primaryAction={{ label: t("features.create"), icon: Plus, onClick: handleOpenCreate, ...superOnly.button }}
       />
 
       <Card>

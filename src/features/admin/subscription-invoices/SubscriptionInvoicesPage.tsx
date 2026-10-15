@@ -264,8 +264,8 @@ export function SubscriptionInvoicesPage() {
         title={t("subscriptionInvoices.title")}
         subtitle={t("subscriptionInvoices.subtitle")}
         actions={
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="w-48">
+          <div className="flex flex-wrap items-end gap-3 max-sm:w-full">
+            <div className="w-full sm:w-48">
               <Select
                 name="status-filter"
                 label={t("subscriptionInvoices.statusFilter")}
@@ -280,35 +280,36 @@ export function SubscriptionInvoicesPage() {
               />
             </div>
             <ColumnPicker columns={columns} />
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={invoiceList.length === 0}
-              onClick={() =>
-                exportToCsv(
-                  invoiceList,
-                  [
-                    { header: t("subscriptionInvoices.invoiceNumber"), accessor: (r) => String(r.invoice_number ?? "") },
-                    { header: t("subscriptionInvoices.tenant"), accessor: (r) => String(((r.subscription as Record<string, unknown>)?.tenant as Record<string, unknown>)?.name ?? "") },
-                    { header: t("subscriptionInvoices.plan"), accessor: (r) => String(((r.subscription as Record<string, unknown>)?.plan as Record<string, unknown>)?.name ?? "") },
-                    { header: t("subscriptionInvoices.amount"), accessor: (r) => Number(r.amount ?? 0) / 100 },
-                    { header: t("subscriptionInvoices.currency"), accessor: (r) => String(r.currency ?? "") },
-                    { header: t("subscriptionInvoices.status"), accessor: (r) => String(r.status ?? "") },
-                    { header: t("subscriptionInvoices.paidAt"), accessor: (r) => (r.paid_at ? String(r.paid_at).slice(0, 10) : "") },
-                  ],
-                  "subscription-invoices"
-                )
-              }
-            >
-              <Download className="h-4 w-4 me-2" />
-              {t("subscriptionInvoices.exportCsv")}
-            </Button>
-            <Button {...superOnly.button} size="sm" onClick={() => { setCreateForm(emptyCreate); setCreateOpen(true); }}>
-              <Plus className="h-4 w-4 me-2" />
-              {t("subscriptionInvoices.newInvoice")}
-            </Button>
           </div>
         }
+        secondaryActions={[
+          {
+            key: "export",
+            label: t("subscriptionInvoices.exportCsv"),
+            icon: Download,
+            disabled: invoiceList.length === 0,
+            onSelect: () =>
+              exportToCsv(
+                invoiceList,
+                [
+                  { header: t("subscriptionInvoices.invoiceNumber"), accessor: (r) => String(r.invoice_number ?? "") },
+                  { header: t("subscriptionInvoices.tenant"), accessor: (r) => String(((r.subscription as Record<string, unknown>)?.tenant as Record<string, unknown>)?.name ?? "") },
+                  { header: t("subscriptionInvoices.plan"), accessor: (r) => String(((r.subscription as Record<string, unknown>)?.plan as Record<string, unknown>)?.name ?? "") },
+                  { header: t("subscriptionInvoices.amount"), accessor: (r) => Number(r.amount ?? 0) / 100 },
+                  { header: t("subscriptionInvoices.currency"), accessor: (r) => String(r.currency ?? "") },
+                  { header: t("subscriptionInvoices.status"), accessor: (r) => String(r.status ?? "") },
+                  { header: t("subscriptionInvoices.paidAt"), accessor: (r) => (r.paid_at ? String(r.paid_at).slice(0, 10) : "") },
+                ],
+                "subscription-invoices"
+              ),
+          },
+        ]}
+        primaryAction={{
+          label: t("subscriptionInvoices.newInvoice"),
+          icon: Plus,
+          onClick: () => { setCreateForm(emptyCreate); setCreateOpen(true); },
+          ...superOnly.button,
+        }}
       />
 
       <Card>

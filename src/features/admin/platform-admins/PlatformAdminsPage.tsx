@@ -180,12 +180,12 @@ export function PlatformAdminsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       <PageHeader
         title={t("platformAdmins.title")}
         subtitle={t("platformAdmins.description")}
         actions={
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2 max-sm:w-full sm:flex-row sm:items-center">
           <ListSearch
             name="platform-admin-search"
             value={search}
@@ -193,11 +193,15 @@ export function PlatformAdminsPage() {
             placeholder={t("platformAdmins.searchPlaceholder")}
           />
           <ColumnPicker columns={columns} />
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={adminList.length === 0}
-            onClick={() =>
+        </div>
+        }
+        secondaryActions={[
+          {
+            key: "export",
+            label: t("platformAdmins.exportCsv"),
+            icon: Download,
+            disabled: adminList.length === 0,
+            onSelect: () =>
               exportToCsv(
                 adminList as unknown as Record<string, unknown>[],
                 [
@@ -208,21 +212,15 @@ export function PlatformAdminsPage() {
                   { header: t("platformAdmins.active"), accessor: (r) => (r.is_active ? "yes" : "no") },
                 ],
                 "platform-admins"
-              )
-            }
-          >
-            <Download className="h-4 w-4 me-2" />
-            {t("platformAdmins.exportCsv")}
-          </Button>
-          <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
-            <Plus className="h-4 w-4 me-2" />
-            {t("platformAdmins.create")}
-          </Button>
-        </div>
-        }
+              ),
+          },
+        ]}
+        primaryAction={{ label: t("platformAdmins.create"), icon: Plus, onClick: handleOpenCreate, ...superOnly.button }}
       />
 
-      <div className="max-w-2xl">
+      {/* Phone: the admin's own security settings follow the list instead of
+          pushing it below the first screen. */}
+      <div className="max-w-2xl max-md:order-last">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
           {t("security.title")}
         </h2>

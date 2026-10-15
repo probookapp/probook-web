@@ -198,7 +198,7 @@ export function DataRequestsPage() {
         title={t("data_requests.title")}
         subtitle={t("data_requests.description")}
         actions={
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+        <div className="flex flex-col gap-2 max-sm:w-full sm:flex-row sm:items-center">
           <ListSearch
             name="data-request-search"
             value={search}
@@ -206,11 +206,15 @@ export function DataRequestsPage() {
             placeholder={t("data_requests.searchPlaceholder")}
           />
           <ColumnPicker columns={columns} />
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={list.length === 0}
-            onClick={() =>
+        </div>
+        }
+        secondaryActions={[
+          {
+            key: "export",
+            label: t("data_requests.exportCsv"),
+            icon: Download,
+            disabled: list.length === 0,
+            onSelect: () =>
               exportToCsv(
                 list,
                 [
@@ -230,18 +234,10 @@ export function DataRequestsPage() {
                   },
                 ],
                 "data-requests"
-              )
-            }
-          >
-            <Download className="h-4 w-4 me-2" />
-            {t("data_requests.exportCsv")}
-          </Button>
-          <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
-            <Plus className="h-4 w-4 me-2" />
-            {t("data_requests.create")}
-          </Button>
-        </div>
-        }
+              ),
+          },
+        ]}
+        primaryAction={{ label: t("data_requests.create"), icon: Plus, onClick: handleOpenCreate, ...superOnly.button }}
       />
 
       <Card>

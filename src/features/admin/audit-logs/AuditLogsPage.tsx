@@ -94,33 +94,30 @@ export function AuditLogsPage() {
       <PageHeader
         title={t("auditLogs.title")}
         subtitle={t("auditLogs.subtitle")}
-        actions={
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={logList.length === 0}
-          onClick={() =>
-            exportToCsv(
-              logList,
-              [
-                {
-                  header: t("auditLogs.dateTime"),
-                  accessor: (r) => (r.created_at ? new Date(String(r.created_at)).toISOString() : ""),
-                },
-                { header: t("auditLogs.actor"), accessor: (r) => String(r.actor_name ?? "") },
-                { header: t("auditLogs.action"), accessor: (r) => String(r.action ?? "") },
-                { header: t("auditLogs.target"), accessor: (r) => `${String(r.target_type ?? "")} ${String(r.target_id ?? "")}`.trim() },
-                { header: t("auditLogs.tenant"), accessor: (r) => String(r.tenant_name ?? "") },
-                { header: t("auditLogs.ip"), accessor: (r) => String(r.ip_address ?? "") },
-              ],
-              "audit-logs"
-            )
-          }
-        >
-          <Download className="h-4 w-4 me-2" />
-          {t("auditLogs.exportCsv")}
-        </Button>
-        }
+        secondaryActions={[
+          {
+            key: "export",
+            label: t("auditLogs.exportCsv"),
+            icon: Download,
+            disabled: logList.length === 0,
+            onSelect: () =>
+              exportToCsv(
+                logList,
+                [
+                  {
+                    header: t("auditLogs.dateTime"),
+                    accessor: (r) => (r.created_at ? new Date(String(r.created_at)).toISOString() : ""),
+                  },
+                  { header: t("auditLogs.actor"), accessor: (r) => String(r.actor_name ?? "") },
+                  { header: t("auditLogs.action"), accessor: (r) => String(r.action ?? "") },
+                  { header: t("auditLogs.target"), accessor: (r) => `${String(r.target_type ?? "")} ${String(r.target_id ?? "")}`.trim() },
+                  { header: t("auditLogs.tenant"), accessor: (r) => String(r.tenant_name ?? "") },
+                  { header: t("auditLogs.ip"), accessor: (r) => String(r.ip_address ?? "") },
+                ],
+                "audit-logs"
+              ),
+          },
+        ]}
       />
 
       <Card>

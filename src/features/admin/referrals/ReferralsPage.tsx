@@ -110,7 +110,7 @@ export function ReferralsPage() {
         title={t("referrals.title")}
         subtitle={t("referrals.description")}
         actions={
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="flex flex-col gap-2 max-sm:w-full sm:flex-row sm:items-center">
             <ColumnPicker columns={columns} />
             <ListSearch
               name="referral-search"
@@ -118,36 +118,32 @@ export function ReferralsPage() {
               onChange={setSearch}
               placeholder={t("referrals.searchPlaceholder")}
             />
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={list.length === 0}
-              onClick={() =>
-                exportToCsv(
-                  list as unknown as Record<string, unknown>[],
-                  [
-                    {
-                      header: t("referrals.tenant"),
-                      accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? ""),
-                    },
-                    { header: t("referrals.code"), accessor: (r) => String(r.code ?? "") },
-                    { header: t("referrals.active"), accessor: (r) => (r.is_active ? "yes" : "no") },
-                    { header: t("referrals.referrals_count"), accessor: (r) => Number(r.referrals_count ?? 0) },
-                    { header: t("referrals.converted_count"), accessor: (r) => Number(r.converted_count ?? 0) },
-                  ],
-                  "referrals"
-                )
-              }
-            >
-              <Download className="h-4 w-4 me-2" />
-              {t("referrals.exportCsv")}
-            </Button>
-            <Button {...superOnly.button} size="sm" onClick={() => setCreateOpen(true)}>
-              <Plus className="h-4 w-4 me-2" />
-              {t("referrals.newCode")}
-            </Button>
           </div>
         }
+        secondaryActions={[
+          {
+            key: "export",
+            label: t("referrals.exportCsv"),
+            icon: Download,
+            disabled: list.length === 0,
+            onSelect: () =>
+              exportToCsv(
+                list as unknown as Record<string, unknown>[],
+                [
+                  {
+                    header: t("referrals.tenant"),
+                    accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? ""),
+                  },
+                  { header: t("referrals.code"), accessor: (r) => String(r.code ?? "") },
+                  { header: t("referrals.active"), accessor: (r) => (r.is_active ? "yes" : "no") },
+                  { header: t("referrals.referrals_count"), accessor: (r) => Number(r.referrals_count ?? 0) },
+                  { header: t("referrals.converted_count"), accessor: (r) => Number(r.converted_count ?? 0) },
+                ],
+                "referrals"
+              ),
+          },
+        ]}
+        primaryAction={{ label: t("referrals.newCode"), icon: Plus, onClick: () => setCreateOpen(true), ...superOnly.button }}
       />
 
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title={t("referrals.newCode")} size="sm">

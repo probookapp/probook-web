@@ -219,12 +219,13 @@ export function TenantsPage() {
       <PageHeader
         title={t("tenants.title")}
         subtitle={t("tenants.subtitle")}
-        actions={
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={tenantList.length === 0}
-            onClick={() =>
+        secondaryActions={[
+          {
+            key: "export",
+            label: t("tenants.exportCsv"),
+            icon: Download,
+            disabled: tenantList.length === 0,
+            onSelect: () =>
               exportToCsv(
                 tenantList,
                 [
@@ -237,13 +238,9 @@ export function TenantsPage() {
                   { header: t("tenants.created"), accessor: (r) => (r.created_at ? new Date(String(r.created_at)).toISOString().slice(0, 10) : "") },
                 ],
                 "tenants"
-              )
-            }
-          >
-            <Download className="h-4 w-4 me-2" />
-            {t("tenants.exportCsv")}
-          </Button>
-        }
+              ),
+          },
+        ]}
       />
 
       <Card>

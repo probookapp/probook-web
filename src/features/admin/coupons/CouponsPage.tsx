@@ -235,47 +235,43 @@ export function CouponsPage() {
         actions={
           <>
             <ColumnPicker columns={columns} />
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={couponList.length === 0}
-              onClick={() =>
-                exportToCsv(
-                  couponList,
-                  [
-                    { header: t("coupons.code"), accessor: (r) => String(r.code ?? "") },
-                    { header: t("coupons.type"), accessor: (r) => String(r.discount_type ?? "") },
-                    {
-                      header: t("coupons.value"),
-                      accessor: (r) =>
-                        r.discount_type === "percentage"
-                          ? Number(r.discount_value ?? 0)
-                          : Number(r.discount_value ?? 0) / 100,
-                    },
-                    { header: t("coupons.currency"), accessor: (r) => String(r.currency ?? "") },
-                    { header: t("coupons.uses"), accessor: (r) => String(r.current_uses ?? 0) },
-                    { header: t("coupons.expires"), accessor: (r) => (r.expires_at ? String(r.expires_at).slice(0, 10) : "") },
-                    { header: t("coupons.active"), accessor: (r) => (r.is_active ? "yes" : "no") },
-                  ],
-                  "coupons"
-                )
-              }
-            >
-              <Download className="h-4 w-4 me-2" />
-              {t("coupons.exportCsv")}
-            </Button>
             <ListSearch
               name="coupon-search"
               value={search}
               onChange={setSearch}
               placeholder={t("coupons.searchPlaceholder")}
             />
-            <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
-              <Plus className="h-4 w-4 me-2" />
-              {t("coupons.create")}
-            </Button>
           </>
         }
+        secondaryActions={[
+          {
+            key: "export",
+            label: t("coupons.exportCsv"),
+            icon: Download,
+            disabled: couponList.length === 0,
+            onSelect: () =>
+              exportToCsv(
+                couponList,
+                [
+                  { header: t("coupons.code"), accessor: (r) => String(r.code ?? "") },
+                  { header: t("coupons.type"), accessor: (r) => String(r.discount_type ?? "") },
+                  {
+                    header: t("coupons.value"),
+                    accessor: (r) =>
+                      r.discount_type === "percentage"
+                        ? Number(r.discount_value ?? 0)
+                        : Number(r.discount_value ?? 0) / 100,
+                  },
+                  { header: t("coupons.currency"), accessor: (r) => String(r.currency ?? "") },
+                  { header: t("coupons.uses"), accessor: (r) => String(r.current_uses ?? 0) },
+                  { header: t("coupons.expires"), accessor: (r) => (r.expires_at ? String(r.expires_at).slice(0, 10) : "") },
+                  { header: t("coupons.active"), accessor: (r) => (r.is_active ? "yes" : "no") },
+                ],
+                "coupons"
+              ),
+          },
+        ]}
+        primaryAction={{ label: t("coupons.create"), icon: Plus, onClick: handleOpenCreate, ...superOnly.button }}
       />
 
       <Card>

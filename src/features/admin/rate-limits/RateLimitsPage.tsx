@@ -84,30 +84,27 @@ export function RateLimitsPage() {
       <PageHeader
         title={t("rate_limits.title")}
         subtitle={t("rate_limits.description")}
-        actions={
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={groups.length === 0}
-          onClick={() =>
-            exportToCsv(
-              groups as unknown as Record<string, unknown>[],
-              [
-                { header: t("rate_limits.tenant"), accessor: (r) => String(r.tenant_name ?? "") },
-                { header: "tenant_id", accessor: (r) => String(r.tenant_id ?? "") },
-                {
-                  header: t("rate_limits.flagged_endpoints"),
-                  accessor: (r) => (r.endpoints as unknown[]).length,
-                },
-              ],
-              "rate-limits"
-            )
-          }
-        >
-          <Download className="h-4 w-4 me-2" />
-          {t("rate_limits.exportCsv")}
-        </Button>
-        }
+        secondaryActions={[
+          {
+            key: "export",
+            label: t("rate_limits.exportCsv"),
+            icon: Download,
+            disabled: groups.length === 0,
+            onSelect: () =>
+              exportToCsv(
+                groups as unknown as Record<string, unknown>[],
+                [
+                  { header: t("rate_limits.tenant"), accessor: (r) => String(r.tenant_name ?? "") },
+                  { header: "tenant_id", accessor: (r) => String(r.tenant_id ?? "") },
+                  {
+                    header: t("rate_limits.flagged_endpoints"),
+                    accessor: (r) => (r.endpoints as unknown[]).length,
+                  },
+                ],
+                "rate-limits"
+              ),
+          },
+        ]}
       />
 
       <Card>

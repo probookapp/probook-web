@@ -295,35 +295,27 @@ export function SubscriptionsPage() {
       <PageHeader
         title={t("subscriptions.title")}
         subtitle={t("subscriptions.subtitle")}
-        actions={
-          <>
-            <Button {...superOnly.button} size="sm" onClick={handleOpenCreate}>
-              <Plus className="h-4 w-4 me-2" />
-              {t("subscriptions.create")}
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              disabled={subList.length === 0}
-              onClick={() =>
-                exportToCsv(
-                  subList,
-                  [
-                    { header: t("subscriptions.tenant"), accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? r.tenant_name ?? "") },
-                    { header: t("subscriptions.plan"), accessor: (r) => planNameOf(r) },
-                    { header: t("subscriptions.status"), accessor: (r) => String(r.status ?? "") },
-                    { header: t("subscriptions.billingCycle"), accessor: (r) => String(r.billing_cycle ?? "") },
-                    { header: t("subscriptions.price"), accessor: (r) => (priceOf(r) != null ? Number(priceOf(r)) / 100 : "") },
-                  ],
-                  "subscriptions"
-                )
-              }
-            >
-              <Download className="h-4 w-4 me-2" />
-              {t("subscriptions.exportCsv")}
-            </Button>
-          </>
-        }
+        secondaryActions={[
+          {
+            key: "export",
+            label: t("subscriptions.exportCsv"),
+            icon: Download,
+            disabled: subList.length === 0,
+            onSelect: () =>
+              exportToCsv(
+                subList,
+                [
+                  { header: t("subscriptions.tenant"), accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? r.tenant_name ?? "") },
+                  { header: t("subscriptions.plan"), accessor: (r) => planNameOf(r) },
+                  { header: t("subscriptions.status"), accessor: (r) => String(r.status ?? "") },
+                  { header: t("subscriptions.billingCycle"), accessor: (r) => String(r.billing_cycle ?? "") },
+                  { header: t("subscriptions.price"), accessor: (r) => (priceOf(r) != null ? Number(priceOf(r)) / 100 : "") },
+                ],
+                "subscriptions"
+              ),
+          },
+        ]}
+        primaryAction={{ label: t("subscriptions.create"), icon: Plus, onClick: handleOpenCreate, ...superOnly.button }}
       />
 
       <Card>
