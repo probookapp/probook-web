@@ -1,6 +1,7 @@
 import { apiCall } from "./api-adapter";
 import { API_BASE_URL } from "./config";
 import type { TaggableDocument } from "./document-tags";
+import type { TablePreferences, TablePreferenceUpdate } from "./table-preferences";
 import type {
   Client,
   CreateClientInput,
@@ -579,6 +580,10 @@ export const authApi = {
   getSessions: () => apiCall<Array<{ id: string; user_agent: string | null; ip_address: string | null; last_active_at: string; created_at: string; is_current: boolean }>>("get_sessions"),
   revokeSession: (id: string) => apiCall<void>("revoke_session", { id }),
   revokeAllSessions: () => apiCall<void>("revoke_all_sessions"),
+  // Which columns each list shows
+  getTablePreferences: () => apiCall<TablePreferences>("get_table_preferences"),
+  updateTablePreference: (input: TablePreferenceUpdate) =>
+    apiCall<TablePreferences>("update_table_preference", { input }),
 };
 
 // POS commands

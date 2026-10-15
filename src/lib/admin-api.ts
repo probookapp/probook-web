@@ -1,5 +1,6 @@
 import { adminApiCall } from "./admin-api-adapter";
 import type { CursorPage } from "@/types";
+import type { TablePreferences, TablePreferenceUpdate } from "./table-preferences";
 
 /** Generic admin row shape (the admin dashboard is untyped by design). */
 type AdminRow = Record<string, unknown>;
@@ -17,6 +18,9 @@ export const adminAuthApi = {
     adminApiCall<{ success: boolean; backup_codes: string[] }>("admin_totp_verify_setup", { input: { code } }),
   totpDisable: (password: string) =>
     adminApiCall<{ success: boolean }>("admin_totp_disable", { input: { password } }),
+  getTablePreferences: () => adminApiCall<TablePreferences>("admin_get_table_preferences"),
+  updateTablePreference: (input: TablePreferenceUpdate) =>
+    adminApiCall<TablePreferences>("admin_update_table_preference", { input }),
 };
 
 // Plans commands

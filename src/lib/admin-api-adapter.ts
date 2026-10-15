@@ -34,6 +34,12 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   admin_login: { method: "POST", path: "/api/admin/auth/login", body: (a) => a.input },
   admin_logout: { method: "POST", path: "/api/admin/auth/logout" },
   admin_get_me: { method: "GET", path: "/api/admin/auth/me" },
+  admin_get_table_preferences: { method: "GET", path: "/api/admin/table-preferences" },
+  admin_update_table_preference: {
+    method: "PUT",
+    path: "/api/admin/table-preferences",
+    body: (a) => a.input,
+  },
   admin_totp_setup: { method: "POST", path: "/api/admin/auth/totp/setup" },
   admin_totp_verify_setup: {
     method: "POST",

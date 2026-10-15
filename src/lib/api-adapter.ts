@@ -715,6 +715,12 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   login: { method: "POST", path: "/api/auth/login", body: (a) => a.input },
   logout: { method: "POST", path: "/api/auth/logout" },
   get_current_user: { method: "GET", path: "/api/auth/me" },
+  get_table_preferences: { method: "GET", path: "/api/auth/table-preferences" },
+  update_table_preference: {
+    method: "PUT",
+    path: "/api/auth/table-preferences",
+    body: (a) => a.input,
+  },
   // TOTP
   totp_setup: { method: "POST", path: "/api/auth/totp/setup" },
   totp_verify_setup: { method: "POST", path: "/api/auth/totp/verify-setup", body: (a) => a.input },
