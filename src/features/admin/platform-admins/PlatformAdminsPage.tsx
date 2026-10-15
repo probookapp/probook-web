@@ -244,8 +244,9 @@ export function PlatformAdminsPage() {
                         ? t("platformAdmins.superAdmin")
                         : t("platformAdmins.supportAgent")}
                     </Badge>
+                    {/* No column header on a card to say what "Yes" answers. */}
                     <Badge variant={admin.is_active ? "success" : "danger"}>
-                      {admin.is_active ? t("common.yes") : t("common.no")}
+                      {admin.is_active ? t("platformAdmins.active") : t("platformAdmins.inactive")}
                     </Badge>
                   </>
                 }

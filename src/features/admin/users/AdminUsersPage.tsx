@@ -192,8 +192,9 @@ export function AdminUsersPage() {
                       <Badge variant={user.role === "admin" ? "info" : "default"}>
                         {String(user.role || "-")}
                       </Badge>
+                      {/* No column header on a card to say what "Yes" answers. */}
                       <Badge variant={user.is_active ? "success" : "danger"}>
-                        {user.is_active ? t("common.yes") : t("common.no")}
+                        {user.is_active ? t("users.active") : t("users.inactive")}
                       </Badge>
                     </>
                   }
