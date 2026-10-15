@@ -10,6 +10,8 @@ import {
   CardHeader,
   CardTitle,
   Modal,
+  ModalFooter,
+  useModalDirty,
   Input,
   Textarea,
   Select,
@@ -249,7 +251,7 @@ function CategoryForm({ category, categories, onSubmit, onCancel, isLoading }: C
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<ProductCategoryFormData>({
     resolver: zodResolver(productCategorySchema) as Resolver<ProductCategoryFormData>,
     defaultValues: {
@@ -278,6 +280,9 @@ function CategoryForm({ category, categories, onSubmit, onCancel, isLoading }: C
     ...availableParents.map((c) => ({ value: c.id, label: c.name })),
   ];
 
+  // Inside a modal, a stray click on the backdrop must not throw the input away.
+  useModalDirty(isDirty);
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       <Input
@@ -300,14 +305,14 @@ function CategoryForm({ category, categories, onSubmit, onCancel, isLoading }: C
         error={errors.parent_id?.message}
       />
 
-      <div className="flex justify-end gap-3 pt-4">
+      <ModalFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>
           {t("common:buttons.cancel")}
         </Button>
         <Button type="submit" isLoading={isLoading}>
           {category ? t("updateProduct") : t("createProduct")}
         </Button>
-      </div>
+      </ModalFooter>
     </form>
   );
 }

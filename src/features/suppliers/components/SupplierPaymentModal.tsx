@@ -5,6 +5,7 @@ import {
   Button,
   Input,
   Modal,
+  ModalFooter,
 } from "@/components/ui";
 import { supplierCreditApi } from "@/lib/api";
 import { useToastStore } from "@/stores/useToastStore";
@@ -79,12 +80,21 @@ export function SupplierPaymentModal({
     createPayment.mutate(input);
   };
 
+  const isDirty =
+    amount !== "" ||
+    paymentDate !== formatDateISO(new Date()) ||
+    paymentMethod !== "CASH" ||
+    purchaseOrderId !== "" ||
+    reference !== "" ||
+    notes !== "";
+
   return (
     <Modal
       isOpen={open}
       onClose={handleClose}
       title={t("credits.recordPayment")}
       size="lg"
+      isDirty={isDirty}
     >
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -185,7 +195,7 @@ export function SupplierPaymentModal({
           />
         </div>
 
-        <div className="flex justify-end gap-3 pt-2">
+        <ModalFooter>
           <Button variant="secondary" onClick={handleClose}>
             {tCommon("buttons.cancel")}
           </Button>
@@ -196,7 +206,7 @@ export function SupplierPaymentModal({
           >
             {t("credits.recordPayment")}
           </Button>
-        </div>
+        </ModalFooter>
       </div>
     </Modal>
   );

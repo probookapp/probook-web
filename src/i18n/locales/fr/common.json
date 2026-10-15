@@ -307,6 +307,8 @@
     "title": "Modifications non enregistrées",
     "message": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir quitter cette page ?",
     "stay": "Rester",
+    "closeMessage": "Ce que vous avez saisi dans cette fenêtre n'est pas enregistré. La fermer quand même ?",
+    "discard": "Fermer sans enregistrer",
     "leave": "Quitter"
   },
   "errors": {

@@ -7,6 +7,7 @@ import {
   Input,
   Select,
   Modal,
+  ModalFooter,
   PasswordToggle,
   Table,
   TableHeader,
@@ -44,6 +45,27 @@ const PERM_ACTIONS: { action: PermissionAction; flag: keyof PermFlags; label: st
   { action: 'edit', flag: 'canEdit', label: 'permEdit' },
   { action: 'delete', flag: 'canDelete', label: 'permDelete' },
 ];
+
+// The CRUD flags a user's permissions open the edit form with; falls back to
+// the legacy view-list (module on = full access) when details are absent.
+const permissionMapOf = (user: UserInfo): Record<string, PermFlags> => {
+  const map: Record<string, PermFlags> = {};
+  ALL_PERMISSIONS.forEach((key) => {
+    const detail = user.permission_details?.find((p) => p.key === key);
+    if (detail) {
+      map[key] = {
+        canView: detail.can_view,
+        canCreate: detail.can_create,
+        canEdit: detail.can_edit,
+        canDelete: detail.can_delete,
+      };
+    } else {
+      const on = user.permissions.includes(key);
+      map[key] = { canView: on, canCreate: on, canEdit: on, canDelete: on };
+    }
+  });
+  return map;
+};
 
 export function UserManagement() {
   const { t } = useTranslation('auth');
@@ -99,24 +121,7 @@ export function UserManagement() {
     setFormPassword('');
     setFormRole(user.role);
     setFormIsActive(user.is_active);
-    // Prefill CRUD flags from the user's permission_details; fall back to the
-    // legacy view-list (module on = full access) when details are absent.
-    const map: Record<string, PermFlags> = {};
-    ALL_PERMISSIONS.forEach((key) => {
-      const detail = user.permission_details?.find((p) => p.key === key);
-      if (detail) {
-        map[key] = {
-          canView: detail.can_view,
-          canCreate: detail.can_create,
-          canEdit: detail.can_edit,
-          canDelete: detail.can_delete,
-        };
-      } else {
-        const on = user.permissions.includes(key);
-        map[key] = { canView: on, canCreate: on, canEdit: on, canDelete: on };
-      }
-    });
-    setFormPermissions(map);
+    setFormPermissions(permissionMapOf(user));
     setShowPassword(false);
     setFormError('');
     setEditingUser(user);
@@ -266,6 +271,24 @@ export function UserManagement() {
     );
   }
 
+  // Unsaved input against what the open form started from: blank for a new
+  // user, the record for an edit.
+  const basePermissions = editingUser ? permissionMapOf(editingUser) : {};
+  const permissionsChanged = ALL_PERMISSIONS.some((key) => {
+    const current = formPermissions[key] ?? emptyFlags();
+    const base = basePermissions[key] ?? emptyFlags();
+    return PERM_ACTIONS.some(({ flag }) => current[flag] !== base[flag]);
+  });
+  const formDirty =
+    formPassword !== '' ||
+    permissionsChanged ||
+    (editingUser
+      ? formUsername !== editingUser.username ||
+        formDisplayName !== editingUser.display_name ||
+        formRole !== editingUser.role ||
+        formIsActive !== editingUser.is_active
+      : formUsername !== '' || formDisplayName !== '' || formRole !== 'employee');
+
   const userFormModal = (
     isOpen: boolean,
     onClose: () => void,
@@ -275,7 +298,7 @@ export function UserManagement() {
     isSubmitting: boolean,
     isEdit: boolean,
   ) => (
-    <Modal isOpen={isOpen} onClose={onClose} title={title} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={title} size="lg" isDirty={formDirty}>
       <div className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
@@ -438,14 +461,14 @@ export function UserManagement() {
           </div>
         )}
 
-        <div className="flex justify-end gap-3 pt-2">
+        <ModalFooter>
           <Button variant="secondary" onClick={onClose}>
             {t('userManagement.cancel')}
           </Button>
           <Button onClick={onSubmit} isLoading={isSubmitting}>
             {submitLabel}
           </Button>
-        </div>
+        </ModalFooter>
       </div>
     </Modal>
   );

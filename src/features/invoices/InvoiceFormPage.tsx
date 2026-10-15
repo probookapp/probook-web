@@ -7,6 +7,7 @@ import { z } from "zod";
 import { Plus, Trash2, ArrowLeft, FileText, List, Rows3 } from "lucide-react";
 import {
   Button,
+  FormActionBar,
   Card,
   CardContent,
   CardHeader,
@@ -214,11 +215,16 @@ export function InvoiceFormPage() {
     if (seededRate.current || !settings || isEditing) return;
     seededRate.current = true;
     if (isDirty || !defaultTaxRate) return;
-    setValue("shipping_tax_rate", defaultTaxRate);
-    (getValues("lines") ?? []).forEach((_, i) =>
-      setValue(`lines.${i}.tax_rate`, defaultTaxRate)
-    );
-  }, [settings, isEditing, isDirty, defaultTaxRate, setValue, getValues]);
+    // Through reset, not setValue: the seeded rate is the blank form's starting
+    // point, not an edit — otherwise an untouched form reads as dirty and asks
+    // before letting the user leave.
+    const values = getValues();
+    reset({
+      ...values,
+      shipping_tax_rate: defaultTaxRate,
+      lines: (values.lines ?? []).map((line) => ({ ...line, tax_rate: defaultTaxRate })),
+    });
+  }, [settings, isEditing, isDirty, defaultTaxRate, reset, getValues]);
 
 
   const [lastResetInvoiceId, setLastResetInvoiceId] = useState<string | null>(null);
@@ -410,7 +416,7 @@ export function InvoiceFormPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" onClick={() => router.push("/invoices")}>
+        <Button variant="ghost" onClick={() => blocker.guard(() => router.push("/invoices"))}>
           <ArrowLeft className="h-4 w-4 me-2" />
           {t("common:buttons.back")}
         </Button>
@@ -981,11 +987,10 @@ export function InvoiceFormPage() {
             />
           </CardContent>
         </Card>
-
-        {/* On a phone the save button is several screens below the lines; it
-            stays in reach at the bottom instead. */}
-        <div className="sticky bottom-0 z-20 -mx-4 flex gap-3 border-t border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-800 dark:bg-gray-900 sm:static sm:mx-0 sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 dark:sm:bg-transparent">
-          <Button type="button" variant="secondary" onClick={() => router.push("/invoices")} className="flex-1 sm:flex-none">
+        {/* Pinned at every width: with the save button several screens down,
+            the Back button at the top was the one in reach. */}
+        <FormActionBar>
+          <Button type="button" variant="secondary" onClick={() => blocker.guard(() => router.push("/invoices"))} className="flex-1 sm:flex-none">
             {t("common:buttons.cancel")}
           </Button>
           <Button
@@ -996,7 +1001,7 @@ export function InvoiceFormPage() {
           >
             {isEditing ? t("common:buttons.save") : t("invoices:createInvoice")}
           </Button>
-        </div>
+        </FormActionBar>
       </form>
       <UnsavedChangesDialog isBlocked={blocker.isBlocked} onProceed={blocker.proceed} onReset={blocker.reset} />
       {/* Outside the form: a label created here must not submit the invoice. */}

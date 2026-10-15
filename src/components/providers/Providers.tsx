@@ -4,6 +4,9 @@ import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { useEffect, useState } from "react";
 import { initSyncManager } from "@/lib/offline-sync-manager";
+// Loaded here for its popstate listener, which must be added before the App
+// Router's own — see src/hooks/useUnsavedChangesGuard.ts.
+import "@/hooks/useUnsavedChangesGuard";
 import { ThemeProvider } from "@/components/providers/ThemeContext";
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { ServiceWorkerRegistration } from "./ServiceWorkerRegistration";

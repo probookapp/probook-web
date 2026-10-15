@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Trash2, ChevronLeft, ChevronRight, Layers } from "lucide-react";
 import type { FieldErrors, UseFormRegister } from "react-hook-form";
-import { Button, Input, Modal, SearchableSelect } from "@/components/ui";
+import { Button, Input, Modal, ModalFooter, SearchableSelect } from "@/components/ui";
 import { commonTaxRate, editorLineTotals, type BundleComponentSnapshot } from "@/lib/bundles";
 import { formatCurrency } from "@/lib/utils";
 import { BundleContents } from "./BundleContents";
@@ -344,7 +344,9 @@ export function DocumentLinesMobile({
               </div>
             )}
 
-            <div className="flex gap-3 pt-1">
+            {/* Edits land in the document form as they are typed, so closing the
+                sheet loses nothing; Done only has to stay in reach. */}
+            <ModalFooter>
               {fields.length > 1 && (
                 <Button
                   type="button"
@@ -363,7 +365,7 @@ export function DocumentLinesMobile({
               <Button type="button" className="flex-1" onClick={() => setEditing(null)}>
                 {t(`${ns}:lines.doneLine`)}
               </Button>
-            </div>
+            </ModalFooter>
           </div>
         )}
       </Modal>

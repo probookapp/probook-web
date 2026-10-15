@@ -3,7 +3,7 @@ import { useForm, useWatch, Controller, useFieldArray, type Resolver } from "rea
 import { useTranslation } from "react-i18next";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Trash2 } from "lucide-react";
-import { Button, Input, Textarea, Select, SearchableSelect } from "@/components/ui";
+import { Button, Input, Textarea, Select, SearchableSelect, ModalFooter, useModalDirty } from "@/components/ui";
 import { fieldBase, FIELD_HEIGHT } from "@/components/ui/field";
 import { useVatRateOptions } from "@/hooks/useFiscalProfile";
 import { useCompanySettings } from "@/features/settings/hooks/useSettings";
@@ -71,7 +71,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
     register,
     handleSubmit,
     control,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<ProductFormData>({
     resolver: zodResolver(productSchema) as Resolver<ProductFormData>,
     defaultValues: {
@@ -109,6 +109,9 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
     { value: "", label: t("fields.noCategory") },
     ...(categories?.map((cat) => ({ value: cat.id, label: cat.name })) || []),
   ];
+
+  // Inside a modal, a stray click on the backdrop must not throw the input away.
+  useModalDirty(isDirty);
 
   return (
     // Opened over another form (a purchase order), this form sits in a portal:
@@ -363,14 +366,14 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
         <ProductPhotoUpload productId={product.id} />
       )}
 
-      <div className="flex justify-end gap-3">
+      <ModalFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>
           {t("common:buttons.cancel")}
         </Button>
         <Button type="submit" isLoading={isLoading}>
           {product ? t("updateProduct") : t("createProduct")}
         </Button>
-      </div>
+      </ModalFooter>
     </form>
   );
 }

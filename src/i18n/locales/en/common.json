@@ -307,6 +307,8 @@
     "title": "Unsaved changes",
     "message": "You have unsaved changes. Are you sure you want to leave this page?",
     "stay": "Stay",
+    "closeMessage": "What you entered in this window is not saved. Close it anyway?",
+    "discard": "Close without saving",
     "leave": "Leave"
   },
   "errors": {

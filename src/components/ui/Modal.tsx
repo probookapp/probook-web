@@ -1,8 +1,42 @@
-import { type ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { Button } from "./Button";
+
+// A form inside the modal reports whether it holds unsaved input, so that
+// dismissing the modal by accident — a click on the backdrop, Escape, the X —
+// asks first instead of throwing the input away.
+const ModalDirtyContext = createContext<((dirty: boolean) => void) | null>(null);
+
+/** Call from a form rendered inside a Modal with its unsaved state (react-hook-form's isDirty). */
+export function useModalDirty(isDirty: boolean) {
+  const setDirty = useContext(ModalDirtyContext);
+  useEffect(() => {
+    setDirty?.(isDirty);
+  }, [setDirty, isDirty]);
+  useEffect(() => () => setDirty?.(false), [setDirty]);
+}
+
+/**
+ * The Cancel / Save row of a form in a Modal, pinned to the bottom of the
+ * dialog while the form scrolls under it. It bleeds through the body padding
+ * of the Modal (px-4 py-3 sm:px-6 sm:py-4) so it spans the dialog.
+ */
+export function ModalFooter({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={cn(
+        "sticky bottom-0 z-10 -mx-4 -mb-3 sm:-mx-6 sm:-mb-4 flex justify-end gap-3",
+        "border-t border-(--color-border-primary) bg-(--color-bg-elevated) px-4 py-3 sm:px-6",
+        className
+      )}
+    >
+      {children}
+    </div>
+  );
+}
 
 interface ModalProps {
   isOpen: boolean;
@@ -10,6 +44,8 @@ interface ModalProps {
   title: string;
   children: ReactNode;
   size?: "sm" | "md" | "lg" | "xl";
+  /** Unsaved input held by the owner itself; a form rendered inside can report it with useModalDirty instead. */
+  isDirty?: boolean;
 }
 
 /**
@@ -18,14 +54,20 @@ interface ModalProps {
  * Escape / overlay-click to dismiss, and body scroll lock — all handled by
  * Radix. The props API is unchanged from the previous hand-rolled version.
  */
-export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, size = "md", isDirty: ownerDirty = false }: ModalProps) {
   const { t } = useTranslation("common");
+  const [isDirty, setIsDirty] = useState(false);
+  const [confirmingClose, setConfirmingClose] = useState(false);
 
   return (
     <Dialog.Root
       open={isOpen}
       onOpenChange={(open) => {
-        if (!open) onClose();
+        if (open) return;
+        // The owner closing it on purpose (after a save, or its own Cancel)
+        // sets isOpen and never comes through here.
+        if (isDirty || ownerDirty) setConfirmingClose(true);
+        else onClose();
       }}
     >
       <Dialog.Portal>
@@ -75,10 +117,34 @@ export function Modal({ isOpen, onClose, title, children, size = "md" }: ModalPr
                 </button>
               </Dialog.Close>
             </div>
-            <div className="px-4 py-3 sm:px-6 sm:py-4">{children}</div>
+            <div className="px-4 py-3 sm:px-6 sm:py-4">
+              <ModalDirtyContext.Provider value={setIsDirty}>{children}</ModalDirtyContext.Provider>
+            </div>
           </Dialog.Content>
         </div>
       </Dialog.Portal>
+      {/* Mounted only while asked: a Modal always rendering its own
+          confirmation would nest one inside the other without end. */}
+      {confirmingClose && (
+        <Modal isOpen onClose={() => setConfirmingClose(false)} title={t("unsavedChanges.title")} size="sm">
+          <p className="text-sm text-(--color-text-secondary) mb-4">{t("unsavedChanges.closeMessage")}</p>
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" size="sm" onClick={() => setConfirmingClose(false)}>
+              {t("unsavedChanges.stay")}
+            </Button>
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={() => {
+                setConfirmingClose(false);
+                onClose();
+              }}
+            >
+              {t("unsavedChanges.discard")}
+            </Button>
+          </div>
+        </Modal>
+      )}
     </Dialog.Root>
   );
 }

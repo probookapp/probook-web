@@ -2,7 +2,7 @@ import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Users } from "lucide-react";
-import { Button, Input, Textarea } from "@/components/ui";
+import { Button, Input, Textarea, ModalFooter, useModalDirty } from "@/components/ui";
 import { useIdentifierFields } from "@/hooks/useFiscalProfile";
 import { createClientSchema, type ClientFormData } from "../schemas/clientSchema";
 import type { Client } from "@/types";
@@ -24,7 +24,7 @@ export function ClientForm({ client, onSubmit, onCancel, onManageContacts, isLoa
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<ClientFormData>({
     resolver: zodResolver(createClientSchema(t)),
     defaultValues: {
@@ -42,6 +42,9 @@ export function ClientForm({ client, onSubmit, onCancel, onManageContacts, isLoa
       notes: client?.notes ?? "",
     },
   });
+
+  // Inside a modal, a stray click on the backdrop must not throw the input away.
+  useModalDirty(isDirty);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -113,7 +116,7 @@ export function ClientForm({ client, onSubmit, onCancel, onManageContacts, isLoa
         error={errors.notes?.message}
       />
 
-      <div className="flex justify-end gap-3">
+      <ModalFooter>
         {onManageContacts && (
           <Button type="button" variant="secondary" onClick={onManageContacts} className="me-auto">
             <Users className="h-4 w-4 me-2" />
@@ -126,7 +129,7 @@ export function ClientForm({ client, onSubmit, onCancel, onManageContacts, isLoa
         <Button type="submit" isLoading={isLoading}>
           {client ? tCommon("buttons.save") : tCommon("buttons.create")}
         </Button>
-      </div>
+      </ModalFooter>
     </form>
   );
 }

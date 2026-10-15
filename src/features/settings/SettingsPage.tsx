@@ -17,7 +17,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardFooter,
+  FormActionBar,
   Input,
   Textarea,
   Select,
@@ -34,6 +34,8 @@ import { useSettingsStore } from "@/stores/useSettingsStore";
 import { useTheme, type AppTheme } from "@/components/providers/ThemeContext";
 import { useEffect, useRef, useState } from "react";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
+import { UnsavedChangesDialog } from "@/components/UnsavedChangesDialog";
 import {
   DEFAULT_FISCAL_PROFILE,
   FISCAL_PROFILE_IDS,
@@ -209,6 +211,10 @@ export function SettingsPage() {
       print_bundle_detail: true,
     },
   });
+
+  // Five cards share one Save at the bottom: leaving with any of them edited
+  // asks first.
+  const blocker = useUnsavedChangesGuard(isDirty);
 
   // The regime picked in the form (not the saved one) drives the VAT scale, the
   // identifier inputs and the stamp-duty section, so switching it previews the
@@ -746,22 +752,25 @@ export function SettingsPage() {
               </span>
             </label>
           </CardContent>
-          <CardFooter>
-            <div className="flex items-center gap-4 w-full">
-              {saveSuccess && (
-                <span className="text-green-600 dark:text-green-400 text-sm">
-                  {t("messages.saveSuccess")}
-                </span>
-              )}
-              <div className="flex-1" />
-              <Button type="submit" isLoading={updateSettings.isPending} disabled={!isDirty}>
-                <Save className="h-4 w-4 me-2" />
-                {t("buttons.save")}
-              </Button>
-            </div>
-          </CardFooter>
         </Card>
+
+        {/* The Save of all five cards above, so it stays in reach from any of them. */}
+        <FormActionBar
+          status={
+            saveSuccess ? (
+              <span className="text-green-600 dark:text-green-400">{t("messages.saveSuccess")}</span>
+            ) : isDirty ? (
+              <span className="text-(--color-text-secondary)">{tCommon("messages.unsavedChanges")}</span>
+            ) : null
+          }
+        >
+          <Button type="submit" isLoading={updateSettings.isPending} disabled={!isDirty} className="flex-1 sm:flex-none">
+            <Save className="h-4 w-4 me-2" />
+            {t("buttons.save")}
+          </Button>
+        </FormActionBar>
       </form>
+      <UnsavedChangesDialog isBlocked={blocker.isBlocked} onProceed={blocker.proceed} onReset={blocker.reset} />
 
       {/* POS Printer Management */}
       <Card>

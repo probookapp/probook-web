@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Modal, Button, Input } from "@/components/ui";
+import { Modal, ModalFooter, Button, Input } from "@/components/ui";
 import { formatCurrency } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
@@ -60,6 +60,12 @@ export function RefundModal({ transaction, sessionId, isOpen, onClose }: RefundM
     setQuantities((prev) => ({ ...prev, [id]: Math.max(0, Math.min(value, max)) }));
   };
 
+  // Every line opens at its full sold quantity.
+  const isDirty =
+    reason !== "" ||
+    restock ||
+    refundable.some((l) => (quantities[l.id] ?? l.quantity) !== l.quantity);
+
   const handleSubmit = async () => {
     if (isDemoMode) {
       showSubscribePrompt();
@@ -85,7 +91,7 @@ export function RefundModal({ transaction, sessionId, isOpen, onClose }: RefundM
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t("refund.title")} size="lg">
+    <Modal isOpen={isOpen} onClose={onClose} title={t("refund.title")} size="lg" isDirty={isDirty}>
       <div className="space-y-4">
         <p className="text-sm text-(--color-text-secondary)">
           {t("refund.subtitle", { ticket: transaction.ticket_number })}
@@ -145,14 +151,14 @@ export function RefundModal({ transaction, sessionId, isOpen, onClose }: RefundM
           <span className="text-lg font-bold">{formatCurrency(total)}</span>
         </div>
 
-        <div className="flex justify-end gap-3">
+        <ModalFooter>
           <Button variant="secondary" onClick={onClose}>
             {t("cancel")}
           </Button>
           <Button onClick={handleSubmit} isLoading={createRefund.isPending}>
             {t("refund.confirm")}
           </Button>
-        </div>
+        </ModalFooter>
       </div>
     </Modal>
   );

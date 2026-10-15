@@ -5,6 +5,7 @@ import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { toast } from "@/stores/useToastStore";
 import {
   Button,
+  FormActionBar,
   Card,
   CardContent,
   CardHeader,
@@ -339,7 +340,7 @@ export function PurchaseFormPage() {
         <Button
           variant="ghost"
           size="sm"
-          onClick={() => router.push(isEdit && id ? `/purchases/${id}` : "/purchases")}
+          onClick={() => blocker.guard(() => router.push(isEdit && id ? `/purchases/${id}` : "/purchases"))}
         >
           <ArrowLeft className="h-4 w-4 me-2" />
           {tCommon("buttons.back")}
@@ -606,13 +607,13 @@ export function PurchaseFormPage() {
         </Card>
 
         {/* Actions */}
-        {/* On a phone the save button is several screens below the lines; it
-            stays in reach at the bottom instead. */}
-        <div className="sticky bottom-0 z-20 -mx-4 flex gap-3 border-t border-gray-200 bg-gray-100 px-4 py-3 dark:border-gray-800 dark:bg-gray-900 sm:static sm:mx-0 sm:justify-end sm:border-0 sm:bg-transparent sm:p-0 dark:sm:bg-transparent">
+        {/* Pinned at every width: with the save button several screens down,
+            the Back button at the top was the one in reach. */}
+        <FormActionBar>
           <Button
             type="button"
             variant="secondary"
-            onClick={() => router.push(isEdit && id ? `/purchases/${id}` : "/purchases")}
+            onClick={() => blocker.guard(() => router.push(isEdit && id ? `/purchases/${id}` : "/purchases"))}
             className="flex-1 sm:flex-none"
           >
             {tCommon("buttons.cancel")}
@@ -624,7 +625,7 @@ export function PurchaseFormPage() {
           >
             {isEdit ? tCommon("buttons.save") : tCommon("buttons.create")}
           </Button>
-        </div>
+        </FormActionBar>
       </form>
 
       <UnsavedChangesDialog isBlocked={blocker.isBlocked} onProceed={blocker.proceed} onReset={blocker.reset} />

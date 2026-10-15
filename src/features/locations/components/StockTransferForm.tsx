@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
-import { Button, Input, Select, SearchableSelect, Textarea } from "@/components/ui";
+import { Button, Input, Select, SearchableSelect, Textarea, ModalFooter, useModalDirty } from "@/components/ui";
 import { productApi, type Location } from "@/lib/api";
 import type { CreateStockTransferInput } from "../hooks/useStockTransfers";
 
@@ -35,6 +35,11 @@ export function StockTransferForm({ locations, onSubmit, onCancel, isLoading }: 
   const [notes, setNotes] = useState("");
   const [lines, setLines] = useState<TransferFormLine[]>([{ ...emptyLine }]);
   const [error, setError] = useState<string | undefined>();
+
+  // Inside a modal, a stray click on the backdrop must not throw the input away.
+  useModalDirty(
+    !!fromId || !!toId || !!notes.trim() || lines.length > 1 || !!lines[0]?.product_id || lines[0]?.quantity !== 1
+  );
 
   const locationOptions = useMemo(
     () => [
@@ -197,14 +202,14 @@ export function StockTransferForm({ locations, onSubmit, onCancel, isLoading }: 
 
       {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
 
-      <div className="flex justify-end gap-3">
+      <ModalFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>
           {tCommon("buttons.cancel")}
         </Button>
         <Button type="submit" isLoading={isLoading}>
           {tCommon("buttons.create")}
         </Button>
-      </div>
+      </ModalFooter>
     </form>
   );
 }

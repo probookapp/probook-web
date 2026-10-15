@@ -7,6 +7,7 @@ import {
   Button,
   Input,
   Modal,
+  ModalFooter,
 } from "@/components/ui";
 import {
   useClientContactsByClient,
@@ -37,6 +38,14 @@ const initialFormData: ContactFormData = {
   is_primary: false,
 };
 
+const contactFormData = (contact: ClientContact): ContactFormData => ({
+  name: contact.name,
+  role: contact.role || "",
+  email: contact.email || "",
+  phone: contact.phone || "",
+  is_primary: contact.is_primary,
+});
+
 export function ClientContacts({ clientId }: ClientContactsProps) {
   const { t } = useTranslation("clients");
   const { t: tCommon } = useTranslation("common");
@@ -62,15 +71,14 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
 
   const handleOpenEdit = (contact: ClientContact) => {
     setEditingContact(contact);
-    setFormData({
-      name: contact.name,
-      role: contact.role || "",
-      email: contact.email || "",
-      phone: contact.phone || "",
-      is_primary: contact.is_primary,
-    });
+    setFormData(contactFormData(contact));
     setIsModalOpen(true);
   };
+
+  const baseFormData = editingContact ? contactFormData(editingContact) : initialFormData;
+  const isFormDirty = (Object.keys(baseFormData) as (keyof ContactFormData)[]).some(
+    (key) => formData[key] !== baseFormData[key]
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,6 +216,7 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
         onClose={() => setIsModalOpen(false)}
         title={editingContact ? t("contacts.editContact") : t("contacts.addContact")}
         size="md"
+        isDirty={isFormDirty}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
@@ -247,7 +256,7 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
               {t("contacts.fields.primaryContact")}
             </label>
           </div>
-          <div className="flex justify-end gap-3 pt-4">
+          <ModalFooter>
             <Button
               type="button"
               variant="secondary"
@@ -261,7 +270,7 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
             >
               {editingContact ? tCommon("buttons.save") : tCommon("buttons.add")}
             </Button>
-          </div>
+          </ModalFooter>
         </form>
       </Modal>
 

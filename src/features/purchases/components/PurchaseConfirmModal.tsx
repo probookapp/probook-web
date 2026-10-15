@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AlertTriangle } from "lucide-react";
-import { Button, Modal, SearchableSelect, Input } from "@/components/ui";
+import { Button, Modal, ModalFooter, SearchableSelect, Input } from "@/components/ui";
 import {
   usePosRegisters,
   useActiveSession,
@@ -89,12 +89,19 @@ export function PurchaseConfirmModal({
     onClose();
   };
 
+  // Every line opens at its full ordered quantity.
+  const isDirty =
+    paidFromRegister ||
+    selectedRegisterId !== "" ||
+    lines.some((line) => (receivedQty[line.id] ?? line.quantity) !== line.quantity);
+
   return (
     <Modal
       isOpen={open}
       onClose={handleClose}
       title={t("confirmModal.title")}
       size="lg"
+      isDirty={isDirty}
     >
       <div className="space-y-4">
         <p className="text-gray-600 dark:text-gray-400">
@@ -233,7 +240,7 @@ export function PurchaseConfirmModal({
           </div>
         )}
 
-        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+        <ModalFooter>
           <Button variant="secondary" onClick={handleClose}>
             {tCommon("buttons.cancel")}
           </Button>
@@ -244,7 +251,7 @@ export function PurchaseConfirmModal({
           >
             {t("confirmModal.confirm")}
           </Button>
-        </div>
+        </ModalFooter>
       </div>
     </Modal>
   );

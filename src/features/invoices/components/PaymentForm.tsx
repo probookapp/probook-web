@@ -2,7 +2,7 @@ import { useForm, useWatch, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslation } from "react-i18next";
-import { Button, Input, Select } from "@/components/ui";
+import { Button, Input, Select, ModalFooter, useModalDirty } from "@/components/ui";
 import { formatDateISO } from "@/lib/utils";
 import { stampDutyApplies } from "@/lib/stamp-duty";
 import { isCheque } from "@/lib/cheque-mentions";
@@ -84,7 +84,7 @@ export function PaymentForm({
     register,
     handleSubmit,
     control,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<PaymentFormData>({
     resolver: zodResolver(paymentSchema) as Resolver<PaymentFormData>,
     defaultValues: {
@@ -103,6 +103,9 @@ export function PaymentForm({
   // which makes React Compiler skip memoising the whole component.
   const paymentMethod = useWatch({ control, name: "payment_method" });
   const showChequeMentions = chequeMentionsRequired && isCheque(paymentMethod);
+
+  // Inside a modal, a stray click on the backdrop must not throw the input away.
+  useModalDirty(isDirty);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -171,14 +174,14 @@ export function PaymentForm({
         error={errors.notes?.message}
       />
 
-      <div className="flex justify-end gap-3 pt-4">
+      <ModalFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>
           {t("buttons.cancel")}
         </Button>
         <Button type="submit" isLoading={isLoading}>
           {t("payments.savePayment")}
         </Button>
-      </div>
+      </ModalFooter>
     </form>
   );
 }

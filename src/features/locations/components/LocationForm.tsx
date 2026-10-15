@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, Input, Select, Textarea } from "@/components/ui";
+import { Button, Input, Select, Textarea, ModalFooter, useModalDirty } from "@/components/ui";
 import type { Location } from "@/lib/api";
 import type { LocationInput } from "../hooks/useLocations";
 
@@ -44,6 +44,14 @@ export function LocationForm({ location, onSubmit, onCancel, isLoading }: Locati
   // (the business must always have exactly one default).
   const defaultLocked = location?.is_default ?? false;
 
+  // Inside a modal, a stray click on the backdrop must not throw the input away.
+  useModalDirty(
+    name !== (location?.name ?? "") ||
+      type !== (location?.type ?? "store") ||
+      address !== (location?.address ?? "") ||
+      isDefault !== (location?.is_default ?? false)
+  );
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Input
@@ -86,14 +94,14 @@ export function LocationForm({ location, onSubmit, onCancel, isLoading }: Locati
         <p className="-mt-4 text-xs text-gray-500 dark:text-gray-400">{t("fields.isDefaultLocked")}</p>
       )}
 
-      <div className="flex justify-end gap-3">
+      <ModalFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>
           {tCommon("buttons.cancel")}
         </Button>
         <Button type="submit" isLoading={isLoading}>
           {location ? tCommon("buttons.save") : tCommon("buttons.create")}
         </Button>
-      </div>
+      </ModalFooter>
     </form>
   );
 }

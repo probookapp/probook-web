@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Input, Textarea } from "@/components/ui";
+import { Button, Input, Textarea, ModalFooter, useModalDirty } from "@/components/ui";
 import { createSupplierSchema, type SupplierFormData } from "../schemas/supplierSchema";
 import type { Supplier } from "@/types";
 
@@ -19,7 +19,7 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<SupplierFormData>({
     resolver: zodResolver(supplierSchema),
     defaultValues: {
@@ -30,6 +30,9 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
       notes: supplier?.notes ?? "",
     },
   });
+
+  // Inside a modal, a stray click on the backdrop must not throw the input away.
+  useModalDirty(isDirty);
 
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -70,14 +73,14 @@ export function SupplierForm({ supplier, onSubmit, onCancel, isLoading }: Suppli
         error={errors.notes?.message}
       />
 
-      <div className="flex justify-end gap-3">
+      <ModalFooter>
         <Button type="button" variant="secondary" onClick={onCancel}>
           {tCommon("buttons.cancel")}
         </Button>
         <Button type="submit" isLoading={isLoading}>
           {supplier ? tCommon("buttons.save") : tCommon("buttons.create")}
         </Button>
-      </div>
+      </ModalFooter>
     </form>
   );
 }

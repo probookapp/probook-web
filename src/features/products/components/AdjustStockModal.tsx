@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { Button, Modal, Input, Select, Textarea } from "@/components/ui";
+import { Button, Modal, ModalFooter, Input, Select, Textarea } from "@/components/ui";
 import { toast } from "@/stores/useToastStore";
 import { isApiError } from "@/lib/api-adapter";
 import { locationsApi } from "@/lib/api";
@@ -83,6 +83,12 @@ export function AdjustStockModal({ isOpen, onClose, product }: AdjustStockModalP
 
   if (!product) return null;
 
+  // "Set" opens prefilled with the current stock, so only a different figure counts.
+  const isDirty =
+    reason !== "" ||
+    locationId !== "" ||
+    (value !== "" && (mode === "delta" || value !== String(currentQty)));
+
   const handleSubmit = async () => {
     const num = parseInt(value, 10);
     if (Number.isNaN(num)) {
@@ -110,7 +116,7 @@ export function AdjustStockModal({ isOpen, onClose, product }: AdjustStockModalP
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t("adjustStock.title")} size="sm">
+    <Modal isOpen={isOpen} onClose={onClose} title={t("adjustStock.title")} size="sm" isDirty={isDirty}>
       <div className="space-y-4">
         <p className="text-sm text-gray-600 dark:text-gray-400">{product.designation}</p>
 
@@ -185,14 +191,14 @@ export function AdjustStockModal({ isOpen, onClose, product }: AdjustStockModalP
           rows={2}
         />
 
-        <div className="flex justify-end gap-3 pt-2">
+        <ModalFooter>
           <Button variant="secondary" onClick={onClose}>
             {tCommon("buttons.cancel")}
           </Button>
           <Button onClick={handleSubmit} isLoading={adjustStock.isPending}>
             {t("adjustStock.apply")}
           </Button>
-        </div>
+        </ModalFooter>
       </div>
     </Modal>
   );

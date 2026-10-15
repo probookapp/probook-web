@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Modal, Button, Input } from "@/components/ui";
+import { Modal, ModalFooter, Button, Input } from "@/components/ui";
 import { formatCurrency, formatDateISO } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
@@ -85,6 +85,13 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
     setQuantities((prev) => ({ ...prev, [id]: clamped }));
   };
 
+  // Every line opens at its full invoiced quantity.
+  const isDirty =
+    reason !== "" ||
+    restock ||
+    issueDate !== formatDateISO(new Date()) ||
+    refundableLines.some((l) => (quantities[l.id] ?? l.quantity) !== l.quantity);
+
   const handleSubmit = async () => {
     if (isDemoMode) {
       showSubscribePrompt();
@@ -119,7 +126,7 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t("invoices:creditNotes.createTitle")} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={t("invoices:creditNotes.createTitle")} size="xl" isDirty={isDirty}>
       <div className="space-y-4">
         <p className="text-sm text-(--color-text-secondary)">
           {t("invoices:creditNotes.createSubtitle", { number: invoice.invoice_number })}
@@ -212,14 +219,14 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
           </div>
         </div>
 
-        <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end sm:gap-3">
+        <ModalFooter>
           <Button variant="secondary" onClick={onClose}>
             {t("common:buttons.cancel")}
           </Button>
           <Button onClick={handleSubmit} isLoading={createCreditNote.isPending}>
             {t("invoices:creditNotes.create")}
           </Button>
-        </div>
+        </ModalFooter>
       </div>
     </Modal>
   );

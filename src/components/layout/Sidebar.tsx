@@ -29,6 +29,7 @@ import { clearAllUserData } from "@/lib/session-cleanup";
 import type { PermissionKey } from "@/types";
 import { Logo } from "@/components/shared/Logo";
 import { useEntitlements } from "@/hooks/useEntitlements";
+import { runGuarded } from "@/hooks/useUnsavedChangesGuard";
 import { FEATURE_KEYS, type FeatureKey } from "@/lib/feature-keys";
 import { translatedName } from "@/lib/translated-name";
 
@@ -192,7 +193,7 @@ export function Sidebar({ onClose }: SidebarProps) {
         {/* POS Mode Button */}
         {hasPermission("pos") && (entitlements?.[FEATURE_KEYS.POS]?.included ?? true) && (
           <button
-            onClick={() => router.push("/pos")}
+            onClick={() => runGuarded(() => router.push("/pos"))}
             // Outlined, not a green slab. Green is the "it worked" colour
             // everywhere else in the application; spending it on a navigation
             // button makes the rail argue with itself.
@@ -221,7 +222,7 @@ export function Sidebar({ onClose }: SidebarProps) {
               </div>
             </div>
             <button
-              onClick={handleLogout}
+              onClick={() => runGuarded(() => void handleLogout())}
               className="p-3 -me-2 lg:p-1.5 lg:me-0 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
               aria-label={t("logout")}
               title={t("logout")}

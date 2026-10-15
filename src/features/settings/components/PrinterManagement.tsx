@@ -6,6 +6,7 @@ import {
   Input,
   Select,
   Modal,
+  ModalFooter,
   Badge,
   Table,
   TableHeader,
@@ -51,6 +52,16 @@ const emptyForm: FormState = {
   is_default: false,
   is_active: true,
 };
+
+const formStateOf = (printer: PosPrinterConfig): FormState => ({
+  printer_name: printer.printer_name,
+  connection_type: printer.connection_type,
+  connection_address: printer.connection_address,
+  paper_width: printer.paper_width,
+  register_id: printer.register_id ?? "",
+  is_default: printer.is_default,
+  is_active: printer.is_active,
+});
 
 export function PrinterManagement() {
   const { t } = useTranslation("settings");
@@ -102,17 +113,14 @@ export function PrinterManagement() {
   const openEdit = (printer: PosPrinterConfig) => {
     if (isDemoMode) return showSubscribePrompt();
     setEditing(printer);
-    setForm({
-      printer_name: printer.printer_name,
-      connection_type: printer.connection_type,
-      connection_address: printer.connection_address,
-      paper_width: printer.paper_width,
-      register_id: printer.register_id ?? "",
-      is_default: printer.is_default,
-      is_active: printer.is_active,
-    });
+    setForm(formStateOf(printer));
     setIsModalOpen(true);
   };
+
+  const baseForm = editing ? formStateOf(editing) : emptyForm;
+  const isFormDirty = (Object.keys(baseForm) as (keyof FormState)[]).some(
+    (key) => form[key] !== baseForm[key]
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -271,6 +279,7 @@ export function PrinterManagement() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         title={editing ? t("printers.editTitle") : t("printers.addTitle")}
+        isDirty={isFormDirty}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <Input
@@ -332,14 +341,14 @@ export function PrinterManagement() {
               </span>
             </label>
           )}
-          <div className="flex justify-end gap-2 pt-2">
+          <ModalFooter>
             <Button type="button" variant="secondary" onClick={() => setIsModalOpen(false)}>
               {t("printers.cancel")}
             </Button>
             <Button type="submit" isLoading={createPrinter.isPending || updatePrinter.isPending}>
               {t("printers.save")}
             </Button>
-          </div>
+          </ModalFooter>
         </form>
       </Modal>
     </div>
