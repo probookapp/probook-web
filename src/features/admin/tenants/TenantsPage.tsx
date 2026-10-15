@@ -23,6 +23,7 @@ import {
   Select,
   PageHeader,
   RowActions,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
@@ -36,6 +37,7 @@ import {
   useImpersonateTenant,
 } from "./hooks/useTenants";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
+import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
 
 type Tenant = Record<string, unknown>;
 
@@ -168,6 +170,50 @@ export function TenantsPage() {
 
   const tenantList = (tenants || []) as Tenant[];
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const tenantActions = (tenant: Tenant): RowAction[] => [
+    {
+      key: "edit",
+      label: t("tenants.edit"),
+      icon: Pencil,
+      onSelect: () => handleOpenEdit(tenant),
+      primary: true,
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+    },
+    {
+      key: "view",
+      label: t("tenants.view"),
+      icon: Eye,
+      onSelect: () => router.push(`/admin/tenants/${tenant.id}`),
+    },
+    {
+      key: "toggleStatus",
+      label: tenant.status === "suspended" ? t("tenants.activate") : t("tenants.suspend"),
+      icon: tenant.status === "suspended" ? Play : Pause,
+      onSelect: () => handleToggleStatus(tenant),
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+    },
+    {
+      key: "impersonate",
+      label: t("tenants.impersonate"),
+      icon: LogIn,
+      onSelect: () => setImpersonateTarget(tenant),
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+    },
+    {
+      key: "delete",
+      label: t("tenants.delete"),
+      icon: Trash2,
+      onSelect: () => setDeleteConfirmId(String(tenant.id)),
+      danger: true,
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -247,93 +293,40 @@ export function TenantsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {/* Mobile card view */}
-          <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-            {tenantList.length > 0 ? (
-              tenantList.map((tenant) => (
-                <div
-                  key={String(tenant.id)}
-                  className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                  onClick={() => router.push(`/admin/tenants/${tenant.id}`)}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {String(tenant.name || "-")}
-                    </span>
-                    <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
-                      <button
-                        onClick={() => router.push(`/admin/tenants/${tenant.id}`)}
-                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={t("tenants.view")}
-                        aria-label={t("tenants.view")}
-                      >
-                        <Eye className="h-4 w-4" />
-                      </button>
-                      <button
-                        {...superOnly.icon}
-                        onClick={() => handleToggleStatus(tenant)}
-                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={tenant.status === "suspended" ? t("tenants.activate") : t("tenants.suspend")}
-                        aria-label={tenant.status === "suspended" ? t("tenants.activate") : t("tenants.suspend")}
-                      >
-                        {tenant.status === "suspended" ? (
-                          <Play className="h-4 w-4" />
-                        ) : (
-                          <Pause className="h-4 w-4" />
-                        )}
-                      </button>
-                      <button
-                        {...superOnly.icon}
-                        onClick={() => setImpersonateTarget(tenant)}
-                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={t("tenants.impersonate")}
-                        aria-label={t("tenants.impersonate")}
-                      >
-                        <LogIn className="h-4 w-4" />
-                      </button>
-                      <button
-                        {...superOnly.icon}
-                        onClick={() => handleOpenEdit(tenant)}
-                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={t("tenants.edit")}
-                        aria-label={t("tenants.edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        {...superOnly.icon}
-                        onClick={() => setDeleteConfirmId(String(tenant.id))}
-                        className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={t("tenants.delete")}
-                        aria-label={t("tenants.delete")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 mt-1">
-                    <Badge variant={getStatusVariant(String(tenant.status || ""))}>
-                      {String(tenant.status || "-")}
-                    </Badge>
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {String(tenant.plan_name || tenant.plan || "-")}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    <span>{String(tenant.user_count ?? tenant.users_count ?? "-")} {t("tenants.users")}</span>
-                    <span>
-                      {tenant.last_active_at
-                        ? new Date(String(tenant.last_active_at)).toLocaleDateString()
-                        : "-"}
-                    </span>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="py-8 text-center text-gray-500 dark:text-gray-400">
-                {t("tenants.noTenants")}
-              </div>
-            )}
-          </div>
+          <MobileCardList isEmpty={tenantList.length === 0} emptyLabel={t("tenants.noTenants")}>
+            {tenantList.map((tenant) => (
+              <MobileCard
+                key={String(tenant.id)}
+                title={String(tenant.name || "-")}
+                subtitle={tenant.plan_name || tenant.plan ? String(tenant.plan_name || tenant.plan) : undefined}
+                badges={
+                  <Badge variant={getStatusVariant(String(tenant.status || ""))}>
+                    {String(tenant.status || "-")}
+                  </Badge>
+                }
+                fields={[
+                  { label: t("tenants.users"), value: String(tenant.user_count ?? tenant.users_count ?? "-") },
+                  {
+                    label: t("tenants.lastActive"),
+                    value: tenant.last_active_at
+                      ? new Date(String(tenant.last_active_at)).toLocaleDateString()
+                      : "-",
+                  },
+                  {
+                    label: t("tenants.trial.label"),
+                    value:
+                      trialStateOf(tenant) === "none" ? null : (
+                        <Badge variant={trialStateOf(tenant) === "active" ? "success" : "default"}>
+                          {new Date(String(tenant.trial_ends_at)).toLocaleDateString()}
+                        </Badge>
+                      ),
+                  },
+                ]}
+                onActivate={() => router.push(`/admin/tenants/${tenant.id}`)}
+                actions={<RowActions actions={tenantActions(tenant)} />}
+              />
+            ))}
+          </MobileCardList>
           {/* Desktop table view */}
           <div className="hidden md:block overflow-x-auto">
             <Table className="min-w-225">
@@ -408,50 +401,7 @@ export function TenantsPage() {
                         </TableCell>
                       )}
                       <TableCell>
-                        <RowActions
-                          actions={[
-                            {
-                              key: "edit",
-                              label: t("tenants.edit"),
-                              icon: Pencil,
-                              onSelect: () => handleOpenEdit(tenant),
-                              primary: true,
-                              disabled: !superOnly.allowed,
-                              disabledReason: superOnly.icon.title,
-                            },
-                            {
-                              key: "view",
-                              label: t("tenants.view"),
-                              icon: Eye,
-                              onSelect: () => router.push(`/admin/tenants/${tenant.id}`),
-                            },
-                            {
-                              key: "toggleStatus",
-                              label: tenant.status === "suspended" ? t("tenants.activate") : t("tenants.suspend"),
-                              icon: tenant.status === "suspended" ? Play : Pause,
-                              onSelect: () => handleToggleStatus(tenant),
-                              disabled: !superOnly.allowed,
-                              disabledReason: superOnly.icon.title,
-                            },
-                            {
-                              key: "impersonate",
-                              label: t("tenants.impersonate"),
-                              icon: LogIn,
-                              onSelect: () => setImpersonateTarget(tenant),
-                              disabled: !superOnly.allowed,
-                              disabledReason: superOnly.icon.title,
-                            },
-                            {
-                              key: "delete",
-                              label: t("tenants.delete"),
-                              icon: Trash2,
-                              onSelect: () => setDeleteConfirmId(String(tenant.id)),
-                              danger: true,
-                              disabled: !superOnly.allowed,
-                              disabledReason: superOnly.icon.title,
-                            },
-                          ]}
-                        />
+                        <RowActions actions={tenantActions(tenant)} />
                       </TableCell>
                     </TableRow>
                   ))

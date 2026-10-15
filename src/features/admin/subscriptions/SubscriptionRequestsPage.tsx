@@ -24,6 +24,7 @@ import {
   Textarea,
   PageHeader,
   RowActions,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
@@ -41,6 +42,7 @@ import {
   useRejectSubscriptionRequest,
 } from "./hooks/useSubscriptions";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
+import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
 
 type SubRequest = Record<string, unknown>;
 
@@ -168,6 +170,35 @@ export function SubscriptionRequestsPage() {
     .filter((req) => req.status === "pending")
     .map((req) => String(req.id));
 
+  /**
+   * The row's actions, shared by the table row and the phone card. Approve and
+   * reject are the whole job of this page: both stay inline.
+   */
+  const requestActions = (req: SubRequest): RowAction[] => [
+    {
+      key: "approve",
+      label: t("subscriptionRequests.approve"),
+      icon: Check,
+      onSelect: () => setApproveId(String(req.id)),
+      primary: true,
+      tone: "success",
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+      hidden: req.status !== "pending",
+    },
+    {
+      key: "reject",
+      label: t("subscriptionRequests.reject"),
+      icon: X,
+      onSelect: () => setRejectId(String(req.id)),
+      primary: true,
+      danger: true,
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+      hidden: req.status !== "pending",
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -263,11 +294,31 @@ export function SubscriptionRequestsPage() {
             </Button>
           </BulkBar>
           {/* Mobile card view */}
-          <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-            {requestList.length > 0 ? (
-              requestList.map((req) => (
-                <div key={String(req.id)} className="p-4 space-y-2">
-                  <div className="flex items-center justify-between gap-2">
+          <MobileCardList isEmpty={requestList.length === 0} emptyLabel={t("subscriptionRequests.noRequests")}>
+            {requestList.map((req) => (
+              <MobileCard
+                key={String(req.id)}
+                title={String((req.tenant as Record<string, unknown>)?.name || req.tenant_name || "-")}
+                subtitle={`${String(req.request_type || req.type || "-")} · ${String(
+                  (req.target_plan as Record<string, unknown>)?.name || req.plan_name || "-"
+                )}`}
+                badges={
+                  <>
+                    <Badge variant={getStatusVariant(String(req.status || ""))}>
+                      {String(req.status || "-")}
+                    </Badge>
+                    {!!req.coupon_code && <Badge variant="info">{String(req.coupon_code)}</Badge>}
+                  </>
+                }
+                fields={[
+                  {
+                    label: t("subscriptionRequests.created"),
+                    value: req.created_at ? new Date(String(req.created_at)).toLocaleDateString() : "-",
+                  },
+                ]}
+                onActivate={req.tenant_id ? () => router.push(`/admin/tenants/${req.tenant_id}`) : undefined}
+                actions={
+                  <>
                     {req.status === "pending" && (
                       <RowCheckbox
                         checked={selection.isSelected(String(req.id))}
@@ -276,58 +327,12 @@ export function SubscriptionRequestsPage() {
                         disabled={!superOnly.allowed}
                       />
                     )}
-                    <span className="flex-1 font-medium text-gray-900 dark:text-gray-100">
-                      {String(
-                        (req.tenant as Record<string, unknown>)?.name ||
-                        req.tenant_name ||
-                        "-"
-                      )}
-                    </span>
-                    {req.status === "pending" && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          {...superOnly.icon}
-                          onClick={() => setApproveId(String(req.id))}
-                          className="p-1 text-gray-500 hover:text-green-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          title={t("subscriptionRequests.approve")}
-                          aria-label={t("subscriptionRequests.approve")}
-                        >
-                          <Check className="h-4 w-4" />
-                        </button>
-                        <button
-                          {...superOnly.icon}
-                          onClick={() => setRejectId(String(req.id))}
-                          className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          title={t("subscriptionRequests.reject")}
-                          aria-label={t("subscriptionRequests.reject")}
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    {String(req.request_type || req.type || "-")} &middot; {String((req.target_plan as Record<string, unknown>)?.name || req.plan_name || "-")}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={getStatusVariant(String(req.status || ""))}>
-                      {String(req.status || "-")}
-                    </Badge>
-                    {!!req.coupon_code && (
-                      <Badge variant="info">{String(req.coupon_code)}</Badge>
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {req.created_at
-                      ? new Date(String(req.created_at)).toLocaleDateString()
-                      : "-"}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="py-8 text-center text-gray-500 dark:text-gray-400">{t("subscriptionRequests.noRequests")}</div>
-            )}
-          </div>
+                    <RowActions actions={requestActions(req)} />
+                  </>
+                }
+              />
+            ))}
+          </MobileCardList>
           {/* Desktop table view */}
           <div className="hidden md:block overflow-x-auto">
             <Table className="min-w-200">
@@ -413,33 +418,7 @@ export function SubscriptionRequestsPage() {
                         </TableCell>
                       )}
                       <TableCell>
-                        {/* Approve and reject are the whole job of this page: both stay inline. */}
-                        <RowActions
-                          actions={[
-                            {
-                              key: "approve",
-                              label: t("subscriptionRequests.approve"),
-                              icon: Check,
-                              onSelect: () => setApproveId(String(req.id)),
-                              primary: true,
-                              tone: "success",
-                              disabled: !superOnly.allowed,
-                              disabledReason: superOnly.icon.title,
-                              hidden: req.status !== "pending",
-                            },
-                            {
-                              key: "reject",
-                              label: t("subscriptionRequests.reject"),
-                              icon: X,
-                              onSelect: () => setRejectId(String(req.id)),
-                              primary: true,
-                              danger: true,
-                              disabled: !superOnly.allowed,
-                              disabledReason: superOnly.icon.title,
-                              hidden: req.status !== "pending",
-                            },
-                          ]}
-                        />
+                        <RowActions actions={requestActions(req)} />
                       </TableCell>
                     </TableRow>
                   ))

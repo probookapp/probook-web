@@ -20,6 +20,7 @@ import {
   TableCell,
   PageHeader,
   RowActions,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { useTableColumns } from "@/hooks/useTableColumns";
@@ -146,6 +147,51 @@ export function DataRequestsPage() {
     );
   }
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const dataRequestActions = (dr: DataRequest): RowAction[] => {
+    const open = dr.status === "pending" || dr.status === "processing";
+    return [
+      {
+        key: "download",
+        label: t("data_requests.download"),
+        icon: Download,
+        onSelect: () => handleDownload(String(dr.id)),
+        primary: true,
+        hidden: !(dr.status === "completed" && dr.request_type === "export"),
+      },
+      {
+        key: "markCompleted",
+        label: t("data_requests.mark_completed"),
+        icon: Check,
+        onSelect: () => handleSetStatus(String(dr.id), "completed"),
+        primary: true,
+        tone: "success",
+        disabled: !superOnly.allowed || updateDataRequest.isPending,
+        disabledReason: superOnly.icon.title,
+        hidden: !open,
+      },
+      {
+        key: "markFailed",
+        label: t("data_requests.mark_failed"),
+        icon: X,
+        onSelect: () => handleSetStatus(String(dr.id), "failed"),
+        disabled: !superOnly.allowed || updateDataRequest.isPending,
+        disabledReason: superOnly.icon.title,
+        hidden: !open,
+      },
+      {
+        key: "executeDeletion",
+        label: t("data_requests.execute_deletion"),
+        icon: Trash2,
+        onSelect: () => { setDeleteTarget(dr); setConfirmName(""); },
+        danger: true,
+        disabled: !superOnly.allowed,
+        disabledReason: superOnly.icon.title,
+        hidden: !(dr.request_type === "deletion" && dr.status === "processing"),
+      },
+    ];
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -231,58 +277,7 @@ export function DataRequestsPage() {
                         : "-",
                     },
                   ]}
-                  actions={
-                    <>
-                      {dr.status === "completed" && dr.request_type === "export" && (
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleDownload(String(dr.id))}
-                        >
-                          <Download className="h-4 w-4 me-1" />
-                          {t("data_requests.download")}
-                        </Button>
-                      )}
-                      {dr.request_type === "deletion" && dr.status === "processing" && (
-                        <Button
-                          {...superOnly.button}
-                          variant="danger"
-                          size="sm"
-                          onClick={() => {
-                            setDeleteTarget(dr);
-                            setConfirmName("");
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 me-1" />
-                          {t("data_requests.execute_deletion")}
-                        </Button>
-                      )}
-                      {(dr.status === "pending" || dr.status === "processing") && (
-                        <>
-                          <Button
-                            {...superOnly.button}
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleSetStatus(String(dr.id), "completed")}
-                            isLoading={updateDataRequest.isPending}
-                          >
-                            <Check className="h-4 w-4 me-1" />
-                            {t("data_requests.mark_completed")}
-                          </Button>
-                          <Button
-                            {...superOnly.button}
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleSetStatus(String(dr.id), "failed")}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <X className="h-4 w-4 me-1" />
-                            {t("data_requests.mark_failed")}
-                          </Button>
-                        </>
-                      )}
-                    </>
-                  }
+                  actions={<RowActions actions={dataRequestActions(dr)} />}
                 />
               );
             })}
@@ -303,7 +298,6 @@ export function DataRequestsPage() {
               <TableBody>
                 {list.map((dr) => {
                   const tenant = dr.tenant as Record<string, unknown> | undefined;
-                  const open = dr.status === "pending" || dr.status === "processing";
                   return (
                     <TableRow key={String(dr.id)}>
                       <TableCell className="font-medium text-gray-900 dark:text-gray-100">
@@ -343,44 +337,7 @@ export function DataRequestsPage() {
                         </TableCell>
                       )}
                       <TableCell>
-                        <RowActions
-                          actions={[
-                            {
-                              key: "download",
-                              label: t("data_requests.download"),
-                              icon: Download,
-                              onSelect: () => handleDownload(String(dr.id)),
-                              primary: true,
-                              hidden: !(dr.status === "completed" && dr.request_type === "export"),
-                            },
-                            {
-                              key: "markCompleted",
-                              label: t("data_requests.mark_completed"),
-                              icon: Check,
-                              onSelect: () => handleSetStatus(String(dr.id), "completed"),
-                              primary: true,
-                              tone: "success",
-                              disabled: !superOnly.allowed || updateDataRequest.isPending,
-                              disabledReason: superOnly.icon.title,
-                              hidden: !open,
-                            },
-                            {
-                              key: "markFailed",
-                              label: t("data_requests.mark_failed"),
-                              icon: X,
-                              onSelect: () => handleSetStatus(String(dr.id), "failed"),
-                              hidden: !open,
-                            },
-                            {
-                              key: "executeDeletion",
-                              label: t("data_requests.execute_deletion"),
-                              icon: Trash2,
-                              onSelect: () => { setDeleteTarget(dr); setConfirmName(""); },
-                              danger: true,
-                              hidden: !(dr.request_type === "deletion" && dr.status === "processing"),
-                            },
-                          ]}
-                        />
+                        <RowActions actions={dataRequestActions(dr)} />
                       </TableCell>
                     </TableRow>
                   );

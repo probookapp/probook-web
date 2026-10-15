@@ -24,6 +24,7 @@ import {
 import { useTableColumns } from "@/hooks/useTableColumns";
 import { useAdminAuditLogs } from "./hooks/useAuditLogs";
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
+import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
 
 type AuditLog = Record<string, unknown>;
 type TenantOption = { id: string; name: string };
@@ -180,40 +181,35 @@ export function AuditLogsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {/* Mobile card view */}
-          <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-            {logList.length > 0 ? (
-              logList.map((log, idx) => (
-                <div key={String(log.id || idx)} className="p-4 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900 dark:text-gray-100">
-                      {String(log.action || "-")}
-                    </span>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {log.created_at || log.timestamp
-                        ? new Date(String(log.created_at || log.timestamp)).toLocaleString()
-                        : "-"}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-900 dark:text-gray-100">
-                    {String(log.actor_name || log.admin_name || log.actor || "-")}
-                  </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {String(log.target || log.target_type || "-")}
-                    {log.target_id ? ` (${String(log.target_id).slice(0, 8)}...)` : ""}
-                    {" · "}
-                    {String(log.tenant_name || log.tenant || "-")}
-                  </div>
-                  {!!(log.ip_address || log.ip) && (
-                    <div className="text-xs text-gray-400 dark:text-gray-500">
-                      {String(log.ip_address || log.ip)}
-                    </div>
-                  )}
-                </div>
-              ))
-            ) : (
-              <div className="py-8 text-center text-gray-500 dark:text-gray-400">{t("auditLogs.noLogs")}</div>
-            )}
-          </div>
+          <MobileCardList isEmpty={logList.length === 0} emptyLabel={t("auditLogs.noLogs")}>
+            {logList.map((log, idx) => (
+              <MobileCard
+                key={String(log.id || idx)}
+                title={String(log.action || "-")}
+                subtitle={String(log.actor_name || log.admin_name || log.actor || "-")}
+                badges={
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {log.created_at || log.timestamp
+                      ? new Date(String(log.created_at || log.timestamp)).toLocaleString()
+                      : "-"}
+                  </span>
+                }
+                fields={[
+                  {
+                    label: t("auditLogs.target"),
+                    value: `${String(log.target || log.target_type || "-")}${
+                      log.target_id ? ` (${String(log.target_id).slice(0, 8)}...)` : ""
+                    }`,
+                  },
+                  { label: t("auditLogs.tenant"), value: String(log.tenant_name || log.tenant || "-") },
+                  {
+                    label: t("auditLogs.ip"),
+                    value: log.ip_address || log.ip ? String(log.ip_address || log.ip) : null,
+                  },
+                ]}
+              />
+            ))}
+          </MobileCardList>
           {/* Desktop table view */}
           <div className="hidden md:block overflow-x-auto">
             <Table className="min-w-200">

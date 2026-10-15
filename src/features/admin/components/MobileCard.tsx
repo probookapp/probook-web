@@ -1,4 +1,6 @@
 import type { ReactNode } from "react";
+import { cn } from "@/lib/utils";
+import { ACTIVATABLE, activateProps } from "@/components/ui/activate";
 
 /**
  * Stacked row for the admin lists on narrow screens.
@@ -8,6 +10,10 @@ import type { ReactNode } from "react";
  * and requests pages already hand-rolled a card variant — this is that same
  * shape, factored out so the remaining lists get it without repeating the
  * markup (and so they all look alike).
+ *
+ * `actions` is usually a `<RowActions>` built from the same list as the table
+ * row, so phone and desktop offer the same menu; `onActivate` makes tapping the
+ * card open the record, like clicking the row.
  */
 export function MobileCard({
   title,
@@ -15,6 +21,7 @@ export function MobileCard({
   badges,
   fields,
   actions,
+  onActivate,
 }: {
   title: ReactNode;
   subtitle?: ReactNode;
@@ -22,11 +29,16 @@ export function MobileCard({
   /** Label/value pairs; entries with a nullish value are skipped. */
   fields?: { label: string; value: ReactNode }[];
   actions?: ReactNode;
+  /** Opens the record when the card is tapped (not its buttons). */
+  onActivate?: () => void;
 }) {
   const shown = (fields || []).filter((f) => f.value !== null && f.value !== undefined);
 
   return (
-    <div className="p-4 space-y-2">
+    <div
+      className={cn("p-4 space-y-2", onActivate && ACTIVATABLE, onActivate && "active:bg-(--color-bg-secondary)")}
+      {...activateProps<HTMLDivElement>(onActivate)}
+    >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <p className="font-medium text-gray-900 dark:text-gray-100 break-words">{title}</p>
@@ -50,7 +62,7 @@ export function MobileCard({
         </dl>
       )}
 
-      {actions ? <div className="flex flex-wrap items-center gap-2 pt-1">{actions}</div> : null}
+      {actions ? <div className="-me-3 -mb-2 flex flex-wrap items-center justify-end gap-2">{actions}</div> : null}
     </div>
   );
 }

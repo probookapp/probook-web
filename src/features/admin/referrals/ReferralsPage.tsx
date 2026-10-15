@@ -20,6 +20,7 @@ import {
   TableCell,
   PageHeader,
   RowActions,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { useTableColumns } from "@/hooks/useTableColumns";
@@ -88,6 +89,20 @@ export function ReferralsPage() {
       </div>
     );
   }
+
+  /** The row's actions, shared by the table row and the phone card. */
+  const referralActions = (rc: ReferralCode): RowAction[] => [
+    {
+      key: "toggle",
+      label: rc.is_active ? t("referrals.deactivate") : t("referrals.activate"),
+      icon: rc.is_active ? PowerOff : Power,
+      onSelect: () => toggleCode.mutate({ id: String(rc.id), isActive: !rc.is_active }),
+      primary: true,
+      tone: rc.is_active ? "warning" : "success",
+      disabled: !superOnly.allowed || (toggleCode.isPending && toggleCode.variables?.id === rc.id),
+      disabledReason: superOnly.icon.title,
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -186,19 +201,8 @@ export function ReferralsPage() {
                     { label: t("referrals.referrals_count"), value: String(rc.referrals_count ?? 0) },
                     { label: t("referrals.converted_count"), value: String(rc.converted_count ?? 0) },
                   ]}
-                  actions={
-                    <Button
-                      {...superOnly.button}
-                      variant={rc.is_active ? "ghost" : "secondary"}
-                      size="sm"
-                      onClick={() =>
-                        toggleCode.mutate({ id: String(rc.id), isActive: !rc.is_active })
-                      }
-                      isLoading={toggleCode.isPending && toggleCode.variables?.id === rc.id}
-                    >
-                      {rc.is_active ? t("referrals.deactivate") : t("referrals.activate")}
-                    </Button>
-                  }
+                  onActivate={rc.tenant_id ? () => router.push(`/admin/tenants/${rc.tenant_id}`) : undefined}
+                  actions={<RowActions actions={referralActions(rc)} />}
                 />
               );
             })}
@@ -249,23 +253,7 @@ export function ReferralsPage() {
                         </TableCell>
                       )}
                       <TableCell>
-                        <RowActions
-                          actions={[
-                            {
-                              key: "toggle",
-                              label: rc.is_active ? t("referrals.deactivate") : t("referrals.activate"),
-                              icon: rc.is_active ? PowerOff : Power,
-                              onSelect: () =>
-                                toggleCode.mutate({ id: String(rc.id), isActive: !rc.is_active }),
-                              primary: true,
-                              tone: rc.is_active ? "warning" : "success",
-                              disabled:
-                                !superOnly.allowed ||
-                                (toggleCode.isPending && toggleCode.variables?.id === rc.id),
-                              disabledReason: superOnly.icon.title,
-                            },
-                          ]}
-                        />
+                        <RowActions actions={referralActions(rc)} />
                       </TableCell>
                     </TableRow>
                   );

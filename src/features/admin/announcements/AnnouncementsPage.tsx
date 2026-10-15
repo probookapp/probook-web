@@ -21,6 +21,7 @@ import {
   TableCell,
   PageHeader,
   RowActions,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { useTableColumns } from "@/hooks/useTableColumns";
@@ -162,6 +163,26 @@ export function AnnouncementsPage() {
     );
   }
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const announcementActions = (a: Announcement): RowAction[] => [
+    {
+      key: "edit",
+      label: t("common:buttons.edit"),
+      icon: Pencil,
+      onSelect: () => handleOpenEdit(a),
+      primary: true,
+    },
+    {
+      key: "delete",
+      label: t("common.delete"),
+      icon: Trash2,
+      onSelect: () => setDeleteConfirmId(String(a.id)),
+      danger: true,
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -239,26 +260,8 @@ export function AnnouncementsPage() {
                     value: String(a.dismissal_count ?? 0),
                   },
                 ]}
-                actions={
-                  <>
-                    <Button
-                      {...superOnly.button}
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleOpenEdit(a)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      {...superOnly.button}
-                      variant="danger"
-                      size="sm"
-                      onClick={() => setDeleteConfirmId(String(a.id))}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </>
-                }
+                onActivate={() => handleOpenEdit(a)}
+                actions={<RowActions actions={announcementActions(a)} />}
               />
             ))}
           </MobileCardList>
@@ -312,24 +315,7 @@ export function AnnouncementsPage() {
                       </TableCell>
                     )}
                     <TableCell>
-                      <RowActions
-                        actions={[
-                          {
-                            key: "edit",
-                            label: t("common:buttons.edit"),
-                            icon: Pencil,
-                            onSelect: () => handleOpenEdit(a),
-                            primary: true,
-                          },
-                          {
-                            key: "delete",
-                            label: t("common.delete"),
-                            icon: Trash2,
-                            onSelect: () => setDeleteConfirmId(String(a.id)),
-                            danger: true,
-                          },
-                        ]}
-                      />
+                      <RowActions actions={announcementActions(a)} />
                     </TableCell>
                   </TableRow>
                 ))}

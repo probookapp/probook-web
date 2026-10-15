@@ -23,6 +23,7 @@ import {
   SearchableSelect,
   PageHeader,
   RowActions,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
@@ -37,6 +38,7 @@ import {
 import { useAdminPlans } from "@/features/admin/plans/hooks/usePlans";
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
+import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
 
 type Subscription = Record<string, unknown>;
 type PlanPrice = { currency: string; monthly_price: number; yearly_price: number };
@@ -258,6 +260,36 @@ export function SubscriptionsPage() {
 
   const subList = (subscriptions || []) as Subscription[];
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const subscriptionActions = (sub: Subscription): RowAction[] => [
+    {
+      key: "edit",
+      label: t("subscriptions.edit"),
+      icon: Pencil,
+      onSelect: () => handleOpenEdit(sub),
+      primary: true,
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+    },
+    {
+      key: "renew",
+      label: t("subscriptions.renew"),
+      icon: RefreshCw,
+      onSelect: () => setRenewConfirmId(String(sub.id)),
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+    },
+    {
+      key: "cancel",
+      label: t("subscriptions.cancel"),
+      icon: XCircle,
+      onSelect: () => setCancelConfirmId(String(sub.id)),
+      danger: true,
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -265,7 +297,7 @@ export function SubscriptionsPage() {
         subtitle={t("subscriptions.subtitle")}
         actions={
           <>
-            <Button size="sm" onClick={handleOpenCreate}>
+            <Button {...superOnly.button} size="sm" onClick={handleOpenCreate}>
               <Plus className="h-4 w-4 me-2" />
               {t("subscriptions.create")}
             </Button>
@@ -330,77 +362,42 @@ export function SubscriptionsPage() {
         </CardHeader>
         <CardContent className="p-0">
           {/* Mobile card view */}
-          <div className="md:hidden divide-y">
-            {subList.length > 0 ? (
-              subList.map((sub) => (
-                <div key={String(sub.id)} className="p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900 dark:text-gray-100">
-                      {String(
-                        (sub.tenant as Record<string, unknown>)?.name ||
-                        sub.tenant_name ||
-                        "-"
-                      )}
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <button
-                        {...superOnly.icon}
-                        onClick={() => handleOpenEdit(sub)}
-                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={t("subscriptions.edit")}
-                        aria-label={t("subscriptions.edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        {...superOnly.icon}
-                        onClick={() => setRenewConfirmId(String(sub.id))}
-                        className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={t("subscriptions.renew")}
-                        aria-label={t("subscriptions.renew")}
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                      </button>
-                      <button
-                        {...superOnly.icon}
-                        onClick={() => setCancelConfirmId(String(sub.id))}
-                        className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        title={t("subscriptions.cancel")}
-                        aria-label={t("subscriptions.cancel")}
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      {planNameOf(sub)}
-                    </span>
-                    <Badge variant={getStatusVariant(String(sub.status || ""))}>
-                      {String(sub.status || "-")}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-gray-500">
-                    <span>{String(sub.billing_cycle || "-")}</span>
-                    <span>
-                      {priceOf(sub) != null
-                        ? (Number(priceOf(sub)) / 100).toLocaleString() + " " + String(sub.currency || "")
-                        : "-"}
-                    </span>
-                  </div>
-                  <div className="text-sm text-gray-500">
-                    {periodStartOf(sub) && periodEndOf(sub)
-                      ? `${new Date(String(periodStartOf(sub))).toLocaleDateString()} - ${new Date(String(periodEndOf(sub))).toLocaleDateString()}`
-                      : "-"}
-                  </div>
-                </div>
-              ))
-            ) : (
-              <div className="text-center text-gray-500 dark:text-gray-400 py-8">
-                {t("subscriptions.noSubscriptions")}
-              </div>
-            )}
-          </div>
+          <MobileCardList isEmpty={subList.length === 0} emptyLabel={t("subscriptions.noSubscriptions")}>
+            {subList.map((sub) => (
+              <MobileCard
+                key={String(sub.id)}
+                title={String((sub.tenant as Record<string, unknown>)?.name || sub.tenant_name || "-")}
+                subtitle={planNameOf(sub)}
+                badges={
+                  <Badge variant={getStatusVariant(String(sub.status || ""))}>
+                    {String(sub.status || "-")}
+                  </Badge>
+                }
+                fields={[
+                  {
+                    label: t("subscriptions.price"),
+                    value: (
+                      <span className="font-semibold tabular-nums">
+                        {priceOf(sub) != null
+                          ? (Number(priceOf(sub)) / 100).toLocaleString() + " " + String(sub.currency || "")
+                          : "-"}
+                      </span>
+                    ),
+                  },
+                  { label: t("subscriptions.billingCycle"), value: String(sub.billing_cycle || "-") },
+                  {
+                    label: t("subscriptions.period"),
+                    value:
+                      periodStartOf(sub) && periodEndOf(sub)
+                        ? `${new Date(String(periodStartOf(sub))).toLocaleDateString()} - ${new Date(String(periodEndOf(sub))).toLocaleDateString()}`
+                        : "-",
+                  },
+                ]}
+                onActivate={superOnly.allowed ? () => handleOpenEdit(sub) : undefined}
+                actions={<RowActions actions={subscriptionActions(sub)} />}
+              />
+            ))}
+          </MobileCardList>
 
           {/* Desktop table view */}
           <div className="hidden md:block overflow-x-auto">
@@ -462,37 +459,7 @@ export function SubscriptionsPage() {
                         </TableCell>
                       )}
                       <TableCell>
-                        <RowActions
-                          actions={[
-                            {
-                              // Was only reachable from the phone layout.
-                              key: "edit",
-                              label: t("subscriptions.edit"),
-                              icon: Pencil,
-                              onSelect: () => handleOpenEdit(sub),
-                              primary: true,
-                              disabled: !superOnly.allowed,
-                              disabledReason: superOnly.icon.title,
-                            },
-                            {
-                              key: "renew",
-                              label: t("subscriptions.renew"),
-                              icon: RefreshCw,
-                              onSelect: () => setRenewConfirmId(String(sub.id)),
-                              disabled: !superOnly.allowed,
-                              disabledReason: superOnly.icon.title,
-                            },
-                            {
-                              key: "cancel",
-                              label: t("subscriptions.cancel"),
-                              icon: XCircle,
-                              onSelect: () => setCancelConfirmId(String(sub.id)),
-                              danger: true,
-                              disabled: !superOnly.allowed,
-                              disabledReason: superOnly.icon.title,
-                            },
-                          ]}
-                        />
+                        <RowActions actions={subscriptionActions(sub)} />
                       </TableCell>
                     </TableRow>
                   ))

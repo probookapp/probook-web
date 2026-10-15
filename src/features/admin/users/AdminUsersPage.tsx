@@ -19,6 +19,7 @@ import {
   TableCell,
   PageHeader,
   RowActions,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
@@ -29,6 +30,7 @@ import {
   useResetUserPassword,
 } from "./hooks/useAdminUsers";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
+import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
 
 type User = Record<string, unknown>;
 
@@ -106,6 +108,27 @@ export function AdminUsersPage() {
   // Filtering happens server-side (`search` query param) — render as-is.
   const filteredUsers = (users || []) as User[];
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const userActions = (user: User): RowAction[] => [
+    {
+      key: "resetPassword",
+      label: t("users.reset_password"),
+      icon: KeyRound,
+      onSelect: () => handleOpenResetPassword(user),
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+    },
+    {
+      key: "toggleActive",
+      label: user.is_active ? t("users.disable") : t("users.enable"),
+      icon: Power,
+      onSelect: () => handleToggleActive(user),
+      danger: !!user.is_active,
+      disabled: !superOnly.allowed || disableUser.isPending,
+      disabledReason: superOnly.icon.title,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -156,57 +179,32 @@ export function AdminUsersPage() {
             </div>
           </div>
           {/* Mobile card view */}
-          <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+          <MobileCardList isEmpty={filteredUsers.length === 0} emptyLabel={t("users.empty")}>
             {filteredUsers.map((user) => {
               const tenant = user.tenant as Record<string, unknown> | undefined;
               return (
-                <div key={String(user.id)} className="p-4 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-medium text-gray-900 dark:text-gray-100">
-                      {String(user.username || "-")}
-                    </span>
-                    <Badge variant={user.is_active ? "success" : "danger"}>
-                      {user.is_active ? t("common.yes") : t("common.no")}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600 dark:text-gray-400">
-                      {String(user.display_name || "-")}
-                    </span>
-                    <Badge variant={user.role === "admin" ? "info" : "default"}>
-                      {String(user.role || "-")}
-                    </Badge>
-                  </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {tenant ? String(tenant.name || "-") : "-"}
-                  </div>
-                  <div className="flex gap-2 pt-1">
-                    <Button
-                      {...superOnly.button}
-                      variant={user.is_active ? "danger" : "primary"}
-                      size="sm"
-                      onClick={() => handleToggleActive(user)}
-                      isLoading={disableUser.isPending}
-                    >
-                      <Power className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleOpenResetPassword(user)}
-                    >
-                      <KeyRound className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
+                <MobileCard
+                  key={String(user.id)}
+                  title={String(user.username || "-")}
+                  subtitle={user.display_name ? String(user.display_name) : undefined}
+                  badges={
+                    <>
+                      <Badge variant={user.role === "admin" ? "info" : "default"}>
+                        {String(user.role || "-")}
+                      </Badge>
+                      <Badge variant={user.is_active ? "success" : "danger"}>
+                        {user.is_active ? t("common.yes") : t("common.no")}
+                      </Badge>
+                    </>
+                  }
+                  fields={[
+                    { label: t("users.tenant"), value: tenant ? String(tenant.name || "-") : "-" },
+                  ]}
+                  actions={<RowActions actions={userActions(user)} />}
+                />
               );
             })}
-            {filteredUsers.length === 0 && (
-              <div className="py-8 text-center text-gray-500 dark:text-gray-400">
-                {t("users.empty")}
-              </div>
-            )}
-          </div>
+          </MobileCardList>
           <div className="hidden md:block overflow-x-auto">
             <Table className="min-w-225">
               <TableHeader>
@@ -260,25 +258,7 @@ export function AdminUsersPage() {
                         </TableCell>
                       )}
                       <TableCell>
-                        <RowActions
-                          actions={[
-                            {
-                              key: "resetPassword",
-                              label: t("users.reset_password"),
-                              icon: KeyRound,
-                              onSelect: () => handleOpenResetPassword(user),
-                            },
-                            {
-                              key: "toggleActive",
-                              label: user.is_active ? t("users.disable") : t("users.enable"),
-                              icon: Power,
-                              onSelect: () => handleToggleActive(user),
-                              danger: !!user.is_active,
-                              disabled: !superOnly.allowed || disableUser.isPending,
-                              disabledReason: superOnly.icon.title,
-                            },
-                          ]}
-                        />
+                        <RowActions actions={userActions(user)} />
                       </TableCell>
                     </TableRow>
                   );

@@ -19,6 +19,7 @@ import {
   TableCell,
   PageHeader,
   RowActions,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { useTableColumns } from "@/hooks/useTableColumns";
@@ -158,6 +159,26 @@ export function PlatformAdminsPage() {
     );
   }
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const adminActions = (admin: PlatformAdmin): RowAction[] => [
+    {
+      key: "edit",
+      label: t("common:buttons.edit"),
+      icon: Pencil,
+      onSelect: () => handleOpenEdit(admin),
+      primary: true,
+    },
+    {
+      key: "delete",
+      label: t("platformAdmins.delete"),
+      icon: Trash2,
+      onSelect: () => setDeletingAdmin(admin),
+      danger: true,
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -237,27 +258,8 @@ export function PlatformAdminsPage() {
                       : "-",
                   },
                 ]}
-                actions={
-                  <>
-                    <Button
-                      {...superOnly.button}
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => handleOpenEdit(admin)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      {...superOnly.button}
-                      variant="danger"
-                      size="sm"
-                      onClick={() => setDeletingAdmin(admin)}
-                      aria-label={t("platformAdmins.delete")}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </>
-                }
+                onActivate={() => handleOpenEdit(admin)}
+                actions={<RowActions actions={adminActions(admin)} />}
               />
             ))}
           </MobileCardList>
@@ -314,26 +316,7 @@ export function PlatformAdminsPage() {
                       </TableCell>
                     )}
                     <TableCell>
-                      <RowActions
-                        actions={[
-                          {
-                            key: "edit",
-                            label: t("common:buttons.edit"),
-                            icon: Pencil,
-                            onSelect: () => handleOpenEdit(admin),
-                            primary: true,
-                          },
-                          {
-                            key: "delete",
-                            label: t("platformAdmins.delete"),
-                            icon: Trash2,
-                            onSelect: () => setDeletingAdmin(admin),
-                            danger: true,
-                            disabled: !superOnly.allowed,
-                            disabledReason: superOnly.icon.title,
-                          },
-                        ]}
-                      />
+                      <RowActions actions={adminActions(admin)} />
                     </TableCell>
                   </TableRow>
                 ))}

@@ -19,6 +19,7 @@ import {
   TableCell,
   PageHeader,
   RowActions,
+  type RowAction,
 } from "@/components/ui";
 import { adminRateLimitsApi } from "@/lib/admin-api";
 import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
@@ -64,6 +65,19 @@ export function RateLimitsPage() {
   }
 
   const groups = (data || []) as unknown as RateLimitGroup[];
+
+  /** The row's actions, shared by the table row and the phone card. */
+  const groupActions = (group: RateLimitGroup): RowAction[] => [
+    {
+      key: "clear",
+      label: t("rate_limits.clear"),
+      icon: Eraser,
+      onSelect: () => setClearing(group),
+      primary: true,
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -111,17 +125,7 @@ export function RateLimitsPage() {
                     value: `${group.endpoints.length} ${t("rate_limits.endpoints")}`,
                   },
                 ]}
-                actions={
-                  <Button
-                    {...superOnly.button}
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setClearing(group)}
-                  >
-                    <Eraser className="h-4 w-4 me-1" />
-                    {t("rate_limits.clear")}
-                  </Button>
-                }
+                actions={<RowActions actions={groupActions(group)} />}
               />
             ))}
           </MobileCardList>
@@ -151,19 +155,7 @@ export function RateLimitsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <RowActions
-                        actions={[
-                          {
-                            key: "clear",
-                            label: t("rate_limits.clear"),
-                            icon: Eraser,
-                            onSelect: () => setClearing(group),
-                            primary: true,
-                            disabled: !superOnly.allowed,
-                            disabledReason: superOnly.icon.title,
-                          },
-                        ]}
-                      />
+                      <RowActions actions={groupActions(group)} />
                     </TableCell>
                   </TableRow>
                 ))}

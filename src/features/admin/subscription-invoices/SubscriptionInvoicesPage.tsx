@@ -21,6 +21,7 @@ import {
   TableCell,
   PageHeader,
   RowActions,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
@@ -220,6 +221,43 @@ export function SubscriptionInvoicesPage() {
     .filter((invoice) => invoice.status !== "paid" && invoice.status !== "refunded")
     .map((invoice) => String(invoice.id));
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const invoiceActions = (invoice: Invoice): RowAction[] => {
+    const isPaid = invoice.status === "paid";
+    const isRefunded = invoice.status === "refunded";
+    return [
+      {
+        key: "markPaid",
+        label: t("subscriptionInvoices.markPaid"),
+        icon: CheckCircle,
+        onSelect: () => handleOpenMarkPaid(invoice),
+        primary: true,
+        tone: "success",
+        disabled: !superOnly.allowed,
+        disabledReason: superOnly.icon.title,
+        hidden: isPaid || isRefunded,
+      },
+      {
+        key: "edit",
+        label: t("subscriptionInvoices.edit"),
+        icon: Pencil,
+        onSelect: () => handleOpenEdit(invoice),
+        disabled: !superOnly.allowed,
+        disabledReason: superOnly.icon.title,
+      },
+      {
+        key: "refund",
+        label: t("subscriptionInvoices.refund"),
+        icon: RotateCcw,
+        onSelect: () => setRefundTarget(invoice),
+        danger: true,
+        disabled: !superOnly.allowed,
+        disabledReason: superOnly.icon.title,
+        hidden: !isPaid,
+      },
+    ];
+  };
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -314,14 +352,18 @@ export function SubscriptionInvoicesPage() {
                     </Badge>
                   }
                   fields={[
-                    { label: t("subscriptionInvoices.plan"), value: String(plan.name || "-") },
                     {
                       label: t("subscriptionInvoices.amount"),
-                      value: formatAmount(
-                        Number(invoice.amount || 0),
-                        String(invoice.currency || REFERENCE_CURRENCY)
+                      value: (
+                        <span className="font-semibold tabular-nums">
+                          {formatAmount(
+                            Number(invoice.amount || 0),
+                            String(invoice.currency || REFERENCE_CURRENCY)
+                          )}
+                        </span>
                       ),
                     },
+                    { label: t("subscriptionInvoices.plan"), value: String(plan.name || "-") },
                     {
                       label: t("subscriptionInvoices.period"),
                       value: `${formatDate(invoice.period_start as string | null)} - ${formatDate(
@@ -333,6 +375,7 @@ export function SubscriptionInvoicesPage() {
                       value: formatDate(invoice.paid_at as string | null),
                     },
                   ]}
+                  onActivate={superOnly.allowed ? () => handleOpenEdit(invoice) : undefined}
                   actions={
                     <>
                       {!isPaid && !isRefunded && (
@@ -343,37 +386,7 @@ export function SubscriptionInvoicesPage() {
                           disabled={!superOnly.allowed}
                         />
                       )}
-                      {!isPaid && !isRefunded && (
-                        <Button
-                          {...superOnly.button}
-                          variant="primary"
-                          size="sm"
-                          onClick={() => handleOpenMarkPaid(invoice)}
-                        >
-                          <CheckCircle className="h-4 w-4 me-1" />
-                          {t("subscriptionInvoices.markPaid")}
-                        </Button>
-                      )}
-                      {isPaid && (
-                        <Button
-                          {...superOnly.button}
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => setRefundTarget(invoice)}
-                        >
-                          <RotateCcw className="h-4 w-4 me-1" />
-                          {t("subscriptionInvoices.refund")}
-                        </Button>
-                      )}
-                      <Button
-                        {...superOnly.button}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleOpenEdit(invoice)}
-                        aria-label={t("subscriptionInvoices.edit")}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
+                      <RowActions actions={invoiceActions(invoice)} />
                     </>
                   }
                 />
@@ -470,39 +483,7 @@ export function SubscriptionInvoicesPage() {
                         </TableCell>
                       )}
                       <TableCell>
-                        <RowActions
-                          actions={[
-                            {
-                              key: "markPaid",
-                              label: t("subscriptionInvoices.markPaid"),
-                              icon: CheckCircle,
-                              onSelect: () => handleOpenMarkPaid(invoice),
-                              primary: true,
-                              tone: "success",
-                              disabled: !superOnly.allowed,
-                              disabledReason: superOnly.icon.title,
-                              hidden: isPaid || isRefunded,
-                            },
-                            {
-                              key: "edit",
-                              label: t("subscriptionInvoices.edit"),
-                              icon: Pencil,
-                              onSelect: () => handleOpenEdit(invoice),
-                              disabled: !superOnly.allowed,
-                              disabledReason: superOnly.icon.title,
-                            },
-                            {
-                              key: "refund",
-                              label: t("subscriptionInvoices.refund"),
-                              icon: RotateCcw,
-                              onSelect: () => setRefundTarget(invoice),
-                              danger: true,
-                              disabled: !superOnly.allowed,
-                              disabledReason: superOnly.icon.title,
-                              hidden: !isPaid,
-                            },
-                          ]}
-                        />
+                        <RowActions actions={invoiceActions(invoice)} />
                       </TableCell>
                     </TableRow>
                   );

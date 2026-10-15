@@ -20,6 +20,7 @@ import {
   TableCell,
   PageHeader,
   RowActions,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { useTableColumns } from "@/hooks/useTableColumns";
@@ -206,6 +207,26 @@ export function CouponsPage() {
     );
   }
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const couponActions = (coupon: Coupon): RowAction[] => [
+    {
+      key: "edit",
+      label: t("common:buttons.edit"),
+      icon: Pencil,
+      onSelect: () => handleOpenEdit(coupon),
+      primary: true,
+    },
+    {
+      key: "delete",
+      label: t("coupons.delete"),
+      icon: Trash2,
+      onSelect: () => setDeletingCoupon(coupon),
+      danger: true,
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -300,27 +321,8 @@ export function CouponsPage() {
                           : t("coupons.allPlans"),
                     },
                   ]}
-                  actions={
-                    <>
-                      <Button
-                        {...superOnly.button}
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleOpenEdit(coupon)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        {...superOnly.button}
-                        variant="danger"
-                        size="sm"
-                        onClick={() => setDeletingCoupon(coupon)}
-                        aria-label={t("coupons.delete")}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </>
-                  }
+                  onActivate={() => handleOpenEdit(coupon)}
+                  actions={<RowActions actions={couponActions(coupon)} />}
                 />
               );
             })}
@@ -404,26 +406,7 @@ export function CouponsPage() {
                         </TableCell>
                       )}
                       <TableCell>
-                        <RowActions
-                          actions={[
-                            {
-                              key: "edit",
-                              label: t("common:buttons.edit"),
-                              icon: Pencil,
-                              onSelect: () => handleOpenEdit(coupon),
-                              primary: true,
-                            },
-                            {
-                              key: "delete",
-                              label: t("coupons.delete"),
-                              icon: Trash2,
-                              onSelect: () => setDeletingCoupon(coupon),
-                              danger: true,
-                              disabled: !superOnly.allowed,
-                              disabledReason: superOnly.icon.title,
-                            },
-                          ]}
-                        />
+                        <RowActions actions={couponActions(coupon)} />
                       </TableCell>
                     </TableRow>
                   );

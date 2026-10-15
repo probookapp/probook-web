@@ -20,6 +20,7 @@ import {
   TableCell,
   PageHeader,
   RowActions,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { useTableColumns } from "@/hooks/useTableColumns";
@@ -203,6 +204,40 @@ export function FeaturesPage() {
     );
   }
 
+  /**
+   * The row's actions, shared by the table row and the phone card. The global
+   * switch also sits in the table's "Global" column; the card has no such
+   * column, and the menu keeps it reachable when that column is hidden.
+   */
+  const featureActions = (feature: Feature): RowAction[] => [
+    {
+      key: "edit",
+      label: t("common:buttons.edit"),
+      icon: Pencil,
+      onSelect: () => handleOpenEdit(feature),
+      primary: true,
+    },
+    {
+      key: "toggleGlobal",
+      label: feature.is_global
+        ? `${t("features.global")} → ${t("features.disabled")}`
+        : t("features.global_toggle"),
+      icon: Globe,
+      onSelect: () => handleToggleGlobal(feature),
+      disabled: !superOnly.allowed || updateFeature.isPending,
+      disabledReason: superOnly.icon.title,
+    },
+    {
+      key: "delete",
+      label: t("features.delete"),
+      icon: Trash2,
+      onSelect: () => setDeletingFeature(feature),
+      danger: true,
+      disabled: !superOnly.allowed,
+      disabledReason: superOnly.icon.title,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -280,38 +315,8 @@ export function FeaturesPage() {
                           : "-",
                     },
                   ]}
-                  actions={
-                    <>
-                      <Button
-                        {...superOnly.button}
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleToggleGlobal(feature)}
-                        isLoading={updateFeature.isPending}
-                      >
-                        <Globe className="h-4 w-4 me-1" />
-                        {feature.is_global ? t("features.disabled") : t("features.enabled")}
-                      </Button>
-                      <Button
-                        {...superOnly.button}
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => handleOpenEdit(feature)}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        {...superOnly.button}
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setDeletingFeature(feature)}
-                        aria-label={t("features.delete")}
-                        className="text-red-600 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </>
-                  }
+                  onActivate={() => handleOpenEdit(feature)}
+                  actions={<RowActions actions={featureActions(feature)} />}
                 />
               );
             })}
@@ -354,8 +359,9 @@ export function FeaturesPage() {
                       {columns.show("global") && (
                       <TableCell>
                         <button
+                          {...superOnly.icon}
                           onClick={() => handleToggleGlobal(feature)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors ${
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
                             feature.is_global
                               ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
                               : "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400"
@@ -385,24 +391,7 @@ export function FeaturesPage() {
                       </TableCell>
                       )}
                       <TableCell>
-                        <RowActions
-                          actions={[
-                            {
-                              key: "edit",
-                              label: t("common:buttons.edit"),
-                              icon: Pencil,
-                              onSelect: () => handleOpenEdit(feature),
-                              primary: true,
-                            },
-                            {
-                              key: "delete",
-                              label: t("features.delete"),
-                              icon: Trash2,
-                              onSelect: () => setDeletingFeature(feature),
-                              danger: true,
-                            },
-                          ]}
-                        />
+                        <RowActions actions={featureActions(feature)} />
                       </TableCell>
                     </TableRow>
                   );
