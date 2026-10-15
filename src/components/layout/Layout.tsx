@@ -58,7 +58,7 @@ export function Layout({ children, topBanner }: LayoutProps) {
           <span className="text-lg font-bold text-gray-900 dark:text-gray-100">Probook</span>
         </div>
         {topBanner}
-        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+        <div className="p-4 sm:p-6 lg:p-8 max-md:has-[[data-fab]]:pb-24">{children}</div>
       </main>
     </div>
   );

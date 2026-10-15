@@ -56,7 +56,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         </div>
         {/* Lists here save their column choices to the admin's account, not to a tenant user's. */}
         <TablePreferencesScope.Provider value="admin">
-          <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+          <div className="p-4 sm:p-6 lg:p-8 max-md:has-[[data-fab]]:pb-24">{children}</div>
         </TablePreferencesScope.Provider>
       </main>
     </div>
