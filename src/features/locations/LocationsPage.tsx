@@ -15,8 +15,11 @@ import {
   TableHead,
   TableCell,
   Badge,
+  PageHeader,
+  RowActions,
 } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import { isApiError } from "@/lib/api-adapter";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useToastStore } from "@/stores/useToastStore";
@@ -71,6 +74,19 @@ export function LocationsPage() {
   const updateLocation = useUpdateLocation();
   const deleteLocation = useDeleteLocation();
   const createTransfer = useCreateStockTransfer();
+
+  // Three optional columns: no picker, but an unused address column steps aside.
+  const locationColumns = useTableColumns(
+    "locations",
+    [
+      { key: "name", label: t("fields.name"), hideable: false },
+      { key: "type", label: t("fields.type") },
+      { key: "address", label: t("fields.address"), isEmpty: (l) => !l.address },
+      { key: "default", label: t("fields.default") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    locations
+  );
 
   const handleOpenLocationModal = (location?: Location) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
@@ -138,13 +154,11 @@ export function LocationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
-        </div>
-        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
-          {tab === "locations" ? (
+      <PageHeader
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={
+          tab === "locations" ? (
             <Button onClick={() => handleOpenLocationModal()} size="sm">
               <Plus className="h-4 w-4 me-2" />
               {t("newLocation")}
@@ -158,9 +172,9 @@ export function LocationsPage() {
               <Plus className="h-4 w-4 me-2" />
               {t("transfers.newTransfer")}
             </Button>
-          )}
-        </div>
-      </div>
+          )
+        }
+      />
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">
@@ -244,16 +258,16 @@ export function LocationsPage() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>{t("fields.name")}</TableHead>
-                      <TableHead>{t("fields.type")}</TableHead>
-                      <TableHead>{t("fields.address")}</TableHead>
-                      <TableHead>{t("fields.default")}</TableHead>
-                      <TableHead className="w-24">{tCommon("buttons.actions")}</TableHead>
+                      {locationColumns.show("type") && <TableHead>{t("fields.type")}</TableHead>}
+                      {locationColumns.show("address") && <TableHead>{t("fields.address")}</TableHead>}
+                      {locationColumns.show("default") && <TableHead>{t("fields.default")}</TableHead>}
+                      <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {locations && locations.length > 0 ? (
                       locations.map((location) => (
-                        <TableRow key={location.id}>
+                        <TableRow key={location.id} onActivate={() => handleOpenLocationModal(location)}>
                           <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                             <span className="flex items-center gap-2">
                               {location.type === "warehouse" ? (
@@ -264,39 +278,43 @@ export function LocationsPage() {
                               {location.name}
                             </span>
                           </TableCell>
-                          <TableCell className="text-gray-600 dark:text-gray-400">
-                            {t(`types.${location.type === "warehouse" ? "warehouse" : "store"}`)}
-                          </TableCell>
-                          <TableCell className="text-gray-600 dark:text-gray-400">{location.address || "-"}</TableCell>
+                          {locationColumns.show("type") && (
+                            <TableCell className="text-gray-600 dark:text-gray-400">
+                              {t(`types.${location.type === "warehouse" ? "warehouse" : "store"}`)}
+                            </TableCell>
+                          )}
+                          {locationColumns.show("address") && <TableCell className="text-gray-600 dark:text-gray-400">{location.address || "-"}</TableCell>}
+                          {locationColumns.show("default") && (
+                            <TableCell>
+                              {location.is_default && <Badge variant="success">{t("fields.default")}</Badge>}
+                            </TableCell>
+                          )}
                           <TableCell>
-                            {location.is_default && <Badge variant="success">{t("fields.default")}</Badge>}
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center gap-2 lg:gap-1">
-                              <button
-                                onClick={() => handleOpenLocationModal(location)}
-                                className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                                title={tCommon("buttons.edit")}
-                                aria-label={tCommon("buttons.edit")}
-                              >
-                                <Pencil className="h-4 w-4" />
-                              </button>
-                              <button
-                                onClick={() => setDeleteConfirmId(location.id)}
-                                disabled={location.is_default}
-                                className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                title={tCommon("buttons.delete")}
-                                aria-label={tCommon("buttons.delete")}
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </button>
-                            </div>
+                            <RowActions
+                              actions={[
+                                {
+                                  key: "edit",
+                                  label: tCommon("buttons.edit"),
+                                  icon: Pencil,
+                                  onSelect: () => handleOpenLocationModal(location),
+                                  primary: true,
+                                },
+                                {
+                                  key: "delete",
+                                  label: tCommon("buttons.delete"),
+                                  icon: Trash2,
+                                  onSelect: () => setDeleteConfirmId(location.id),
+                                  danger: true,
+                                  disabled: location.is_default,
+                                },
+                              ]}
+                            />
                           </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                        <TableCell colSpan={locationColumns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                           {t("noLocations")}
                         </TableCell>
                       </TableRow>

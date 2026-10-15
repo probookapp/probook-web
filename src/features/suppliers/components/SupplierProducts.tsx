@@ -11,7 +11,9 @@ import {
   TableHead,
   TableCell,
   TableNumericCell,
+  RowActions,
 } from "@/components/ui";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import {
   useProductsForSupplier,
   useAddProductSupplier,
@@ -47,6 +49,18 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
 
   const linkedProductIds = new Set(linkedProducts?.map((p: ProductWithPrice) => p.id) ?? []);
   const availableProducts = allProducts?.filter((p) => !linkedProductIds.has(p.id)) ?? [];
+
+  const columns = useTableColumns<ProductWithPrice>(
+    "supplier-products",
+    [
+      { key: "product", label: tCommon("labels.product"), hideable: false },
+      { key: "reference", label: tCommon("labels.reference"), isEmpty: (p) => !p.reference },
+      { key: "purchasePrice", label: t("products.purchasePrice") },
+      { key: "unitPrice", label: tCommon("labels.unitPrice") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    linkedProducts
+  );
 
   const handleAddProduct = async () => {
     if (!selectedProductId || !purchasePrice) return;
@@ -165,10 +179,10 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
           <TableHeader>
             <TableRow>
               <TableHead>{tCommon("labels.product")}</TableHead>
-              <TableHead>{tCommon("labels.reference")}</TableHead>
-              <TableHead className="text-end">{t("products.purchasePrice")}</TableHead>
-              <TableHead className="text-end">{tCommon("labels.unitPrice")}</TableHead>
-              <TableHead className="w-24">{tCommon("buttons.actions")}</TableHead>
+              {columns.show("reference") && <TableHead>{tCommon("labels.reference")}</TableHead>}
+              {columns.show("purchasePrice") && <TableHead className="text-end">{t("products.purchasePrice")}</TableHead>}
+              {columns.show("unitPrice") && <TableHead className="text-end">{tCommon("labels.unitPrice")}</TableHead>}
+              <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -178,32 +192,41 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
                   <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                     {product.designation}
                   </TableCell>
-                  <TableCell className="text-gray-600 dark:text-gray-400">
-                    {product.reference || "-"}
-                  </TableCell>
-                  <TableNumericCell className="text-gray-600 dark:text-gray-400">
-                    {formatCurrency(product.purchase_price)}
-                  </TableNumericCell>
-                  <TableNumericCell className="text-gray-600 dark:text-gray-400">
-                    {formatCurrency(product.unit_price)}
-                  </TableNumericCell>
+                  {columns.show("reference") && (
+                    <TableCell className="text-gray-600 dark:text-gray-400">
+                      {product.reference || "-"}
+                    </TableCell>
+                  )}
+                  {columns.show("purchasePrice") && (
+                    <TableNumericCell className="text-gray-600 dark:text-gray-400">
+                      {formatCurrency(product.purchase_price)}
+                    </TableNumericCell>
+                  )}
+                  {columns.show("unitPrice") && (
+                    <TableNumericCell className="text-gray-600 dark:text-gray-400">
+                      {formatCurrency(product.unit_price)}
+                    </TableNumericCell>
+                  )}
                   <TableCell>
-                    {canManage && (
-                    <button
-                      onClick={() => handleRemoveProduct(product.link_id)}
-                      className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors"
-                      title={t("products.removeProduct")}
-                      aria-label={t("products.removeProduct")}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                    )}
+                    <RowActions
+                      actions={[
+                        {
+                          key: "remove",
+                          label: t("products.removeProduct"),
+                          icon: X,
+                          onSelect: () => handleRemoveProduct(product.link_id),
+                          primary: true,
+                          danger: true,
+                          hidden: !canManage,
+                        },
+                      ]}
+                    />
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                <TableCell colSpan={columns.visibleCount}className="text-center text-gray-500 dark:text-gray-400 py-8">
                   {t("products.noProducts")}
                 </TableCell>
               </TableRow>

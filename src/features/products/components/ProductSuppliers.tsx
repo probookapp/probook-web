@@ -12,7 +12,9 @@ import {
   TableHead,
   TableCell,
   TableNumericCell,
+  RowActions,
 } from "@/components/ui";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import {
   useSuppliersForProduct,
   useSuppliers,
@@ -52,6 +54,18 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
 
   const linkedSupplierIds = new Set(linkedSuppliers?.map((s: SupplierWithPrice) => s.id) ?? []);
   const availableSuppliers = allSuppliers?.filter((s) => !linkedSupplierIds.has(s.id)) ?? [];
+
+  const columns = useTableColumns<SupplierWithPrice>(
+    "product-suppliers",
+    [
+      { key: "name", label: tCommon("labels.name"), hideable: false },
+      { key: "email", label: tCommon("labels.email"), isEmpty: (s) => !s.email },
+      { key: "phone", label: tCommon("labels.phone"), isEmpty: (s) => !s.phone },
+      { key: "purchasePrice", label: t("suppliers.purchasePrice") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    linkedSuppliers
+  );
 
   const handleAddSupplier = async () => {
     if (!selectedSupplierId || !purchasePrice) return;
@@ -182,10 +196,10 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
           <TableHeader>
             <TableRow>
               <TableHead>{tCommon("labels.name")}</TableHead>
-              <TableHead>{tCommon("labels.email")}</TableHead>
-              <TableHead>{tCommon("labels.phone")}</TableHead>
-              <TableHead className="text-end">{t("suppliers.purchasePrice")}</TableHead>
-              <TableHead className="w-24">{tCommon("buttons.actions")}</TableHead>
+              {columns.show("email") && <TableHead>{tCommon("labels.email")}</TableHead>}
+              {columns.show("phone") && <TableHead>{tCommon("labels.phone")}</TableHead>}
+              {columns.show("purchasePrice") && <TableHead className="text-end">{t("suppliers.purchasePrice")}</TableHead>}
+              <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -195,12 +209,17 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
                   <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                     {supplier.name}
                   </TableCell>
-                  <TableCell className="text-gray-600 dark:text-gray-400">
-                    {supplier.email || "-"}
-                  </TableCell>
-                  <TableCell className="text-gray-600 dark:text-gray-400">
-                    {supplier.phone || "-"}
-                  </TableCell>
+                  {columns.show("email") && (
+                    <TableCell className="text-gray-600 dark:text-gray-400">
+                      {supplier.email || "-"}
+                    </TableCell>
+                  )}
+                  {columns.show("phone") && (
+                    <TableCell className="text-gray-600 dark:text-gray-400">
+                      {supplier.phone || "-"}
+                    </TableCell>
+                  )}
+                  {columns.show("purchasePrice") && (
                   <TableNumericCell className="text-gray-600 dark:text-gray-400">
                     {editingLinkId === supplier.link_id ? (
                       <div className="flex items-center justify-end gap-2 lg:gap-1">
@@ -249,23 +268,27 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
                       formatCurrency(supplier.purchase_price)
                     )}
                   </TableNumericCell>
+                  )}
                   <TableCell>
-                    {canManage && (
-                    <button
-                      onClick={() => handleRemoveSupplier(supplier.link_id)}
-                      className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors"
-                      title={t("suppliers.removeSupplier")}
-                      aria-label={t("suppliers.removeSupplier")}
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                    )}
+                    <RowActions
+                      actions={[
+                        {
+                          key: "remove",
+                          label: t("suppliers.removeSupplier"),
+                          icon: X,
+                          onSelect: () => handleRemoveSupplier(supplier.link_id),
+                          primary: true,
+                          danger: true,
+                          hidden: !canManage,
+                        },
+                      ]}
+                    />
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                <TableCell colSpan={columns.visibleCount}className="text-center text-gray-500 dark:text-gray-400 py-8">
                   {t("suppliers.noSuppliers")}
                 </TableCell>
               </TableRow>

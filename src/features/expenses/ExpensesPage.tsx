@@ -17,6 +17,9 @@ import {
   TableCell,
   TableNumericCell,
   Input,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
 import { ExpenseForm } from "./components/ExpenseForm";
 import { ExpenseCategoriesModal } from "./components/ExpenseCategoriesModal";
@@ -24,6 +27,7 @@ import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import { expenseApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_EXPENSES } from "@/lib/demo-data";
@@ -139,6 +143,20 @@ export function ExpensesPage() {
     selection.clear();
   }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const columns = useTableColumns(
+    "expenses",
+    [
+      { key: "select", label: "", hideable: false },
+      { key: "name", label: t("fields.name"), hideable: false },
+      { key: "category", label: t("fields.category"), isEmpty: (e) => !e.category },
+      { key: "amount", label: t("fields.amount") },
+      { key: "date", label: t("fields.date") },
+      { key: "notes", label: t("fields.notes"), isEmpty: (e) => !e.notes },
+      { key: "actions", label: "", hideable: false },
+    ],
+    filteredExpenses
+  );
+
   const handleOpenModal = (expense?: Expense) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
     setSelectedExpense(expense);
@@ -181,40 +199,43 @@ export function ExpensesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
-        </div>
-        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
-          <Button variant="secondary" size="sm" onClick={() => setCategoriesOpen(true)}>
-            <Tags className="h-4 w-4 me-2" />
-            {t("categories.manage")}
-          </Button>
-          {canCreate && (
-            <Button onClick={() => handleOpenModal()} size="sm">
-              <Plus className="h-4 w-4 me-2" />
-              {t("newExpense")}
+      <PageHeader
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={
+          <>
+            <Button variant="secondary" size="sm" onClick={() => setCategoriesOpen(true)}>
+              <Tags className="h-4 w-4 me-2" />
+              {t("categories.manage")}
             </Button>
-          )}
-        </div>
-      </div>
+            {canCreate && (
+              <Button onClick={() => handleOpenModal()} size="sm">
+                <Plus className="h-4 w-4 me-2" />
+                {t("newExpense")}
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("expenseList")}</CardTitle>
-            <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
-              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                id="expense-search"
-                name="expense-search"
-                placeholder={t("searchPlaceholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoComplete="off"
-                className="ps-9"
-              />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <ColumnPicker columns={columns} />
+              <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="expense-search"
+                  name="expense-search"
+                  placeholder={t("searchPlaceholder")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoComplete="off"
+                  className="ps-9"
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -274,17 +295,17 @@ export function ExpensesPage() {
                   </label>
                 </TableHead>
                 <TableHead>{t("fields.name")}</TableHead>
-                <TableHead>{t("fields.category")}</TableHead>
-                <TableHead className="text-end">{t("fields.amount")}</TableHead>
-                <TableHead>{t("fields.date")}</TableHead>
-                <TableHead>{t("fields.notes")}</TableHead>
-                <TableHead className="w-24">{tCommon("buttons.actions")}</TableHead>
+                {columns.show("category") && <TableHead>{t("fields.category")}</TableHead>}
+                {columns.show("amount") && <TableHead className="text-end">{t("fields.amount")}</TableHead>}
+                {columns.show("date") && <TableHead>{t("fields.date")}</TableHead>}
+                {columns.show("notes") && <TableHead>{t("fields.notes")}</TableHead>}
+                <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredExpenses && filteredExpenses.length > 0 ? (
                 filteredExpenses.map((expense) => (
-                  <TableRow key={expense.id}>
+                  <TableRow key={expense.id} onActivate={canEdit ? () => handleOpenModal(expense) : undefined}>
                     <TableCell>
                       <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
                         <input
@@ -296,47 +317,47 @@ export function ExpensesPage() {
                       </label>
                     </TableCell>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">{expense.name}</TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
-                      {expense.category ? (
-                        <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs">
-                          {expense.category.name}
-                        </span>
-                      ) : (
-                        "-"
-                      )}
-                    </TableCell>
-                    <TableNumericCell className="text-gray-600 dark:text-gray-400">{formatCurrency(expense.amount)}</TableNumericCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">{formatDate(expense.date)}</TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">{expense.notes || "-"}</TableCell>
+                    {columns.show("category") && (
+                      <TableCell className="text-gray-600 dark:text-gray-400">
+                        {expense.category ? (
+                          <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs">
+                            {expense.category.name}
+                          </span>
+                        ) : (
+                          "-"
+                        )}
+                      </TableCell>
+                    )}
+                    {columns.show("amount") && <TableNumericCell className="text-gray-600 dark:text-gray-400">{formatCurrency(expense.amount)}</TableNumericCell>}
+                    {columns.show("date") && <TableCell className="text-gray-600 dark:text-gray-400">{formatDate(expense.date)}</TableCell>}
+                    {columns.show("notes") && <TableCell className="text-gray-600 dark:text-gray-400">{expense.notes || "-"}</TableCell>}
                     <TableCell>
-                      <div className="flex items-center gap-2 lg:gap-1">
-                        {canEdit && (
-                        <button
-                          onClick={() => handleOpenModal(expense)}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                          title={tCommon("buttons.edit")}
-                          aria-label={tCommon("buttons.edit")}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        )}
-                        {canDelete && (
-                        <button
-                          onClick={() => setDeleteConfirmId(expense.id)}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={tCommon("buttons.delete")}
-                          aria-label={tCommon("buttons.delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        )}
-                      </div>
+                      <RowActions
+                        actions={[
+                          {
+                            key: "edit",
+                            label: tCommon("buttons.edit"),
+                            icon: Pencil,
+                            onSelect: () => handleOpenModal(expense),
+                            primary: true,
+                            hidden: !canEdit,
+                          },
+                          {
+                            key: "delete",
+                            label: tCommon("buttons.delete"),
+                            icon: Trash2,
+                            onSelect: () => setDeleteConfirmId(expense.id),
+                            danger: true,
+                            hidden: !canDelete,
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                     {t("noExpenses")}
                   </TableCell>
                 </TableRow>

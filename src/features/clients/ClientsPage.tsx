@@ -16,6 +16,9 @@ import {
   TableCell,
   TableNumericCell,
   Input,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
 import { ClientForm } from "./components/ClientForm";
 import { ClientContacts } from "./components/ClientContacts";
@@ -31,6 +34,7 @@ import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import { exportToCsv } from "@/lib/csv-export";
 import { formatCurrency } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -92,6 +96,20 @@ export function ClientsPage() {
   useEffect(() => {
     selection.clear();
   }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const columns = useTableColumns(
+    "clients",
+    [
+      { key: "select", label: "", hideable: false },
+      { key: "name", label: t("fields.name"), hideable: false },
+      { key: "email", label: t("fields.email"), isEmpty: (c) => !c.email },
+      { key: "phone", label: t("fields.phone"), isEmpty: (c) => !c.phone },
+      { key: "city", label: t("fields.city"), isEmpty: (c) => !c.city },
+      { key: "outstanding", label: t("statement.outstanding") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    filteredClients
+  );
 
   const handleExportCsv = () => {
     exportToCsv(
@@ -170,44 +188,47 @@ export function ClientsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
-        </div>
-        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
-          <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredClients?.length}>
-            <Download className="h-4 w-4 me-2" />
-            {tCommon("buttons.exportCsv")}
-          </Button>
-          <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
-            <Upload className="h-4 w-4 me-2" />
-            {tCommon("buttons.import")}
-          </Button>
-          {canCreate && (
-            <Button onClick={() => handleOpenModal()} size="sm">
-              <Plus className="h-4 w-4 me-2" />
-              {t("newClient")}
+      <PageHeader
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={
+          <>
+            <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredClients?.length}>
+              <Download className="h-4 w-4 me-2" />
+              {tCommon("buttons.exportCsv")}
             </Button>
-          )}
-        </div>
-      </div>
+            <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
+              <Upload className="h-4 w-4 me-2" />
+              {tCommon("buttons.import")}
+            </Button>
+            {canCreate && (
+              <Button onClick={() => handleOpenModal()} size="sm">
+                <Plus className="h-4 w-4 me-2" />
+                {t("newClient")}
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("clientList")}</CardTitle>
-            <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
-              <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <Input
-                id="client-search"
-                name="client-search"
-                placeholder={t("searchPlaceholder")}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                autoComplete="off"
-                className="ps-9"
-              />
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <ColumnPicker columns={columns} />
+              <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
+                <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  id="client-search"
+                  name="client-search"
+                  placeholder={t("searchPlaceholder")}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  autoComplete="off"
+                  className="ps-9"
+                />
+              </div>
             </div>
           </div>
         </CardHeader>
@@ -269,17 +290,20 @@ export function ClientsPage() {
                   </label>
                 </TableHead>
                 <TableHead>{t("fields.name")}</TableHead>
-                <TableHead>{t("fields.email")}</TableHead>
-                <TableHead>{t("fields.phone")}</TableHead>
-                <TableHead>{t("fields.city")}</TableHead>
-                <TableHead className="text-end">{t("statement.outstanding")}</TableHead>
-                <TableHead className="w-24">{tCommon("buttons.actions")}</TableHead>
+                {columns.show("email") && <TableHead>{t("fields.email")}</TableHead>}
+                {columns.show("phone") && <TableHead>{t("fields.phone")}</TableHead>}
+                {columns.show("city") && <TableHead>{t("fields.city")}</TableHead>}
+                {columns.show("outstanding") && <TableHead className="text-end">{t("statement.outstanding")}</TableHead>}
+                <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredClients && filteredClients.length > 0 ? (
                 filteredClients.map((client) => (
-                  <TableRow key={client.id}>
+                  <TableRow
+                    key={client.id}
+                    onActivate={() => (canEdit && !isDemoMode ? handleOpenModal(client) : setViewingClient(client))}
+                  >
                     <TableCell>
                       <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
                         <input
@@ -291,57 +315,53 @@ export function ClientsPage() {
                       </label>
                     </TableCell>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">{client.name}</TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">{client.email || "-"}</TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">{client.phone || "-"}</TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">{client.city || "-"}</TableCell>
-                    <TableNumericCell className="font-medium text-gray-900 dark:text-gray-100">
-                      {balances?.has(client.id) ? formatCurrency(balances.get(client.id)) : "-"}
-                    </TableNumericCell>
+                    {columns.show("email") && <TableCell className="text-gray-600 dark:text-gray-400">{client.email || "-"}</TableCell>}
+                    {columns.show("phone") && <TableCell className="text-gray-600 dark:text-gray-400">{client.phone || "-"}</TableCell>}
+                    {columns.show("city") && <TableCell className="text-gray-600 dark:text-gray-400">{client.city || "-"}</TableCell>}
+                    {columns.show("outstanding") && (
+                      <TableNumericCell className="font-medium text-gray-900 dark:text-gray-100">
+                        {balances?.has(client.id) ? formatCurrency(balances.get(client.id)) : "-"}
+                      </TableNumericCell>
+                    )}
                     <TableCell>
-                      <div className="flex items-center gap-2 lg:gap-1">
-                        <button
-                          onClick={() => handleOpenStatement(client)}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                          title={t("statement.title")}
-                          aria-label={t("statement.title")}
-                        >
-                          <FileText className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => setViewingClient(client)}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                          title={t("viewContacts")}
-                          aria-label={t("viewContacts")}
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                        {canEdit && (
-                        <button
-                          onClick={() => handleOpenModal(client)}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                          title={tCommon("buttons.edit")}
-                          aria-label={tCommon("buttons.edit")}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        )}
-                        {canDelete && (
-                        <button
-                          onClick={() => setDeleteConfirmId(client.id)}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={tCommon("buttons.delete")}
-                          aria-label={tCommon("buttons.delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        )}
-                      </div>
+                      <RowActions
+                        actions={[
+                          {
+                            key: "edit",
+                            label: tCommon("buttons.edit"),
+                            icon: Pencil,
+                            onSelect: () => handleOpenModal(client),
+                            primary: true,
+                            hidden: !canEdit,
+                          },
+                          {
+                            key: "viewContacts",
+                            label: t("viewContacts"),
+                            icon: Eye,
+                            onSelect: () => setViewingClient(client),
+                          },
+                          {
+                            key: "statement",
+                            label: t("statement.title"),
+                            icon: FileText,
+                            onSelect: () => handleOpenStatement(client),
+                          },
+                          {
+                            key: "delete",
+                            label: tCommon("buttons.delete"),
+                            icon: Trash2,
+                            onSelect: () => setDeleteConfirmId(client.id),
+                            danger: true,
+                            hidden: !canDelete,
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                     {t("noClients")}
                   </TableCell>
                 </TableRow>

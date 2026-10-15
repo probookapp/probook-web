@@ -37,7 +37,11 @@ import {
   TableCell,
   TableNumericCell,
   Badge,
+  PageHeader,
+  ColumnPicker,
 } from "@/components/ui";
+import { useTableColumns, type TableColumnsState } from "@/hooks/useTableColumns";
+import { useRouter } from "@/lib/navigation";
 import type { ReportPDFColumn } from "@/features/pdf/ReportPDF";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { locationsApi } from "@/lib/api";
@@ -135,10 +139,20 @@ function SimpleBarChart({
 }
 
 /** CSV + PDF export toolbar shared by every report tab. */
-function ExportBar({ onCsv, onPdf }: { onCsv: () => void; onPdf: () => void }) {
+function ExportBar({
+  onCsv,
+  onPdf,
+  columns,
+}: {
+  onCsv: () => void;
+  onPdf: () => void;
+  /** The tab's column picker, for the tables wide enough to need one. */
+  columns?: TableColumnsState;
+}) {
   const { t } = useTranslation(["reports"]);
   return (
     <div className="flex justify-end gap-2">
+      {columns && <ColumnPicker columns={columns} />}
       <Button variant="secondary" size="sm" onClick={onPdf}>
         <FileDown className="h-4 w-4 me-2" />
         {t("reports:exportPdf")}
@@ -222,6 +236,47 @@ export function ReportsPage() {
     useTaxSummary(startDate, endDate, activeReport === "taxSummary");
   const { data: accountingData, isPending: isLoadingAccounting } =
     useAccountingExport(startDate, endDate, activeReport === "accountingExport");
+
+  const router = useRouter();
+  const profitColumns = useTableColumns(
+    "report-profit-margin",
+    [
+      { key: "product", label: t("reports:profitMargin.product"), hideable: false },
+      { key: "quantity", label: t("reports:profitMargin.quantity") },
+      { key: "revenue", label: t("reports:profitMargin.revenue") },
+      { key: "cost", label: t("reports:profitMargin.cost") },
+      { key: "margin", label: t("reports:profitMargin.margin") },
+      { key: "marginPercent", label: t("reports:profitMargin.marginPercent") },
+    ],
+    profitData
+  );
+  const outstandingColumns = useTableColumns(
+    "report-outstanding",
+    [
+      { key: "invoice", label: t("reports:outstanding.invoice"), hideable: false },
+      { key: "client", label: t("reports:outstanding.client") },
+      { key: "issueDate", label: t("reports:outstanding.issueDate") },
+      { key: "dueDate", label: t("reports:outstanding.dueDate") },
+      { key: "status", label: t("reports:outstanding.status") },
+      { key: "amount", label: t("reports:outstanding.amount") },
+    ],
+    outstandingData
+  );
+  const accountingColumns = useTableColumns(
+    "report-accounting-journal",
+    [
+      { key: "date", label: t("reports:accountingExport.date") },
+      { key: "entryType", label: t("reports:accountingExport.entryType") },
+      { key: "document", label: t("reports:accountingExport.document"), hideable: false },
+      { key: "party", label: t("reports:accountingExport.party"), isEmpty: (r) => !r.party },
+      { key: "discount", label: t("reports:accountingExport.discount") },
+      { key: "ht", label: t("reports:accountingExport.ht") },
+      { key: "vat", label: t("reports:accountingExport.vat") },
+      { key: "ttc", label: t("reports:accountingExport.ttc") },
+    ],
+    // The rows on screen: the table stops at the first hundred.
+    accountingData?.journal.slice(0, 100)
+  );
 
   const reports = [
     { id: "pipeline" as const, label: t("reports:pipeline.title"), icon: Activity },
@@ -470,7 +525,7 @@ export function ReportsPage() {
                   </TableHeader>
                   <TableBody>
                     {progress?.awaiting_payment.map((row) => (
-                      <TableRow key={row.id}>
+                      <TableRow key={row.id} onActivate={() => router.push(`/invoices/${row.id}`)}>
                         <TableCell className="font-mono">{row.number}</TableCell>
                         <TableCell>{row.client || "-"}</TableCell>
                         <TableCell>
@@ -507,7 +562,7 @@ export function ReportsPage() {
                   </TableHeader>
                   <TableBody>
                     {progress?.awaiting_invoice.map((row) => (
-                      <TableRow key={row.id}>
+                      <TableRow key={row.id} onActivate={() => router.push(`/quotes/${row.id}`)}>
                         <TableCell className="font-mono">{row.number}</TableCell>
                         <TableCell>{row.client || "-"}</TableCell>
                         <TableCell>{formatDate(row.date)}</TableCell>
@@ -767,6 +822,7 @@ export function ReportsPage() {
         return (
           <div className="space-y-4">
             <ExportBar
+              columns={profitColumns}
               onCsv={() => exportToCSV(profitData || [], "marge_produits")}
               onPdf={() =>
                 exportToPDF(
@@ -811,11 +867,11 @@ export function ReportsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("reports:profitMargin.product")}</TableHead>
-                  <TableHead className="text-end">{t("reports:profitMargin.quantity")}</TableHead>
-                  <TableHead className="text-end">{t("reports:profitMargin.revenue")}</TableHead>
-                  <TableHead className="text-end">{t("reports:profitMargin.cost")}</TableHead>
-                  <TableHead className="text-end">{t("reports:profitMargin.margin")}</TableHead>
-                  <TableHead className="text-end">{t("reports:profitMargin.marginPercent")}</TableHead>
+                  {profitColumns.show("quantity") && <TableHead className="text-end">{t("reports:profitMargin.quantity")}</TableHead>}
+                  {profitColumns.show("revenue") && <TableHead className="text-end">{t("reports:profitMargin.revenue")}</TableHead>}
+                  {profitColumns.show("cost") && <TableHead className="text-end">{t("reports:profitMargin.cost")}</TableHead>}
+                  {profitColumns.show("margin") && <TableHead className="text-end">{t("reports:profitMargin.margin")}</TableHead>}
+                  {profitColumns.show("marginPercent") && <TableHead className="text-end">{t("reports:profitMargin.marginPercent")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -823,24 +879,26 @@ export function ReportsPage() {
                   profitData.map((row) => (
                     <TableRow key={row.product_id}>
                       <TableCell className="font-medium">{row.product_name}</TableCell>
-                      <TableCell className="text-end">{row.quantity_sold.toFixed(2)}</TableCell>
-                      <TableNumericCell>{formatCurrency(row.revenue)}</TableNumericCell>
-                      <TableNumericCell>{formatCurrency(row.cost)}</TableNumericCell>
-                      <TableNumericCell
-                        className={
-                          row.margin >= 0
-                            ? "text-end font-medium text-green-600 dark:text-green-400"
-                            : "text-end font-medium text-red-600 dark:text-red-400"
-                        }
-                      >
-                        {formatCurrency(row.margin)}
-                      </TableNumericCell>
-                      <TableCell className="text-end">{row.margin_percent.toFixed(1)}%</TableCell>
+                      {profitColumns.show("quantity") && <TableCell className="text-end">{row.quantity_sold.toFixed(2)}</TableCell>}
+                      {profitColumns.show("revenue") && <TableNumericCell>{formatCurrency(row.revenue)}</TableNumericCell>}
+                      {profitColumns.show("cost") && <TableNumericCell>{formatCurrency(row.cost)}</TableNumericCell>}
+                      {profitColumns.show("margin") && (
+                        <TableNumericCell
+                          className={
+                            row.margin >= 0
+                              ? "text-end font-medium text-green-600 dark:text-green-400"
+                              : "text-end font-medium text-red-600 dark:text-red-400"
+                          }
+                        >
+                          {formatCurrency(row.margin)}
+                        </TableNumericCell>
+                      )}
+                      {profitColumns.show("marginPercent") && <TableCell className="text-end">{row.margin_percent.toFixed(1)}%</TableCell>}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-(--color-text-secondary) py-8">
+                    <TableCell colSpan={profitColumns.visibleCount}className="text-center text-(--color-text-secondary) py-8">
                       {t("reports:noData")}
                     </TableCell>
                   </TableRow>
@@ -955,6 +1013,7 @@ export function ReportsPage() {
         return (
           <div className="space-y-4">
             <ExportBar
+              columns={outstandingColumns}
               onCsv={() => exportToCSV(outstandingData || [], "impayes")}
               onPdf={() =>
                 exportToPDF(
@@ -989,40 +1048,44 @@ export function ReportsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("reports:outstanding.invoice")}</TableHead>
-                  <TableHead>{t("reports:outstanding.client")}</TableHead>
-                  <TableHead>{t("reports:outstanding.issueDate")}</TableHead>
-                  <TableHead>{t("reports:outstanding.dueDate")}</TableHead>
-                  <TableHead>{t("reports:outstanding.status")}</TableHead>
-                  <TableHead className="text-end">{t("reports:outstanding.amount")}</TableHead>
+                  {outstandingColumns.show("client") && <TableHead>{t("reports:outstanding.client")}</TableHead>}
+                  {outstandingColumns.show("issueDate") && <TableHead>{t("reports:outstanding.issueDate")}</TableHead>}
+                  {outstandingColumns.show("dueDate") && <TableHead>{t("reports:outstanding.dueDate")}</TableHead>}
+                  {outstandingColumns.show("status") && <TableHead>{t("reports:outstanding.status")}</TableHead>}
+                  {outstandingColumns.show("amount") && <TableHead className="text-end">{t("reports:outstanding.amount")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {outstandingData && outstandingData.length > 0 ? (
                   outstandingData.map((row) => (
-                    <TableRow key={row.invoice_id}>
+                    <TableRow key={row.invoice_id} onActivate={() => router.push(`/invoices/${row.invoice_id}`)}>
                       <TableCell className="font-mono font-medium">
                         {row.invoice_number}
                       </TableCell>
-                      <TableCell>{row.client_name}</TableCell>
-                      <TableCell>{formatDate(row.issue_date)}</TableCell>
-                      <TableCell>{formatDate(row.due_date)}</TableCell>
-                      <TableCell>
-                        {row.days_overdue > 0 ? (
-                          <Badge variant="danger">
-                            {t("reports:daysOverdue", { count: row.days_overdue })}
-                          </Badge>
-                        ) : (
-                          <Badge variant="warning">{t("reports:dueNow")}</Badge>
-                        )}
-                      </TableCell>
-                      <TableNumericCell className="font-medium">
-                        {formatCurrency(row.total)}
-                      </TableNumericCell>
+                      {outstandingColumns.show("client") && <TableCell>{row.client_name}</TableCell>}
+                      {outstandingColumns.show("issueDate") && <TableCell>{formatDate(row.issue_date)}</TableCell>}
+                      {outstandingColumns.show("dueDate") && <TableCell>{formatDate(row.due_date)}</TableCell>}
+                      {outstandingColumns.show("status") && (
+                        <TableCell>
+                          {row.days_overdue > 0 ? (
+                            <Badge variant="danger">
+                              {t("reports:daysOverdue", { count: row.days_overdue })}
+                            </Badge>
+                          ) : (
+                            <Badge variant="warning">{t("reports:dueNow")}</Badge>
+                          )}
+                        </TableCell>
+                      )}
+                      {outstandingColumns.show("amount") && (
+                        <TableNumericCell className="font-medium">
+                          {formatCurrency(row.total)}
+                        </TableNumericCell>
+                      )}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-(--color-text-secondary) py-8">
+                    <TableCell colSpan={outstandingColumns.visibleCount}className="text-center text-(--color-text-secondary) py-8">
                       {t("reports:noUnpaidInvoices")}
                     </TableCell>
                   </TableRow>
@@ -1696,6 +1759,8 @@ export function ReportsPage() {
         // The CSV always carries gross and discount; on screen the column only
         // earns its width when the period actually granted one.
         const hasDiscountRow = ae.journal.some((r) => r.discount > 0);
+        const showDiscount = hasDiscountRow && accountingColumns.show("discount");
+        const show = accountingColumns.show;
         const counts: { label: string; value: number; data: unknown[]; filename: string }[] = [
           { label: t("reports:accountingExport.sales"), value: ae.sales.length, data: ae.sales, filename: "ventes" },
           { label: t("reports:accountingExport.purchases"), value: ae.purchases.length, data: ae.purchases, filename: "achats" },
@@ -1708,6 +1773,7 @@ export function ReportsPage() {
               {t("reports:accountingExport.description")}
             </p>
             <div className="flex flex-wrap justify-end gap-2">
+              <ColumnPicker columns={accountingColumns} />
               <Button
                 variant="primary"
                 size="sm"
@@ -1740,39 +1806,39 @@ export function ReportsPage() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>{t("reports:accountingExport.date")}</TableHead>
-                  <TableHead>{t("reports:accountingExport.entryType")}</TableHead>
+                  {show("date") && <TableHead>{t("reports:accountingExport.date")}</TableHead>}
+                  {show("entryType") && <TableHead>{t("reports:accountingExport.entryType")}</TableHead>}
                   <TableHead>{t("reports:accountingExport.document")}</TableHead>
-                  <TableHead>{t("reports:accountingExport.party")}</TableHead>
-                  {hasDiscountRow && (
+                  {show("party") && <TableHead>{t("reports:accountingExport.party")}</TableHead>}
+                  {showDiscount && (
                     <TableHead className="text-end">{t("reports:accountingExport.discount")}</TableHead>
                   )}
-                  <TableHead className="text-end">{t("reports:accountingExport.ht")}</TableHead>
-                  <TableHead className="text-end">{t("reports:accountingExport.vat")}</TableHead>
-                  <TableHead className="text-end">{t("reports:accountingExport.ttc")}</TableHead>
+                  {show("ht") && <TableHead className="text-end">{t("reports:accountingExport.ht")}</TableHead>}
+                  {show("vat") && <TableHead className="text-end">{t("reports:accountingExport.vat")}</TableHead>}
+                  {show("ttc") && <TableHead className="text-end">{t("reports:accountingExport.ttc")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {ae.journal.length > 0 ? (
                   ae.journal.slice(0, 100).map((row, i) => (
                     <TableRow key={`${row.type}-${row.document}-${i}`}>
-                      <TableCell>{formatDate(row.date)}</TableCell>
-                      <TableCell>{t(`reports:accountingExport.types.${row.type}`)}</TableCell>
+                      {show("date") && <TableCell>{formatDate(row.date)}</TableCell>}
+                      {show("entryType") && <TableCell>{t(`reports:accountingExport.types.${row.type}`)}</TableCell>}
                       <TableCell className="font-mono">{row.document || "-"}</TableCell>
-                      <TableCell>{row.party || "-"}</TableCell>
-                      {hasDiscountRow && (
+                      {show("party") && <TableCell>{row.party || "-"}</TableCell>}
+                      {showDiscount && (
                         <TableNumericCell>
                           {row.discount > 0 ? `-${formatCurrency(row.discount)}` : "-"}
                         </TableNumericCell>
                       )}
-                      <TableNumericCell>{formatCurrency(row.ht)}</TableNumericCell>
-                      <TableNumericCell>{formatCurrency(row.vat)}</TableNumericCell>
-                      <TableNumericCell>{formatCurrency(row.ttc)}</TableNumericCell>
+                      {show("ht") && <TableNumericCell>{formatCurrency(row.ht)}</TableNumericCell>}
+                      {show("vat") && <TableNumericCell>{formatCurrency(row.vat)}</TableNumericCell>}
+                      {show("ttc") && <TableNumericCell>{formatCurrency(row.ttc)}</TableNumericCell>}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={hasDiscountRow ? 8 : 7} className="text-center text-(--color-text-secondary) py-8">
+                    <TableCell colSpan={accountingColumns.visibleCount - (show("discount") && !showDiscount ? 1 : 0)}className="text-center text-(--color-text-secondary) py-8">
                       {t("reports:noData")}
                     </TableCell>
                   </TableRow>
@@ -1792,10 +1858,7 @@ export function ReportsPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-lg sm:text-2xl font-bold text-(--color-text-primary)">{t("reports:title")}</h1>
-        <p className="text-(--color-text-secondary)">{t("reports:subtitle")}</p>
-      </div>
+      <PageHeader title={t("reports:title")} subtitle={t("reports:subtitle")} />
 
       <div className="flex gap-2 overflow-x-auto pb-2 -mb-2 scrollbar-thin">
         {reports.map((report) => (

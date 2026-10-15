@@ -13,7 +13,10 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import { toast } from "@/stores/useToastStore";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import type {
@@ -61,6 +64,19 @@ export function PrinterManagement() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editing, setEditing] = useState<PosPrinterConfig | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+
+  const columns = useTableColumns<PosPrinterConfig>(
+    "printers",
+    [
+      { key: "name", label: t("printers.name"), hideable: false },
+      { key: "connection", label: t("printers.connection") },
+      { key: "register", label: t("printers.register") },
+      { key: "paperWidth", label: t("printers.paperWidth") },
+      { key: "status", label: t("printers.status") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    printers
+  );
 
   const connectionTypeOptions: { value: PrinterConnectionType; label: string }[] = [
     { value: "Network", label: t("printers.connectionTypes.network") },
@@ -162,7 +178,8 @@ export function PrinterManagement() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        {!!printers?.length && <ColumnPicker columns={columns} />}
         <Button size="sm" onClick={openCreate}>
           <Plus className="h-4 w-4 me-2" />
           {t("printers.addPrinter")}
@@ -178,16 +195,16 @@ export function PrinterManagement() {
           <TableHeader>
             <TableRow>
               <TableHead>{t("printers.name")}</TableHead>
-              <TableHead>{t("printers.connection")}</TableHead>
-              <TableHead>{t("printers.register")}</TableHead>
-              <TableHead>{t("printers.paperWidth")}</TableHead>
-              <TableHead>{t("printers.status")}</TableHead>
-              <TableHead className="text-end">{t("printers.actions")}</TableHead>
+              {columns.show("connection") && <TableHead>{t("printers.connection")}</TableHead>}
+              {columns.show("register") && <TableHead>{t("printers.register")}</TableHead>}
+              {columns.show("paperWidth") && <TableHead>{t("printers.paperWidth")}</TableHead>}
+              {columns.show("status") && <TableHead>{t("printers.status")}</TableHead>}
+              <TableHead className="w-px text-end">{t("printers.actions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {printers.map((printer) => (
-              <TableRow key={printer.id}>
+              <TableRow key={printer.id} onActivate={() => openEdit(printer)}>
                 <TableCell className="font-medium">
                   <span className="flex items-center gap-2">
                     <Printer className="h-4 w-4 text-(--color-text-secondary)" />
@@ -197,53 +214,48 @@ export function PrinterManagement() {
                     )}
                   </span>
                 </TableCell>
-                <TableCell>
-                  {printer.connection_type} · {printer.connection_address}
-                </TableCell>
-                <TableCell>{registerName(printer.register_id)}</TableCell>
-                <TableCell>{printer.paper_width} mm</TableCell>
-                <TableCell>
-                  {printer.is_active ? (
-                    <Badge variant="success">{t("printers.active")}</Badge>
-                  ) : (
-                    <Badge variant="default">{t("printers.inactive")}</Badge>
-                  )}
-                </TableCell>
-                <TableCell className="text-end">
-                  <div className="flex justify-end gap-2 lg:gap-1">
-                    {!printer.is_default && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="w-10 px-0 max-lg:h-10 lg:w-8"
-                        onClick={() => handleSetDefault(printer)}
-                        title={t("printers.setDefault")}
-                        aria-label={t("printers.setDefault")}
-                      >
-                        <Star className="h-4 w-4" />
-                      </Button>
+                {columns.show("connection") && (
+                  <TableCell>
+                    {printer.connection_type} · {printer.connection_address}
+                  </TableCell>
+                )}
+                {columns.show("register") && <TableCell>{registerName(printer.register_id)}</TableCell>}
+                {columns.show("paperWidth") && <TableCell>{printer.paper_width} mm</TableCell>}
+                {columns.show("status") && (
+                  <TableCell>
+                    {printer.is_active ? (
+                      <Badge variant="success">{t("printers.active")}</Badge>
+                    ) : (
+                      <Badge variant="default">{t("printers.inactive")}</Badge>
                     )}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-10 px-0 max-lg:h-10 lg:w-8"
-                      onClick={() => openEdit(printer)}
-                      title={t("printers.edit")}
-                      aria-label={t("printers.edit")}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-10 px-0 max-lg:h-10 lg:w-8"
-                      onClick={() => handleDelete(printer)}
-                      title={t("printers.delete")}
-                      aria-label={t("printers.delete")}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-600 dark:text-red-400" />
-                    </Button>
-                  </div>
+                  </TableCell>
+                )}
+                <TableCell>
+                  <RowActions
+                    actions={[
+                      {
+                        key: "edit",
+                        label: t("printers.edit"),
+                        icon: Pencil,
+                        onSelect: () => openEdit(printer),
+                        primary: true,
+                      },
+                      {
+                        key: "setDefault",
+                        label: t("printers.setDefault"),
+                        icon: Star,
+                        onSelect: () => handleSetDefault(printer),
+                        hidden: printer.is_default,
+                      },
+                      {
+                        key: "delete",
+                        label: t("printers.delete"),
+                        icon: Trash2,
+                        onSelect: () => handleDelete(printer),
+                        danger: true,
+                      },
+                    ]}
+                  />
                 </TableCell>
               </TableRow>
             ))}

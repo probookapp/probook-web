@@ -15,11 +15,14 @@ import {
   TableHead,
   TableCell,
   Input,
+  PageHeader,
+  RowActions,
 } from "@/components/ui";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import { SupplierForm } from "./components/SupplierForm";
 import { SupplierProducts } from "./components/SupplierProducts";
 import { SupplierCredits } from "./components/SupplierCredits";
@@ -87,6 +90,20 @@ export function SuppliersPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { selection.clear(); }, [searchQuery]);
 
+  // Three optional columns: no picker, but each steps aside when empty.
+  const columns = useTableColumns(
+    "suppliers",
+    [
+      { key: "select", label: "", hideable: false },
+      { key: "name", label: t("fields.name"), hideable: false },
+      { key: "email", label: t("fields.email"), isEmpty: (s) => !s.email },
+      { key: "phone", label: t("fields.phone"), isEmpty: (s) => !s.phone },
+      { key: "address", label: t("fields.address"), isEmpty: (s) => !s.address },
+      { key: "actions", label: "", hideable: false },
+    ],
+    filteredSuppliers
+  );
+
   const handleOpenModal = (supplier?: Supplier) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
     setSelectedSupplier(supplier);
@@ -150,24 +167,24 @@ export function SuppliersPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
-        </div>
-        <div className="flex flex-wrap gap-2 self-start sm:self-auto">
-          <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
-            <Upload className="h-4 w-4 me-2" />
-            {tCommon("buttons.import")}
-          </Button>
-          {canCreate && (
-            <Button onClick={() => handleOpenModal()} size="sm">
-              <Plus className="h-4 w-4 me-2" />
-              {t("newSupplier")}
+      <PageHeader
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={
+          <>
+            <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
+              <Upload className="h-4 w-4 me-2" />
+              {tCommon("buttons.import")}
             </Button>
-          )}
-        </div>
-      </div>
+            {canCreate && (
+              <Button onClick={() => handleOpenModal()} size="sm">
+                <Plus className="h-4 w-4 me-2" />
+                {t("newSupplier")}
+              </Button>
+            )}
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>
@@ -239,16 +256,19 @@ export function SuppliersPage() {
                   </label>
                 </TableHead>
                 <TableHead>{t("fields.name")}</TableHead>
-                <TableHead>{t("fields.email")}</TableHead>
-                <TableHead>{t("fields.phone")}</TableHead>
-                <TableHead>{t("fields.address")}</TableHead>
-                <TableHead className="w-32">{tCommon("buttons.actions")}</TableHead>
+                {columns.show("email") && <TableHead>{t("fields.email")}</TableHead>}
+                {columns.show("phone") && <TableHead>{t("fields.phone")}</TableHead>}
+                {columns.show("address") && <TableHead>{t("fields.address")}</TableHead>}
+                <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredSuppliers && filteredSuppliers.length > 0 ? (
                 filteredSuppliers.map((supplier) => (
-                  <TableRow key={supplier.id}>
+                  <TableRow
+                    key={supplier.id}
+                    onActivate={() => (canEdit && !isDemoMode ? handleOpenModal(supplier) : setProductsSupplier(supplier))}
+                  >
                     <TableCell>
                       <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
                         <input
@@ -260,54 +280,48 @@ export function SuppliersPage() {
                       </label>
                     </TableCell>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">{supplier.name}</TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">{supplier.email || "-"}</TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">{supplier.phone || "-"}</TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">{supplier.address || "-"}</TableCell>
+                    {columns.show("email") && <TableCell className="text-gray-600 dark:text-gray-400">{supplier.email || "-"}</TableCell>}
+                    {columns.show("phone") && <TableCell className="text-gray-600 dark:text-gray-400">{supplier.phone || "-"}</TableCell>}
+                    {columns.show("address") && <TableCell className="text-gray-600 dark:text-gray-400">{supplier.address || "-"}</TableCell>}
                     <TableCell>
-                      <div className="flex items-center gap-2 lg:gap-1">
-                        <button
-                          onClick={() => setProductsSupplier(supplier)}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                          title={t("products.title")}
-                          aria-label={t("products.title")}
-                        >
-                          <Package className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => setCreditsSupplier(supplier)}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                          title={t("credits.title")}
-                          aria-label={t("credits.title")}
-                        >
-                          <CreditCard className="h-4 w-4" />
-                        </button>
-                        {canEdit && (
-                        <button
-                          onClick={() => handleOpenModal(supplier)}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                          title={tCommon("buttons.edit")}
-                          aria-label={tCommon("buttons.edit")}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        )}
-                        {canDelete && (
-                        <button
-                          onClick={() => setDeleteConfirmId(supplier.id)}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={tCommon("buttons.delete")}
-                          aria-label={tCommon("buttons.delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                        )}
-                      </div>
+                      <RowActions
+                        actions={[
+                          {
+                            key: "edit",
+                            label: tCommon("buttons.edit"),
+                            icon: Pencil,
+                            onSelect: () => handleOpenModal(supplier),
+                            primary: true,
+                            hidden: !canEdit,
+                          },
+                          {
+                            key: "products",
+                            label: t("products.title"),
+                            icon: Package,
+                            onSelect: () => setProductsSupplier(supplier),
+                          },
+                          {
+                            key: "credits",
+                            label: t("credits.title"),
+                            icon: CreditCard,
+                            onSelect: () => setCreditsSupplier(supplier),
+                          },
+                          {
+                            key: "delete",
+                            label: tCommon("buttons.delete"),
+                            icon: Trash2,
+                            onSelect: () => setDeleteConfirmId(supplier.id),
+                            danger: true,
+                            hidden: !canDelete,
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                     {t("noSuppliers")}
                   </TableCell>
                 </TableRow>

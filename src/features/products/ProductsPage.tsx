@@ -19,11 +19,15 @@ import {
   TableNumericCell,
   Input,
   Badge,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
 import { useSelection } from "@/hooks/useSelection";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import { ProductForm } from "./components/ProductForm";
 import { ProductSuppliers } from "./components/ProductSuppliers";
 import { CategoryManager } from "./components/CategoryManager";
@@ -137,6 +141,23 @@ export function ProductsPage() {
 
   useEffect(() => { selection.clear(); }, [searchQuery, categoryFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const columns = useTableColumns(
+    "products",
+    [
+      { key: "select", label: "", hideable: false },
+      { key: "type", label: t("fields.type") },
+      { key: "reference", label: t("fields.reference"), isEmpty: (p) => !p.reference },
+      { key: "designation", label: t("fields.designation"), hideable: false },
+      { key: "category", label: t("fields.category"), isEmpty: (p) => !getCategoryName(p.category_id) },
+      { key: "suppliers", label: t("fields.suppliers"), isEmpty: (p) => !suppliersByProduct[p.id]?.length },
+      { key: "purchasePrice", label: t("fields.purchasePriceHt"), isEmpty: (p) => p.purchase_price == null },
+      { key: "price", label: t("fields.priceHT") },
+      { key: "quantity", label: t("fields.quantity") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    filteredProducts
+  );
+
   const handleExportCsv = () => {
     exportToCsv(
       filteredProducts ?? [],
@@ -231,30 +252,30 @@ export function ProductsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subtitle")}</p>
-        </div>
-        {activeTab === "products" && (
-          <div className="flex flex-wrap gap-2 self-start sm:self-auto">
-            <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredProducts?.length}>
-              <Download className="h-4 w-4 me-2" />
-              {tCommon("buttons.exportCsv")}
-            </Button>
-            <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
-              <Upload className="h-4 w-4 me-2" />
-              {tCommon("buttons.import")}
-            </Button>
-            {canCreate && (
-              <Button onClick={() => handleOpenModal()} size="sm">
-                <Plus className="h-4 w-4 me-2" />
-                {t("newProduct")}
+      <PageHeader
+        title={t("title")}
+        subtitle={t("subtitle")}
+        actions={
+          activeTab === "products" ? (
+            <>
+              <Button variant="secondary" onClick={handleExportCsv} size="sm" disabled={!filteredProducts?.length}>
+                <Download className="h-4 w-4 me-2" />
+                {tCommon("buttons.exportCsv")}
               </Button>
-            )}
-          </div>
-        )}
-      </div>
+              <Button variant="secondary" onClick={() => isDemoMode ? showSubscribePrompt() : setIsImportOpen(true)} size="sm">
+                <Upload className="h-4 w-4 me-2" />
+                {tCommon("buttons.import")}
+              </Button>
+              {canCreate && (
+                <Button onClick={() => handleOpenModal()} size="sm">
+                  <Plus className="h-4 w-4 me-2" />
+                  {t("newProduct")}
+                </Button>
+              )}
+            </>
+          ) : undefined
+        }
+      />
 
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">
@@ -327,6 +348,7 @@ export function ProductsPage() {
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle>{t("productList")}</CardTitle>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
+                <ColumnPicker columns={columns} />
                 {categories && categories.length > 0 && (
                   <select
                     id="category-filter"
@@ -444,77 +466,88 @@ export function ProductsPage() {
                       <input type="checkbox" checked={selection.isAllSelected} ref={(el) => { if (el) el.indeterminate = selection.isIndeterminate; }} onChange={() => selection.toggleAll()} className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500" />
                     </label>
                   </TableHead>
-                  <TableHead>{t("fields.type")}</TableHead>
-                  <TableHead>{t("fields.reference")}</TableHead>
+                  {columns.show("type") && <TableHead>{t("fields.type")}</TableHead>}
+                  {columns.show("reference") && <TableHead>{t("fields.reference")}</TableHead>}
                   <TableHead>{t("fields.designation")}</TableHead>
-                  <TableHead>{t("fields.category")}</TableHead>
-                  <TableHead>{t("fields.suppliers")}</TableHead>
-                  <TableHead className="text-end whitespace-nowrap">{t("fields.purchasePriceHt")}</TableHead>
-                  <TableHead className="text-end whitespace-nowrap">{t("fields.priceHT")}</TableHead>
-                  <TableHead>{t("fields.quantity")}</TableHead>
-                  <TableHead>{tCommon("buttons.actions")}</TableHead>
+                  {columns.show("category") && <TableHead>{t("fields.category")}</TableHead>}
+                  {columns.show("suppliers") && <TableHead>{t("fields.suppliers")}</TableHead>}
+                  {columns.show("purchasePrice") && <TableHead className="text-end whitespace-nowrap">{t("fields.purchasePriceHt")}</TableHead>}
+                  {columns.show("price") && <TableHead className="text-end whitespace-nowrap">{t("fields.priceHT")}</TableHead>}
+                  {columns.show("quantity") && <TableHead>{t("fields.quantity")}</TableHead>}
+                  <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredProducts && filteredProducts.length > 0 ? (
                   filteredProducts.map((product) => (
-                    <TableRow key={product.id}>
+                    <TableRow key={product.id} onActivate={canEdit ? () => handleOpenModal(product) : undefined}>
                       <TableCell>
                         <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
                           <input type="checkbox" checked={selection.isSelected(product.id)} onChange={() => selection.toggle(product.id)} className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500" />
                         </label>
                       </TableCell>
-                      <TableCell>
-                        {product.is_bundle ? (
-                          <Badge variant="warning">
-                            <Boxes className="h-3 w-3 me-1" />
-                            {t("types.bundle")}
-                          </Badge>
-                        ) : product.is_service ? (
-                          <Badge variant="info">
-                            <Briefcase className="h-3 w-3 me-1" />
-                            {t("types.service")}
-                          </Badge>
-                        ) : (
-                          <Badge variant="default">
-                            <Package className="h-3 w-3 me-1" />
-                            {t("types.product")}
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm text-gray-600 dark:text-gray-400">
-                        {product.reference || "-"}
-                      </TableCell>
+                      {columns.show("type") && (
+                        <TableCell>
+                          {product.is_bundle ? (
+                            <Badge variant="warning">
+                              <Boxes className="h-3 w-3 me-1" />
+                              {t("types.bundle")}
+                            </Badge>
+                          ) : product.is_service ? (
+                            <Badge variant="info">
+                              <Briefcase className="h-3 w-3 me-1" />
+                              {t("types.service")}
+                            </Badge>
+                          ) : (
+                            <Badge variant="default">
+                              <Package className="h-3 w-3 me-1" />
+                              {t("types.product")}
+                            </Badge>
+                          )}
+                        </TableCell>
+                      )}
+                      {columns.show("reference") && (
+                        <TableCell className="font-mono text-sm text-gray-600 dark:text-gray-400">
+                          {product.reference || "-"}
+                        </TableCell>
+                      )}
                       {/* A floor under the name: the figures are nowrap, so without one the
                           designation was the column that gave way, a word per line. */}
                       <TableCell className="min-w-48 font-medium text-gray-900 dark:text-gray-100">{product.designation}</TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {getCategoryName(product.category_id) ? (
-                          <span className="inline-flex items-center gap-1">
-                            <Folder className="h-3 w-3" />
-                            {getCategoryName(product.category_id)}
-                          </span>
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-500">-</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {suppliersByProduct[product.id]?.length ? (
-                          <div className="flex flex-wrap gap-1">
-                            {suppliersByProduct[product.id].map((s) => (
-                              <Badge key={s.supplier_id} variant="default" className="text-xs">
-                                {s.supplier_name}
-                              </Badge>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-gray-400 dark:text-gray-500">-</span>
-                        )}
-                      </TableCell>
-                      <TableNumericCell className="text-gray-600 dark:text-gray-400">
-                        {product.purchase_price != null ? formatCurrency(product.purchase_price) : "-"}
-                      </TableNumericCell>
-                      <TableNumericCell className="text-gray-600 dark:text-gray-400">{formatCurrency(product.unit_price)}</TableNumericCell>
+                      {columns.show("category") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {getCategoryName(product.category_id) ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Folder className="h-3 w-3" />
+                              {getCategoryName(product.category_id)}
+                            </span>
+                          ) : (
+                            <span className="text-gray-400 dark:text-gray-500">-</span>
+                          )}
+                        </TableCell>
+                      )}
+                      {columns.show("suppliers") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {suppliersByProduct[product.id]?.length ? (
+                            <div className="flex flex-wrap gap-1">
+                              {suppliersByProduct[product.id].map((s) => (
+                                <Badge key={s.supplier_id} variant="default" className="text-xs">
+                                  {s.supplier_name}
+                                </Badge>
+                              ))}
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 dark:text-gray-500">-</span>
+                          )}
+                        </TableCell>
+                      )}
+                      {columns.show("purchasePrice") && (
+                        <TableNumericCell className="text-gray-600 dark:text-gray-400">
+                          {product.purchase_price != null ? formatCurrency(product.purchase_price) : "-"}
+                        </TableNumericCell>
+                      )}
+                      {columns.show("price") && <TableNumericCell className="text-gray-600 dark:text-gray-400">{formatCurrency(product.unit_price)}</TableNumericCell>}
+                      {columns.show("quantity") && (
                       <TableCell>
                         {product.is_bundle ? (
                           // What its components can make up; a pack of services only has no limit.
@@ -545,66 +578,62 @@ export function ProductsPage() {
                           </div>
                         )}
                       </TableCell>
+                      )}
                       <TableCell>
-                        <div className="flex items-center gap-2 lg:gap-1">
-                          {!product.is_service && !product.is_bundle && (
-                            <>
-                              {canEdit && (
-                              <button
-                                onClick={() => handleAdjustStock(product)}
-                                aria-label={t("adjustStock.title")}
-                                title={t("adjustStock.title")}
-                                className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                              >
-                                <SlidersHorizontal className="h-4 w-4" />
-                              </button>
-                              )}
-                              <button
-                                onClick={() => setMovementsProduct(product)}
-                                aria-label={t("movements.title")}
-                                title={t("movements.title")}
-                                className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
-                              >
-                                <History className="h-4 w-4" />
-                              </button>
-                            </>
-                          )}
-                          {!product.is_bundle && (
-                          <button
-                            onClick={() => setSupplierProductId(product.id)}
-                            aria-label={t("fields.suppliers")}
-                            title={t("fields.suppliers")}
-                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
-                          >
-                            <Truck className="h-4 w-4" />
-                          </button>
-                          )}
-                          {canEdit && (
-                          <button
-                            onClick={() => handleOpenModal(product)}
-                            aria-label={tCommon("buttons.edit")}
-                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          )}
-                          {canDelete && (
-                          <button
-                            onClick={() => setDeleteConfirmId(product.id)}
-                            aria-label={tCommon("buttons.delete")}
-                            className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                            title={tCommon("buttons.delete")}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                          )}
-                        </div>
+                        <RowActions
+                          actions={[
+                            {
+                              key: "edit",
+                              label: tCommon("buttons.edit"),
+                              icon: Pencil,
+                              onSelect: () => handleOpenModal(product),
+                              primary: true,
+                              hidden: !canEdit,
+                            },
+                            {
+                              key: "adjustStock",
+                              label: t("adjustStock.title"),
+                              icon: SlidersHorizontal,
+                              onSelect: () => handleAdjustStock(product),
+                              hidden: !canEdit || product.is_service || product.is_bundle,
+                            },
+                            {
+                              key: "movements",
+                              label: t("movements.title"),
+                              icon: History,
+                              onSelect: () => setMovementsProduct(product),
+                              hidden: product.is_service || product.is_bundle,
+                            },
+                            {
+                              key: "stockLocations",
+                              label: t("stockLocations.title"),
+                              icon: MapPin,
+                              onSelect: () => setStockLocationsProduct(product),
+                              hidden: !multiLocation || product.is_service || product.is_bundle,
+                            },
+                            {
+                              key: "suppliers",
+                              label: t("fields.suppliers"),
+                              icon: Truck,
+                              onSelect: () => setSupplierProductId(product.id),
+                              hidden: product.is_bundle,
+                            },
+                            {
+                              key: "delete",
+                              label: tCommon("buttons.delete"),
+                              icon: Trash2,
+                              onSelect: () => setDeleteConfirmId(product.id),
+                              danger: true,
+                              hidden: !canDelete,
+                            },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                       {t("noProducts")}
                     </TableCell>
                   </TableRow>

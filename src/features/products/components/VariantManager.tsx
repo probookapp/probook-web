@@ -2,13 +2,26 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2, Edit2, Save, X } from "lucide-react";
-import { Button, Input } from "@/components/ui";
+import {
+  Button,
+  Input,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  TableNumericCell,
+} from "@/components/ui";
 import { productVariantApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { toast } from "@/stores/useToastStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { ProductVariant, CreateProductVariantInput } from "@/types";
-import { NUMERIC_CELL } from "@/components/ui";
+
+/** The variant list sits inside the product form: tighter than a page-level table. */
+const HEAD = "h-auto px-3 py-2 text-sm font-medium normal-case tracking-normal text-inherit bg-gray-50 dark:bg-gray-800";
+const CELL = "px-3 py-2";
 
 const PRESET_ATTRIBUTES = ["size", "color", "material"];
 const SIZE_OPTIONS = ["S", "M", "L", "XL", "XXL", "2XL", "3XL"];
@@ -175,21 +188,24 @@ export function VariantManager({ productId, isBundle = false }: VariantManagerPr
       {/* Existing variants list */}
       {variants.length > 0 && (
         <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 dark:bg-gray-800">
-              <tr>
-                <th className="px-3 py-2 text-start font-medium">{t("variants.name")}</th>
-                <th className="px-3 py-2 text-start font-medium">{t("variants.attributes")}</th>
-                {!isBundle && <th className={`px-3 py-2 font-medium ${NUMERIC_CELL}`}>{t("variants.quantity")}</th>}
-                <th className={`px-3 py-2 font-medium ${NUMERIC_CELL}`}>{t("variants.barcode")}</th>
-                <th className="px-3 py-2 w-20"></th>
-              </tr>
-            </thead>
-            <tbody>
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className={HEAD}>{t("variants.name")}</TableHead>
+                <TableHead className={HEAD}>{t("variants.attributes")}</TableHead>
+                {!isBundle && <TableHead className={`${HEAD} text-end`}>{t("variants.quantity")}</TableHead>}
+                <TableHead className={`${HEAD} text-end`}>{t("variants.barcode")}</TableHead>
+                <TableHead className={`${HEAD} w-20`}></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {variants.map((v) => (
-                <tr key={v.id} className="border-t border-gray-200 dark:border-gray-700">
-                  <td className="px-3 py-2 font-medium">{v.name}</td>
-                  <td className="px-3 py-2">
+                <TableRow
+                  key={v.id}
+                  onActivate={canEdit ? () => (isDemoMode ? showSubscribePrompt() : startEdit(v)) : undefined}
+                >
+                  <TableCell className={`${CELL} font-medium`}>{v.name}</TableCell>
+                  <TableCell className={CELL}>
                     <div className="flex flex-wrap gap-1">
                       {Object.entries(v.attributes || {}).map(([key, val]) => (
                         <span key={key} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-100 dark:bg-gray-700">
@@ -197,23 +213,25 @@ export function VariantManager({ productId, isBundle = false }: VariantManagerPr
                         </span>
                       ))}
                     </div>
-                  </td>
+                  </TableCell>
                   {!isBundle && (
-                    <td className={`px-3 py-2 ${NUMERIC_CELL}`}>
+                    <TableNumericCell className={CELL}>
                       <span className={v.quantity === 0 ? "text-red-600 dark:text-red-400 font-medium" : ""}>
                         {v.quantity}
                       </span>
-                    </td>
+                    </TableNumericCell>
                   )}
-                  <td className={`px-3 py-2 text-xs text-gray-500 ${NUMERIC_CELL}`}>
+                  <TableNumericCell className={`${CELL} text-xs text-gray-500`}>
                     {v.barcode || "-"}
-                  </td>
-                  <td className="px-3 py-2">
+                  </TableNumericCell>
+                  <TableCell className={CELL}>
                     <div className="flex items-center gap-2 lg:gap-1 justify-end">
                       {canEdit && (
                       <button
                         type="button"
                         onClick={() => isDemoMode ? showSubscribePrompt() : startEdit(v)}
+                        aria-label={t("common:buttons.edit")}
+                        title={t("common:buttons.edit")}
                         className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400"
                       >
                         <Edit2 className="h-3.5 w-3.5" />
@@ -226,17 +244,19 @@ export function VariantManager({ productId, isBundle = false }: VariantManagerPr
                           if (isDemoMode) { showSubscribePrompt(); return; }
                           if (confirm(t("common:messages.deleteConfirm"))) deleteMutation.mutate(v.id);
                         }}
+                        aria-label={t("common:buttons.delete")}
+                        title={t("common:buttons.delete")}
                         className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
                       )}
                     </div>
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ))}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
       )}
 

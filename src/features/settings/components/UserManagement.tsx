@@ -2,7 +2,20 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Plus, Pencil, Trash2, Shield } from 'lucide-react';
 import { toast } from '@/stores/useToastStore';
-import { Button, Input, Select, Modal, PasswordToggle } from '@/components/ui';
+import {
+  Button,
+  Input,
+  Select,
+  Modal,
+  PasswordToggle,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+  RowActions,
+} from '@/components/ui';
 import { useUsers, useCreateUser, useUpdateUser, useDeleteUser } from '../hooks/useUsers';
 import { useAuthStore } from '@/stores/useAuthStore';
 import { useDemoMode } from '@/components/providers/DemoModeProvider';
@@ -341,38 +354,38 @@ export function UserManagement() {
                 that name them are hidden there. Every checkbox keeps its one
                 aria-label either way. */}
             <div className="sm:overflow-x-auto sm:rounded-lg sm:border sm:border-gray-200 sm:dark:border-gray-700">
-              <table className="w-full text-sm max-sm:block">
-                <thead className="max-sm:hidden">
-                  <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                    <th className="text-start py-2 px-3 font-medium text-gray-500 dark:text-gray-400">
+              <Table className="max-sm:block">
+                <TableHeader className="max-sm:hidden">
+                  <TableRow className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <TableHead className="h-auto py-2 px-3 text-sm font-medium normal-case tracking-normal text-gray-500 dark:text-gray-400 bg-transparent">
                       {t('userManagement.module')}
-                    </th>
+                    </TableHead>
                     {PERM_ACTIONS.map((a) => (
-                      <th
+                      <TableHead
                         key={a.action}
-                        className="py-2 px-2 font-medium text-gray-500 dark:text-gray-400 text-center w-16"
+                        className="h-auto py-2 px-2 text-sm font-medium normal-case tracking-normal text-gray-500 dark:text-gray-400 bg-transparent text-center w-16"
                       >
                         {t(`userManagement.${a.label}`)}
-                      </th>
+                      </TableHead>
                     ))}
-                  </tr>
-                </thead>
-                <tbody className="max-sm:block max-sm:space-y-2">
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="max-sm:block max-sm:space-y-2">
                   {ALL_PERMISSIONS.map((perm) => {
                     const flags = formPermissions[perm] ?? emptyFlags();
                     return (
-                      <tr
+                      <TableRow
                         key={perm}
-                        className="border-b border-gray-100 dark:border-gray-800 last:border-0 max-sm:grid max-sm:grid-cols-4 max-sm:rounded-lg max-sm:border max-sm:border-gray-200 max-sm:last:border max-sm:dark:border-gray-700"
+                        className="border-b border-gray-100 dark:border-gray-800 last:border-0 hover:bg-transparent max-sm:grid max-sm:grid-cols-4 max-sm:rounded-lg max-sm:border max-sm:border-gray-200 max-sm:last:border! max-sm:dark:border-gray-700"
                       >
-                        <td className="py-2 px-3 text-gray-700 dark:text-gray-300 max-sm:col-span-4 max-sm:font-medium max-sm:pb-0">
+                        <TableCell className="py-2 px-3 text-gray-700 dark:text-gray-300 max-sm:col-span-4 max-sm:font-medium max-sm:pb-0">
                           {t(`permissions.${perm}`)}
-                        </td>
+                        </TableCell>
                         {PERM_ACTIONS.map((a) => {
                           const checked = flags[a.flag];
                           const disabled = a.action !== 'view' && !flags.canView;
                           return (
-                            <td key={a.action} className="py-2 px-2 text-center max-sm:p-0">
+                            <TableCell key={a.action} className="py-2 px-2 text-center max-sm:p-0">
                               {/* The whole cell is the target: 44px on a phone. */}
                               <label
                                 className={`flex items-center justify-center gap-1.5 max-sm:min-h-11 max-sm:flex-col max-sm:gap-0.5 ${
@@ -394,14 +407,14 @@ export function UserManagement() {
                                   {t(`userManagement.${a.label}`)}
                                 </span>
                               </label>
-                            </td>
+                            </TableCell>
                           );
                         })}
-                      </tr>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           </div>
         )}
@@ -534,31 +547,21 @@ export function UserManagement() {
         ))}
       </ul>
 
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-gray-200 dark:border-gray-700">
-              <th className="text-start py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
-                {t('userManagement.displayName')}
-              </th>
-              <th className="text-start py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
-                {t('userManagement.username')}
-              </th>
-              <th className="text-start py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
-                {t('userManagement.role')}
-              </th>
-              <th className="text-start py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
-                {t('userManagement.status')}
-              </th>
-              <th className="text-end py-3 px-4 font-medium text-gray-500 dark:text-gray-400">
-                {t('userManagement.actions')}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
+      <div className="hidden md:block">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t('userManagement.displayName')}</TableHead>
+              <TableHead>{t('userManagement.username')}</TableHead>
+              <TableHead>{t('userManagement.role')}</TableHead>
+              <TableHead>{t('userManagement.status')}</TableHead>
+              <TableHead className="w-px text-end">{t('userManagement.actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {users?.map((user) => (
-              <tr key={user.id} className="border-b border-gray-100 dark:border-gray-800">
-                <td className="py-3 px-4">
+              <TableRow key={user.id} onActivate={canEditUser ? () => openEdit(user) : undefined}>
+                <TableCell>
                   <div className="flex items-center gap-2">
                     <span className="font-medium text-gray-900 dark:text-gray-100">
                       {user.display_name}
@@ -569,17 +572,38 @@ export function UserManagement() {
                       </span>
                     )}
                   </div>
-                </td>
-                <td className="py-3 px-4 text-gray-600 dark:text-gray-400">
+                </TableCell>
+                <TableCell className="text-gray-600 dark:text-gray-400">
                   {user.username}
-                </td>
-                <td className="py-3 px-4">{roleBadge(user)}</td>
-                <td className="py-3 px-4">{statusBadge(user)}</td>
-                <td className="py-3 px-4">{rowActions(user)}</td>
-              </tr>
+                </TableCell>
+                <TableCell>{roleBadge(user)}</TableCell>
+                <TableCell>{statusBadge(user)}</TableCell>
+                <TableCell>
+                  <RowActions
+                    actions={[
+                      {
+                        key: 'edit',
+                        label: t('common:buttons.edit'),
+                        icon: Pencil,
+                        onSelect: () => openEdit(user),
+                        primary: true,
+                        hidden: !canEditUser,
+                      },
+                      {
+                        key: 'delete',
+                        label: t('userManagement.delete'),
+                        icon: Trash2,
+                        onSelect: () => setDeleteConfirmUser(user),
+                        danger: true,
+                        hidden: !(canDeleteUser && user.id !== currentUser?.id),
+                      },
+                    ]}
+                  />
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
       {/* Create User Modal */}
