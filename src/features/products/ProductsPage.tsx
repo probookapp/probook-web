@@ -21,6 +21,8 @@ import {
   Badge,
   PageHeader,
   RowActions,
+  ListCard,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
@@ -250,6 +252,54 @@ export function ProductsPage() {
     );
   }
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const productActions = (product: Product): RowAction[] => [
+    {
+      key: "edit",
+      label: tCommon("buttons.edit"),
+      icon: Pencil,
+      onSelect: () => handleOpenModal(product),
+      primary: true,
+      hidden: !canEdit,
+    },
+    {
+      key: "adjustStock",
+      label: t("adjustStock.title"),
+      icon: SlidersHorizontal,
+      onSelect: () => handleAdjustStock(product),
+      hidden: !canEdit || product.is_service || product.is_bundle,
+    },
+    {
+      key: "movements",
+      label: t("movements.title"),
+      icon: History,
+      onSelect: () => setMovementsProduct(product),
+      hidden: product.is_service || product.is_bundle,
+    },
+    {
+      key: "stockLocations",
+      label: t("stockLocations.title"),
+      icon: MapPin,
+      onSelect: () => setStockLocationsProduct(product),
+      hidden: !multiLocation || product.is_service || product.is_bundle,
+    },
+    {
+      key: "suppliers",
+      label: t("fields.suppliers"),
+      icon: Truck,
+      onSelect: () => setSupplierProductId(product.id),
+      hidden: product.is_bundle,
+    },
+    {
+      key: "delete",
+      label: tCommon("buttons.delete"),
+      icon: Trash2,
+      onSelect: () => setDeleteConfirmId(product.id),
+      danger: true,
+      hidden: !canDelete,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -385,72 +435,50 @@ export function ProductsPage() {
             <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
               {filteredProducts && filteredProducts.length > 0 ? (
                 filteredProducts.map((product) => (
-                  <div key={product.id} className="p-4 flex items-start gap-3">
-                    <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selection.isSelected(product.id)}
-                        onChange={() => selection.toggle(product.id)}
-                        className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                      />
-                    </label>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-2">
+                  <ListCard
+                    key={product.id}
+                    onActivate={canEdit ? () => handleOpenModal(product) : undefined}
+                    leading={
+                      <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={selection.isSelected(product.id)}
+                          onChange={() => selection.toggle(product.id)}
+                          className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                        />
+                      </label>
+                    }
+                    title={product.designation}
+                    badge={
+                      product.is_bundle ? (
+                        product.quantity !== null && (
+                          <Badge variant={(product.quantity ?? 0) > 0 ? "success" : "danger"} title={t("bundle.availableHint")}>
+                            {t("bundle.available")}: {product.quantity}
+                          </Badge>
+                        )
+                      ) : !product.is_service ? (
+                        <Badge variant={(product.quantity ?? 0) > 0 ? "success" : "danger"}>
+                          {t("fields.quantity")}: {product.quantity ?? 0}
+                        </Badge>
+                      ) : undefined
+                    }
+                    meta={
+                      <span className="inline-flex flex-wrap items-center gap-x-2">
+                        {/* A plain product is the default: only packs and services say what they are. */}
                         {product.is_bundle ? (
-                          <Badge variant="warning" className="shrink-0"><Boxes className="h-3 w-3 me-1" />{t("types.bundle")}</Badge>
+                          <span className="inline-flex items-center gap-1"><Boxes className="h-3 w-3" />{t("types.bundle")}</span>
                         ) : product.is_service ? (
-                          <Badge variant="info" className="shrink-0"><Briefcase className="h-3 w-3 me-1" />{t("types.service")}</Badge>
-                        ) : (
-                          <Badge variant="default" className="shrink-0"><Package className="h-3 w-3 me-1" />{t("types.product")}</Badge>
-                        )}
-                        <p className="min-w-0 font-medium text-gray-900 dark:text-gray-100 wrap-break-word">{product.designation}</p>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-x-2 mt-1 text-sm text-gray-500 dark:text-gray-400">
+                          <span className="inline-flex items-center gap-1"><Briefcase className="h-3 w-3" />{t("types.service")}</span>
+                        ) : null}
                         {product.reference && <span className="font-mono">{product.reference}</span>}
                         {getCategoryName(product.category_id) && (
                           <span className="inline-flex items-center gap-1"><Folder className="h-3 w-3" />{getCategoryName(product.category_id)}</span>
                         )}
-                      </div>
-                      <div className="flex items-center justify-between mt-1.5">
-                        <span className="text-sm font-medium text-gray-900 dark:text-gray-100">{formatCurrency(product.unit_price)}</span>
-                        {product.is_bundle && product.quantity !== null && (
-                          <Badge variant={(product.quantity ?? 0) > 0 ? "success" : "danger"} title={t("bundle.availableHint")}>
-                            {t("bundle.available")}: {product.quantity}
-                          </Badge>
-                        )}
-                        {!product.is_service && !product.is_bundle && (
-                          <div className="flex items-center gap-1.5">
-                            <Badge variant={(product.quantity ?? 0) > 0 ? "success" : "danger"}>
-                              {t("fields.quantity")}: {product.quantity ?? 0}
-                            </Badge>
-                            {multiLocation && (
-                              <button
-                                onClick={() => setStockLocationsProduct(product)}
-                                aria-label={t("stockLocations.title")}
-                                title={t("stockLocations.title")}
-                                className="-my-2 -me-3 p-3 rounded-md text-gray-400 hover:text-primary-600 dark:hover:text-primary-400"
-                              >
-                                <MapPin className="h-4 w-4" />
-                              </button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      {/* Five icons beside the name left it a few letters wide:
-                          on a phone they get a row of their own. */}
-                      <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
-                        {!product.is_service && !product.is_bundle && (
-                          <>
-                            {canEdit && <button onClick={() => handleAdjustStock(product)} className="p-3 rounded-md text-gray-500 hover:text-blue-600 dark:hover:text-blue-400" aria-label={t("adjustStock.title")} title={t("adjustStock.title")}><SlidersHorizontal className="h-4 w-4" /></button>}
-                            <button onClick={() => setMovementsProduct(product)} className="p-3 rounded-md text-gray-500 hover:text-indigo-600 dark:hover:text-indigo-400" aria-label={t("movements.title")} title={t("movements.title")}><History className="h-4 w-4" /></button>
-                          </>
-                        )}
-                        {!product.is_bundle && <button onClick={() => setSupplierProductId(product.id)} className="p-3 rounded-md text-gray-500 hover:text-amber-600 dark:hover:text-amber-400" aria-label={t("fields.suppliers")} title={t("fields.suppliers")}><Truck className="h-4 w-4" /></button>}
-                        {canEdit && <button onClick={() => handleOpenModal(product)} className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
-                        {canDelete && <button onClick={() => setDeleteConfirmId(product.id)} className="p-3 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
-                      </div>
-                    </div>
-                  </div>
+                      </span>
+                    }
+                    amount={formatCurrency(product.unit_price)}
+                    actions={<RowActions actions={productActions(product)} />}
+                  />
                 ))
               ) : (
                 <div className="py-8 text-center text-gray-500 dark:text-gray-400">{t("noProducts")}</div>
@@ -580,54 +608,7 @@ export function ProductsPage() {
                       </TableCell>
                       )}
                       <TableCell>
-                        <RowActions
-                          actions={[
-                            {
-                              key: "edit",
-                              label: tCommon("buttons.edit"),
-                              icon: Pencil,
-                              onSelect: () => handleOpenModal(product),
-                              primary: true,
-                              hidden: !canEdit,
-                            },
-                            {
-                              key: "adjustStock",
-                              label: t("adjustStock.title"),
-                              icon: SlidersHorizontal,
-                              onSelect: () => handleAdjustStock(product),
-                              hidden: !canEdit || product.is_service || product.is_bundle,
-                            },
-                            {
-                              key: "movements",
-                              label: t("movements.title"),
-                              icon: History,
-                              onSelect: () => setMovementsProduct(product),
-                              hidden: product.is_service || product.is_bundle,
-                            },
-                            {
-                              key: "stockLocations",
-                              label: t("stockLocations.title"),
-                              icon: MapPin,
-                              onSelect: () => setStockLocationsProduct(product),
-                              hidden: !multiLocation || product.is_service || product.is_bundle,
-                            },
-                            {
-                              key: "suppliers",
-                              label: t("fields.suppliers"),
-                              icon: Truck,
-                              onSelect: () => setSupplierProductId(product.id),
-                              hidden: product.is_bundle,
-                            },
-                            {
-                              key: "delete",
-                              label: tCommon("buttons.delete"),
-                              icon: Trash2,
-                              onSelect: () => setDeleteConfirmId(product.id),
-                              danger: true,
-                              hidden: !canDelete,
-                            },
-                          ]}
-                        />
+                        <RowActions actions={productActions(product)} />
                       </TableCell>
                     </TableRow>
                   ))

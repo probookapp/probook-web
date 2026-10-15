@@ -17,6 +17,8 @@ import {
   Input,
   PageHeader,
   RowActions,
+  ListCard,
+  type RowAction,
 } from "@/components/ui";
 import { BulkActionBar } from "@/components/shared/BulkActionBar";
 import { BulkDeleteModal } from "@/components/shared/BulkDeleteModal";
@@ -165,6 +167,42 @@ export function SuppliersPage() {
     );
   }
 
+  /** Opening a supplier: the form when it can be edited, its products otherwise. */
+  const openSupplier = (supplier: Supplier) =>
+    canEdit && !isDemoMode ? handleOpenModal(supplier) : setProductsSupplier(supplier);
+
+  /** The row's actions, shared by the table row and the phone card. */
+  const supplierActions = (supplier: Supplier): RowAction[] => [
+    {
+      key: "edit",
+      label: tCommon("buttons.edit"),
+      icon: Pencil,
+      onSelect: () => handleOpenModal(supplier),
+      primary: true,
+      hidden: !canEdit,
+    },
+    {
+      key: "products",
+      label: t("products.title"),
+      icon: Package,
+      onSelect: () => setProductsSupplier(supplier),
+    },
+    {
+      key: "credits",
+      label: t("credits.title"),
+      icon: CreditCard,
+      onSelect: () => setCreditsSupplier(supplier),
+    },
+    {
+      key: "delete",
+      label: tCommon("buttons.delete"),
+      icon: Trash2,
+      onSelect: () => setDeleteConfirmId(supplier.id),
+      danger: true,
+      hidden: !canDelete,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -209,31 +247,23 @@ export function SuppliersPage() {
           <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
             {filteredSuppliers && filteredSuppliers.length > 0 ? (
               filteredSuppliers.map((supplier) => (
-                <div key={supplier.id} className="p-4 flex items-start gap-3">
-                  <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selection.isSelected(supplier.id)}
-                      onChange={() => selection.toggle(supplier.id)}
-                      className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
-                  </label>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 dark:text-gray-100 wrap-break-word">{supplier.name}</p>
-                    {supplier.email && <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{supplier.email}</p>}
-                    <div className="flex items-center gap-3 mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                      {supplier.phone && <span>{supplier.phone}</span>}
-                      {supplier.address && <span className="truncate">{supplier.address}</span>}
-                    </div>
-                    {/* A row of their own, so the name is not squeezed by the icons. */}
-                    <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
-                      <button onClick={() => setProductsSupplier(supplier)} className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={t("products.title")} aria-label={t("products.title")}><Package className="h-4 w-4" /></button>
-                      <button onClick={() => setCreditsSupplier(supplier)} className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={t("credits.title")} aria-label={t("credits.title")}><CreditCard className="h-4 w-4" /></button>
-                      {canEdit && <button onClick={() => handleOpenModal(supplier)} className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={tCommon("buttons.edit")} aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
-                      {canDelete && <button onClick={() => setDeleteConfirmId(supplier.id)} className="p-3 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
-                    </div>
-                  </div>
-                </div>
+                <ListCard
+                  key={supplier.id}
+                  onActivate={() => openSupplier(supplier)}
+                  leading={
+                    <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selection.isSelected(supplier.id)}
+                        onChange={() => selection.toggle(supplier.id)}
+                        className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                    </label>
+                  }
+                  title={supplier.name}
+                  meta={[supplier.phone, supplier.email, supplier.address].filter(Boolean).join(" · ")}
+                  actions={<RowActions actions={supplierActions(supplier)} />}
+                />
               ))
             ) : (
               <div className="py-8 text-center text-gray-500 dark:text-gray-400">{t("noSuppliers")}</div>
@@ -267,7 +297,7 @@ export function SuppliersPage() {
                 filteredSuppliers.map((supplier) => (
                   <TableRow
                     key={supplier.id}
-                    onActivate={() => (canEdit && !isDemoMode ? handleOpenModal(supplier) : setProductsSupplier(supplier))}
+                    onActivate={() => openSupplier(supplier)}
                   >
                     <TableCell>
                       <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
@@ -284,38 +314,7 @@ export function SuppliersPage() {
                     {columns.show("phone") && <TableCell className="text-gray-600 dark:text-gray-400">{supplier.phone || "-"}</TableCell>}
                     {columns.show("address") && <TableCell className="text-gray-600 dark:text-gray-400">{supplier.address || "-"}</TableCell>}
                     <TableCell>
-                      <RowActions
-                        actions={[
-                          {
-                            key: "edit",
-                            label: tCommon("buttons.edit"),
-                            icon: Pencil,
-                            onSelect: () => handleOpenModal(supplier),
-                            primary: true,
-                            hidden: !canEdit,
-                          },
-                          {
-                            key: "products",
-                            label: t("products.title"),
-                            icon: Package,
-                            onSelect: () => setProductsSupplier(supplier),
-                          },
-                          {
-                            key: "credits",
-                            label: t("credits.title"),
-                            icon: CreditCard,
-                            onSelect: () => setCreditsSupplier(supplier),
-                          },
-                          {
-                            key: "delete",
-                            label: tCommon("buttons.delete"),
-                            icon: Trash2,
-                            onSelect: () => setDeleteConfirmId(supplier.id),
-                            danger: true,
-                            hidden: !canDelete,
-                          },
-                        ]}
-                      />
+                      <RowActions actions={supplierActions(supplier)} />
                     </TableCell>
                   </TableRow>
                 ))

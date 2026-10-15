@@ -18,6 +18,8 @@ import {
   Input,
   PageHeader,
   RowActions,
+  ListCard,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { ClientForm } from "./components/ClientForm";
@@ -186,6 +188,42 @@ export function ClientsPage() {
     );
   }
 
+  /** Opening a client: the form when it can be edited, its contacts otherwise. */
+  const openClient = (client: Client) =>
+    canEdit && !isDemoMode ? handleOpenModal(client) : setViewingClient(client);
+
+  /** The row's actions, shared by the table row and the phone card. */
+  const clientActions = (client: Client): RowAction[] => [
+    {
+      key: "edit",
+      label: tCommon("buttons.edit"),
+      icon: Pencil,
+      onSelect: () => handleOpenModal(client),
+      primary: true,
+      hidden: !canEdit,
+    },
+    {
+      key: "viewContacts",
+      label: t("viewContacts"),
+      icon: Eye,
+      onSelect: () => setViewingClient(client),
+    },
+    {
+      key: "statement",
+      label: t("statement.title"),
+      icon: FileText,
+      onSelect: () => handleOpenStatement(client),
+    },
+    {
+      key: "delete",
+      label: tCommon("buttons.delete"),
+      icon: Trash2,
+      onSelect: () => setDeleteConfirmId(client.id),
+      danger: true,
+      hidden: !canDelete,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -237,37 +275,28 @@ export function ClientsPage() {
           <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
             {filteredClients && filteredClients.length > 0 ? (
               filteredClients.map((client) => (
-                <div key={client.id} className="p-4 flex items-start gap-3">
-                  <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selection.isSelected(client.id)}
-                      onChange={() => selection.toggle(client.id)}
-                      className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
-                  </label>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 dark:text-gray-100 wrap-break-word">{client.name}</p>
-                    {client.email && <p className="text-sm text-gray-500 dark:text-gray-400 truncate">{client.email}</p>}
-                    <div className="flex flex-wrap items-center gap-x-3 mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                      {client.phone && <span>{client.phone}</span>}
-                      {client.city && <span>{client.city}</span>}
-                    </div>
-                    {balances?.has(client.id) && (
-                      <p className="text-sm mt-0.5 text-gray-700 dark:text-gray-300">
-                        {t("statement.outstanding")}: <span className="font-medium">{formatCurrency(balances.get(client.id))}</span>
-                      </p>
-                    )}
-                    {/* Actions get their own row so the name is never squeezed
-                        down to an ellipsis by four icons. */}
-                    <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
-                      <button onClick={() => handleOpenStatement(client)} className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={t("statement.title")} aria-label={t("statement.title")}><FileText className="h-4 w-4" /></button>
-                      <button onClick={() => setViewingClient(client)} className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={t("viewContacts")} aria-label={t("viewContacts")}><Eye className="h-4 w-4" /></button>
-                      {canEdit && <button onClick={() => handleOpenModal(client)} className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={tCommon("buttons.edit")} aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
-                      {canDelete && <button onClick={() => setDeleteConfirmId(client.id)} className="p-3 rounded-md text-gray-500 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
-                    </div>
-                  </div>
-                </div>
+                <ListCard
+                  key={client.id}
+                  onActivate={() => openClient(client)}
+                  leading={
+                    <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selection.isSelected(client.id)}
+                        onChange={() => selection.toggle(client.id)}
+                        className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                    </label>
+                  }
+                  title={client.name}
+                  meta={[client.phone, client.city, client.email].filter(Boolean).join(" · ")}
+                  amount={
+                    balances?.has(client.id) ? (
+                      <span title={t("statement.outstanding")}>{formatCurrency(balances.get(client.id))}</span>
+                    ) : undefined
+                  }
+                  actions={<RowActions actions={clientActions(client)} />}
+                />
               ))
             ) : (
               <div className="py-8 text-center text-gray-500 dark:text-gray-400">{t("noClients")}</div>
@@ -302,7 +331,7 @@ export function ClientsPage() {
                 filteredClients.map((client) => (
                   <TableRow
                     key={client.id}
-                    onActivate={() => (canEdit && !isDemoMode ? handleOpenModal(client) : setViewingClient(client))}
+                    onActivate={() => openClient(client)}
                   >
                     <TableCell>
                       <label className="-m-3 p-3 inline-flex align-middle cursor-pointer">
@@ -324,38 +353,7 @@ export function ClientsPage() {
                       </TableNumericCell>
                     )}
                     <TableCell>
-                      <RowActions
-                        actions={[
-                          {
-                            key: "edit",
-                            label: tCommon("buttons.edit"),
-                            icon: Pencil,
-                            onSelect: () => handleOpenModal(client),
-                            primary: true,
-                            hidden: !canEdit,
-                          },
-                          {
-                            key: "viewContacts",
-                            label: t("viewContacts"),
-                            icon: Eye,
-                            onSelect: () => setViewingClient(client),
-                          },
-                          {
-                            key: "statement",
-                            label: t("statement.title"),
-                            icon: FileText,
-                            onSelect: () => handleOpenStatement(client),
-                          },
-                          {
-                            key: "delete",
-                            label: tCommon("buttons.delete"),
-                            icon: Trash2,
-                            onSelect: () => setDeleteConfirmId(client.id),
-                            danger: true,
-                            hidden: !canDelete,
-                          },
-                        ]}
-                      />
+                      <RowActions actions={clientActions(client)} />
                     </TableCell>
                   </TableRow>
                 ))

@@ -17,6 +17,8 @@ import {
   Badge,
   PageHeader,
   RowActions,
+  ListCard,
+  type RowAction,
 } from "@/components/ui";
 import { cn } from "@/lib/utils";
 import { useTableColumns } from "@/hooks/useTableColumns";
@@ -152,6 +154,25 @@ export function LocationsPage() {
     { key: "transfers", label: t("tabs.transfers") },
   ];
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const locationActions = (location: Location): RowAction[] => [
+    {
+      key: "edit",
+      label: tCommon("buttons.edit"),
+      icon: Pencil,
+      onSelect: () => handleOpenLocationModal(location),
+      primary: true,
+    },
+    {
+      key: "delete",
+      label: tCommon("buttons.delete"),
+      icon: Trash2,
+      onSelect: () => setDeleteConfirmId(location.id),
+      danger: true,
+      disabled: location.is_default,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -212,41 +233,26 @@ export function LocationsPage() {
               <ul className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
                 {locations && locations.length > 0 ? (
                   locations.map((location) => (
-                    <li key={location.id} className="flex items-start gap-3 px-4 py-3">
-                      {location.type === "warehouse" ? (
-                        <Warehouse className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
-                      ) : (
-                        <Store className="mt-0.5 h-4 w-4 shrink-0 text-gray-400" />
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="flex flex-wrap items-center gap-2 font-medium text-gray-900 dark:text-gray-100">
-                          {location.name}
-                          {location.is_default && <Badge variant="success">{t("fields.default")}</Badge>}
-                        </p>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                          {t(`types.${location.type === "warehouse" ? "warehouse" : "store"}`)}
-                          {location.address ? ` · ${location.address}` : ""}
-                        </p>
-                      </div>
-                      <div className="-me-2 flex shrink-0 items-center gap-1">
-                        <button
-                          onClick={() => handleOpenLocationModal(location)}
-                          className="p-3 rounded-md text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors"
-                          title={tCommon("buttons.edit")}
-                          aria-label={tCommon("buttons.edit")}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => setDeleteConfirmId(location.id)}
-                          disabled={location.is_default}
-                          className="p-3 rounded-md text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          title={tCommon("buttons.delete")}
-                          aria-label={tCommon("buttons.delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+                    <li key={location.id}>
+                      <ListCard
+                        onActivate={() => handleOpenLocationModal(location)}
+                        leading={
+                          location.type === "warehouse" ? (
+                            <Warehouse className="mt-1 h-4 w-4 shrink-0 text-gray-400" />
+                          ) : (
+                            <Store className="mt-1 h-4 w-4 shrink-0 text-gray-400" />
+                          )
+                        }
+                        title={location.name}
+                        badge={location.is_default && <Badge variant="success">{t("fields.default")}</Badge>}
+                        meta={
+                          <>
+                            {t(`types.${location.type === "warehouse" ? "warehouse" : "store"}`)}
+                            {location.address ? ` · ${location.address}` : ""}
+                          </>
+                        }
+                        actions={<RowActions actions={locationActions(location)} />}
+                      />
                     </li>
                   ))
                 ) : (
@@ -290,25 +296,7 @@ export function LocationsPage() {
                             </TableCell>
                           )}
                           <TableCell>
-                            <RowActions
-                              actions={[
-                                {
-                                  key: "edit",
-                                  label: tCommon("buttons.edit"),
-                                  icon: Pencil,
-                                  onSelect: () => handleOpenLocationModal(location),
-                                  primary: true,
-                                },
-                                {
-                                  key: "delete",
-                                  label: tCommon("buttons.delete"),
-                                  icon: Trash2,
-                                  onSelect: () => setDeleteConfirmId(location.id),
-                                  danger: true,
-                                  disabled: location.is_default,
-                                },
-                              ]}
-                            />
+                            <RowActions actions={locationActions(location)} />
                           </TableCell>
                         </TableRow>
                       ))
@@ -341,18 +329,23 @@ export function LocationsPage() {
               <ul className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
                 {transfers && transfers.length > 0 ? (
                   transfers.map((transfer) => (
-                    <li key={transfer.id} className="px-4 py-3">
-                      <p className="flex items-center justify-between gap-2">
-                        <span className="font-medium text-gray-900 dark:text-gray-100">{transfer.transfer_number}</span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {transfer.created_at ? new Date(transfer.created_at).toLocaleDateString() : "-"}
-                        </span>
-                      </p>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {transfer.from_location?.name ?? "-"} → {transfer.to_location?.name ?? "-"}
-                        {" · "}
-                        {t("transfers.fields.items")} : {transfer.lines?.length ?? 0}
-                      </p>
+                    <li key={transfer.id}>
+                      {/* The route is what a transfer is recognised by; its number is for quoting. */}
+                      <ListCard
+                        title={<>{transfer.from_location?.name ?? "-"} → {transfer.to_location?.name ?? "-"}</>}
+                        meta={
+                          <>
+                            {transfer.transfer_number}
+                            {" · "}
+                            {transfer.created_at ? new Date(transfer.created_at).toLocaleDateString() : "-"}
+                          </>
+                        }
+                        amount={
+                          <span className="text-sm">
+                            {t("transfers.fields.items")} : {transfer.lines?.length ?? 0}
+                          </span>
+                        }
+                      />
                     </li>
                   ))
                 ) : (

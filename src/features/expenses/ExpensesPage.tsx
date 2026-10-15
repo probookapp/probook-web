@@ -19,6 +19,8 @@ import {
   Input,
   PageHeader,
   RowActions,
+  ListCard,
+  type RowAction,
   ColumnPicker,
 } from "@/components/ui";
 import { ExpenseForm } from "./components/ExpenseForm";
@@ -197,6 +199,26 @@ export function ExpensesPage() {
     );
   }
 
+  /** The row's actions, shared by the table row and the phone card. */
+  const expenseActions = (expense: Expense): RowAction[] => [
+    {
+      key: "edit",
+      label: tCommon("buttons.edit"),
+      icon: Pencil,
+      onSelect: () => handleOpenModal(expense),
+      primary: true,
+      hidden: !canEdit,
+    },
+    {
+      key: "delete",
+      label: tCommon("buttons.delete"),
+      icon: Trash2,
+      onSelect: () => setDeleteConfirmId(expense.id),
+      danger: true,
+      hidden: !canDelete,
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -244,35 +266,33 @@ export function ExpensesPage() {
           <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
             {filteredExpenses && filteredExpenses.length > 0 ? (
               filteredExpenses.map((expense) => (
-                <div key={expense.id} className="p-4 flex items-start gap-3">
-                  <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={selection.isSelected(expense.id)}
-                      onChange={() => selection.toggle(expense.id)}
-                      className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-                    />
-                  </label>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{expense.name}</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100 shrink-0">{formatCurrency(expense.amount)}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(expense.date)}</p>
-                      {expense.category && (
-                        <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
-                          {expense.category.name}
-                        </span>
-                      )}
-                    </div>
-                    {expense.notes && <p className="text-sm text-gray-400 dark:text-gray-500 truncate mt-0.5">{expense.notes}</p>}
-                    <div className="flex flex-wrap justify-end gap-2 mt-1 -me-3">
-                      {canEdit && <button onClick={() => handleOpenModal(expense)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600 dark:hover:text-primary-400" title={tCommon("buttons.edit")} aria-label={tCommon("buttons.edit")}><Pencil className="h-4 w-4" /></button>}
-                      {canDelete && <button onClick={() => setDeleteConfirmId(expense.id)} className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed" title={tCommon("buttons.delete")} aria-label={tCommon("buttons.delete")}><Trash2 className="h-4 w-4" /></button>}
-                    </div>
-                  </div>
-                </div>
+                <ListCard
+                  key={expense.id}
+                  onActivate={canEdit ? () => handleOpenModal(expense) : undefined}
+                  leading={
+                    <label className="-mx-3 -mb-3 -mt-2 p-3 shrink-0 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selection.isSelected(expense.id)}
+                        onChange={() => selection.toggle(expense.id)}
+                        className="block h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                      />
+                    </label>
+                  }
+                  title={expense.name}
+                  badge={
+                    expense.category && (
+                      <span className="inline-flex items-center rounded-full bg-gray-100 dark:bg-gray-700 px-2 py-0.5 text-xs text-gray-600 dark:text-gray-300">
+                        {expense.category.name}
+                      </span>
+                    )
+                  }
+                  meta={formatDate(expense.date)}
+                  amount={formatCurrency(expense.amount)}
+                  actions={<RowActions actions={expenseActions(expense)} />}
+                >
+                  {expense.notes && <p className="text-sm text-gray-400 dark:text-gray-500 truncate">{expense.notes}</p>}
+                </ListCard>
               ))
             ) : (
               <div className="py-8 text-center text-gray-500 dark:text-gray-400">{t("noExpenses")}</div>
@@ -332,26 +352,7 @@ export function ExpensesPage() {
                     {columns.show("date") && <TableCell className="text-gray-600 dark:text-gray-400">{formatDate(expense.date)}</TableCell>}
                     {columns.show("notes") && <TableCell className="text-gray-600 dark:text-gray-400">{expense.notes || "-"}</TableCell>}
                     <TableCell>
-                      <RowActions
-                        actions={[
-                          {
-                            key: "edit",
-                            label: tCommon("buttons.edit"),
-                            icon: Pencil,
-                            onSelect: () => handleOpenModal(expense),
-                            primary: true,
-                            hidden: !canEdit,
-                          },
-                          {
-                            key: "delete",
-                            label: tCommon("buttons.delete"),
-                            icon: Trash2,
-                            onSelect: () => setDeleteConfirmId(expense.id),
-                            danger: true,
-                            hidden: !canDelete,
-                          },
-                        ]}
-                      />
+                      <RowActions actions={expenseActions(expense)} />
                     </TableCell>
                   </TableRow>
                 ))
