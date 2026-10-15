@@ -18,7 +18,11 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import {
   useAdminFeatures,
   useCreateFeature,
@@ -167,6 +171,30 @@ export function FeaturesPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const allFeatures = (features || []) as Feature[];
+  const featureList = allFeatures.filter((f) => matchesQuery(search, f.key, f.name));
+
+  const columns = useTableColumns<Feature>(
+    "admin-features",
+    [
+      { key: "key", label: t("features.key"), hideable: false },
+      { key: "name", label: t("features.name") },
+      {
+        key: "description",
+        label: t("features.description"),
+        isEmpty: (f) => !t(`features.desc_${f.key}`, String(f.description || "")),
+      },
+      { key: "global", label: t("features.global") },
+      {
+        key: "plans",
+        label: t("features.plans"),
+        isEmpty: (f) => !((f.plan_features || []) as unknown[]).length,
+      },
+      { key: "actions", label: "", hideable: false },
+    ],
+    featureList
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -175,27 +203,20 @@ export function FeaturesPage() {
     );
   }
 
-  const allFeatures = (features || []) as Feature[];
-  const featureList = allFeatures.filter((f) => matchesQuery(search, f.key, f.name));
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {t("features.title")}
-          </h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-            {t("features.subtitle")}
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center self-start sm:self-auto">
+      <PageHeader
+        title={t("features.title")}
+        subtitle={t("features.subtitle")}
+        actions={
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <ListSearch
             name="feature-search"
             value={search}
             onChange={setSearch}
             placeholder={t("features.searchPlaceholder")}
           />
+          <ColumnPicker columns={columns} />
           <Button
             variant="secondary"
             size="sm"
@@ -227,7 +248,8 @@ export function FeaturesPage() {
             {t("features.create")}
           </Button>
         </div>
-      </div>
+        }
+      />
 
       <Card>
         <CardContent className="p-0">
@@ -299,24 +321,27 @@ export function FeaturesPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("features.key")}</TableHead>
-                  <TableHead>{t("features.name")}</TableHead>
-                  <TableHead className="hidden md:table-cell">{t("features.description")}</TableHead>
-                  <TableHead>{t("features.global")}</TableHead>
-                  <TableHead className="hidden lg:table-cell">{t("features.plans")}</TableHead>
-                  <TableHead className="text-end">{t("features.actions")}</TableHead>
+                  {columns.show("name") && <TableHead>{t("features.name")}</TableHead>}
+                  {columns.show("description") && <TableHead className="hidden md:table-cell">{t("features.description")}</TableHead>}
+                  {columns.show("global") && <TableHead>{t("features.global")}</TableHead>}
+                  {columns.show("plans") && <TableHead className="hidden lg:table-cell">{t("features.plans")}</TableHead>}
+                  <TableHead className="w-px text-end">{t("features.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {featureList.map((feature) => {
                   const planFeatures = (feature.plan_features || []) as Record<string, unknown>[];
                   return (
-                    <TableRow key={String(feature.id)}>
+                    <TableRow key={String(feature.id)} onActivate={() => handleOpenEdit(feature)}>
                       <TableCell className="font-mono text-xs text-gray-900 dark:text-gray-100">
                         {String(feature.key || "")}
                       </TableCell>
+                      {columns.show("name") && (
                       <TableCell className="text-gray-900 dark:text-gray-100">
                         {t(`features.name_${feature.key}`, String(feature.name || ""))}
                       </TableCell>
+                      )}
+                      {columns.show("description") && (
                       <TableCell className="text-gray-500 dark:text-gray-400 hidden md:table-cell max-w-xs">
                         <span
                           className="block truncate cursor-help"
@@ -325,6 +350,8 @@ export function FeaturesPage() {
                           {t(`features.desc_${feature.key}`, String(feature.description || "-"))}
                         </span>
                       </TableCell>
+                      )}
+                      {columns.show("global") && (
                       <TableCell>
                         <button
                           onClick={() => handleToggleGlobal(feature)}
@@ -340,6 +367,8 @@ export function FeaturesPage() {
                             : t("features.disabled")}
                         </button>
                       </TableCell>
+                      )}
+                      {columns.show("plans") && (
                       <TableCell className="hidden lg:table-cell">
                         <div className="flex flex-wrap gap-1">
                           {planFeatures.length > 0
@@ -354,33 +383,33 @@ export function FeaturesPage() {
                             : <span className="text-gray-400 dark:text-gray-500">-</span>}
                         </div>
                       </TableCell>
-                      <TableCell className="text-end">
-                        <div className="flex items-center justify-end gap-2">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleOpenEdit(feature)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setDeletingFeature(feature)}
-                            aria-label={t("features.delete")}
-                            title={t("features.delete")}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                      )}
+                      <TableCell>
+                        <RowActions
+                          actions={[
+                            {
+                              key: "edit",
+                              label: t("common:buttons.edit"),
+                              icon: Pencil,
+                              onSelect: () => handleOpenEdit(feature),
+                              primary: true,
+                            },
+                            {
+                              key: "delete",
+                              label: t("features.delete"),
+                              icon: Trash2,
+                              onSelect: () => setDeletingFeature(feature),
+                              danger: true,
+                            },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   );
                 })}
                 {featureList.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                       {t("features.empty")}
                     </TableCell>
                   </TableRow>

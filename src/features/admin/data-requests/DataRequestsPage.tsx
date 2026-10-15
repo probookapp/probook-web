@@ -18,7 +18,11 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import { useAdminDataRequests, useCreateDataRequest, useUpdateDataRequest, useExecuteDataRequest } from "./hooks/useDataRequests";
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
@@ -115,6 +119,25 @@ export function DataRequestsPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const allRequests = (dataRequests || []) as DataRequest[];
+  const list = allRequests.filter((dr) =>
+    matchesQuery(search, (dr.tenant as Record<string, unknown>)?.name, dr.request_type, dr.status)
+  );
+
+  const columns = useTableColumns<DataRequest>(
+    "admin-data-requests",
+    [
+      { key: "tenant", label: t("data_requests.tenant"), hideable: false },
+      { key: "type", label: t("data_requests.type") },
+      { key: "status", label: t("data_requests.status") },
+      { key: "requestedBy", label: t("data_requests.requested_by") },
+      { key: "created", label: t("data_requests.created") },
+      { key: "completed", label: t("data_requests.completed"), isEmpty: (dr) => !dr.completed_at },
+      { key: "actions", label: "", hideable: false },
+    ],
+    list
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -123,29 +146,20 @@ export function DataRequestsPage() {
     );
   }
 
-  const allRequests = (dataRequests || []) as DataRequest[];
-  const list = allRequests.filter((dr) =>
-    matchesQuery(search, (dr.tenant as Record<string, unknown>)?.name, dr.request_type, dr.status)
-  );
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {t("data_requests.title")}
-          </h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-            {t("data_requests.description")}
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center self-start sm:self-auto">
+      <PageHeader
+        title={t("data_requests.title")}
+        subtitle={t("data_requests.description")}
+        actions={
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <ListSearch
             name="data-request-search"
             value={search}
             onChange={setSearch}
             placeholder={t("data_requests.searchPlaceholder")}
           />
+          <ColumnPicker columns={columns} />
           <Button
             variant="secondary"
             size="sm"
@@ -181,7 +195,8 @@ export function DataRequestsPage() {
             {t("data_requests.create")}
           </Button>
         </div>
-      </div>
+        }
+      />
 
       <Card>
         <CardContent className="p-0">
@@ -277,99 +292,102 @@ export function DataRequestsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("data_requests.tenant")}</TableHead>
-                  <TableHead>{t("data_requests.type")}</TableHead>
-                  <TableHead>{t("data_requests.status")}</TableHead>
-                  <TableHead>{t("data_requests.requested_by")}</TableHead>
-                  <TableHead>{t("data_requests.created")}</TableHead>
-                  <TableHead>{t("data_requests.completed")}</TableHead>
-                  <TableHead className="text-end">{t("data_requests.actions")}</TableHead>
+                  {columns.show("type") && <TableHead>{t("data_requests.type")}</TableHead>}
+                  {columns.show("status") && <TableHead>{t("data_requests.status")}</TableHead>}
+                  {columns.show("requestedBy") && <TableHead>{t("data_requests.requested_by")}</TableHead>}
+                  {columns.show("created") && <TableHead>{t("data_requests.created")}</TableHead>}
+                  {columns.show("completed") && <TableHead>{t("data_requests.completed")}</TableHead>}
+                  <TableHead className="w-px text-end">{t("data_requests.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {list.map((dr) => {
                   const tenant = dr.tenant as Record<string, unknown> | undefined;
+                  const open = dr.status === "pending" || dr.status === "processing";
                   return (
                     <TableRow key={String(dr.id)}>
                       <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                         {tenant ? String(tenant.name || "-") : "-"}
                       </TableCell>
+                      {columns.show("type") && (
+                        <TableCell>
+                          <Badge variant={dr.request_type === "export" ? "info" : "warning"}>
+                            {String(dr.request_type || "-")}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {columns.show("status") && (
+                        <TableCell>
+                          <Badge variant={getStatusVariant(String(dr.status || ""))}>
+                            {String(dr.status || "-")}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {columns.show("requestedBy") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400 text-xs">
+                          {String(dr.requested_by || "-").slice(0, 8)}...
+                        </TableCell>
+                      )}
+                      {columns.show("created") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {dr.created_at
+                            ? new Date(String(dr.created_at)).toLocaleDateString()
+                            : "-"}
+                        </TableCell>
+                      )}
+                      {columns.show("completed") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {dr.completed_at
+                            ? new Date(String(dr.completed_at)).toLocaleDateString()
+                            : "-"}
+                        </TableCell>
+                      )}
                       <TableCell>
-                        <Badge variant={dr.request_type === "export" ? "info" : "warning"}>
-                          {String(dr.request_type || "-")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusVariant(String(dr.status || ""))}>
-                          {String(dr.status || "-")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400 text-xs">
-                        {String(dr.requested_by || "-").slice(0, 8)}...
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {dr.created_at
-                          ? new Date(String(dr.created_at)).toLocaleDateString()
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {dr.completed_at
-                          ? new Date(String(dr.completed_at)).toLocaleDateString()
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-end">
-                        <div className="flex items-center justify-end gap-2">
-                          {dr.status === "completed" && dr.request_type === "export" && (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handleDownload(String(dr.id))}
-                            >
-                              <Download className="h-4 w-4 me-1" />
-                              {t("data_requests.download")}
-                            </Button>
-                          )}
-                          {dr.request_type === "deletion" && dr.status === "processing" && (
-                            <Button
-                              variant="danger"
-                              size="sm"
-                              onClick={() => { setDeleteTarget(dr); setConfirmName(""); }}
-                              title={t("data_requests.execute_deletion")}
-                            >
-                              <Trash2 className="h-4 w-4 me-1" />
-                              {t("data_requests.execute_deletion")}
-                            </Button>
-                          )}
-                          {(dr.status === "pending" || dr.status === "processing") && (
-                            <>
-                              <Button
-                                {...superOnly.button}
-                                variant="secondary"
-                                size="sm"
-                                onClick={() => handleSetStatus(String(dr.id), "completed")}
-                                isLoading={updateDataRequest.isPending}
-                                title={t("data_requests.mark_completed")}
-                              >
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleSetStatus(String(dr.id), "failed")}
-                                title={t("data_requests.mark_failed")}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </>
-                          )}
-                        </div>
+                        <RowActions
+                          actions={[
+                            {
+                              key: "download",
+                              label: t("data_requests.download"),
+                              icon: Download,
+                              onSelect: () => handleDownload(String(dr.id)),
+                              primary: true,
+                              hidden: !(dr.status === "completed" && dr.request_type === "export"),
+                            },
+                            {
+                              key: "markCompleted",
+                              label: t("data_requests.mark_completed"),
+                              icon: Check,
+                              onSelect: () => handleSetStatus(String(dr.id), "completed"),
+                              primary: true,
+                              tone: "success",
+                              disabled: !superOnly.allowed || updateDataRequest.isPending,
+                              disabledReason: superOnly.icon.title,
+                              hidden: !open,
+                            },
+                            {
+                              key: "markFailed",
+                              label: t("data_requests.mark_failed"),
+                              icon: X,
+                              onSelect: () => handleSetStatus(String(dr.id), "failed"),
+                              hidden: !open,
+                            },
+                            {
+                              key: "executeDeletion",
+                              label: t("data_requests.execute_deletion"),
+                              icon: Trash2,
+                              onSelect: () => { setDeleteTarget(dr); setConfirmName(""); },
+                              danger: true,
+                              hidden: !(dr.request_type === "deletion" && dr.status === "processing"),
+                            },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   );
                 })}
                 {list.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                       {t("data_requests.empty")}
                     </TableCell>
                   </TableRow>

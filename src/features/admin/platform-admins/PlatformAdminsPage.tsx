@@ -17,7 +17,11 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import {
   usePlatformAdmins,
   useCreatePlatformAdmin,
@@ -127,6 +131,25 @@ export function PlatformAdminsPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const allAdmins = (admins || []) as PlatformAdmin[];
+  const adminList = allAdmins.filter((a) =>
+    matchesQuery(search, a.username, a.display_name, a.email)
+  );
+
+  const columns = useTableColumns<PlatformAdmin>(
+    "admin-platform-admins",
+    [
+      { key: "username", label: t("platformAdmins.username"), hideable: false },
+      { key: "displayName", label: t("platformAdmins.displayName") },
+      { key: "email", label: t("platformAdmins.email"), isEmpty: (a) => !a.email },
+      { key: "role", label: t("platformAdmins.role") },
+      { key: "active", label: t("platformAdmins.active") },
+      { key: "created", label: t("platformAdmins.created") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    adminList
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -135,29 +158,20 @@ export function PlatformAdminsPage() {
     );
   }
 
-  const allAdmins = (admins || []) as PlatformAdmin[];
-  const adminList = allAdmins.filter((a) =>
-    matchesQuery(search, a.username, a.display_name, a.email)
-  );
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {t("platformAdmins.title")}
-          </h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-            {t("platformAdmins.description")}
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center self-start sm:self-auto">
+      <PageHeader
+        title={t("platformAdmins.title")}
+        subtitle={t("platformAdmins.description")}
+        actions={
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <ListSearch
             name="platform-admin-search"
             value={search}
             onChange={setSearch}
             placeholder={t("platformAdmins.searchPlaceholder")}
           />
+          <ColumnPicker columns={columns} />
           <Button
             variant="secondary"
             size="sm"
@@ -184,7 +198,8 @@ export function PlatformAdminsPage() {
             {t("platformAdmins.create")}
           </Button>
         </div>
-      </div>
+        }
+      />
 
       <div className="max-w-2xl">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-3">
@@ -251,68 +266,80 @@ export function PlatformAdminsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("platformAdmins.username")}</TableHead>
-                  <TableHead>{t("platformAdmins.displayName")}</TableHead>
-                  <TableHead>{t("platformAdmins.email")}</TableHead>
-                  <TableHead>{t("platformAdmins.role")}</TableHead>
-                  <TableHead>{t("platformAdmins.active")}</TableHead>
-                  <TableHead>{t("platformAdmins.created")}</TableHead>
-                  <TableHead>{t("platformAdmins.actions")}</TableHead>
+                  {columns.show("displayName") && <TableHead>{t("platformAdmins.displayName")}</TableHead>}
+                  {columns.show("email") && <TableHead>{t("platformAdmins.email")}</TableHead>}
+                  {columns.show("role") && <TableHead>{t("platformAdmins.role")}</TableHead>}
+                  {columns.show("active") && <TableHead>{t("platformAdmins.active")}</TableHead>}
+                  {columns.show("created") && <TableHead>{t("platformAdmins.created")}</TableHead>}
+                  <TableHead className="w-px text-end">{t("platformAdmins.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {adminList.map((admin) => (
-                  <TableRow key={String(admin.id)}>
+                  <TableRow key={String(admin.id)} onActivate={() => handleOpenEdit(admin)}>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                       {String(admin.username || "-")}
                     </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
-                      {String(admin.display_name || "-")}
-                    </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
-                      {String(admin.email || "-")}
-                    </TableCell>
+                    {columns.show("displayName") && (
+                      <TableCell className="text-gray-600 dark:text-gray-400">
+                        {String(admin.display_name || "-")}
+                      </TableCell>
+                    )}
+                    {columns.show("email") && (
+                      <TableCell className="text-gray-600 dark:text-gray-400">
+                        {String(admin.email || "-")}
+                      </TableCell>
+                    )}
+                    {columns.show("role") && (
+                      <TableCell>
+                        <Badge variant={admin.role === "super_admin" ? "warning" : "default"}>
+                          {admin.role === "super_admin"
+                            ? t("platformAdmins.superAdmin")
+                            : t("platformAdmins.supportAgent")}
+                        </Badge>
+                      </TableCell>
+                    )}
+                    {columns.show("active") && (
+                      <TableCell>
+                        <Badge variant={admin.is_active ? "success" : "danger"}>
+                          {admin.is_active ? t("common.yes") : t("common.no")}
+                        </Badge>
+                      </TableCell>
+                    )}
+                    {columns.show("created") && (
+                      <TableCell className="text-gray-600 dark:text-gray-400">
+                        {admin.created_at
+                          ? new Date(String(admin.created_at)).toLocaleDateString()
+                          : "-"}
+                      </TableCell>
+                    )}
                     <TableCell>
-                      <Badge variant={admin.role === "super_admin" ? "warning" : "default"}>
-                        {admin.role === "super_admin"
-                          ? t("platformAdmins.superAdmin")
-                          : t("platformAdmins.supportAgent")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={admin.is_active ? "success" : "danger"}>
-                        {admin.is_active ? t("common.yes") : t("common.no")}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
-                      {admin.created_at
-                        ? new Date(String(admin.created_at)).toLocaleDateString()
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleOpenEdit(admin)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          {...superOnly.button}
-                          variant="danger"
-                          size="sm"
-                          onClick={() => setDeletingAdmin(admin)}
-                          aria-label={t("platformAdmins.delete")}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <RowActions
+                        actions={[
+                          {
+                            key: "edit",
+                            label: t("common:buttons.edit"),
+                            icon: Pencil,
+                            onSelect: () => handleOpenEdit(admin),
+                            primary: true,
+                          },
+                          {
+                            key: "delete",
+                            label: t("platformAdmins.delete"),
+                            icon: Trash2,
+                            onSelect: () => setDeletingAdmin(admin),
+                            danger: true,
+                            disabled: !superOnly.allowed,
+                            disabledReason: superOnly.icon.title,
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
                 {adminList.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                       {t("platformAdmins.empty")}
                     </TableCell>
                   </TableRow>

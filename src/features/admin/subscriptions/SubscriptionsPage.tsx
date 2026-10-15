@@ -21,8 +21,12 @@ import {
   Badge,
   Select,
   SearchableSelect,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import {
   useAdminSubscriptionsInfinite,
   useRenewSubscription,
@@ -230,6 +234,20 @@ export function SubscriptionsPage() {
     }
   };
 
+  const columns = useTableColumns(
+    "admin-subscriptions",
+    [
+      { key: "tenant", label: t("subscriptions.tenant"), hideable: false },
+      { key: "plan", label: t("subscriptions.plan") },
+      { key: "status", label: t("subscriptions.status") },
+      { key: "billingCycle", label: t("subscriptions.billingCycle") },
+      { key: "period", label: t("subscriptions.period") },
+      { key: "price", label: t("subscriptions.price") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    subscriptions as Subscription[] | undefined
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -242,45 +260,46 @@ export function SubscriptionsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("subscriptions.title")}</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subscriptions.subtitle")}</p>
-        </div>
-        <div className="flex gap-2 self-start sm:self-auto">
-          <Button size="sm" onClick={handleOpenCreate}>
-            <Plus className="h-4 w-4 me-2" />
-            {t("subscriptions.create")}
-          </Button>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={subList.length === 0}
-            onClick={() =>
-              exportToCsv(
-                subList,
-                [
-                  { header: t("subscriptions.tenant"), accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? r.tenant_name ?? "") },
-                  { header: t("subscriptions.plan"), accessor: (r) => planNameOf(r) },
-                  { header: t("subscriptions.status"), accessor: (r) => String(r.status ?? "") },
-                  { header: t("subscriptions.billingCycle"), accessor: (r) => String(r.billing_cycle ?? "") },
-                  { header: t("subscriptions.price"), accessor: (r) => (priceOf(r) != null ? Number(priceOf(r)) / 100 : "") },
-                ],
-                "subscriptions"
-              )
-            }
-          >
-            <Download className="h-4 w-4 me-2" />
-            {t("subscriptions.exportCsv")}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title={t("subscriptions.title")}
+        subtitle={t("subscriptions.subtitle")}
+        actions={
+          <>
+            <Button size="sm" onClick={handleOpenCreate}>
+              <Plus className="h-4 w-4 me-2" />
+              {t("subscriptions.create")}
+            </Button>
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={subList.length === 0}
+              onClick={() =>
+                exportToCsv(
+                  subList,
+                  [
+                    { header: t("subscriptions.tenant"), accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? r.tenant_name ?? "") },
+                    { header: t("subscriptions.plan"), accessor: (r) => planNameOf(r) },
+                    { header: t("subscriptions.status"), accessor: (r) => String(r.status ?? "") },
+                    { header: t("subscriptions.billingCycle"), accessor: (r) => String(r.billing_cycle ?? "") },
+                    { header: t("subscriptions.price"), accessor: (r) => (priceOf(r) != null ? Number(priceOf(r)) / 100 : "") },
+                  ],
+                  "subscriptions"
+                )
+              }
+            >
+              <Download className="h-4 w-4 me-2" />
+              {t("subscriptions.exportCsv")}
+            </Button>
+          </>
+        }
+      />
 
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("subscriptions.list")}</CardTitle>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <ColumnPicker columns={columns} />
               <Select
                 name="status-filter"
                 value={statusFilter}
@@ -389,18 +408,21 @@ export function SubscriptionsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("subscriptions.tenant")}</TableHead>
-                  <TableHead>{t("subscriptions.plan")}</TableHead>
-                  <TableHead>{t("subscriptions.status")}</TableHead>
-                  <TableHead>{t("subscriptions.billingCycle")}</TableHead>
-                  <TableHead>{t("subscriptions.period")}</TableHead>
-                  <TableHead>{t("subscriptions.price")}</TableHead>
-                  <TableHead className="w-28">{t("subscriptions.actions")}</TableHead>
+                  {columns.show("plan") && <TableHead>{t("subscriptions.plan")}</TableHead>}
+                  {columns.show("status") && <TableHead>{t("subscriptions.status")}</TableHead>}
+                  {columns.show("billingCycle") && <TableHead>{t("subscriptions.billingCycle")}</TableHead>}
+                  {columns.show("period") && <TableHead>{t("subscriptions.period")}</TableHead>}
+                  {columns.show("price") && <TableHead>{t("subscriptions.price")}</TableHead>}
+                  <TableHead className="w-px text-end">{t("subscriptions.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {subList.length > 0 ? (
                   subList.map((sub) => (
-                    <TableRow key={String(sub.id)}>
+                    <TableRow
+                      key={String(sub.id)}
+                      onActivate={superOnly.allowed ? () => handleOpenEdit(sub) : undefined}
+                    >
                       <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                         {String(
                           (sub.tenant as Record<string, unknown>)?.name ||
@@ -408,54 +430,75 @@ export function SubscriptionsPage() {
                           "-"
                         )}
                       </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {planNameOf(sub)}
-                      </TableCell>
+                      {columns.show("plan") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {planNameOf(sub)}
+                        </TableCell>
+                      )}
+                      {columns.show("status") && (
+                        <TableCell>
+                          <Badge variant={getStatusVariant(String(sub.status || ""))}>
+                            {String(sub.status || "-")}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {columns.show("billingCycle") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {String(sub.billing_cycle || "-")}
+                        </TableCell>
+                      )}
+                      {columns.show("period") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {periodStartOf(sub) && periodEndOf(sub)
+                            ? `${new Date(String(periodStartOf(sub))).toLocaleDateString()} - ${new Date(String(periodEndOf(sub))).toLocaleDateString()}`
+                            : "-"}
+                        </TableCell>
+                      )}
+                      {columns.show("price") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {priceOf(sub) != null
+                            ? (Number(priceOf(sub)) / 100).toLocaleString() + " " + String(sub.currency || "")
+                            : "-"}
+                        </TableCell>
+                      )}
                       <TableCell>
-                        <Badge variant={getStatusVariant(String(sub.status || ""))}>
-                          {String(sub.status || "-")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {String(sub.billing_cycle || "-")}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {periodStartOf(sub) && periodEndOf(sub)
-                          ? `${new Date(String(periodStartOf(sub))).toLocaleDateString()} - ${new Date(String(periodEndOf(sub))).toLocaleDateString()}`
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {priceOf(sub) != null
-                          ? (Number(priceOf(sub)) / 100).toLocaleString() + " " + String(sub.currency || "")
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <button
-                            {...superOnly.icon}
-                            onClick={() => setRenewConfirmId(String(sub.id))}
-                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={t("subscriptions.renew")}
-                            aria-label={t("subscriptions.renew")}
-                          >
-                            <RefreshCw className="h-4 w-4" />
-                          </button>
-                          <button
-                            {...superOnly.icon}
-                            onClick={() => setCancelConfirmId(String(sub.id))}
-                            className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={t("subscriptions.cancel")}
-                            aria-label={t("subscriptions.cancel")}
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <RowActions
+                          actions={[
+                            {
+                              // Was only reachable from the phone layout.
+                              key: "edit",
+                              label: t("subscriptions.edit"),
+                              icon: Pencil,
+                              onSelect: () => handleOpenEdit(sub),
+                              primary: true,
+                              disabled: !superOnly.allowed,
+                              disabledReason: superOnly.icon.title,
+                            },
+                            {
+                              key: "renew",
+                              label: t("subscriptions.renew"),
+                              icon: RefreshCw,
+                              onSelect: () => setRenewConfirmId(String(sub.id)),
+                              disabled: !superOnly.allowed,
+                              disabledReason: superOnly.icon.title,
+                            },
+                            {
+                              key: "cancel",
+                              label: t("subscriptions.cancel"),
+                              icon: XCircle,
+                              onSelect: () => setCancelConfirmId(String(sub.id)),
+                              danger: true,
+                              disabled: !superOnly.allowed,
+                              disabledReason: superOnly.icon.title,
+                            },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                       {t("subscriptions.noSubscriptions")}
                     </TableCell>
                   </TableRow>

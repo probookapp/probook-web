@@ -18,7 +18,10 @@ import {
   TableCell,
   Input,
   Select,
+  PageHeader,
+  ColumnPicker,
 } from "@/components/ui";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import { useAdminAuditLogs } from "./hooks/useAuditLogs";
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 
@@ -54,14 +57,6 @@ export function AuditLogsPage() {
     limit: PAGE_SIZE,
   });
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
-      </div>
-    );
-  }
-
   // Data may be paginated { data: [], total: n } or a plain array
   const rawData = data as { data?: unknown[]; logs?: unknown[]; total?: number } | unknown[];
   const logList: AuditLog[] = Array.isArray(rawData)
@@ -72,13 +67,33 @@ export function AuditLogsPage() {
   const lastRow = (page - 1) * PAGE_SIZE + logList.length;
   const hasNextPage = lastRow < total;
 
+  const columns = useTableColumns<AuditLog>(
+    "admin-audit-logs",
+    [
+      { key: "dateTime", label: t("auditLogs.dateTime"), hideable: false },
+      { key: "actor", label: t("auditLogs.actor") },
+      { key: "action", label: t("auditLogs.action") },
+      { key: "target", label: t("auditLogs.target") },
+      { key: "tenant", label: t("auditLogs.tenant"), isEmpty: (l) => !(l.tenant_name || l.tenant) },
+      { key: "ip", label: t("auditLogs.ip"), isEmpty: (l) => !(l.ip_address || l.ip) },
+    ],
+    logList
+  );
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("auditLogs.title")}</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("auditLogs.subtitle")}</p>
-        </div>
+      <PageHeader
+        title={t("auditLogs.title")}
+        subtitle={t("auditLogs.subtitle")}
+        actions={
         <Button
           variant="secondary"
           size="sm"
@@ -104,13 +119,15 @@ export function AuditLogsPage() {
           <Download className="h-4 w-4 me-2" />
           {t("auditLogs.exportCsv")}
         </Button>
-      </div>
+        }
+      />
 
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("auditLogs.list")}</CardTitle>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <ColumnPicker columns={columns} />
               <Select
                 name="action-filter"
                 value={actionFilter}
@@ -203,11 +220,11 @@ export function AuditLogsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("auditLogs.dateTime")}</TableHead>
-                  <TableHead>{t("auditLogs.actor")}</TableHead>
-                  <TableHead>{t("auditLogs.action")}</TableHead>
-                  <TableHead>{t("auditLogs.target")}</TableHead>
-                  <TableHead>{t("auditLogs.tenant")}</TableHead>
-                  <TableHead>{t("auditLogs.ip")}</TableHead>
+                  {columns.show("actor") && <TableHead>{t("auditLogs.actor")}</TableHead>}
+                  {columns.show("action") && <TableHead>{t("auditLogs.action")}</TableHead>}
+                  {columns.show("target") && <TableHead>{t("auditLogs.target")}</TableHead>}
+                  {columns.show("tenant") && <TableHead>{t("auditLogs.tenant")}</TableHead>}
+                  {columns.show("ip") && <TableHead>{t("auditLogs.ip")}</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -219,27 +236,37 @@ export function AuditLogsPage() {
                           ? new Date(String(log.created_at || log.timestamp)).toLocaleString()
                           : "-"}
                       </TableCell>
-                      <TableCell className="font-medium text-gray-900 dark:text-gray-100">
-                        {String(log.actor_name || log.admin_name || log.actor || "-")}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {String(log.action || "-")}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {String(log.target || log.target_type || "-")}
-                        {log.target_id ? ` (${String(log.target_id).slice(0, 8)}...)` : ""}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {String(log.tenant_name || log.tenant || "-")}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {String(log.ip_address || log.ip || "-")}
-                      </TableCell>
+                      {columns.show("actor") && (
+                        <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                          {String(log.actor_name || log.admin_name || log.actor || "-")}
+                        </TableCell>
+                      )}
+                      {columns.show("action") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {String(log.action || "-")}
+                        </TableCell>
+                      )}
+                      {columns.show("target") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {String(log.target || log.target_type || "-")}
+                          {log.target_id ? ` (${String(log.target_id).slice(0, 8)}...)` : ""}
+                        </TableCell>
+                      )}
+                      {columns.show("tenant") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {String(log.tenant_name || log.tenant || "-")}
+                        </TableCell>
+                      )}
+                      {columns.show("ip") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {String(log.ip_address || log.ip || "-")}
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                       {t("auditLogs.noLogs")}
                     </TableCell>
                   </TableRow>

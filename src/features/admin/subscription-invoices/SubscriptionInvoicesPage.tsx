@@ -19,8 +19,12 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import {
   useAdminSubscriptionInvoicesInfinite,
   useMarkInvoicePaid,
@@ -185,6 +189,23 @@ export function SubscriptionInvoicesPage() {
     handleCloseMarkPaid();
   };
 
+  const columns = useTableColumns(
+    "admin-subscription-invoices",
+    [
+      { key: "select", label: "", hideable: false },
+      { key: "number", label: t("subscriptionInvoices.invoiceNumber"), hideable: false },
+      { key: "tenant", label: t("subscriptionInvoices.tenant") },
+      { key: "plan", label: t("subscriptionInvoices.plan") },
+      { key: "amount", label: t("subscriptionInvoices.amount") },
+      { key: "status", label: t("subscriptionInvoices.status") },
+      { key: "paymentMethod", label: t("subscriptionInvoices.paymentMethod"), isEmpty: (i: Invoice) => !i.payment_method },
+      { key: "paidAt", label: t("subscriptionInvoices.paidAt"), isEmpty: (i: Invoice) => !i.paid_at },
+      { key: "period", label: t("subscriptionInvoices.period") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    invoices as Invoice[] | undefined
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -201,59 +222,56 @@ export function SubscriptionInvoicesPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {t("subscriptionInvoices.title")}
-          </h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-            {t("subscriptionInvoices.subtitle")}
-          </p>
-        </div>
-        <div className="flex items-end gap-3">
-          <div className="w-48">
-            <Select
-              name="status-filter"
-              label={t("subscriptionInvoices.statusFilter")}
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              options={[
-                { value: "", label: t("subscriptionInvoices.allStatuses") },
-                { value: "unpaid", label: t("subscriptionInvoices.unpaid") },
-                { value: "paid", label: t("subscriptionInvoices.paid") },
-                { value: "refunded", label: t("subscriptionInvoices.refunded") },
-              ]}
-            />
+      <PageHeader
+        title={t("subscriptionInvoices.title")}
+        subtitle={t("subscriptionInvoices.subtitle")}
+        actions={
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="w-48">
+              <Select
+                name="status-filter"
+                label={t("subscriptionInvoices.statusFilter")}
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value)}
+                options={[
+                  { value: "", label: t("subscriptionInvoices.allStatuses") },
+                  { value: "unpaid", label: t("subscriptionInvoices.unpaid") },
+                  { value: "paid", label: t("subscriptionInvoices.paid") },
+                  { value: "refunded", label: t("subscriptionInvoices.refunded") },
+                ]}
+              />
+            </div>
+            <ColumnPicker columns={columns} />
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={invoiceList.length === 0}
+              onClick={() =>
+                exportToCsv(
+                  invoiceList,
+                  [
+                    { header: t("subscriptionInvoices.invoiceNumber"), accessor: (r) => String(r.invoice_number ?? "") },
+                    { header: t("subscriptionInvoices.tenant"), accessor: (r) => String(((r.subscription as Record<string, unknown>)?.tenant as Record<string, unknown>)?.name ?? "") },
+                    { header: t("subscriptionInvoices.plan"), accessor: (r) => String(((r.subscription as Record<string, unknown>)?.plan as Record<string, unknown>)?.name ?? "") },
+                    { header: t("subscriptionInvoices.amount"), accessor: (r) => Number(r.amount ?? 0) / 100 },
+                    { header: t("subscriptionInvoices.currency"), accessor: (r) => String(r.currency ?? "") },
+                    { header: t("subscriptionInvoices.status"), accessor: (r) => String(r.status ?? "") },
+                    { header: t("subscriptionInvoices.paidAt"), accessor: (r) => (r.paid_at ? String(r.paid_at).slice(0, 10) : "") },
+                  ],
+                  "subscription-invoices"
+                )
+              }
+            >
+              <Download className="h-4 w-4 me-2" />
+              {t("subscriptionInvoices.exportCsv")}
+            </Button>
+            <Button {...superOnly.button} size="sm" onClick={() => { setCreateForm(emptyCreate); setCreateOpen(true); }}>
+              <Plus className="h-4 w-4 me-2" />
+              {t("subscriptionInvoices.newInvoice")}
+            </Button>
           </div>
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={invoiceList.length === 0}
-            onClick={() =>
-              exportToCsv(
-                invoiceList,
-                [
-                  { header: t("subscriptionInvoices.invoiceNumber"), accessor: (r) => String(r.invoice_number ?? "") },
-                  { header: t("subscriptionInvoices.tenant"), accessor: (r) => String(((r.subscription as Record<string, unknown>)?.tenant as Record<string, unknown>)?.name ?? "") },
-                  { header: t("subscriptionInvoices.plan"), accessor: (r) => String(((r.subscription as Record<string, unknown>)?.plan as Record<string, unknown>)?.name ?? "") },
-                  { header: t("subscriptionInvoices.amount"), accessor: (r) => Number(r.amount ?? 0) / 100 },
-                  { header: t("subscriptionInvoices.currency"), accessor: (r) => String(r.currency ?? "") },
-                  { header: t("subscriptionInvoices.status"), accessor: (r) => String(r.status ?? "") },
-                  { header: t("subscriptionInvoices.paidAt"), accessor: (r) => (r.paid_at ? String(r.paid_at).slice(0, 10) : "") },
-                ],
-                "subscription-invoices"
-              )
-            }
-          >
-            <Download className="h-4 w-4 me-2" />
-            {t("subscriptionInvoices.exportCsv")}
-          </Button>
-          <Button {...superOnly.button} size="sm" onClick={() => { setCreateForm(emptyCreate); setCreateOpen(true); }}>
-            <Plus className="h-4 w-4 me-2" />
-            {t("subscriptionInvoices.newInvoice")}
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       <Card>
         <CardContent className="p-0">
@@ -375,14 +393,14 @@ export function SubscriptionInvoicesPage() {
                     />
                   </TableHead>
                   <TableHead>{t("subscriptionInvoices.invoiceNumber")}</TableHead>
-                  <TableHead>{t("subscriptionInvoices.tenant")}</TableHead>
-                  <TableHead>{t("subscriptionInvoices.plan")}</TableHead>
-                  <TableHead>{t("subscriptionInvoices.amount")}</TableHead>
-                  <TableHead>{t("subscriptionInvoices.status")}</TableHead>
-                  <TableHead>{t("subscriptionInvoices.paymentMethod")}</TableHead>
-                  <TableHead>{t("subscriptionInvoices.paidAt")}</TableHead>
-                  <TableHead>{t("subscriptionInvoices.period")}</TableHead>
-                  <TableHead>{t("subscriptionInvoices.actions")}</TableHead>
+                  {columns.show("tenant") && <TableHead>{t("subscriptionInvoices.tenant")}</TableHead>}
+                  {columns.show("plan") && <TableHead>{t("subscriptionInvoices.plan")}</TableHead>}
+                  {columns.show("amount") && <TableHead>{t("subscriptionInvoices.amount")}</TableHead>}
+                  {columns.show("status") && <TableHead>{t("subscriptionInvoices.status")}</TableHead>}
+                  {columns.show("paymentMethod") && <TableHead>{t("subscriptionInvoices.paymentMethod")}</TableHead>}
+                  {columns.show("paidAt") && <TableHead>{t("subscriptionInvoices.paidAt")}</TableHead>}
+                  {columns.show("period") && <TableHead>{t("subscriptionInvoices.period")}</TableHead>}
+                  <TableHead className="w-px text-end">{t("subscriptionInvoices.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -394,7 +412,10 @@ export function SubscriptionInvoicesPage() {
                   const isRefunded = invoice.status === "refunded";
 
                   return (
-                    <TableRow key={String(invoice.id)}>
+                    <TableRow
+                      key={String(invoice.id)}
+                      onActivate={superOnly.allowed ? () => handleOpenEdit(invoice) : undefined}
+                    >
                       <TableCell>
                         {!isPaid && !isRefunded && (
                           <RowCheckbox
@@ -408,76 +429,87 @@ export function SubscriptionInvoicesPage() {
                       <TableCell className="font-mono font-semibold">
                         {String(invoice.invoice_number || "-")}
                       </TableCell>
-                      <TableCell>{String(tenant.name || "-")}</TableCell>
-                      <TableCell>{String(plan.name || "-")}</TableCell>
-                      <TableCell>
-                        {formatAmount(
-                          Number(invoice.amount || 0),
-                          String(invoice.currency || REFERENCE_CURRENCY)
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={isRefunded ? "danger" : isPaid ? "success" : "warning"}>
-                          {isRefunded
-                            ? t("subscriptionInvoices.refunded")
-                            : isPaid
-                              ? t("subscriptionInvoices.paid")
-                              : t("subscriptionInvoices.unpaid")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {invoice.payment_method
-                          ? t(`subscriptionInvoices.method.${invoice.payment_method}`)
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {formatDate(invoice.paid_at as string | null)}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {formatDate(invoice.period_start as string | null)}
-                        {" - "}
-                        {formatDate(invoice.period_end as string | null)}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {!isPaid && !isRefunded && (
-                            <Button
-                              variant="primary"
-                              size="sm"
-                              onClick={() => handleOpenMarkPaid(invoice)}
-                            >
-                              <CheckCircle className="h-4 w-4 me-1" />
-                              {t("subscriptionInvoices.markPaid")}
-                            </Button>
+                      {columns.show("tenant") && <TableCell>{String(tenant.name || "-")}</TableCell>}
+                      {columns.show("plan") && <TableCell>{String(plan.name || "-")}</TableCell>}
+                      {columns.show("amount") && (
+                        <TableCell>
+                          {formatAmount(
+                            Number(invoice.amount || 0),
+                            String(invoice.currency || REFERENCE_CURRENCY)
                           )}
-                          {isPaid && (
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => setRefundTarget(invoice)}
-                              title={t("subscriptionInvoices.refund")}
-                            >
-                              <RotateCcw className="h-4 w-4 me-1" />
-                              {t("subscriptionInvoices.refund")}
-                            </Button>
-                          )}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleOpenEdit(invoice)}
-                            aria-label={t("subscriptionInvoices.edit")}
-                            title={t("subscriptionInvoices.edit")}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                        </div>
+                        </TableCell>
+                      )}
+                      {columns.show("status") && (
+                        <TableCell>
+                          <Badge variant={isRefunded ? "danger" : isPaid ? "success" : "warning"}>
+                            {isRefunded
+                              ? t("subscriptionInvoices.refunded")
+                              : isPaid
+                                ? t("subscriptionInvoices.paid")
+                                : t("subscriptionInvoices.unpaid")}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {columns.show("paymentMethod") && (
+                        <TableCell>
+                          {invoice.payment_method
+                            ? t(`subscriptionInvoices.method.${invoice.payment_method}`)
+                            : "-"}
+                        </TableCell>
+                      )}
+                      {columns.show("paidAt") && (
+                        <TableCell>
+                          {formatDate(invoice.paid_at as string | null)}
+                        </TableCell>
+                      )}
+                      {columns.show("period") && (
+                        <TableCell className="text-sm">
+                          {formatDate(invoice.period_start as string | null)}
+                          {" - "}
+                          {formatDate(invoice.period_end as string | null)}
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <RowActions
+                          actions={[
+                            {
+                              key: "markPaid",
+                              label: t("subscriptionInvoices.markPaid"),
+                              icon: CheckCircle,
+                              onSelect: () => handleOpenMarkPaid(invoice),
+                              primary: true,
+                              tone: "success",
+                              disabled: !superOnly.allowed,
+                              disabledReason: superOnly.icon.title,
+                              hidden: isPaid || isRefunded,
+                            },
+                            {
+                              key: "edit",
+                              label: t("subscriptionInvoices.edit"),
+                              icon: Pencil,
+                              onSelect: () => handleOpenEdit(invoice),
+                              disabled: !superOnly.allowed,
+                              disabledReason: superOnly.icon.title,
+                            },
+                            {
+                              key: "refund",
+                              label: t("subscriptionInvoices.refund"),
+                              icon: RotateCcw,
+                              onSelect: () => setRefundTarget(invoice),
+                              danger: true,
+                              disabled: !superOnly.allowed,
+                              disabledReason: superOnly.icon.title,
+                              hidden: !isPaid,
+                            },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   );
                 })}
                 {invoiceList.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={10} className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <TableCell colSpan={columns.visibleCount} className="text-center py-12 text-gray-500 dark:text-gray-400">
                       {t("subscriptionInvoices.empty")}
                     </TableCell>
                   </TableRow>

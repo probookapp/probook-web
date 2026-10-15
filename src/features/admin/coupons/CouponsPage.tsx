@@ -18,7 +18,11 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import {
   useAdminCoupons,
   useCreateCoupon,
@@ -174,6 +178,26 @@ export function CouponsPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const allCoupons = (coupons || []) as Coupon[];
+  const couponList = allCoupons.filter((c) => matchesQuery(search, c.code, c.currency));
+  const planList = (plans || []) as Record<string, unknown>[];
+
+  const columns = useTableColumns(
+    "admin-coupons",
+    [
+      { key: "code", label: t("coupons.code"), hideable: false },
+      { key: "type", label: t("coupons.type") },
+      { key: "value", label: t("coupons.value") },
+      { key: "currency", label: t("coupons.currency") },
+      { key: "uses", label: t("coupons.uses") },
+      { key: "expires", label: t("coupons.expires") },
+      { key: "active", label: t("coupons.active") },
+      { key: "plans", label: t("coupons.plans") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    couponList
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -182,63 +206,56 @@ export function CouponsPage() {
     );
   }
 
-  const allCoupons = (coupons || []) as Coupon[];
-  const couponList = allCoupons.filter((c) => matchesQuery(search, c.code, c.currency));
-  const planList = (plans || []) as Record<string, unknown>[];
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {t("coupons.title")}
-          </h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-            {t("coupons.subtitle")}
-          </p>
-        </div>
-        <div className="flex gap-2 self-start sm:self-auto">
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={couponList.length === 0}
-            onClick={() =>
-              exportToCsv(
-                couponList,
-                [
-                  { header: t("coupons.code"), accessor: (r) => String(r.code ?? "") },
-                  { header: t("coupons.type"), accessor: (r) => String(r.discount_type ?? "") },
-                  {
-                    header: t("coupons.value"),
-                    accessor: (r) =>
-                      r.discount_type === "percentage"
-                        ? Number(r.discount_value ?? 0)
-                        : Number(r.discount_value ?? 0) / 100,
-                  },
-                  { header: t("coupons.currency"), accessor: (r) => String(r.currency ?? "") },
-                  { header: t("coupons.uses"), accessor: (r) => String(r.current_uses ?? 0) },
-                  { header: t("coupons.expires"), accessor: (r) => (r.expires_at ? String(r.expires_at).slice(0, 10) : "") },
-                  { header: t("coupons.active"), accessor: (r) => (r.is_active ? "yes" : "no") },
-                ],
-                "coupons"
-              )
-            }
-          >
-            <Download className="h-4 w-4 me-2" />
-            {t("coupons.exportCsv")}
-          </Button>
-          <ListSearch
-            name="coupon-search"
-            value={search}
-            onChange={setSearch}
-            placeholder={t("coupons.searchPlaceholder")}
-          />
-          <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
-            <Plus className="h-4 w-4 me-2" />
-            {t("coupons.create")}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title={t("coupons.title")}
+        subtitle={t("coupons.subtitle")}
+        actions={
+          <>
+            <ColumnPicker columns={columns} />
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={couponList.length === 0}
+              onClick={() =>
+                exportToCsv(
+                  couponList,
+                  [
+                    { header: t("coupons.code"), accessor: (r) => String(r.code ?? "") },
+                    { header: t("coupons.type"), accessor: (r) => String(r.discount_type ?? "") },
+                    {
+                      header: t("coupons.value"),
+                      accessor: (r) =>
+                        r.discount_type === "percentage"
+                          ? Number(r.discount_value ?? 0)
+                          : Number(r.discount_value ?? 0) / 100,
+                    },
+                    { header: t("coupons.currency"), accessor: (r) => String(r.currency ?? "") },
+                    { header: t("coupons.uses"), accessor: (r) => String(r.current_uses ?? 0) },
+                    { header: t("coupons.expires"), accessor: (r) => (r.expires_at ? String(r.expires_at).slice(0, 10) : "") },
+                    { header: t("coupons.active"), accessor: (r) => (r.is_active ? "yes" : "no") },
+                  ],
+                  "coupons"
+                )
+              }
+            >
+              <Download className="h-4 w-4 me-2" />
+              {t("coupons.exportCsv")}
+            </Button>
+            <ListSearch
+              name="coupon-search"
+              value={search}
+              onChange={setSearch}
+              placeholder={t("coupons.searchPlaceholder")}
+            />
+            <Button {...superOnly.button} onClick={handleOpenCreate} size="sm">
+              <Plus className="h-4 w-4 me-2" />
+              {t("coupons.create")}
+            </Button>
+          </>
+        }
+      />
 
       <Card>
         <CardContent className="p-0">
@@ -313,14 +330,14 @@ export function CouponsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("coupons.code")}</TableHead>
-                  <TableHead>{t("coupons.type")}</TableHead>
-                  <TableHead>{t("coupons.value")}</TableHead>
-                  <TableHead>{t("coupons.currency")}</TableHead>
-                  <TableHead>{t("coupons.uses")}</TableHead>
-                  <TableHead>{t("coupons.expires")}</TableHead>
-                  <TableHead>{t("coupons.active")}</TableHead>
-                  <TableHead>{t("coupons.plans")}</TableHead>
-                  <TableHead>{t("coupons.actions")}</TableHead>
+                  {columns.show("type") && <TableHead>{t("coupons.type")}</TableHead>}
+                  {columns.show("value") && <TableHead>{t("coupons.value")}</TableHead>}
+                  {columns.show("currency") && <TableHead>{t("coupons.currency")}</TableHead>}
+                  {columns.show("uses") && <TableHead>{t("coupons.uses")}</TableHead>}
+                  {columns.show("expires") && <TableHead>{t("coupons.expires")}</TableHead>}
+                  {columns.show("active") && <TableHead>{t("coupons.active")}</TableHead>}
+                  {columns.show("plans") && <TableHead>{t("coupons.plans")}</TableHead>}
+                  <TableHead className="w-px text-end">{t("coupons.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -328,76 +345,92 @@ export function CouponsPage() {
                   const restrictions = (coupon.plan_restrictions ||
                     []) as PlanRestriction[];
                   return (
-                    <TableRow key={String(coupon.id)}>
+                    <TableRow key={String(coupon.id)} onActivate={() => handleOpenEdit(coupon)}>
                       <TableCell className="font-mono font-semibold">
                         {String(coupon.code || "-")}
                       </TableCell>
-                      <TableCell>
-                        {coupon.discount_type === "percentage"
-                          ? t("coupons.percentage")
-                          : t("coupons.fixed")}
-                      </TableCell>
-                      <TableCell>
-                        {formatDiscountValue(
-                          String(coupon.discount_type),
-                          Number(coupon.discount_value || 0),
-                          String(coupon.currency || REFERENCE_CURRENCY)
-                        )}
-                      </TableCell>
-                      <TableCell>{String(coupon.currency || REFERENCE_CURRENCY)}</TableCell>
-                      <TableCell>
-                        {String(coupon.current_uses ?? 0)}
-                        {coupon.max_uses != null
-                          ? ` / ${coupon.max_uses}`
-                          : ` / ${t("coupons.unlimited")}`}
-                      </TableCell>
-                      <TableCell>
-                        {coupon.expires_at
-                          ? new Date(
-                              String(coupon.expires_at)
-                            ).toLocaleDateString()
-                          : t("coupons.never")}
-                      </TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={coupon.is_active ? "success" : "default"}
-                        >
-                          {coupon.is_active
-                            ? t("coupons.yes")
-                            : t("coupons.no")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {restrictions.length > 0
-                          ? restrictions.map((r) => r.plan.name).join(", ")
-                          : t("coupons.allPlans")}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => handleOpenEdit(coupon)}
+                      {columns.show("type") && (
+                        <TableCell>
+                          {coupon.discount_type === "percentage"
+                            ? t("coupons.percentage")
+                            : t("coupons.fixed")}
+                        </TableCell>
+                      )}
+                      {columns.show("value") && (
+                        <TableCell>
+                          {formatDiscountValue(
+                            String(coupon.discount_type),
+                            Number(coupon.discount_value || 0),
+                            String(coupon.currency || REFERENCE_CURRENCY)
+                          )}
+                        </TableCell>
+                      )}
+                      {columns.show("currency") && (
+                        <TableCell>{String(coupon.currency || REFERENCE_CURRENCY)}</TableCell>
+                      )}
+                      {columns.show("uses") && (
+                        <TableCell>
+                          {String(coupon.current_uses ?? 0)}
+                          {coupon.max_uses != null
+                            ? ` / ${coupon.max_uses}`
+                            : ` / ${t("coupons.unlimited")}`}
+                        </TableCell>
+                      )}
+                      {columns.show("expires") && (
+                        <TableCell>
+                          {coupon.expires_at
+                            ? new Date(
+                                String(coupon.expires_at)
+                              ).toLocaleDateString()
+                            : t("coupons.never")}
+                        </TableCell>
+                      )}
+                      {columns.show("active") && (
+                        <TableCell>
+                          <Badge
+                            variant={coupon.is_active ? "success" : "default"}
                           >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            {...superOnly.button}
-                            variant="danger"
-                            size="sm"
-                            onClick={() => setDeletingCoupon(coupon)}
-                            aria-label={t("coupons.delete")}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
+                            {coupon.is_active
+                              ? t("coupons.yes")
+                              : t("coupons.no")}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {columns.show("plans") && (
+                        <TableCell>
+                          {restrictions.length > 0
+                            ? restrictions.map((r) => r.plan.name).join(", ")
+                            : t("coupons.allPlans")}
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <RowActions
+                          actions={[
+                            {
+                              key: "edit",
+                              label: t("common:buttons.edit"),
+                              icon: Pencil,
+                              onSelect: () => handleOpenEdit(coupon),
+                              primary: true,
+                            },
+                            {
+                              key: "delete",
+                              label: t("coupons.delete"),
+                              icon: Trash2,
+                              onSelect: () => setDeletingCoupon(coupon),
+                              danger: true,
+                              disabled: !superOnly.allowed,
+                              disabledReason: superOnly.icon.title,
+                            },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   );
                 })}
                 {couponList.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <TableCell colSpan={columns.visibleCount} className="text-center py-12 text-gray-500 dark:text-gray-400">
                       {t("coupons.empty")}
                     </TableCell>
                   </TableRow>

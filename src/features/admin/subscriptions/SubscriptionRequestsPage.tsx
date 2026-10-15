@@ -22,8 +22,12 @@ import {
   Select,
   Input,
   Textarea,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import {
   BulkBar,
   RowCheckbox,
@@ -136,6 +140,21 @@ export function SubscriptionRequestsPage() {
     }
   };
 
+  const columns = useTableColumns(
+    "admin-subscription-requests",
+    [
+      { key: "select", label: "", hideable: false },
+      { key: "tenant", label: t("subscriptionRequests.tenant"), hideable: false },
+      { key: "requestType", label: t("subscriptionRequests.requestType") },
+      { key: "targetPlan", label: t("subscriptionRequests.targetPlan") },
+      { key: "status", label: t("subscriptionRequests.status") },
+      { key: "coupon", label: t("subscriptionRequests.coupon"), isEmpty: (r: SubRequest) => !r.coupon_code },
+      { key: "created", label: t("subscriptionRequests.created") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    requests as SubRequest[] | undefined
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -151,49 +170,50 @@ export function SubscriptionRequestsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("subscriptionRequests.title")}</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("subscriptionRequests.subtitle")}</p>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={requestList.length === 0}
-          onClick={() =>
-            exportToCsv(
-              requestList,
-              [
-                {
-                  header: t("subscriptionRequests.tenant"),
-                  accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? ""),
-                },
-                { header: t("subscriptionRequests.requestType"), accessor: (r) => String(r.request_type ?? "") },
-                {
-                  header: t("subscriptionRequests.targetPlan"),
-                  accessor: (r) => String((r.target_plan as Record<string, unknown>)?.name ?? ""),
-                },
-                { header: t("subscriptionRequests.status"), accessor: (r) => String(r.status ?? "") },
-                { header: t("subscriptionRequests.coupon"), accessor: (r) => String(r.coupon_code ?? "") },
-                {
-                  header: t("subscriptionRequests.created"),
-                  accessor: (r) => (r.created_at ? String(r.created_at).slice(0, 10) : ""),
-                },
-              ],
-              "subscription-requests"
-            )
-          }
-        >
-          <Download className="h-4 w-4 me-2" />
-          {t("subscriptionRequests.exportCsv")}
-        </Button>
-      </div>
+      <PageHeader
+        title={t("subscriptionRequests.title")}
+        subtitle={t("subscriptionRequests.subtitle")}
+        actions={
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={requestList.length === 0}
+            onClick={() =>
+              exportToCsv(
+                requestList,
+                [
+                  {
+                    header: t("subscriptionRequests.tenant"),
+                    accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? ""),
+                  },
+                  { header: t("subscriptionRequests.requestType"), accessor: (r) => String(r.request_type ?? "") },
+                  {
+                    header: t("subscriptionRequests.targetPlan"),
+                    accessor: (r) => String((r.target_plan as Record<string, unknown>)?.name ?? ""),
+                  },
+                  { header: t("subscriptionRequests.status"), accessor: (r) => String(r.status ?? "") },
+                  { header: t("subscriptionRequests.coupon"), accessor: (r) => String(r.coupon_code ?? "") },
+                  {
+                    header: t("subscriptionRequests.created"),
+                    accessor: (r) => (r.created_at ? String(r.created_at).slice(0, 10) : ""),
+                  },
+                ],
+                "subscription-requests"
+              )
+            }
+          >
+            <Download className="h-4 w-4 me-2" />
+            {t("subscriptionRequests.exportCsv")}
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("subscriptionRequests.list")}</CardTitle>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <ColumnPicker columns={columns} />
               <Select
                 name="status-filter"
                 value={statusFilter}
@@ -322,18 +342,21 @@ export function SubscriptionRequestsPage() {
                     />
                   </TableHead>
                   <TableHead>{t("subscriptionRequests.tenant")}</TableHead>
-                  <TableHead>{t("subscriptionRequests.requestType")}</TableHead>
-                  <TableHead>{t("subscriptionRequests.targetPlan")}</TableHead>
-                  <TableHead>{t("subscriptionRequests.status")}</TableHead>
-                  <TableHead>{t("subscriptionRequests.coupon")}</TableHead>
-                  <TableHead>{t("subscriptionRequests.created")}</TableHead>
-                  <TableHead className="w-28">{t("subscriptionRequests.actions")}</TableHead>
+                  {columns.show("requestType") && <TableHead>{t("subscriptionRequests.requestType")}</TableHead>}
+                  {columns.show("targetPlan") && <TableHead>{t("subscriptionRequests.targetPlan")}</TableHead>}
+                  {columns.show("status") && <TableHead>{t("subscriptionRequests.status")}</TableHead>}
+                  {columns.show("coupon") && <TableHead>{t("subscriptionRequests.coupon")}</TableHead>}
+                  {columns.show("created") && <TableHead>{t("subscriptionRequests.created")}</TableHead>}
+                  <TableHead className="w-px text-end">{t("subscriptionRequests.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {requestList.length > 0 ? (
                   requestList.map((req) => (
-                    <TableRow key={String(req.id)}>
+                    <TableRow
+                      key={String(req.id)}
+                      onActivate={req.tenant_id ? () => router.push(`/admin/tenants/${req.tenant_id}`) : undefined}
+                    >
                       <TableCell>
                         {req.status === "pending" && (
                           <RowCheckbox
@@ -356,58 +379,73 @@ export function SubscriptionRequestsPage() {
                           String((req.tenant as Record<string, unknown>)?.name || req.tenant_name || "-")
                         )}
                       </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {String(req.request_type || req.type || "-")}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {String((req.target_plan as Record<string, unknown>)?.name || req.plan_name || "-")}
-                      </TableCell>
+                      {columns.show("requestType") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {String(req.request_type || req.type || "-")}
+                        </TableCell>
+                      )}
+                      {columns.show("targetPlan") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {String((req.target_plan as Record<string, unknown>)?.name || req.plan_name || "-")}
+                        </TableCell>
+                      )}
+                      {columns.show("status") && (
+                        <TableCell>
+                          <Badge variant={getStatusVariant(String(req.status || ""))}>
+                            {String(req.status || "-")}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {columns.show("coupon") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {req.coupon_code ? (
+                            <Badge variant="info">{String(req.coupon_code)}</Badge>
+                          ) : (
+                            "-"
+                          )}
+                        </TableCell>
+                      )}
+                      {columns.show("created") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {req.created_at
+                            ? new Date(String(req.created_at)).toLocaleDateString()
+                            : "-"}
+                        </TableCell>
+                      )}
                       <TableCell>
-                        <Badge variant={getStatusVariant(String(req.status || ""))}>
-                          {String(req.status || "-")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {req.coupon_code ? (
-                          <Badge variant="info">{String(req.coupon_code)}</Badge>
-                        ) : (
-                          "-"
-                        )}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {req.created_at
-                          ? new Date(String(req.created_at)).toLocaleDateString()
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {req.status === "pending" && (
-                          <div className="flex items-center gap-2">
-                            <button
-                              {...superOnly.icon}
-                              onClick={() => setApproveId(String(req.id))}
-                              className="p-1 text-gray-500 hover:text-green-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                              title={t("subscriptionRequests.approve")}
-                              aria-label={t("subscriptionRequests.approve")}
-                            >
-                              <Check className="h-4 w-4" />
-                            </button>
-                            <button
-                              {...superOnly.icon}
-                              onClick={() => setRejectId(String(req.id))}
-                              className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                              title={t("subscriptionRequests.reject")}
-                              aria-label={t("subscriptionRequests.reject")}
-                            >
-                              <X className="h-4 w-4" />
-                            </button>
-                          </div>
-                        )}
+                        {/* Approve and reject are the whole job of this page: both stay inline. */}
+                        <RowActions
+                          actions={[
+                            {
+                              key: "approve",
+                              label: t("subscriptionRequests.approve"),
+                              icon: Check,
+                              onSelect: () => setApproveId(String(req.id)),
+                              primary: true,
+                              tone: "success",
+                              disabled: !superOnly.allowed,
+                              disabledReason: superOnly.icon.title,
+                              hidden: req.status !== "pending",
+                            },
+                            {
+                              key: "reject",
+                              label: t("subscriptionRequests.reject"),
+                              icon: X,
+                              onSelect: () => setRejectId(String(req.id)),
+                              primary: true,
+                              danger: true,
+                              disabled: !superOnly.allowed,
+                              disabledReason: superOnly.icon.title,
+                              hidden: req.status !== "pending",
+                            },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                       {t("subscriptionRequests.noRequests")}
                     </TableCell>
                   </TableRow>

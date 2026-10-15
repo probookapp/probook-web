@@ -17,6 +17,8 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  PageHeader,
+  RowActions,
 } from "@/components/ui";
 import { adminRateLimitsApi } from "@/lib/admin-api";
 import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
@@ -65,15 +67,10 @@ export function RateLimitsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {t("rate_limits.title")}
-          </h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-            {t("rate_limits.description")}
-          </p>
-        </div>
+      <PageHeader
+        title={t("rate_limits.title")}
+        subtitle={t("rate_limits.description")}
+        actions={
         <Button
           variant="secondary"
           size="sm"
@@ -96,7 +93,8 @@ export function RateLimitsPage() {
           <Download className="h-4 w-4 me-2" />
           {t("rate_limits.exportCsv")}
         </Button>
-      </div>
+        }
+      />
 
       <Card>
         <CardContent className="p-0">
@@ -134,7 +132,7 @@ export function RateLimitsPage() {
                   <TableHead>{t("rate_limits.tenant")}</TableHead>
                   <TableHead>{t("rate_limits.flagged_endpoints")}</TableHead>
                   <TableHead>{t("rate_limits.status")}</TableHead>
-                  <TableHead className="w-28">{t("rate_limits.actions")}</TableHead>
+                  <TableHead className="w-px text-end">{t("rate_limits.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -153,15 +151,19 @@ export function RateLimitsPage() {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button
-                        {...superOnly.button}
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => setClearing(group)}
-                      >
-                        <Eraser className="h-4 w-4 me-1" />
-                        {t("rate_limits.clear")}
-                      </Button>
+                      <RowActions
+                        actions={[
+                          {
+                            key: "clear",
+                            label: t("rate_limits.clear"),
+                            icon: Eraser,
+                            onSelect: () => setClearing(group),
+                            primary: true,
+                            disabled: !superOnly.allowed,
+                            disabledReason: superOnly.icon.title,
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

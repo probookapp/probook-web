@@ -21,8 +21,12 @@ import {
   Input,
   Badge,
   Select,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
 import { LoadMoreSentinel } from "@/components/shared/LoadMoreSentinel";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import {
   useAdminTenantsInfinite,
   useSuspendTenant,
@@ -138,6 +142,22 @@ export function TenantsPage() {
     }
   };
 
+  const columns = useTableColumns(
+    "admin-tenants",
+    [
+      { key: "name", label: t("tenants.name"), hideable: false },
+      { key: "slug", label: t("tenants.slug") },
+      { key: "status", label: t("tenants.status") },
+      { key: "plan", label: t("tenants.plan"), isEmpty: (r: Tenant) => !r.plan_name },
+      { key: "trial", label: t("tenants.trial.label"), isEmpty: (r: Tenant) => trialStateOf(r) === "none" },
+      { key: "users", label: t("tenants.users") },
+      { key: "lastActive", label: t("tenants.lastActive"), isEmpty: (r: Tenant) => !r.last_active_at },
+      { key: "created", label: t("tenants.created") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    tenants as Tenant[] | undefined
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -150,41 +170,42 @@ export function TenantsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("tenants.title")}</h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">{t("tenants.subtitle")}</p>
-        </div>
-        <Button
-          variant="secondary"
-          size="sm"
-          disabled={tenantList.length === 0}
-          onClick={() =>
-            exportToCsv(
-              tenantList,
-              [
-                { header: t("tenants.name"), accessor: (r) => String(r.name ?? "") },
-                { header: t("tenants.slug"), accessor: (r) => String(r.slug ?? "") },
-                { header: t("tenants.status"), accessor: (r) => String(r.status ?? "") },
-                { header: t("tenants.plan"), accessor: (r) => String(r.plan_name ?? "") },
-                { header: t("tenants.trial.label"), accessor: (r) => (r.trial_ends_at ? new Date(String(r.trial_ends_at)).toISOString().slice(0, 10) : "") },
-                { header: t("tenants.users"), accessor: (r) => String(r.user_count ?? r.users_count ?? "") },
-                { header: t("tenants.created"), accessor: (r) => (r.created_at ? new Date(String(r.created_at)).toISOString().slice(0, 10) : "") },
-              ],
-              "tenants"
-            )
-          }
-        >
-          <Download className="h-4 w-4 me-2" />
-          {t("tenants.exportCsv")}
-        </Button>
-      </div>
+      <PageHeader
+        title={t("tenants.title")}
+        subtitle={t("tenants.subtitle")}
+        actions={
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={tenantList.length === 0}
+            onClick={() =>
+              exportToCsv(
+                tenantList,
+                [
+                  { header: t("tenants.name"), accessor: (r) => String(r.name ?? "") },
+                  { header: t("tenants.slug"), accessor: (r) => String(r.slug ?? "") },
+                  { header: t("tenants.status"), accessor: (r) => String(r.status ?? "") },
+                  { header: t("tenants.plan"), accessor: (r) => String(r.plan_name ?? "") },
+                  { header: t("tenants.trial.label"), accessor: (r) => (r.trial_ends_at ? new Date(String(r.trial_ends_at)).toISOString().slice(0, 10) : "") },
+                  { header: t("tenants.users"), accessor: (r) => String(r.user_count ?? r.users_count ?? "") },
+                  { header: t("tenants.created"), accessor: (r) => (r.created_at ? new Date(String(r.created_at)).toISOString().slice(0, 10) : "") },
+                ],
+                "tenants"
+              )
+            }
+          >
+            <Download className="h-4 w-4 me-2" />
+            {t("tenants.exportCsv")}
+          </Button>
+        }
+      />
 
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <CardTitle>{t("tenants.list")}</CardTitle>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+              <ColumnPicker columns={columns} />
               <Select
                 name="status-filter"
                 value={statusFilter}
@@ -319,14 +340,14 @@ export function TenantsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("tenants.name")}</TableHead>
-                  <TableHead>{t("tenants.slug")}</TableHead>
-                  <TableHead>{t("tenants.status")}</TableHead>
-                  <TableHead>{t("tenants.plan")}</TableHead>
-                  <TableHead>{t("tenants.trial.label")}</TableHead>
-                  <TableHead>{t("tenants.users")}</TableHead>
-                  <TableHead>{t("tenants.lastActive")}</TableHead>
-                  <TableHead>{t("tenants.created")}</TableHead>
-                  <TableHead className="w-44">{t("tenants.actions")}</TableHead>
+                  {columns.show("slug") && <TableHead>{t("tenants.slug")}</TableHead>}
+                  {columns.show("status") && <TableHead>{t("tenants.status")}</TableHead>}
+                  {columns.show("plan") && <TableHead>{t("tenants.plan")}</TableHead>}
+                  {columns.show("trial") && <TableHead>{t("tenants.trial.label")}</TableHead>}
+                  {columns.show("users") && <TableHead>{t("tenants.users")}</TableHead>}
+                  {columns.show("lastActive") && <TableHead>{t("tenants.lastActive")}</TableHead>}
+                  {columns.show("created") && <TableHead>{t("tenants.created")}</TableHead>}
+                  <TableHead className="w-px text-end">{t("tenants.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -334,102 +355,109 @@ export function TenantsPage() {
                   tenantList.map((tenant) => (
                     <TableRow
                       key={String(tenant.id)}
-                      className="cursor-pointer"
-                      onClick={() => router.push(`/admin/tenants/${tenant.id}`)}
+                      onActivate={() => router.push(`/admin/tenants/${tenant.id}`)}
                     >
                       <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                         {String(tenant.name || "-")}
                       </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {String(tenant.slug || "-")}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusVariant(String(tenant.status || ""))}>
-                          {String(tenant.status || "-")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {String(tenant.plan_name || "-")}
-                      </TableCell>
-                      <TableCell>
-                        {trialStateOf(tenant) === "none" ? (
-                          <span className="text-gray-400 dark:text-gray-500">-</span>
-                        ) : (
-                          <Badge variant={trialStateOf(tenant) === "active" ? "success" : "default"}>
-                            {new Date(String(tenant.trial_ends_at)).toLocaleDateString()}
+                      {columns.show("slug") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {String(tenant.slug || "-")}
+                        </TableCell>
+                      )}
+                      {columns.show("status") && (
+                        <TableCell>
+                          <Badge variant={getStatusVariant(String(tenant.status || ""))}>
+                            {String(tenant.status || "-")}
                           </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {String(tenant.user_count ?? tenant.users_count ?? "-")}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {tenant.last_active_at
-                          ? new Date(String(tenant.last_active_at)).toLocaleDateString()
-                          : "-"}
-                      </TableCell>
-                      <TableCell className="text-gray-600 dark:text-gray-400">
-                        {tenant.created_at
-                          ? new Date(String(tenant.created_at)).toLocaleDateString()
-                          : "-"}
-                      </TableCell>
+                        </TableCell>
+                      )}
+                      {columns.show("plan") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {String(tenant.plan_name || "-")}
+                        </TableCell>
+                      )}
+                      {columns.show("trial") && (
+                        <TableCell>
+                          {trialStateOf(tenant) === "none" ? (
+                            <span className="text-gray-400 dark:text-gray-500">-</span>
+                          ) : (
+                            <Badge variant={trialStateOf(tenant) === "active" ? "success" : "default"}>
+                              {new Date(String(tenant.trial_ends_at)).toLocaleDateString()}
+                            </Badge>
+                          )}
+                        </TableCell>
+                      )}
+                      {columns.show("users") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {String(tenant.user_count ?? tenant.users_count ?? "-")}
+                        </TableCell>
+                      )}
+                      {columns.show("lastActive") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {tenant.last_active_at
+                            ? new Date(String(tenant.last_active_at)).toLocaleDateString()
+                            : "-"}
+                        </TableCell>
+                      )}
+                      {columns.show("created") && (
+                        <TableCell className="text-gray-600 dark:text-gray-400">
+                          {tenant.created_at
+                            ? new Date(String(tenant.created_at)).toLocaleDateString()
+                            : "-"}
+                        </TableCell>
+                      )}
                       <TableCell>
-                        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => router.push(`/admin/tenants/${tenant.id}`)}
-                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={t("tenants.view")}
-                            aria-label={t("tenants.view")}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </button>
-                          <button
-                            {...superOnly.icon}
-                            onClick={() => handleToggleStatus(tenant)}
-                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={tenant.status === "suspended" ? t("tenants.activate") : t("tenants.suspend")}
-                            aria-label={tenant.status === "suspended" ? t("tenants.activate") : t("tenants.suspend")}
-                          >
-                            {tenant.status === "suspended" ? (
-                              <Play className="h-4 w-4" />
-                            ) : (
-                              <Pause className="h-4 w-4" />
-                            )}
-                          </button>
-                          <button
-                            {...superOnly.icon}
-                            onClick={() => setImpersonateTarget(tenant)}
-                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={t("tenants.impersonate")}
-                            aria-label={t("tenants.impersonate")}
-                          >
-                            <LogIn className="h-4 w-4" />
-                          </button>
-                          <button
-                            {...superOnly.icon}
-                            onClick={() => handleOpenEdit(tenant)}
-                            className="p-1 text-gray-500 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={t("tenants.edit")}
-                            aria-label={t("tenants.edit")}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            {...superOnly.icon}
-                            onClick={() => setDeleteConfirmId(String(tenant.id))}
-                            className="p-1 text-gray-500 hover:text-red-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            title={t("tenants.delete")}
-                            aria-label={t("tenants.delete")}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </button>
-                        </div>
+                        <RowActions
+                          actions={[
+                            {
+                              key: "edit",
+                              label: t("tenants.edit"),
+                              icon: Pencil,
+                              onSelect: () => handleOpenEdit(tenant),
+                              primary: true,
+                              disabled: !superOnly.allowed,
+                              disabledReason: superOnly.icon.title,
+                            },
+                            {
+                              key: "view",
+                              label: t("tenants.view"),
+                              icon: Eye,
+                              onSelect: () => router.push(`/admin/tenants/${tenant.id}`),
+                            },
+                            {
+                              key: "toggleStatus",
+                              label: tenant.status === "suspended" ? t("tenants.activate") : t("tenants.suspend"),
+                              icon: tenant.status === "suspended" ? Play : Pause,
+                              onSelect: () => handleToggleStatus(tenant),
+                              disabled: !superOnly.allowed,
+                              disabledReason: superOnly.icon.title,
+                            },
+                            {
+                              key: "impersonate",
+                              label: t("tenants.impersonate"),
+                              icon: LogIn,
+                              onSelect: () => setImpersonateTarget(tenant),
+                              disabled: !superOnly.allowed,
+                              disabledReason: superOnly.icon.title,
+                            },
+                            {
+                              key: "delete",
+                              label: t("tenants.delete"),
+                              icon: Trash2,
+                              onSelect: () => setDeleteConfirmId(String(tenant.id)),
+                              danger: true,
+                              disabled: !superOnly.allowed,
+                              disabledReason: superOnly.icon.title,
+                            },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                       {t("tenants.noTenants")}
                     </TableCell>
                   </TableRow>

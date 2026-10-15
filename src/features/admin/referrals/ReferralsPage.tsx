@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Download } from "lucide-react";
+import { Plus, Download, Power, PowerOff } from "lucide-react";
+import { useRouter } from "@/lib/navigation";
 import {
   Button,
   Card,
@@ -17,7 +18,11 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import { useAdminReferrals, useToggleReferralCode, useCreateReferralCode } from "./hooks/useReferrals";
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
@@ -31,6 +36,7 @@ type TenantOption = { id: string; name: string };
 export function ReferralsPage() {
   const { t } = useTranslation("admin");
   const superOnly = useSuperAdminOnly();
+  const router = useRouter();
   const { data: referrals, isLoading } = useAdminReferrals();
   const toggleCode = useToggleReferralCode();
   const createCode = useCreateReferralCode();
@@ -57,6 +63,24 @@ export function ReferralsPage() {
     setNewCode("");
   };
 
+  const allReferrals = (referrals || []) as ReferralCode[];
+  const list = allReferrals.filter((rc) =>
+    matchesQuery(search, rc.code, (rc.tenant as Record<string, unknown>)?.name)
+  );
+
+  const columns = useTableColumns(
+    "admin-referrals",
+    [
+      { key: "tenant", label: t("referrals.tenant"), hideable: false },
+      { key: "code", label: t("referrals.code") },
+      { key: "active", label: t("referrals.active") },
+      { key: "referralsCount", label: t("referrals.referrals_count") },
+      { key: "convertedCount", label: t("referrals.converted_count") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    list
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -65,59 +89,51 @@ export function ReferralsPage() {
     );
   }
 
-  const allReferrals = (referrals || []) as ReferralCode[];
-  const list = allReferrals.filter((rc) =>
-    matchesQuery(search, rc.code, (rc.tenant as Record<string, unknown>)?.name)
-  );
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {t("referrals.title")}
-          </h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-            {t("referrals.description")}
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center self-start sm:self-auto">
-          <ListSearch
-            name="referral-search"
-            value={search}
-            onChange={setSearch}
-            placeholder={t("referrals.searchPlaceholder")}
-          />
-          <Button
-            variant="secondary"
-            size="sm"
-            disabled={list.length === 0}
-            onClick={() =>
-              exportToCsv(
-                list as unknown as Record<string, unknown>[],
-                [
-                  {
-                    header: t("referrals.tenant"),
-                    accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? ""),
-                  },
-                  { header: t("referrals.code"), accessor: (r) => String(r.code ?? "") },
-                  { header: t("referrals.active"), accessor: (r) => (r.is_active ? "yes" : "no") },
-                  { header: t("referrals.referrals_count"), accessor: (r) => Number(r.referrals_count ?? 0) },
-                  { header: t("referrals.converted_count"), accessor: (r) => Number(r.converted_count ?? 0) },
-                ],
-                "referrals"
-              )
-            }
-          >
-            <Download className="h-4 w-4 me-2" />
-            {t("referrals.exportCsv")}
-          </Button>
-          <Button {...superOnly.button} size="sm" onClick={() => setCreateOpen(true)}>
-            <Plus className="h-4 w-4 me-2" />
-            {t("referrals.newCode")}
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title={t("referrals.title")}
+        subtitle={t("referrals.description")}
+        actions={
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <ColumnPicker columns={columns} />
+            <ListSearch
+              name="referral-search"
+              value={search}
+              onChange={setSearch}
+              placeholder={t("referrals.searchPlaceholder")}
+            />
+            <Button
+              variant="secondary"
+              size="sm"
+              disabled={list.length === 0}
+              onClick={() =>
+                exportToCsv(
+                  list as unknown as Record<string, unknown>[],
+                  [
+                    {
+                      header: t("referrals.tenant"),
+                      accessor: (r) => String((r.tenant as Record<string, unknown>)?.name ?? ""),
+                    },
+                    { header: t("referrals.code"), accessor: (r) => String(r.code ?? "") },
+                    { header: t("referrals.active"), accessor: (r) => (r.is_active ? "yes" : "no") },
+                    { header: t("referrals.referrals_count"), accessor: (r) => Number(r.referrals_count ?? 0) },
+                    { header: t("referrals.converted_count"), accessor: (r) => Number(r.converted_count ?? 0) },
+                  ],
+                  "referrals"
+                )
+              }
+            >
+              <Download className="h-4 w-4 me-2" />
+              {t("referrals.exportCsv")}
+            </Button>
+            <Button {...superOnly.button} size="sm" onClick={() => setCreateOpen(true)}>
+              <Plus className="h-4 w-4 me-2" />
+              {t("referrals.newCode")}
+            </Button>
+          </div>
+        }
+      />
 
       <Modal isOpen={createOpen} onClose={() => setCreateOpen(false)} title={t("referrals.newCode")} size="sm">
         <div className="space-y-4">
@@ -192,53 +208,71 @@ export function ReferralsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("referrals.tenant")}</TableHead>
-                  <TableHead>{t("referrals.code")}</TableHead>
-                  <TableHead>{t("referrals.active")}</TableHead>
-                  <TableHead>{t("referrals.referrals_count")}</TableHead>
-                  <TableHead>{t("referrals.converted_count")}</TableHead>
-                  <TableHead className="text-end">{t("referrals.actions")}</TableHead>
+                  {columns.show("code") && <TableHead>{t("referrals.code")}</TableHead>}
+                  {columns.show("active") && <TableHead>{t("referrals.active")}</TableHead>}
+                  {columns.show("referralsCount") && <TableHead>{t("referrals.referrals_count")}</TableHead>}
+                  {columns.show("convertedCount") && <TableHead>{t("referrals.converted_count")}</TableHead>}
+                  <TableHead className="w-px text-end">{t("referrals.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {list.map((rc) => {
                   const tenant = rc.tenant as Record<string, unknown> | undefined;
                   return (
-                    <TableRow key={String(rc.id)}>
+                    <TableRow
+                      key={String(rc.id)}
+                      onActivate={rc.tenant_id ? () => router.push(`/admin/tenants/${rc.tenant_id}`) : undefined}
+                    >
                       <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                         {tenant ? String(tenant.name || "-") : "-"}
                       </TableCell>
-                      <TableCell className="font-mono text-gray-600 dark:text-gray-400">
-                        {String(rc.code || "-")}
-                      </TableCell>
+                      {columns.show("code") && (
+                        <TableCell className="font-mono text-gray-600 dark:text-gray-400">
+                          {String(rc.code || "-")}
+                        </TableCell>
+                      )}
+                      {columns.show("active") && (
+                        <TableCell>
+                          <Badge variant={rc.is_active ? "success" : "default"}>
+                            {rc.is_active ? t("common.yes") : t("common.no")}
+                          </Badge>
+                        </TableCell>
+                      )}
+                      {columns.show("referralsCount") && (
+                        <TableCell className="text-gray-900 dark:text-gray-100">
+                          {String(rc.referrals_count ?? 0)}
+                        </TableCell>
+                      )}
+                      {columns.show("convertedCount") && (
+                        <TableCell className="text-gray-900 dark:text-gray-100">
+                          {String(rc.converted_count ?? 0)}
+                        </TableCell>
+                      )}
                       <TableCell>
-                        <Badge variant={rc.is_active ? "success" : "default"}>
-                          {rc.is_active ? t("common.yes") : t("common.no")}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100">
-                        {String(rc.referrals_count ?? 0)}
-                      </TableCell>
-                      <TableCell className="text-gray-900 dark:text-gray-100">
-                        {String(rc.converted_count ?? 0)}
-                      </TableCell>
-                      <TableCell className="text-end">
-                        <Button
-                          variant={rc.is_active ? "ghost" : "secondary"}
-                          size="sm"
-                          onClick={() =>
-                            toggleCode.mutate({ id: String(rc.id), isActive: !rc.is_active })
-                          }
-                          isLoading={toggleCode.isPending && toggleCode.variables?.id === rc.id}
-                        >
-                          {rc.is_active ? t("referrals.deactivate") : t("referrals.activate")}
-                        </Button>
+                        <RowActions
+                          actions={[
+                            {
+                              key: "toggle",
+                              label: rc.is_active ? t("referrals.deactivate") : t("referrals.activate"),
+                              icon: rc.is_active ? PowerOff : Power,
+                              onSelect: () =>
+                                toggleCode.mutate({ id: String(rc.id), isActive: !rc.is_active }),
+                              primary: true,
+                              tone: rc.is_active ? "warning" : "success",
+                              disabled:
+                                !superOnly.allowed ||
+                                (toggleCode.isPending && toggleCode.variables?.id === rc.id),
+                              disabledReason: superOnly.icon.title,
+                            },
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   );
                 })}
                 {list.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                       {t("referrals.empty")}
                     </TableCell>
                   </TableRow>

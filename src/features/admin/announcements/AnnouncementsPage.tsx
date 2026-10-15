@@ -19,7 +19,11 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  PageHeader,
+  RowActions,
+  ColumnPicker,
 } from "@/components/ui";
+import { useTableColumns } from "@/hooks/useTableColumns";
 import {
   useAdminAnnouncements,
   useCreateAnnouncement,
@@ -134,6 +138,22 @@ export function AnnouncementsPage() {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const allAnnouncements = (announcements || []) as Announcement[];
+  const list = allAnnouncements.filter((a) => matchesQuery(search, a.title, a.body));
+
+  const columns = useTableColumns<Announcement>(
+    "admin-announcements",
+    [
+      { key: "title", label: t("announcements.field_title"), hideable: false },
+      { key: "target", label: t("announcements.target") },
+      { key: "published", label: t("announcements.published"), isEmpty: (a) => !a.published_at },
+      { key: "expires", label: t("announcements.expires"), isEmpty: (a) => !a.expires_at },
+      { key: "dismissals", label: t("announcements.dismissals") },
+      { key: "actions", label: "", hideable: false },
+    ],
+    list
+  );
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -142,27 +162,20 @@ export function AnnouncementsPage() {
     );
   }
 
-  const allAnnouncements = (announcements || []) as Announcement[];
-  const list = allAnnouncements.filter((a) => matchesQuery(search, a.title, a.body));
-
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">
-            {t("announcements.title")}
-          </h1>
-          <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-            {t("announcements.description")}
-          </p>
-        </div>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center self-start sm:self-auto">
+      <PageHeader
+        title={t("announcements.title")}
+        subtitle={t("announcements.description")}
+        actions={
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
           <ListSearch
             name="announcement-search"
             value={search}
             onChange={setSearch}
             placeholder={t("announcements.searchPlaceholder")}
           />
+          <ColumnPicker columns={columns} />
           <Button
             variant="secondary"
             size="sm"
@@ -195,7 +208,8 @@ export function AnnouncementsPage() {
             {t("announcements.create")}
           </Button>
         </div>
-      </div>
+        }
+      />
 
       <Card>
         <CardContent className="p-0">
@@ -253,65 +267,75 @@ export function AnnouncementsPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>{t("announcements.field_title")}</TableHead>
-                  <TableHead>{t("announcements.target")}</TableHead>
-                  <TableHead>{t("announcements.published")}</TableHead>
-                  <TableHead>{t("announcements.expires")}</TableHead>
-                  <TableHead>{t("announcements.dismissals")}</TableHead>
-                  <TableHead className="text-end">{t("announcements.actions")}</TableHead>
+                  {columns.show("target") && <TableHead>{t("announcements.target")}</TableHead>}
+                  {columns.show("published") && <TableHead>{t("announcements.published")}</TableHead>}
+                  {columns.show("expires") && <TableHead>{t("announcements.expires")}</TableHead>}
+                  {columns.show("dismissals") && <TableHead>{t("announcements.dismissals")}</TableHead>}
+                  <TableHead className="w-px text-end">{t("announcements.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {list.map((a) => (
-                  <TableRow key={String(a.id)}>
+                  <TableRow key={String(a.id)} onActivate={() => handleOpenEdit(a)}>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                       {String(a.title || "-")}
                     </TableCell>
+                    {columns.show("target") && (
+                      <TableCell>
+                        <Badge variant={a.target_type === "all" ? "default" : "info"}>
+                          {String(a.target_type || "all")}
+                        </Badge>
+                        {a.target_id ? (
+                          <span className="ms-1 text-xs text-gray-400">
+                            ({String(a.target_id).slice(0, 8)}...)
+                          </span>
+                        ) : null}
+                      </TableCell>
+                    )}
+                    {columns.show("published") && (
+                      <TableCell className="text-gray-600 dark:text-gray-400">
+                        {a.published_at
+                          ? new Date(String(a.published_at)).toLocaleDateString()
+                          : "-"}
+                      </TableCell>
+                    )}
+                    {columns.show("expires") && (
+                      <TableCell className="text-gray-600 dark:text-gray-400">
+                        {a.expires_at
+                          ? new Date(String(a.expires_at)).toLocaleDateString()
+                          : "-"}
+                      </TableCell>
+                    )}
+                    {columns.show("dismissals") && (
+                      <TableCell className="text-gray-600 dark:text-gray-400">
+                        <Badge variant="default">{String(a.dismissal_count ?? 0)}</Badge>
+                      </TableCell>
+                    )}
                     <TableCell>
-                      <Badge variant={a.target_type === "all" ? "default" : "info"}>
-                        {String(a.target_type || "all")}
-                      </Badge>
-                      {a.target_id ? (
-                        <span className="ms-1 text-xs text-gray-400">
-                          ({String(a.target_id).slice(0, 8)}...)
-                        </span>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
-                      {a.published_at
-                        ? new Date(String(a.published_at)).toLocaleDateString()
-                        : "-"}
-                    </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
-                      {a.expires_at
-                        ? new Date(String(a.expires_at)).toLocaleDateString()
-                        : "-"}
-                    </TableCell>
-                    <TableCell className="text-gray-600 dark:text-gray-400">
-                      <Badge variant="default">{String(a.dismissal_count ?? 0)}</Badge>
-                    </TableCell>
-                    <TableCell className="text-end">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleOpenEdit(a)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="danger"
-                          size="sm"
-                          onClick={() => setDeleteConfirmId(String(a.id))}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+                      <RowActions
+                        actions={[
+                          {
+                            key: "edit",
+                            label: t("common:buttons.edit"),
+                            icon: Pencil,
+                            onSelect: () => handleOpenEdit(a),
+                            primary: true,
+                          },
+                          {
+                            key: "delete",
+                            label: t("common.delete"),
+                            icon: Trash2,
+                            onSelect: () => setDeleteConfirmId(String(a.id)),
+                            danger: true,
+                          },
+                        ]}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}
                 {list.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <TableCell colSpan={columns.visibleCount} className="text-center text-gray-500 dark:text-gray-400 py-8">
                       {t("announcements.empty")}
                     </TableCell>
                   </TableRow>
