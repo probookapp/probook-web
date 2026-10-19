@@ -37,9 +37,19 @@ function createPrismaClient() {
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL!,
     max: 5,
+    // Fail fast when the pooler is unreachable (seen 2026-09-22: DNS nxdomain
+    // on pooler.supabase.com) instead of hanging until the function times out.
+    connectionTimeoutMillis: 10_000,
   });
   // Fired once per physical connection, when the pool opens it.
   pool.on("connect", serializeQueries);
+  // When the pooler drops an idle connection (a Supabase restart, or a frozen
+  // serverless instance waking up), pg emits "error" on the pool and evicts
+  // the client. With no listener that is an uncaught exception that takes the
+  // whole function down; with one, the next query just opens a fresh socket.
+  pool.on("error", (err) => {
+    console.warn("[db] idle connection dropped:", err.message);
+  });
   const adapter = new PrismaPg(pool);
   return new PrismaClient({ adapter });
 }
