@@ -161,8 +161,12 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
           {...register("unit_price")}
           error={errors.unit_price?.message}
         />
+        {/* Keyed apart: the same <Input> in the same slot would otherwise be
+            reused, and the registered (uncontrolled) price field would turn
+            into this read-only, controlled one — React warns about exactly that. */}
         {isBundle ? (
           <Input
+            key="bundle-cost"
             label={t("bundle.cost")}
             value={product ? formatCurrency(product.purchase_price ?? 0) : "-"}
             readOnly
@@ -170,6 +174,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
           />
         ) : (
           <Input
+            key="purchase-price"
             label={t("fields.purchasePriceHt")}
             type="number"
             step="0.01"
@@ -181,7 +186,7 @@ export function ProductForm({ product, onSubmit, onCancel, isLoading, fromPurcha
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {isBundle ? (
-          <Input label={t("fields.vatRate")} value={t("bundle.vatFromComponents")} readOnly disabled />
+          <Input key="bundle-vat" label={t("fields.vatRate")} value={t("bundle.vatFromComponents")} readOnly disabled />
         ) : (
           <Select
             label={t("fields.vatRateRequired")}
