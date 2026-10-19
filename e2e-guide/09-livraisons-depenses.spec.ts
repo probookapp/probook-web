@@ -35,7 +35,7 @@ test("Chapitre 9 — Bons de livraison et dépenses", async ({ page }) => {
 
   // Saving lands straight on the note, not back on the list.
   await expect(page).toHaveURL(/delivery-notes\/[0-9a-f-]{36}/);
-  await expect(page.getByText(CLIENT_2.name).first()).toBeVisible();
+  await expect(page.getByText(CLIENT_2.name).filter({ visible: true }).first()).toBeVisible();
   await tour.say("Le bon est prêt à imprimer. Il pourra être transformé en facture plus tard.");
   await tour.pause(1800);
 

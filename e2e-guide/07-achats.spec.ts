@@ -158,7 +158,7 @@ test("Chapitre 7 — Fournisseurs et réapprovisionnement", async ({ page }) => 
     settleMs: 1800,
   });
   await tour.say("Le bon de commande est enregistré, en attente de réception.");
-  await expect(order.getByText(SUPPLIER.name).first()).toBeVisible();
+  await expect(order.getByText(SUPPLIER.name).filter({ visible: true }).first()).toBeVisible();
 
   // ─── réception ───
   await tour.say(

@@ -62,7 +62,11 @@ test("Chapitre 8 — Plusieurs points de vente et transferts de stock", async ({
     settleMs: 2000,
   });
   await tour.say("Le transfert est tracé : sa page dit ce qui a quitté un site pour l'autre.");
-  await expect(transfer.getByText(PRODUCTS.cable.designation).first()).toBeVisible();
+  // The lines render twice (phone cards and desktop table) and the hidden copy
+  // comes first in the DOM; which one `.first()` meets depends on timing.
+  await expect(
+    transfer.getByText(PRODUCTS.cable.designation).filter({ visible: true }).first()
+  ).toBeVisible();
   await tour.pause(1800);
 
   // ─── stock par emplacement ───
