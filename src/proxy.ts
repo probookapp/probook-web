@@ -202,6 +202,14 @@ export async function proxy(req: NextRequest) {
       return NextResponse.next();
     }
 
+    // "Who am I?" is asked on every page, public ones included, and a visitor
+    // is a valid answer: the route returns null without a session. Gating it
+    // here turned each visit to the landing, the FAQ or the guide into two 401s
+    // in the console for what is not an error.
+    if (pathname === "/api/auth/me") {
+      return NextResponse.next();
+    }
+
     // Protected API routes — require tenant session (or admin impersonation)
     const token = req.cookies.get("probook_session")?.value;
     const session = token ? await verifyTokenMiddleware(token) : null;
