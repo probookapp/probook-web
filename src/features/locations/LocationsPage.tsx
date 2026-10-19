@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, Store, Warehouse } from "lucide-react";
 import {
@@ -26,7 +27,6 @@ import { isApiError } from "@/lib/api-adapter";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useToastStore } from "@/stores/useToastStore";
 import { LocationForm } from "./components/LocationForm";
-import { StockTransferForm } from "./components/StockTransferForm";
 import {
   useLocations,
   useCreateLocation,
@@ -34,11 +34,8 @@ import {
   useDeleteLocation,
   type LocationInput,
 } from "./hooks/useLocations";
-import {
-  useStockTransfers,
-  useCreateStockTransfer,
-  type CreateStockTransferInput,
-} from "./hooks/useStockTransfers";
+import { useStockTransfers } from "./hooks/useStockTransfers";
+import { useRouter } from "@/lib/navigation";
 import type { Location } from "@/lib/api";
 
 type Tab = "locations" | "transfers";
@@ -60,22 +57,24 @@ export function LocationsPage() {
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const addToast = useToastStore((state) => state.addToast);
 
-  const [tab, setTab] = useState<Tab>("locations");
+  const router = useRouter();
+  // The tab lives in the address (?tab=transfers), so coming back from a
+  // transfer's page lands on the transfer list rather than the locations.
+  const searchParams = useSearchParams();
+  const tab: Tab = searchParams.get("tab") === "transfers" ? "transfers" : "locations";
+  const setTab = (next: Tab) =>
+    router.replace(next === "transfers" ? "/locations?tab=transfers" : "/locations", { scroll: false });
 
   // Locations state
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState<Location | undefined>();
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  // Transfers state
-  const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
-
   const { data: locations, isLoading: locationsLoading } = useLocations();
   const { data: transfers, isLoading: transfersLoading } = useStockTransfers();
   const createLocation = useCreateLocation();
   const updateLocation = useUpdateLocation();
   const deleteLocation = useDeleteLocation();
-  const createTransfer = useCreateStockTransfer();
 
   // Three optional columns: no picker, but an unused address column steps aside.
   const locationColumns = useTableColumns(
@@ -138,17 +137,6 @@ export function LocationsPage() {
     }
   };
 
-  const handleTransferSubmit = async (input: CreateStockTransferInput) => {
-    if (isDemoMode) { showSubscribePrompt(); return; }
-    try {
-      await createTransfer.mutateAsync(input);
-      addToast({ type: "success", message: t("transfers.messages.created") });
-      setIsTransferModalOpen(false);
-    } catch (err) {
-      addToast({ type: "error", message: serverErrorMessage(err) ?? t("transfers.messages.createError") });
-    }
-  };
-
   const tabs: { key: Tab; label: string }[] = [
     { key: "locations", label: t("tabs.locations") },
     { key: "transfers", label: t("tabs.transfers") },
@@ -184,7 +172,7 @@ export function LocationsPage() {
             : {
                 label: t("transfers.newTransfer"),
                 icon: Plus,
-                onClick: () => (isDemoMode ? showSubscribePrompt() : setIsTransferModalOpen(true)),
+                onClick: () => (isDemoMode ? showSubscribePrompt() : router.push("/locations/transfers/new")),
                 disabled: (locations?.length ?? 0) < 2,
               }
         }
@@ -325,6 +313,7 @@ export function LocationsPage() {
                     <li key={transfer.id}>
                       {/* The route is what a transfer is recognised by; its number is for quoting. */}
                       <ListCard
+                        onActivate={() => router.push(`/locations/transfers/${transfer.id}`)}
                         title={<>{transfer.from_location?.name ?? "-"} → {transfer.to_location?.name ?? "-"}</>}
                         meta={
                           <>
@@ -359,7 +348,10 @@ export function LocationsPage() {
                   <TableBody>
                     {transfers && transfers.length > 0 ? (
                       transfers.map((transfer) => (
-                        <TableRow key={transfer.id}>
+                        <TableRow
+                          key={transfer.id}
+                          onActivate={() => router.push(`/locations/transfers/${transfer.id}`)}
+                        >
                           <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                             {transfer.transfer_number}
                           </TableCell>
@@ -417,7 +409,7 @@ export function LocationsPage() {
         title={tCommon("messages.confirmDelete")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">{t("deleteConfirmation")}</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">{t("deleteConfirmation")}</p>
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={() => setDeleteConfirmId(null)}>
             {tCommon("buttons.cancel")}
@@ -432,20 +424,6 @@ export function LocationsPage() {
         </div>
       </Modal>
 
-      {/* New transfer modal */}
-      <Modal
-        isOpen={isTransferModalOpen}
-        onClose={() => setIsTransferModalOpen(false)}
-        title={t("transfers.newTransfer")}
-        size="lg"
-      >
-        <StockTransferForm
-          locations={locations ?? []}
-          onSubmit={handleTransferSubmit}
-          onCancel={() => setIsTransferModalOpen(false)}
-          isLoading={createTransfer.isPending}
-        />
-      </Modal>
     </div>
   );
 }

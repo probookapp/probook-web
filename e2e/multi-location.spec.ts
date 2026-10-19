@@ -111,24 +111,35 @@ test.describe("Multi-location", () => {
     expect(wh.status).toBe(201);
 
     await page.goto("/en/locations");
-    // Switch to the "Stock transfers" tab and open the transfer form.
+    // Switch to the "Stock transfers" tab; a new transfer is written on its own page.
     await page.getByRole("button", { name: "Stock transfers" }).click();
-    await page.getByRole("button", { name: "New transfer" }).click();
+    await expect(page).toHaveURL(/\/en\/locations\?tab=transfers$/);
+    await page.getByRole("button", { name: "New transfer" }).first().click();
+    await expect(page).toHaveURL(/\/en\/locations\/transfers\/new$/);
 
-    const dialog = modal(page);
+    const form = page.locator("main");
     // from-location / to-location <select>s carry a name, so labels associate.
-    await dialog.getByLabel("From").selectOption({ label: company });
-    await dialog.getByLabel("To").selectOption({ label: "Warehouse" });
+    await form.getByLabel("From").selectOption({ label: company });
+    await form.getByLabel("To").selectOption({ label: "Warehouse" });
     // Product is a SearchableSelect: click the trigger (shows the placeholder),
     // then pick the option from the dropdown listbox.
-    await dialog.getByRole("button", { name: "Select a product" }).click();
-    await dialog.getByRole("option", { name: "Transfer Product" }).click();
-    // Quantity Input has no id/name — it's the only number input in the modal.
-    await dialog.getByRole("spinbutton").fill("40");
-    await dialog.getByRole("button", { name: "Create" }).click();
+    await form.getByRole("button", { name: "Select a product" }).click();
+    await form.getByRole("option", { name: "Transfer Product" }).click();
+    // The quantity is the only number input on the page.
+    await form.getByRole("spinbutton").fill("40");
+    await form.getByRole("button", { name: "Create", exact: true }).click();
 
-    // Success toast then the transfer appears in the list.
+    // Success toast, then the transfer's own page says what moved.
     await expect(page.getByText("Stock transfer created")).toBeVisible();
+    await expect(page).toHaveURL(/\/en\/locations\/transfers\/[0-9a-f-]{36}$/);
+    const line = form.getByRole("row").filter({ hasText: "Transfer Product" });
+    await expect(line.getByRole("cell").last()).toHaveText("40");
+
+    // Back lands on the transfer list, where the row opens the same page.
+    await form.getByRole("button", { name: "Back" }).click();
+    await expect(page).toHaveURL(/\/en\/locations\?tab=transfers$/);
+    await page.getByRole("row").filter({ hasText: "Warehouse" }).first().click();
+    await expect(page).toHaveURL(/\/en\/locations\/transfers\/[0-9a-f-]{36}$/);
 
     // ── Assert quantities moved and aggregate is unchanged ──────────────
     const levels = await stockLevels(page, product.id as string);

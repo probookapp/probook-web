@@ -44,7 +44,8 @@ test("Chapitre 8 — Plusieurs points de vente et transferts de stock", async ({
   await tour.click(tour.button(t("locations:tabs.transfers")), { settleMs: 900 });
   await tour.click(tour.button(t("locations:transfers.newTransfer")), { settleMs: 1200 });
 
-  const transfer = tour.dialog();
+  // Written on its own page, like the other documents with lines.
+  const transfer = page.locator("main");
   await tour.say("Origine et destination.");
   await tour.choose(transfer.locator('select[name="from-location"]'), { label: LOCATIONS.shop });
   await tour.choose(transfer.locator('select[name="to-location"]'), { label: LOCATIONS.warehouse });
@@ -60,7 +61,8 @@ test("Chapitre 8 — Plusieurs points de vente et transferts de stock", async ({
   await tour.click(transfer.getByRole("button", { name: t("common:buttons.create"), exact: true }), {
     settleMs: 2000,
   });
-  await tour.say("Le transfert est tracé : rien ne se perd entre deux sites.");
+  await tour.say("Le transfert est tracé : sa page dit ce qui a quitté un site pour l'autre.");
+  await expect(transfer.getByText(PRODUCTS.cable.designation).first()).toBeVisible();
   await tour.pause(1800);
 
   // ─── stock par emplacement ───

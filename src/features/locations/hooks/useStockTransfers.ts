@@ -6,6 +6,9 @@ export interface StockTransferLine {
   product_id: string;
   variant_id?: string | null;
   quantity: number;
+  /** Only on a single transfer (useStockTransfer): what the ids stand for. */
+  product?: { id: string; designation: string; reference: string | null } | null;
+  variant?: { id: string; name: string } | null;
 }
 
 export interface StockTransfer {
@@ -16,6 +19,8 @@ export interface StockTransfer {
   lines: StockTransferLine[];
   notes: string | null;
   created_at: string;
+  /** Only on a single transfer: who recorded it. */
+  created_by_name?: string | null;
 }
 
 export interface CreateStockTransferInput {
@@ -35,10 +40,22 @@ export function useStockTransfers() {
   });
 }
 
+export function useStockTransfer(id: string) {
+  return useQuery({
+    queryKey: ["stock-transfers", id],
+    queryFn: async () => {
+      const data = await stockTransfersApi.getById(id);
+      return data as unknown as StockTransfer;
+    },
+    enabled: !!id,
+  });
+}
+
 export function useCreateStockTransfer() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: CreateStockTransferInput) => stockTransfersApi.create(input),
+    mutationFn: async (input: CreateStockTransferInput) =>
+      (await stockTransfersApi.create(input)) as unknown as StockTransfer,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["stock-transfers"] });
       // Stock levels changed as a result of the transfer.

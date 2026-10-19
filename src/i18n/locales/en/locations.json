@@ -37,6 +37,10 @@
   "transfers": {
     "newTransfer": "New transfer",
     "transferList": "Stock transfers",
+    "viewTransfer": "Transfer {{number}}",
+    "route": "Route",
+    "details": "Details",
+    "totalQuantity": "Total quantity",
     "noTransfers": "No transfers yet",
     "selectLocation": "Select a location",
     "fields": {
@@ -52,7 +56,8 @@
       "variant": "Variant",
       "selectVariant": "Select a variant",
       "quantity": "Quantity",
-      "notes": "Notes"
+      "notes": "Notes",
+      "createdBy": "Recorded by"
     },
     "validation": {
       "locationsRequired": "Select both a source and a destination location",

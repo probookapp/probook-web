@@ -37,6 +37,10 @@
   "transfers": {
     "newTransfer": "تحويل جديد",
     "transferList": "تحويلات المخزون",
+    "viewTransfer": "تحويل {{number}}",
+    "route": "المسار",
+    "details": "التفاصيل",
+    "totalQuantity": "الكمية الإجمالية",
     "noTransfers": "لا توجد تحويلات بعد",
     "selectLocation": "اختر موقعًا",
     "fields": {
@@ -52,7 +56,8 @@
       "variant": "المتغير",
       "selectVariant": "اختر متغيرًا",
       "quantity": "الكمية",
-      "notes": "ملاحظات"
+      "notes": "ملاحظات",
+      "createdBy": "سجّله"
     },
     "validation": {
       "locationsRequired": "اختر موقع المصدر وموقع الوجهة",
