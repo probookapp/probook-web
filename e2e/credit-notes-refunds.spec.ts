@@ -165,4 +165,56 @@ test.describe("Credit notes & refunds", () => {
     const qtyAfterRefund = await productQty(page, product.id as string);
     expect(qtyAfterRefund).toBe(qtyAfterSale + 1);
   });
+  test("a credit note refunds what the client paid, after the invoice's commercial discount", async ({
+    page,
+  }) => {
+    const client = await setupClient(page, "Discount Credit Client");
+    const widget = await setupProduct(page, "Discount Widget", 100, { quantity: 10 });
+    const gadget = await setupProduct(page, "Discount Gadget", 50, { quantity: 10 });
+
+    // Lines 2 x 100 + 2 x 50 = 300 HT, 10% off -> 270 HT, 20% VAT -> 324 TTC.
+    const inv = await apiPost(page, "/api/invoices", {
+      client_id: client.id,
+      issue_date: today(),
+      discount_percent: 10,
+      lines: [
+        { product_id: widget.id, description: "Discount Widget", quantity: 2, unit_price: 100, tax_rate: 20 },
+        { product_id: gadget.id, description: "Discount Gadget", quantity: 2, unit_price: 50, tax_rate: 20 },
+      ],
+    });
+    expect(inv.status).toBe(200);
+    expect(inv.body.total).toBe(324);
+    expect((await apiPost(page, `/api/invoices/${inv.body.id}/issue`)).status).toBe(200);
+
+    await page.goto(`/en/invoices/${inv.body.id}`);
+    await page.waitForLoadState("networkidle");
+    await page.getByRole("button", { name: "Create Credit Note" }).first().click();
+    const dialog = page.getByRole("dialog");
+
+    // Nothing is refunded until a quantity is entered: typing on the returned
+    // line used to leave every other line at its full quantity.
+    await dialog.getByRole("spinbutton").first().fill("1");
+    await dialog.getByRole("button", { name: "Create Credit Note" }).click();
+    await page.waitForURL(/\/invoices\/credit-notes\//, { timeout: 15_000 });
+
+    let notes = await getCreditNotes(page);
+    expect(notes).toHaveLength(1);
+    // One widget at 100 less 10% = 90 HT, 108 TTC — not 120.
+    expect(notes[0].subtotal).toBe(90);
+    expect(notes[0].total).toBe(108);
+
+    // The rest, in one click: exactly what is left of the invoice (324 - 108).
+    await page.goto(`/en/invoices/${inv.body.id}`);
+    await page.waitForLoadState("networkidle");
+    await page.getByRole("button", { name: "Create Credit Note" }).first().click();
+    await dialog.getByRole("button", { name: "Refund everything" }).click();
+    await dialog.getByRole("spinbutton").first().fill("1");
+    await dialog.getByRole("button", { name: "Create Credit Note" }).click();
+    await page.waitForURL(/\/invoices\/credit-notes\//, { timeout: 15_000 });
+
+    notes = await getCreditNotes(page);
+    expect(notes).toHaveLength(2);
+    const total = notes.reduce((sum, n) => sum + (n.total as number), 0);
+    expect(total).toBeCloseTo(324, 2);
+  });
 });

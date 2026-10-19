@@ -28,9 +28,12 @@ export function RefundModal({ transaction, sessionId, isOpen, onClose }: RefundM
   const packNames = new Map(
     transaction.lines.filter((l) => l.is_bundle_header).map((l) => [l.bundle_key, l.designation])
   );
-  const [quantities, setQuantities] = useState<Record<string, number>>(() =>
-    Object.fromEntries(refundable.map((l) => [l.id, l.quantity]))
-  );
+  // Nothing is refunded until a quantity is entered: opening at the full sold
+  // quantities meant that typing "1" on the returned item still refunded the
+  // rest of the ticket. "Refund everything" is one click away.
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const refundAll = () =>
+    setQuantities(Object.fromEntries(refundable.map((l) => [l.id, l.quantity])));
 
   // Effective per-unit price (excl. tax) the customer actually paid: line price
   // after its own discount, scaled by the transaction-level discount ratio
@@ -60,11 +63,11 @@ export function RefundModal({ transaction, sessionId, isOpen, onClose }: RefundM
     setQuantities((prev) => ({ ...prev, [id]: Math.max(0, Math.min(value, max)) }));
   };
 
-  // Every line opens at its full sold quantity.
+  // Every line opens at nothing to refund.
   const isDirty =
     reason !== "" ||
     restock ||
-    refundable.some((l) => (quantities[l.id] ?? l.quantity) !== l.quantity);
+    refundable.some((l) => (quantities[l.id] ?? 0) !== 0);
 
   const handleSubmit = async () => {
     if (isDemoMode) {
@@ -96,6 +99,12 @@ export function RefundModal({ transaction, sessionId, isOpen, onClose }: RefundM
         <p className="text-sm text-(--color-text-secondary)">
           {t("refund.subtitle", { ticket: transaction.ticket_number })}
         </p>
+
+        <div className="flex justify-end">
+          <Button variant="secondary" size="sm" onClick={refundAll}>
+            {t("refund.refundAll")}
+          </Button>
+        </div>
 
         <div className="space-y-2">
           {refundable.map((line) => {

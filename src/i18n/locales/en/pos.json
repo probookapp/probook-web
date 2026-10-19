@@ -108,6 +108,7 @@
     "title": "Refund",
     "subtitle": "Refund items from ticket {{ticket}}",
     "sold": "sold",
+    "refundAll": "Refund everything",
     "reason": "Reason",
     "reasonPlaceholder": "e.g. Returned item, defect...",
     "restock": "Restock returned items",

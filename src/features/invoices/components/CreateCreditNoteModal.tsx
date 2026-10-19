@@ -9,6 +9,7 @@ import type { Invoice } from "@/types";
 import { useCreateCreditNote } from "../hooks/useCreditNotes";
 import { NUMERIC_CELL } from "@/components/ui";
 import { bundleRoles } from "@/lib/bundles";
+import { resolveDocumentDiscount } from "@/lib/document-totals";
 
 interface CreateCreditNoteModalProps {
   invoice: Invoice;
@@ -47,13 +48,29 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
       });
   }, [invoice.lines]);
 
+  // What one unit of each line actually cost the client. A line discount (a
+  // pack's, for its components) is in the line's own subtotal; the invoice's
+  // commercial discount is not — it is a row of its own (src/lib/document-totals)
+  // — so it is applied here, the same way the invoice applied it. Refunding at
+  // the undiscounted price gave back more than was paid, and a full credit note
+  // came out above the invoice's own total, which the server then refused.
+  const keptRatio = useMemo(() => {
+    const linesSubtotal = refundableLines.reduce((sum, l) => sum + l.subtotal, 0);
+    return resolveDocumentDiscount(linesSubtotal, invoice.discount_percent, invoice.discount_amount).keptRatio;
+  }, [refundableLines, invoice.discount_percent, invoice.discount_amount]);
+  const chargedUnitPrice = (l: (typeof refundableLines)[number]) =>
+    l.quantity > 0 ? Math.round(((l.subtotal * keptRatio) / l.quantity) * 1000) / 1000 : l.unit_price;
+
   const [issueDate, setIssueDate] = useState(formatDateISO(new Date()));
   const [reason, setReason] = useState("");
   const [restock, setRestock] = useState(false);
-  // Quantity to refund per invoice-line id (defaults to the full invoiced qty).
-  const [quantities, setQuantities] = useState<Record<string, number>>(() =>
-    Object.fromEntries(refundableLines.map((l) => [l.id, l.quantity]))
-  );
+  // Quantity to refund per invoice-line id. Every line starts at nothing: a
+  // credit note is usually for what came back, and opening at the full
+  // quantities meant that typing "1" on the returned line still refunded every
+  // other line in full. "Refund everything" is one click away.
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
+  const refundAll = () =>
+    setQuantities(Object.fromEntries(refundableLines.map((l) => [l.id, l.quantity])));
 
   const draftLines: DraftLine[] = refundableLines
     .filter((l) => (quantities[l.id] ?? 0) > 0)
@@ -63,9 +80,7 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
       variant_id: l.variant_id ?? null,
       description: l.description,
       quantity: quantities[l.id] ?? 0,
-      // What was actually charged per unit: a line discount (a pack's, for
-      // its components) is not refunded on top of what the customer paid.
-      unit_price: l.quantity > 0 ? Math.round((l.subtotal / l.quantity) * 1000) / 1000 : l.unit_price,
+      unit_price: chargedUnitPrice(l),
       tax_rate: l.tax_rate,
     }));
 
@@ -85,12 +100,12 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
     setQuantities((prev) => ({ ...prev, [id]: clamped }));
   };
 
-  // Every line opens at its full invoiced quantity.
+  // Every line opens at nothing to refund.
   const isDirty =
     reason !== "" ||
     restock ||
     issueDate !== formatDateISO(new Date()) ||
-    refundableLines.some((l) => (quantities[l.id] ?? l.quantity) !== l.quantity);
+    refundableLines.some((l) => (quantities[l.id] ?? 0) !== 0);
 
   const handleSubmit = async () => {
     if (isDemoMode) {
@@ -161,7 +176,8 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
           </div>
           {refundableLines.map((line) => {
             const qty = quantities[line.id] ?? 0;
-            const lineSub = qty * line.unit_price;
+            const unit = chargedUnitPrice(line);
+            const lineSub = qty * unit;
             const lineTotal = lineSub + lineSub * (line.tax_rate / 100);
             return (
               <div
@@ -169,7 +185,7 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
                 className="grid grid-cols-[6rem_minmax(0,1fr)] sm:col-span-4 sm:grid-cols-subgrid items-center gap-x-3 gap-y-1 px-3 py-2"
               >
                 <span className="col-span-2 sm:col-span-1 min-w-0 text-sm wrap-anywhere">{line.description}</span>
-                <span className={`hidden sm:block text-sm ${NUMERIC_CELL}`}>{formatCurrency(line.unit_price)}</span>
+                <span className={`hidden sm:block text-sm ${NUMERIC_CELL}`}>{formatCurrency(unit)}</span>
                 <label className="block">
                   <span className="sm:hidden block text-xs text-(--color-text-secondary)">
                     {t("invoices:creditNotes.quantityToRefund")}
@@ -196,6 +212,17 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
               </div>
             );
           })}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {keptRatio < 1 ? (
+            <p className="text-xs text-(--color-text-secondary)">{t("invoices:creditNotes.afterDiscount")}</p>
+          ) : (
+            <span />
+          )}
+          <Button variant="secondary" size="sm" onClick={refundAll}>
+            {t("invoices:creditNotes.refundAll")}
+          </Button>
         </div>
 
         <label className="flex items-center gap-2 cursor-pointer select-none">

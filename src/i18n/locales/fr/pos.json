@@ -108,6 +108,7 @@
     "title": "Remboursement",
     "subtitle": "Rembourser des articles du ticket {{ticket}}",
     "sold": "vendus",
+    "refundAll": "Tout rembourser",
     "reason": "Motif",
     "reasonPlaceholder": "ex. Article retourné, défaut...",
     "restock": "Réintégrer les articles retournés",
