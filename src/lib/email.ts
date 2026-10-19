@@ -10,8 +10,18 @@ function getResend(): Resend | null {
   return _resend;
 }
 
+/**
+ * `EMAIL_DRIVER=log` (outside production): write each message to the server log
+ * instead of sending it. The test environment uses it — sending from there
+ * either failed on an invalid key, printing a stack trace per signup, or with a
+ * valid one would have mailed every fake address the e2e suites invent.
+ */
+function logsInsteadOfSending(): boolean {
+  return process.env.EMAIL_DRIVER === "log" && process.env.NODE_ENV !== "production";
+}
+
 export function isResendConfigured(): boolean {
-  return !!process.env.RESEND_API_KEY;
+  return logsInsteadOfSending() || !!process.env.RESEND_API_KEY;
 }
 
 interface SendEmailOptions {
@@ -39,6 +49,10 @@ export function verificationEmailHtml(verifyUrl: string): string {
 }
 
 export async function sendEmail({ to, subject, html, replyTo }: SendEmailOptions) {
+  if (logsInsteadOfSending()) {
+    console.info(`[email:log] to=${to} subject=${JSON.stringify(subject)}`);
+    return;
+  }
   const resend = getResend();
   if (!resend) {
     throw new Error("RESEND_NOT_CONFIGURED");

@@ -10,6 +10,11 @@ import { z } from "zod";
 //   so a misconfigured deploy fails loudly at boot;
 // - in development/test (and during the production build phase) it only warns.
 
+// An optional variable set to "" means unset. .env.test blanks the production
+// Sentry DSN that way, so `next dev` cannot pick it up from .env — and a blank
+// value must not then be reported as invalid.
+const optional = () => z.preprocess((v) => (v === "" ? undefined : v), z.string().min(1).optional());
+
 const envSchema = z.object({
   // Required in production
   DATABASE_URL: z.string().min(1),
@@ -21,16 +26,16 @@ const envSchema = z.object({
   NEXT_PUBLIC_APP_URL: z.string().min(1),
 
   // Optional
-  DIRECT_URL: z.string().min(1).optional(),
-  TOTP_ENCRYPTION_KEY: z.string().min(1).optional(),
-  INVOICE_INTEGRITY_SECRET: z.string().min(1).optional(),
-  UPSTASH_REDIS_REST_URL: z.string().min(1).optional(),
-  UPSTASH_REDIS_REST_TOKEN: z.string().min(1).optional(),
-  CRON_SECRET: z.string().min(1).optional(),
-  NEXT_PUBLIC_SENTRY_DSN: z.string().min(1).optional(),
-  SENTRY_ORG: z.string().min(1).optional(),
-  SENTRY_PROJECT: z.string().min(1).optional(),
-  SENTRY_AUTH_TOKEN: z.string().min(1).optional(),
+  DIRECT_URL: optional(),
+  TOTP_ENCRYPTION_KEY: optional(),
+  INVOICE_INTEGRITY_SECRET: optional(),
+  UPSTASH_REDIS_REST_URL: optional(),
+  UPSTASH_REDIS_REST_TOKEN: optional(),
+  CRON_SECRET: optional(),
+  NEXT_PUBLIC_SENTRY_DSN: optional(),
+  SENTRY_ORG: optional(),
+  SENTRY_PROJECT: optional(),
+  SENTRY_AUTH_TOKEN: optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
