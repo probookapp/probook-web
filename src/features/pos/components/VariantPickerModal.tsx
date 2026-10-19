@@ -17,7 +17,7 @@ export function VariantPickerModal({ product, onSelect, onClose }: VariantPicker
 
   return (
     <Modal isOpen={true} onClose={onClose} title={t("pos:selectVariant")} size="sm">
-      <p className="font-medium text-sm mb-3 truncate">{product.designation}</p>
+      <p className="font-medium text-sm mb-3 wrap-anywhere">{product.designation}</p>
       <div className="space-y-2">
         {variants.map((v) => {
           const price = v.price_override ?? product.unit_price;

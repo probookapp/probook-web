@@ -165,7 +165,7 @@ export function DocumentLinesMobile({
                 )}
 
                 <span className="flex-1 min-w-0">
-                  <span className="block truncate text-sm text-gray-900 dark:text-gray-100">
+                  <span className="block line-clamp-2 wrap-anywhere text-sm text-gray-900 dark:text-gray-100">
                     {isSubtotal ? t(`${ns}:lines.subtotalOnly`) : description}
                   </span>
                   {problem && (

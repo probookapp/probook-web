@@ -338,7 +338,7 @@ export function PlatformAdminsPage() {
         title={t("platformAdmins.deleteTitle")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("platformAdmins.confirmDelete", { username: String(deletingAdmin?.username || "") })}
         </p>
         <div className="flex justify-end gap-3">

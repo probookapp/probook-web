@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { Download, Upload, Lock, FileDown } from "lucide-react";
-import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/components/ui";
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, Modal } from "@/components/ui";
 import { toast } from "@/stores/useToastStore";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { exportApi, backupApi } from "@/lib/api";
@@ -221,39 +221,36 @@ export function BackupSection() {
         </div>
       </CardContent>
 
-      {/* Confirmation dialog */}
-      {showConfirmDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold mb-2">
-              {t("backup.importConfirmTitle")}
-            </h3>
-            <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
-              {t("backup.importConfirmMessage")}
-            </p>
-            <div className="flex justify-end gap-3">
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => {
-                  setShowConfirmDialog(false);
-                  setPendingBackupData(null);
-                }}
-              >
-                {t("backup.importCancel")}
-              </Button>
-              <Button
-                type="button"
-                variant="danger"
-                onClick={handleConfirmImport}
-                isLoading={isImporting}
-              >
-                {t("backup.importConfirm")}
-              </Button>
-            </div>
-          </div>
+      {/* Confirmation dialog — the shared Modal, like every other one. While
+          the restore runs it cannot be dismissed: closing it would not stop it. */}
+      <Modal
+        isOpen={showConfirmDialog}
+        onClose={() => {
+          setShowConfirmDialog(false);
+          setPendingBackupData(null);
+        }}
+        title={t("backup.importConfirmTitle")}
+        size="md"
+        dismissible={!isImporting}
+      >
+        <p className="text-sm text-(--color-text-secondary) mb-6">{t("backup.importConfirmMessage")}</p>
+        <div className="flex flex-wrap justify-end gap-3">
+          <Button
+            type="button"
+            variant="secondary"
+            disabled={isImporting}
+            onClick={() => {
+              setShowConfirmDialog(false);
+              setPendingBackupData(null);
+            }}
+          >
+            {t("backup.importCancel")}
+          </Button>
+          <Button type="button" variant="danger" onClick={handleConfirmImport} isLoading={isImporting}>
+            {t("backup.importConfirm")}
+          </Button>
         </div>
-      )}
+      </Modal>
     </Card>
   );
 }

@@ -19,7 +19,7 @@ export function UnsavedChangesDialog({ isBlocked, onProceed, onReset }: UnsavedC
       title={t("unsavedChanges.title")}
       size="sm"
     >
-      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+      <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 wrap-anywhere">
         {t("unsavedChanges.message")}
       </p>
       <div className="flex justify-end gap-3">

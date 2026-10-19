@@ -12,6 +12,7 @@ import {
   TableCell,
   TableNumericCell,
   RowActions,
+  FitAmount,
 } from "@/components/ui";
 import { useTableColumns } from "@/hooks/useTableColumns";
 import {
@@ -92,6 +93,18 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
       addToast({ type: "error", message: t("messages.productUnlinkError") });
     }
   };
+
+  const removeAction = (product: ProductWithPrice) => [
+    {
+      key: "remove",
+      label: t("products.removeProduct"),
+      icon: X,
+      onSelect: () => handleRemoveProduct(product.link_id),
+      primary: true,
+      danger: true,
+      hidden: !canManage,
+    },
+  ];
 
   if (isLoadingLinked) {
     return (
@@ -174,7 +187,33 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      {/* Cards while the dialog is narrow (a phone), the table once it is
+          wide enough — measured on the dialog, not the screen. */}
+      <div className="@container">
+      <ul className="@md:hidden divide-y divide-(--color-border-primary) rounded-lg border border-(--color-border-primary)">
+        {linkedProducts && linkedProducts.length > 0 ? (
+          linkedProducts.map((product: ProductWithPrice) => (
+            <li key={product.link_id} className="flex items-start gap-3 px-3 py-2.5">
+              <div className="min-w-0 flex-1 wrap-anywhere">
+                <p className="font-medium text-(--color-text-primary)">{product.designation}</p>
+                {product.reference && (
+                  <p className="text-xs text-(--color-text-secondary)">{product.reference}</p>
+                )}
+                <dl className="mt-1 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 text-sm">
+                  <dt className="text-(--color-text-secondary)">{t("products.purchasePrice")}</dt>
+                  <dd className="text-end"><FitAmount>{formatCurrency(product.purchase_price)}</FitAmount></dd>
+                  <dt className="text-(--color-text-secondary)">{tCommon("labels.unitPrice")}</dt>
+                  <dd className="text-end"><FitAmount>{formatCurrency(product.unit_price)}</FitAmount></dd>
+                </dl>
+              </div>
+              <RowActions actions={removeAction(product)} />
+            </li>
+          ))
+        ) : (
+          <li className="px-3 py-6 text-center text-sm text-(--color-text-secondary)">{t("products.noProducts")}</li>
+        )}
+      </ul>
+      <div className="hidden @md:block overflow-x-auto">
         <Table className="min-w-full">
           <TableHeader>
             <TableRow>
@@ -208,19 +247,7 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
                     </TableNumericCell>
                   )}
                   <TableCell>
-                    <RowActions
-                      actions={[
-                        {
-                          key: "remove",
-                          label: t("products.removeProduct"),
-                          icon: X,
-                          onSelect: () => handleRemoveProduct(product.link_id),
-                          primary: true,
-                          danger: true,
-                          hidden: !canManage,
-                        },
-                      ]}
-                    />
+                    <RowActions actions={removeAction(product)} />
                   </TableCell>
                 </TableRow>
               ))
@@ -233,6 +260,7 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
             )}
           </TableBody>
         </Table>
+      </div>
       </div>
     </div>
   );

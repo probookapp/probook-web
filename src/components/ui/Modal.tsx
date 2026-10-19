@@ -46,6 +46,11 @@ interface ModalProps {
   size?: "sm" | "md" | "lg" | "xl";
   /** Unsaved input held by the owner itself; a form rendered inside can report it with useModalDirty instead. */
   isDirty?: boolean;
+  /**
+   * false for a decision that cannot be put off (an offline conflict): no
+   * close button, and Escape or a click outside leave it open.
+   */
+  dismissible?: boolean;
 }
 
 /**
@@ -54,7 +59,15 @@ interface ModalProps {
  * Escape / overlay-click to dismiss, and body scroll lock — all handled by
  * Radix. The props API is unchanged from the previous hand-rolled version.
  */
-export function Modal({ isOpen, onClose, title, children, size = "md", isDirty: ownerDirty = false }: ModalProps) {
+export function Modal({
+  isOpen,
+  onClose,
+  title,
+  children,
+  size = "md",
+  isDirty: ownerDirty = false,
+  dismissible = true,
+}: ModalProps) {
   const { t } = useTranslation("common");
   const [isDirty, setIsDirty] = useState(false);
   const [confirmingClose, setConfirmingClose] = useState(false);
@@ -63,7 +76,7 @@ export function Modal({ isOpen, onClose, title, children, size = "md", isDirty: 
     <Dialog.Root
       open={isOpen}
       onOpenChange={(open) => {
-        if (open) return;
+        if (open || !dismissible) return;
         // The owner closing it on purpose (after a save, or its own Cancel)
         // sets isOpen and never comes through here.
         if (isDirty || ownerDirty) setConfirmingClose(true);
@@ -104,9 +117,12 @@ export function Modal({ isOpen, onClose, title, children, size = "md", isDirty: 
             )}
           >
             <div className="sticky top-0 z-10 flex items-center justify-between gap-3 px-4 py-1 sm:px-6 sm:py-4 border-b border-(--color-border-primary) bg-(--color-bg-elevated) rounded-t-xl">
-              <Dialog.Title className="text-base sm:text-lg font-semibold text-(--color-text-primary)">
+              {/* A title carrying a name ("Statement — <client>") wraps rather
+                  than pushing the close button off the dialog. */}
+              <Dialog.Title className="min-w-0 wrap-anywhere text-base sm:text-lg font-semibold text-(--color-text-primary)">
                 {title}
               </Dialog.Title>
+              {dismissible && (
               <Dialog.Close asChild>
                 <button
                   aria-label={t("aria.close")}
@@ -116,6 +132,7 @@ export function Modal({ isOpen, onClose, title, children, size = "md", isDirty: 
                   <X className="h-5 w-5" />
                 </button>
               </Dialog.Close>
+              )}
             </div>
             <div className="px-4 py-3 sm:px-6 sm:py-4">
               <ModalDirtyContext.Provider value={setIsDirty}>{children}</ModalDirtyContext.Provider>

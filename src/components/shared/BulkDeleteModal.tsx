@@ -25,7 +25,7 @@ export function BulkDeleteModal({
       title={t("bulk.confirmDeleteTitle")}
       size="sm"
     >
-      <p className="text-(--color-text-secondary) mb-6">
+      <p className="text-(--color-text-secondary) mb-6 wrap-anywhere">
         {t("bulk.confirmDeleteMessage", { count })}
       </p>
       <div className="flex justify-end gap-3">

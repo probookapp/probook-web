@@ -344,7 +344,9 @@ export function SearchableSelect({
                     aria-selected={option.value === value}
                     className={cn(
                       // Taller rows below lg, where an option is chosen with a finger.
-                      "px-3 py-2.5 lg:py-2 text-sm cursor-pointer transition-colors",
+                      // A long name wraps — in full, since the list is where it
+                      // is read before choosing — instead of scrolling sideways.
+                      "px-3 py-2.5 lg:py-2 text-sm cursor-pointer transition-colors wrap-anywhere",
                       option.value === value
                         ? "bg-primary-50 dark:bg-primary-950 text-primary-700 dark:text-primary-300 font-medium"
                         : "text-(--color-text-primary)",

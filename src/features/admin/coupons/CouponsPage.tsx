@@ -427,7 +427,7 @@ export function CouponsPage() {
         title={t("coupons.deleteTitle")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("coupons.confirmDelete", { code: String(deletingCoupon?.code || "") })}
         </p>
         <div className="flex justify-end gap-3">

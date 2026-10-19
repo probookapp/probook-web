@@ -449,7 +449,7 @@ export function DeliveryNotesPage() {
         title={t("delivery:deleteDeliveryNote")}
         size="sm"
       >
-        <p className="text-(--color-text-secondary) mb-6">
+        <p className="text-(--color-text-secondary) mb-6 wrap-anywhere">
           {t("delivery:confirmDelete")}
         </p>
         <div className="flex justify-end gap-3">

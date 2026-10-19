@@ -212,7 +212,7 @@ export function CategoryManager() {
         title={t("categories.deleteCategory")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
+        <p className="text-gray-600 dark:text-gray-400 mb-4 wrap-anywhere">
           {t("categories.confirmDelete")}
         </p>
         <p className="text-sm text-amber-600 dark:text-amber-500 mb-6">

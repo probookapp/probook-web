@@ -165,13 +165,15 @@ export function ClientStatement({ isOpen, onClose, clientId, clientName }: Clien
 
         {/* Outstanding balance highlight */}
         {statement && (
-          <div className="flex items-center justify-between rounded-lg bg-primary-50 dark:bg-primary-900/20 px-4 py-3">
-            <span className="text-sm font-medium text-primary-700 dark:text-primary-300">
+          // An outstanding balance in the billions does not fit beside its
+          // label at 320 px: it shrinks to fit instead of spilling out.
+          <div className="flex items-center justify-between gap-4 rounded-lg bg-primary-50 dark:bg-primary-900/20 px-4 py-3">
+            <span className="shrink-0 text-sm font-medium text-primary-700 dark:text-primary-300">
               {t("statement.outstandingBalance")}
             </span>
-            <span className="text-lg font-bold text-primary-700 dark:text-primary-300">
+            <FitAmount className="flex-1 text-end text-lg font-bold text-primary-700 dark:text-primary-300">
               {formatCurrency(statement.totals.closing_balance)}
-            </span>
+            </FitAmount>
           </div>
         )}
 
@@ -180,7 +182,43 @@ export function ClientStatement({ isOpen, onClose, clientId, clientName }: Clien
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600" />
           </div>
         ) : (
-          <div className="overflow-x-auto max-h-[50vh] overflow-y-auto">
+          // Cards while the dialog is narrow (a phone), the table once it is
+          // wide enough — measured on the dialog, not the screen. Six columns
+          // of dates and amounts in a phone-width sheet meant scrolling
+          // sideways to reach the balance, the one figure looked for.
+          <div className="@container">
+          <ul className="@xl:hidden max-h-[50vh] overflow-y-auto divide-y divide-(--color-border-primary) rounded-lg border border-(--color-border-primary)">
+            <li className="flex items-start gap-3 px-3 py-2.5">
+              <div className="min-w-0 flex-1">
+                <p className="text-sm italic text-(--color-text-secondary)">{t("statement.openingBalance")}</p>
+                <p className="text-xs text-(--color-text-tertiary)">{startDate ? formatDate(startDate) : "-"}</p>
+              </div>
+              <FitAmount className="min-w-0 flex-1 text-end text-sm font-medium">
+                {statement ? formatCurrency(statement.opening_balance) : "-"}
+              </FitAmount>
+            </li>
+            {statement && statement.entries.length > 0 ? (
+              statement.entries.map((e, i) => (
+                <li key={`${e.type}-${e.reference}-${i}`} className="flex items-start gap-3 px-3 py-2.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-(--color-text-primary) wrap-anywhere">{e.reference}</p>
+                    <p className="text-xs text-(--color-text-secondary)">
+                      {formatDate(e.date)} · {typeLabel(e.type)}
+                    </p>
+                  </div>
+                  <div className="min-w-0 flex-1 text-end">
+                    <FitAmount className="text-sm text-(--color-text-secondary)">
+                      {e.debit ? `+ ${formatCurrency(e.debit)}` : e.credit ? `− ${formatCurrency(e.credit)}` : ""}
+                    </FitAmount>
+                    <FitAmount className="text-sm font-medium">{formatCurrency(e.running_balance)}</FitAmount>
+                  </div>
+                </li>
+              ))
+            ) : (
+              <li className="px-3 py-6 text-center text-sm text-(--color-text-secondary)">{t("statement.noEntries")}</li>
+            )}
+          </ul>
+          <div className="hidden @xl:block overflow-x-auto max-h-[50vh] overflow-y-auto">
             <Table className="min-w-150">
               <TableHeader>
                 <TableRow>
@@ -232,6 +270,7 @@ export function ClientStatement({ isOpen, onClose, clientId, clientName }: Clien
                 )}
               </TableBody>
             </Table>
+          </div>
           </div>
         )}
 

@@ -195,7 +195,7 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
         title={t("payments.deletePayment")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("payments.deleteConfirm")}
         </p>
         <div className="flex justify-end gap-3">

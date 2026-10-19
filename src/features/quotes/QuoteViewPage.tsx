@@ -265,7 +265,7 @@ export function QuoteViewPage() {
         title={t("quotes:actions.convertToInvoice")}
         size="sm"
       >
-        <p className="text-(--color-text-secondary) mb-6">
+        <p className="text-(--color-text-secondary) mb-6 wrap-anywhere">
           {t("quotes:confirmConvert")} <strong>{quote.quote_number}</strong>
         </p>
         {shortCount > 0 && (

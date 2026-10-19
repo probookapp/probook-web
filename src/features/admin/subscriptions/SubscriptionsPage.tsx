@@ -640,7 +640,7 @@ export function SubscriptionsPage() {
         title={t("subscriptions.confirmRenewalTitle")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("subscriptions.confirmRenewalMessage")}
         </p>
         <div className="flex justify-end gap-3">
@@ -664,7 +664,7 @@ export function SubscriptionsPage() {
         title={t("subscriptions.confirmCancellationTitle")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("subscriptions.confirmCancellationMessage")}
         </p>
         <div className="flex justify-end gap-3">

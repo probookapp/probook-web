@@ -148,25 +148,25 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
           {contacts.map((contact) => (
             <div
               key={contact.id}
-              className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-start justify-between"
+              className="p-3 bg-gray-50 dark:bg-gray-800 rounded-lg flex items-start justify-between gap-2"
             >
-              <div className="space-y-1">
+              <div className="min-w-0 flex-1 space-y-1 wrap-anywhere">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900 dark:text-gray-100">{contact.name}</span>
+                  <span className="min-w-0 font-medium text-gray-900 dark:text-gray-100">{contact.name}</span>
                   {contact.is_primary && (
-                    <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                    <Star className="h-4 w-4 shrink-0 text-yellow-500 fill-current" />
                   )}
                 </div>
                 {contact.role && (
                   <p className="text-sm text-gray-500 dark:text-gray-400">{contact.role}</p>
                 )}
-                <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
                   {contact.email && (
                     <a
                       href={`mailto:${contact.email}`}
-                      className="flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400"
+                      className="flex min-w-0 items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400"
                     >
-                      <Mail className="h-4 w-4" />
+                      <Mail className="h-4 w-4 shrink-0" />
                       {contact.email}
                     </a>
                   )}
@@ -175,13 +175,13 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
                       href={`tel:${contact.phone}`}
                       className="flex items-center gap-1 hover:text-primary-600 dark:hover:text-primary-400"
                     >
-                      <Phone className="h-4 w-4" />
+                      <Phone className="h-4 w-4 shrink-0" />
                       {contact.phone}
                     </a>
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex shrink-0 items-center gap-2">
                 {canEdit && (
                 <button
                   onClick={() => handleOpenEdit(contact)}
@@ -281,7 +281,7 @@ export function ClientContacts({ clientId }: ClientContactsProps) {
         title={tCommon("messages.confirmDelete")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("contacts.deleteConfirmation")}
         </p>
         <div className="flex justify-end gap-3">

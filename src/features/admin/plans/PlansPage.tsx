@@ -372,7 +372,7 @@ export function PlansPage() {
                 </p>
 
                 {plan.description ? (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4 wrap-anywhere">
                     {String(plan.description)}
                   </p>
                 ) : null}

@@ -443,7 +443,7 @@ export function AnnouncementsPage() {
         title={t("announcements.delete_confirm_title")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("announcements.delete_confirm_message")}
         </p>
         <div className="flex justify-end gap-3">

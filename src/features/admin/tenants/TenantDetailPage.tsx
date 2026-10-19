@@ -596,7 +596,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
         title={t("tenants.trial.endTitle")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("tenants.trial.endMessage")}
         </p>
         <div className="flex justify-end gap-3">
@@ -617,7 +617,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
         title={t("tenants.confirmDeleteTitle")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("tenants.detail.confirmDeleteMessage", { name: String(tenant.name) })}
         </p>
         <div className="flex justify-end gap-3">

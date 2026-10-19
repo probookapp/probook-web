@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Trash2, Plus, Minus, Tag } from "lucide-react";
 import { usePosStore } from "../stores/usePosStore";
 import { formatCurrency } from "@/lib/utils";
+import { FitAmount } from "@/components/ui";
 import { tillLineAmounts } from "@/lib/bundles";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 
@@ -197,14 +198,16 @@ export function CartDisplay() {
           <li key={item.id} className="py-2">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 pt-2">
-                <p className="font-medium wrap-break-word">{item.designation}</p>
+                <p className="font-medium wrap-anywhere">{item.designation}</p>
                 {details(item)}
               </div>
               <div className="shrink-0 -me-1">{removeButton(item)}</div>
             </div>
             <div className="flex items-center justify-between gap-2">
               <div className="-ms-2">{quantityStepper(item)}</div>
-              <div className="min-w-0 text-end">
+              {/* What the stepper leaves: a line total in the billions shrinks
+                  to fit it (FitAmount) instead of running off the screen. */}
+              <div className="min-w-0 flex-1 text-end">
                 <EditableCell
                   value={item.unitPrice}
                   onCommit={(val) => updateItemPrice(item.id, val)}
@@ -213,9 +216,7 @@ export function CartDisplay() {
                   min="0"
                   className="text-xs text-(--color-text-secondary) font-mono tabular-nums whitespace-nowrap"
                 />
-                <p className="font-medium font-mono tabular-nums whitespace-nowrap">
-                  {formatAmount(lineTotalOf(item))}
-                </p>
+                <FitAmount className="font-medium font-mono">{formatAmount(lineTotalOf(item))}</FitAmount>
               </div>
             </div>
           </li>

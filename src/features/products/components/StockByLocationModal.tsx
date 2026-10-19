@@ -18,7 +18,7 @@ export function StockByLocationModal({ isOpen, onClose, product }: StockByLocati
     <Modal isOpen={isOpen} onClose={onClose} title={t("stockLocations.title")} size="md">
       <div className="space-y-3">
         {product && (
-          <p className="text-sm text-gray-600 dark:text-gray-400">{product.designation}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 wrap-anywhere">{product.designation}</p>
         )}
 
         {isLoading ? (
@@ -53,8 +53,8 @@ export function StockByLocationModal({ isOpen, onClose, product }: StockByLocati
                         key={v.variant_id}
                         className="flex items-center justify-between gap-2 text-xs text-gray-600 dark:text-gray-400"
                       >
-                        <span className="truncate">{v.variant_name ?? "-"}</span>
-                        <span className="font-medium">{v.quantity}</span>
+                        <span className="min-w-0 wrap-anywhere">{v.variant_name ?? "-"}</span>
+                        <span className="shrink-0 font-medium tabular-nums">{v.quantity}</span>
                       </div>
                     ))}
                   </div>

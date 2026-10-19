@@ -398,7 +398,7 @@ export function ClientsPage() {
         title={tCommon("messages.confirmDelete")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("deleteConfirmation")}
         </p>
         <div className="flex justify-end gap-3">
@@ -460,7 +460,9 @@ export function ClientsPage() {
       >
         {viewingClient && (
           <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* min-w-0 and wrap-anywhere: a company name or an e-mail address
+                is one long word, and would push the dialog sideways. */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 [&>div]:min-w-0 wrap-anywhere">
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">{t("fields.name")}</p>
                 <p className="font-medium text-gray-900 dark:text-gray-100">{viewingClient.name}</p>
@@ -478,7 +480,7 @@ export function ClientsPage() {
                 <p className="font-medium text-gray-900 dark:text-gray-100">{viewingClient.city || "-"}</p>
               </div>
               {viewingClient.address && (
-                <div className="col-span-2">
+                <div className="sm:col-span-2">
                   <p className="text-sm text-gray-500 dark:text-gray-400">{t("fields.address")}</p>
                   <p className="font-medium text-gray-900 dark:text-gray-100">
                     {viewingClient.address}

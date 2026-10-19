@@ -52,7 +52,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
             <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
               {t("common:errors.somethingWentWrong")}
             </h2>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
               {t("common:errors.unexpectedError")}
             </p>
             {this.state.error && (

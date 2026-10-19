@@ -234,7 +234,7 @@ export function CreditNotesPage() {
         title={t("invoices:creditNotes.deleteTitle")}
         size="sm"
       >
-        <p className="text-(--color-text-secondary) mb-6">{t("invoices:creditNotes.confirmDelete")}</p>
+        <p className="text-(--color-text-secondary) mb-6 wrap-anywhere">{t("invoices:creditNotes.confirmDelete")}</p>
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={() => setDeleteConfirmId(null)}>
             {t("common:buttons.cancel")}

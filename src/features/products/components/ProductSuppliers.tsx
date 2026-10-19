@@ -119,6 +119,67 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
     }
   };
 
+  /** The purchase price, editable in place — the same in the table and on a phone card. */
+  const renderPrice = (supplier: SupplierWithPrice) =>
+    editingLinkId === supplier.link_id ? (
+      <div className="flex items-center @md:justify-end gap-2 lg:gap-1">
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          value={editingPrice}
+          onChange={(e) => setEditingPrice(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSavePrice();
+            if (e.key === "Escape") { setEditingLinkId(null); setEditingPrice(""); }
+          }}
+          autoFocus
+          className="w-28 px-2 py-2 lg:py-1 text-base sm:text-sm border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
+        />
+        <button
+          onClick={handleSavePrice}
+          className="p-3 lg:p-1.5 rounded-md text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors"
+          title={tCommon("buttons.save")}
+          aria-label={tCommon("buttons.save")}
+        >
+          <Check className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => { setEditingLinkId(null); setEditingPrice(""); }}
+          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+          title={tCommon("buttons.cancel")}
+          aria-label={tCommon("buttons.cancel")}
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+    ) : canManage ? (
+      <button
+        onClick={() => handleStartEditPrice(supplier)}
+        className="group inline-flex items-center gap-1.5 -my-2 py-2 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
+        title={t("suppliers.editPrice")}
+      >
+        {formatCurrency(supplier.purchase_price)}
+        {/* Hover-only would hide it from every touch screen; the
+            pencil is only tucked away where a pointer can find it. */}
+        <Pencil className="h-3.5 w-3.5 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-visible:opacity-100 transition-opacity" />
+      </button>
+    ) : (
+      formatCurrency(supplier.purchase_price)
+    );
+
+  const removeAction = (supplier: SupplierWithPrice) => [
+    {
+      key: "remove",
+      label: t("suppliers.removeSupplier"),
+      icon: X,
+      onSelect: () => handleRemoveSupplier(supplier.link_id),
+      primary: true,
+      danger: true,
+      hidden: !canManage,
+    },
+  ];
+
   if (isLoadingLinked) {
     return (
       <div className="flex items-center justify-center h-32">
@@ -191,7 +252,30 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
         </div>
       )}
 
-      <div className="overflow-x-auto">
+      {/* Cards while the dialog is narrow (a phone), the table once it is
+          wide enough — measured on the dialog, not the screen. */}
+      <div className="@container">
+      <ul className="@md:hidden divide-y divide-(--color-border-primary) rounded-lg border border-(--color-border-primary)">
+        {linkedSuppliers && linkedSuppliers.length > 0 ? (
+          linkedSuppliers.map((supplier: SupplierWithPrice) => (
+            <li key={supplier.link_id} className="flex items-start gap-3 px-3 py-2.5">
+              <div className="min-w-0 flex-1 wrap-anywhere">
+                <p className="font-medium text-(--color-text-primary)">{supplier.name}</p>
+                {(supplier.email || supplier.phone) && (
+                  <p className="text-xs text-(--color-text-secondary)">
+                    {[supplier.email, supplier.phone].filter(Boolean).join(" · ")}
+                  </p>
+                )}
+                <div className="mt-1 text-sm text-(--color-text-secondary) tabular-nums">{renderPrice(supplier)}</div>
+              </div>
+              <RowActions actions={removeAction(supplier)} />
+            </li>
+          ))
+        ) : (
+          <li className="px-3 py-6 text-center text-sm text-(--color-text-secondary)">{t("suppliers.noSuppliers")}</li>
+        )}
+      </ul>
+      <div className="hidden @md:block overflow-x-auto">
         <Table className="min-w-full">
           <TableHeader>
             <TableRow>
@@ -221,68 +305,11 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
                   )}
                   {columns.show("purchasePrice") && (
                   <TableNumericCell className="text-gray-600 dark:text-gray-400">
-                    {editingLinkId === supplier.link_id ? (
-                      <div className="flex items-center justify-end gap-2 lg:gap-1">
-                        <input
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          value={editingPrice}
-                          onChange={(e) => setEditingPrice(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") handleSavePrice();
-                            if (e.key === "Escape") { setEditingLinkId(null); setEditingPrice(""); }
-                          }}
-                          autoFocus
-                          className="w-28 px-2 py-2 lg:py-1 text-base sm:text-sm border rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                        />
-                        <button
-                          onClick={handleSavePrice}
-                          className="p-3 lg:p-1.5 rounded-md text-green-600 hover:text-green-700 dark:text-green-400 dark:hover:text-green-300 transition-colors"
-                          title={tCommon("buttons.save")}
-                          aria-label={tCommon("buttons.save")}
-                        >
-                          <Check className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => { setEditingLinkId(null); setEditingPrice(""); }}
-                          className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-                          title={tCommon("buttons.cancel")}
-                          aria-label={tCommon("buttons.cancel")}
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-                    ) : canManage ? (
-                      <button
-                        onClick={() => handleStartEditPrice(supplier)}
-                        className="group inline-flex items-center gap-1.5 -my-2 py-2 hover:text-primary-600 dark:hover:text-primary-400 transition-colors"
-                        title={t("suppliers.editPrice")}
-                      >
-                        {formatCurrency(supplier.purchase_price)}
-                        {/* Hover-only would hide it from every touch screen; the
-                            pencil is only tucked away where a pointer can find it. */}
-                        <Pencil className="h-3.5 w-3.5 lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-visible:opacity-100 transition-opacity" />
-                      </button>
-                    ) : (
-                      formatCurrency(supplier.purchase_price)
-                    )}
+                    {renderPrice(supplier)}
                   </TableNumericCell>
                   )}
                   <TableCell>
-                    <RowActions
-                      actions={[
-                        {
-                          key: "remove",
-                          label: t("suppliers.removeSupplier"),
-                          icon: X,
-                          onSelect: () => handleRemoveSupplier(supplier.link_id),
-                          primary: true,
-                          danger: true,
-                          hidden: !canManage,
-                        },
-                      ]}
-                    />
+                    <RowActions actions={removeAction(supplier)} />
                   </TableCell>
                 </TableRow>
               ))
@@ -295,6 +322,7 @@ export function ProductSuppliers({ productId }: ProductSuppliersProps) {
             )}
           </TableBody>
         </Table>
+      </div>
       </div>
     </div>
   );

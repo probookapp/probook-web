@@ -669,7 +669,7 @@ export function ProductsPage() {
         title={tCommon("messages.confirmDelete")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("deleteConfirmation")}
         </p>
         <div className="flex justify-end gap-3">

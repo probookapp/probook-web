@@ -145,7 +145,7 @@ export function ExpenseCategoriesModal({ isOpen, onClose, canEdit, canDelete }: 
                 />
                 <button
                   type="button"
-                  className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600"
+                  className="shrink-0 p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600"
                   title={tCommon("buttons.save")}
                   aria-label={tCommon("buttons.save")}
                   onClick={() => {
@@ -158,7 +158,7 @@ export function ExpenseCategoriesModal({ isOpen, onClose, canEdit, canDelete }: 
                 </button>
                 <button
                   type="button"
-                  className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"
+                  className="shrink-0 p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-gray-900 dark:hover:text-gray-100"
                   title={tCommon("buttons.cancel")}
                   aria-label={tCommon("buttons.cancel")}
                   onClick={() => setEditingId(null)}
@@ -168,14 +168,14 @@ export function ExpenseCategoriesModal({ isOpen, onClose, canEdit, canDelete }: 
               </>
             ) : (
               <>
-                <span className="flex-1 text-gray-900 dark:text-gray-100">{category.name}</span>
-                <span className="text-xs text-gray-500 dark:text-gray-400">
+                <span className="min-w-0 flex-1 text-gray-900 dark:text-gray-100 wrap-anywhere">{category.name}</span>
+                <span className="shrink-0 text-xs text-gray-500 dark:text-gray-400">
                   {t("categories.usage", { count: category.expense_count })}
                 </span>
                 {canEdit && (
                   <button
                     type="button"
-                    className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600"
+                    className="shrink-0 p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-primary-600"
                     title={tCommon("buttons.edit")}
                     aria-label={`${tCommon("buttons.edit")} ${category.name}`}
                     onClick={() => startEditing(category)}
@@ -186,7 +186,7 @@ export function ExpenseCategoriesModal({ isOpen, onClose, canEdit, canDelete }: 
                 {canDelete && (
                   <button
                     type="button"
-                    className="p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600"
+                    className="shrink-0 p-3 lg:p-1.5 rounded-md text-gray-500 hover:text-red-600"
                     title={tCommon("buttons.delete")}
                     aria-label={`${tCommon("buttons.delete")} ${category.name}`}
                     onClick={() => setConfirmDeleteId(category.id)}
@@ -206,7 +206,7 @@ export function ExpenseCategoriesModal({ isOpen, onClose, canEdit, canDelete }: 
         title={tCommon("messages.confirmDelete")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">{t("categories.deleteConfirmation")}</p>
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">{t("categories.deleteConfirmation")}</p>
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={() => setConfirmDeleteId(null)}>
             {tCommon("buttons.cancel")}

@@ -110,27 +110,27 @@ export function PurchaseConfirmModal({
 
         {purchaseOrder && (
           <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 text-sm space-y-1">
-            <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">
+            <div className="flex justify-between gap-4">
+              <span className="shrink-0 text-gray-500 dark:text-gray-400">
                 {t("fields.orderNumber")}
               </span>
-              <span className="font-medium text-gray-900 dark:text-gray-100">
+              <span className="min-w-0 text-end font-medium text-gray-900 dark:text-gray-100 wrap-anywhere">
                 {purchaseOrder.order_number}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">
+            <div className="flex justify-between gap-4">
+              <span className="shrink-0 text-gray-500 dark:text-gray-400">
                 {t("fields.supplier")}
               </span>
-              <span className="font-medium text-gray-900 dark:text-gray-100">
+              <span className="min-w-0 text-end font-medium text-gray-900 dark:text-gray-100 wrap-anywhere">
                 {purchaseOrder.supplier?.name ?? "-"}
               </span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500 dark:text-gray-400">
+            <div className="flex justify-between gap-4">
+              <span className="shrink-0 text-gray-500 dark:text-gray-400">
                 {t("fields.total")}
               </span>
-              <span className="font-medium text-gray-900 dark:text-gray-100">
+              <span className="min-w-0 text-end font-medium text-gray-900 dark:text-gray-100 wrap-anywhere">
                 {/* The business's own currency, not the dinar for everyone. */}
                 {formatCurrency(purchaseOrder.total)}
               </span>
@@ -159,7 +159,7 @@ export function PurchaseConfirmModal({
                 return (
                   <div key={line.id} className="p-3 flex items-center gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 wrap-anywhere">
                         {label}
                         {line.variant?.name ? ` — ${line.variant.name}` : ""}
                       </p>

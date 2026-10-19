@@ -469,7 +469,7 @@ export function InvoicesPage() {
         title={t("invoices:deleteInvoice")}
         size="sm"
       >
-        <p className="text-(--color-text-secondary) mb-6">
+        <p className="text-(--color-text-secondary) mb-6 wrap-anywhere">
           {t("invoices:confirmDelete")}
         </p>
         <div className="flex justify-end gap-3">
@@ -492,7 +492,7 @@ export function InvoicesPage() {
         title={t("invoices:actions.markAsPaid")}
         size="sm"
       >
-        <p className="text-(--color-text-secondary) mb-6">
+        <p className="text-(--color-text-secondary) mb-6 wrap-anywhere">
           {t("invoices:confirmMarkPaid")}
         </p>
         <div className="flex justify-end gap-3">

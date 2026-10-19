@@ -460,7 +460,7 @@ export function TenantsPage() {
         title={t("tenants.impersonate")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("tenants.impersonateConfirm", { name: String(impersonateTarget?.name || "") })}
         </p>
         <div className="flex justify-end gap-3">
@@ -480,7 +480,7 @@ export function TenantsPage() {
         title={t("tenants.confirmDeleteTitle")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("tenants.confirmDeleteMessage")}
         </p>
         <div className="flex justify-end gap-3">

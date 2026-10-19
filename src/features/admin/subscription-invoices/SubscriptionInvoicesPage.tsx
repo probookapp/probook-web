@@ -697,7 +697,7 @@ export function SubscriptionInvoicesPage() {
 
       {/* Refund Confirmation */}
       <Modal isOpen={!!refundTarget} onClose={() => setRefundTarget(null)} title={t("subscriptionInvoices.refund")} size="sm">
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("subscriptionInvoices.refundConfirm", { invoiceNumber: String(refundTarget?.invoice_number || "") })}
         </p>
         <div className="flex justify-end gap-3">

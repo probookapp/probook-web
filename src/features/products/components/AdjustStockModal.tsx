@@ -118,7 +118,7 @@ export function AdjustStockModal({ isOpen, onClose, product }: AdjustStockModalP
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={t("adjustStock.title")} size="sm" isDirty={isDirty}>
       <div className="space-y-4">
-        <p className="text-sm text-gray-600 dark:text-gray-400">{product.designation}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 wrap-anywhere">{product.designation}</p>
 
         {showLocationPicker && (
           <Select

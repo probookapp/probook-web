@@ -51,7 +51,7 @@ function ProductTile({
         </div>
       )}
       <div className="p-2">
-        <p className="font-medium text-sm truncate">{product.designation}</p>
+        <p className="font-medium text-sm line-clamp-2 wrap-anywhere">{product.designation}</p>
         <div className="flex justify-between items-center mt-0.5">
           <span className="text-xs text-(--color-text-secondary) truncate">
             {product.reference || product.barcode || "-"}
@@ -96,7 +96,7 @@ function ProductRow({ product, onClick }: { product: Product; onClick: () => voi
       className="w-full text-start px-3 py-2.5 min-h-12 border-b border-(--color-border-primary) hover:bg-(--color-bg-secondary) transition-colors flex items-center gap-3"
     >
       <div className="min-w-0 flex-1">
-        <p className="font-medium text-sm truncate">{product.designation}</p>
+        <p className="font-medium text-sm line-clamp-2 wrap-anywhere">{product.designation}</p>
         <p className="text-xs text-(--color-text-secondary) truncate">
           {product.reference || product.barcode || "-"}
           {outOfStock && <span className="ms-2 text-red-600 dark:text-red-400">{t("outOfStock")}</span>}
@@ -126,7 +126,7 @@ function PriceTierPicker({ product, onSelect, onClose }: PriceTierPickerProps) {
 
   return (
     <Modal isOpen={true} onClose={onClose} title={t("pos:selectPriceTier")} size="sm">
-      <p className="font-medium text-sm mb-3 truncate">{product.designation}</p>
+      <p className="font-medium text-sm mb-3 wrap-anywhere">{product.designation}</p>
       <div className="space-y-2">
         <button
           onClick={() => onSelect(product)}

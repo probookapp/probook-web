@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Modal, ModalFooter, Button, Input } from "@/components/ui";
+import { Modal, ModalFooter, Button, Input, FitAmount } from "@/components/ui";
 import { formatCurrency, formatDateISO } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
@@ -149,9 +149,11 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
 
         {/* One row per line that re-flows rather than a table that scrolls: in
             a phone-width dialog a 500px table hid the quantity to refund, the
-            one thing to fill in, off to the side. */}
-        <div className="border border-(--color-border-primary) rounded-lg divide-y divide-(--color-border-primary)">
-          <div className="hidden sm:grid grid-cols-[1fr_6rem_7rem_7rem] gap-3 bg-(--color-bg-secondary) px-3 py-2 text-sm font-medium text-(--color-text-secondary) rounded-t-lg">
+            one thing to fill in, off to the side. From sm up the rows share
+            one grid (subgrid), so the amount columns grow to fit the widest
+            amount — fixed widths let an amount in the billions spill out. */}
+        <div className="border border-(--color-border-primary) rounded-lg divide-y divide-(--color-border-primary) sm:grid sm:grid-cols-[minmax(0,1fr)_auto_6rem_auto]">
+          <div className="hidden sm:grid sm:col-span-4 sm:grid-cols-subgrid gap-3 bg-(--color-bg-secondary) px-3 py-2 text-sm font-medium text-(--color-text-secondary) rounded-t-lg">
             <span className="text-start">{t("invoices:lines.description")}</span>
             <span className="text-end">{t("invoices:lines.unitPriceHt")}</span>
             <span className="text-center">{t("invoices:creditNotes.quantityToRefund")}</span>
@@ -164,9 +166,9 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
             return (
               <div
                 key={line.id}
-                className="grid grid-cols-[1fr_7rem] sm:grid-cols-[1fr_6rem_7rem_7rem] items-center gap-x-3 gap-y-1 px-3 py-2"
+                className="grid grid-cols-[6rem_minmax(0,1fr)] sm:col-span-4 sm:grid-cols-subgrid items-center gap-x-3 gap-y-1 px-3 py-2"
               >
-                <span className="col-span-2 sm:col-span-1 text-sm">{line.description}</span>
+                <span className="col-span-2 sm:col-span-1 min-w-0 text-sm wrap-anywhere">{line.description}</span>
                 <span className={`hidden sm:block text-sm ${NUMERIC_CELL}`}>{formatCurrency(line.unit_price)}</span>
                 <label className="block">
                   <span className="sm:hidden block text-xs text-(--color-text-secondary)">
@@ -186,7 +188,11 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
                     / {line.quantity}
                   </span>
                 </label>
-                <span className={`text-sm font-medium ${NUMERIC_CELL}`}>{formatCurrency(lineTotal)}</span>
+                {/* On a phone the column is what is left beside the quantity: an
+                    amount in the billions shrinks to fit it (FitAmount) rather
+                    than spill. From sm up the column grows to the amount. */}
+                <FitAmount className="sm:hidden text-sm font-medium text-end">{formatCurrency(lineTotal)}</FitAmount>
+                <span className={`hidden sm:block text-sm font-medium ${NUMERIC_CELL}`}>{formatCurrency(lineTotal)}</span>
               </div>
             );
           })}
@@ -202,19 +208,21 @@ export function CreateCreditNoteModal({ invoice, isOpen, onClose }: CreateCredit
           <span className="text-sm text-(--color-text-primary)">{t("invoices:creditNotes.restock")}</span>
         </label>
 
+        {/* 24rem at most; an amount wider than what its label leaves shrinks
+            to fit (FitAmount) — an amount split over two lines reads as two. */}
         <div className="flex justify-end">
-          <div className="w-full sm:w-64 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="text-(--color-text-secondary)">{t("invoices:fields.totalHt")}</span>
-              <span>{formatCurrency(totals.subtotal)}</span>
+          <div className="w-full sm:max-w-sm space-y-2">
+            <div className="flex justify-between gap-4 text-sm">
+              <span className="shrink-0 text-(--color-text-secondary)">{t("invoices:fields.totalHt")}</span>
+              <FitAmount className="flex-1 text-end">{formatCurrency(totals.subtotal)}</FitAmount>
             </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-(--color-text-secondary)">{t("common:labels.vat")}</span>
-              <span>{formatCurrency(totals.tax)}</span>
+            <div className="flex justify-between gap-4 text-sm">
+              <span className="shrink-0 text-(--color-text-secondary)">{t("common:labels.vat")}</span>
+              <FitAmount className="flex-1 text-end">{formatCurrency(totals.tax)}</FitAmount>
             </div>
-            <div className="flex justify-between text-base font-bold border-t pt-2">
-              <span>{t("invoices:fields.totalTtc")}</span>
-              <span>{formatCurrency(total)}</span>
+            <div className="flex justify-between gap-4 text-base font-bold border-t pt-2">
+              <span className="shrink-0">{t("invoices:fields.totalTtc")}</span>
+              <FitAmount className="flex-1 text-end">{formatCurrency(total)}</FitAmount>
             </div>
           </div>
         </div>

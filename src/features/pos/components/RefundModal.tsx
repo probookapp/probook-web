@@ -107,8 +107,8 @@ export function RefundModal({ transaction, sessionId, isOpen, onClose }: RefundM
                 className="flex items-center justify-between gap-3 border border-(--color-border-primary) rounded-lg p-2"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium truncate">{line.designation}</p>
-                  {pack && <p className="text-xs text-(--color-text-secondary) truncate">{pack}</p>}
+                  <p className="text-sm font-medium wrap-anywhere">{line.designation}</p>
+                  {pack && <p className="text-xs text-(--color-text-secondary) wrap-anywhere">{pack}</p>}
                   <p className="text-xs text-(--color-text-secondary)">
                     {formatCurrency(unitPriceOf(line))} · {line.quantity} {t("refund.sold")}
                   </p>

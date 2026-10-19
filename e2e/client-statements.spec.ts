@@ -106,15 +106,17 @@ test.describe("Client statements", () => {
     // Open the statement modal via the row's "More actions" menu.
     await row.getByRole("button", { name: "More actions" }).click();
     await page.getByRole("menuitem", { name: "Statement" }).click();
-    await expect(page.getByText("Opening balance")).toBeVisible();
+    // The ledger is drawn twice — cards for a narrow dialog, a table for a
+    // wide one — and only one is shown: look at the visible one.
+    await expect(page.getByText("Opening balance").filter({ visible: true })).toBeVisible();
 
     // Ledger rows: the invoice/credit-note references are listed. inv1's number
     // appears twice (its own invoice row + the payment row that references it),
     // so scope these to the first match.
-    await expect(page.getByText(inv1.invoice_number as string).first()).toBeVisible();
-    await expect(page.getByText(inv2.invoice_number as string).first()).toBeVisible();
+    await expect(page.getByText(inv1.invoice_number as string).filter({ visible: true }).first()).toBeVisible();
+    await expect(page.getByText(inv2.invoice_number as string).filter({ visible: true }).first()).toBeVisible();
     await expect(
-      page.getByText(cn.body.credit_note_number as string).first()
+      page.getByText(cn.body.credit_note_number as string).filter({ visible: true }).first()
     ).toBeVisible();
 
     // The DRAFT invoice number is absent from the ledger.

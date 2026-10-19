@@ -175,7 +175,7 @@ export function RateLimitsPage() {
         title={t("rate_limits.clearTitle")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("rate_limits.clearConfirm", {
             tenant: clearing?.tenant_name || clearing?.tenant_id || "",
           })}

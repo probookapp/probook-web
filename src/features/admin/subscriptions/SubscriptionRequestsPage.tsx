@@ -445,7 +445,7 @@ export function SubscriptionRequestsPage() {
         title={t("subscriptionRequests.approveTitle")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("subscriptionRequests.approveMessage")}
         </p>
         <div className="flex justify-end gap-3">
