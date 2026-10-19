@@ -34,6 +34,8 @@ model Tenant {
   bundleComponents     BundleComponent[]
   purchaseOrders       PurchaseOrder[]
   supplierPayments     SupplierPayment[]
+  supplierAdjustments  SupplierAdjustment[]
+  supplierReturns      SupplierReturn[]
   quotes               Quote[]
   invoices             Invoice[]
   payments             Payment[]
@@ -289,6 +291,7 @@ model Product {
   prices              ProductPrice[]
   variants            ProductVariant[]
   purchaseOrderLines  PurchaseOrderLine[]
+  supplierReturnLines SupplierReturnLine[]
   quoteLines          QuoteLine[]
   invoiceLines        InvoiceLine[]
   deliveryNoteLines   DeliveryNoteLine[]
@@ -336,6 +339,7 @@ model ProductVariant {
   product             Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
   posTransactionLines PosTransactionLine[]
   purchaseOrderLines  PurchaseOrderLine[]
+  supplierReturnLines SupplierReturnLine[]
   quoteLines          QuoteLine[]
   invoiceLines        InvoiceLine[]
   deliveryNoteLines   DeliveryNoteLine[]
@@ -810,20 +814,25 @@ model ExpenseCategory {
 // ========== Suppliers ==========
 
 model Supplier {
-  id        String   @id @default(uuid())
-  tenantId  String   @map("tenant_id")
-  name      String
-  email     String?
-  phone     String?
-  address   String?
-  notes     String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id             String   @id @default(uuid())
+  tenantId       String   @map("tenant_id")
+  name           String
+  email          String?
+  phone          String?
+  address        String?
+  notes          String?
+  // What stood between the business and this supplier before the app: positive
+  // when the business owed them, negative when the supplier owed the business.
+  openingBalance Decimal  @default(0) @map("opening_balance") @db.Decimal(16, 3)
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
 
-  tenant           Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant           Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   products         ProductSupplier[]
   purchaseOrders   PurchaseOrder[]
   supplierPayments SupplierPayment[]
+  adjustments      SupplierAdjustment[]
+  returns          SupplierReturn[]
 
   @@index([tenantId])
   @@map("suppliers")
@@ -876,6 +885,7 @@ model PurchaseOrder {
   location Location?           @relation(fields: [locationId], references: [id])
   lines    PurchaseOrderLine[]
   payments SupplierPayment[]
+  returns  SupplierReturn[]
 
   @@unique([tenantId, orderNumber])
   @@index([tenantId])
@@ -899,9 +909,10 @@ model PurchaseOrderLine {
   taxAmount        Decimal  @default(0) @map("tax_amount") @db.Decimal(16, 3)
   total            Decimal  @default(0) @db.Decimal(16, 3)
 
-  order   PurchaseOrder   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product         @relation(fields: [productId], references: [id])
-  variant ProductVariant? @relation(fields: [variantId], references: [id])
+  order       PurchaseOrder        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product              @relation(fields: [productId], references: [id])
+  variant     ProductVariant?      @relation(fields: [variantId], references: [id])
+  returnLines SupplierReturnLine[]
 
   @@index([orderId])
   @@map("purchase_order_lines")
@@ -917,6 +928,8 @@ model SupplierPayment {
   paymentMethod   String   @default("CASH") @map("payment_method")
   reference       String?
   notes           String?
+  // Cash taken from a till when the goods were received, not entered by hand.
+  fromRegister    Boolean  @default(false) @map("from_register")
   createdAt       DateTime @default(now()) @map("created_at")
 
   tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -926,6 +939,82 @@ model SupplierPayment {
   @@index([supplierId])
   @@index([tenantId])
   @@map("supplier_payments")
+}
+
+// A hand-written correction to what is owed to a supplier: a discount granted
+// by phone, a debt agreed outside any order. Signed like the balance: positive
+// adds to what the business owes, negative is credit in its favour.
+model SupplierAdjustment {
+  id             String   @id @default(uuid())
+  tenantId       String   @map("tenant_id")
+  supplierId     String   @map("supplier_id")
+  amount         Decimal  @db.Decimal(16, 3)
+  adjustmentDate DateTime @map("adjustment_date") @db.Date
+  reason         String
+  userId         String?  @map("user_id")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+
+  @@index([tenantId])
+  @@index([supplierId])
+  @@map("supplier_adjustments")
+}
+
+// Goods sent back to a supplier, kept by them as credit: the stock goes out and
+// the value comes off what the business owes (an "avoir fournisseur").
+model SupplierReturn {
+  id              String   @id @default(uuid())
+  tenantId        String   @map("tenant_id")
+  returnNumber    String   @map("return_number")
+  supplierId      String   @map("supplier_id")
+  purchaseOrderId String?  @map("purchase_order_id")
+  locationId      String?  @map("location_id")
+  returnDate      DateTime @map("return_date") @db.Date
+  reason          String?
+  notes           String?
+  subtotal        Decimal  @default(0) @db.Decimal(16, 3)
+  taxAmount       Decimal  @default(0) @map("tax_amount") @db.Decimal(16, 3)
+  total           Decimal  @default(0) @db.Decimal(16, 3)
+  userId          String?  @map("user_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tenant        Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  supplier      Supplier             @relation(fields: [supplierId], references: [id])
+  purchaseOrder PurchaseOrder?       @relation(fields: [purchaseOrderId], references: [id])
+  location      Location?            @relation(fields: [locationId], references: [id])
+  lines         SupplierReturnLine[]
+
+  @@unique([tenantId, returnNumber])
+  @@index([tenantId])
+  @@index([supplierId])
+  @@index([purchaseOrderId])
+  @@map("supplier_returns")
+}
+
+model SupplierReturnLine {
+  id                  String  @id @default(uuid())
+  returnId            String  @map("return_id")
+  purchaseOrderLineId String? @map("purchase_order_line_id")
+  productId           String  @map("product_id")
+  variantId           String? @map("variant_id")
+  quantity            Float
+  unitPrice           Decimal @map("unit_price") @db.Decimal(16, 3)
+  taxRate             Float   @default(0) @map("tax_rate")
+  subtotal            Decimal @default(0) @db.Decimal(16, 3)
+  taxAmount           Decimal @default(0) @map("tax_amount") @db.Decimal(16, 3)
+  total               Decimal @default(0) @db.Decimal(16, 3)
+
+  supplierReturn    SupplierReturn     @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  purchaseOrderLine PurchaseOrderLine? @relation(fields: [purchaseOrderLineId], references: [id], onDelete: SetNull)
+  product           Product            @relation(fields: [productId], references: [id])
+  variant           ProductVariant?    @relation(fields: [variantId], references: [id])
+
+  @@index([returnId])
+  @@index([purchaseOrderLineId])
+  @@map("supplier_return_lines")
 }
 
 // ========== Client Contacts ==========
@@ -1693,13 +1782,14 @@ model Location {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  stockLevels    StockLevel[]
-  stockMovements StockMovement[]
-  posRegisters   PosRegister[]
-  purchaseOrders PurchaseOrder[]
-  transfersFrom  StockTransfer[] @relation("TransferFrom")
-  transfersTo    StockTransfer[] @relation("TransferTo")
+  tenant          Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  stockLevels     StockLevel[]
+  stockMovements  StockMovement[]
+  posRegisters    PosRegister[]
+  purchaseOrders  PurchaseOrder[]
+  supplierReturns SupplierReturn[]
+  transfersFrom   StockTransfer[]  @relation("TransferFrom")
+  transfersTo     StockTransfer[]  @relation("TransferTo")
 
   @@index([tenantId])
   @@map("locations")
