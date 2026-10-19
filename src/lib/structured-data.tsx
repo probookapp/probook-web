@@ -141,3 +141,37 @@ export function BreadcrumbJsonLd({
     />
   );
 }
+
+/**
+ * One guide chapter's video, hosted on YouTube. Search engines show a video
+ * result only with a thumbnail and an upload date, so both are required.
+ */
+export function VideoObjectJsonLd({
+  name,
+  description,
+  youtubeId,
+  uploadDate,
+  transcript,
+}: {
+  name: string;
+  description: string;
+  youtubeId: string;
+  uploadDate: string;
+  transcript?: string;
+}) {
+  return (
+    <JsonLd
+      data={{
+        "@context": "https://schema.org",
+        "@type": "VideoObject",
+        name,
+        description,
+        uploadDate,
+        thumbnailUrl: `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`,
+        embedUrl: `https://www.youtube-nocookie.com/embed/${youtubeId}`,
+        contentUrl: `https://www.youtube.com/watch?v=${youtubeId}`,
+        ...(transcript ? { transcript } : {}),
+      }}
+    />
+  );
+}

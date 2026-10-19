@@ -18,7 +18,7 @@ interface NavbarProps {
   actions?: React.ReactNode;
 }
 
-const navLinks = ["about", "faq", "pricing"] as const;
+const navLinks = ["about", "guide", "faq", "pricing"] as const;
 
 export function Navbar({ actions }: NavbarProps) {
   const { t } = useTranslation("common");

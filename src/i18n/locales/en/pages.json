@@ -200,5 +200,97 @@
         "content": "If you have questions about this Privacy Policy or our data practices, please contact us at support@probookapp.net."
       }
     }
+  },
+  "guide": {
+    "title": "User guide",
+    "subtitle": "Probook on video, chapter by chapter: from creating your account to your first report. Every video is filmed in the real application.",
+    "phoneIntro": "Four short videos in phone format: what you do on your feet, at a client's or at the counter.",
+    "chapter": "Chapter {{number}}",
+    "transcript": "What the video shows",
+    "comingSoon": "The video for this chapter is coming soon. Meanwhile, here is what it shows, step by step.",
+    "play": "Play the video: {{title}}",
+    "watchOnYouTube": "Watch on YouTube",
+    "previous": "Previous",
+    "next": "Next",
+    "backToGuide": "The whole guide",
+    "ctaTitle": "Ready to try it?",
+    "ctaSubtitle": "10-day free trial, every feature included.",
+    "ctaButton": "Create my account",
+    "help": "Video guide for this page",
+    "groups": {
+      "start": "Getting started",
+      "sell": "Selling",
+      "stock": "Buying and stock",
+      "deliver": "Deliveries and expenses",
+      "manage": "Running the business",
+      "account": "Your account",
+      "phone": "On your phone"
+    },
+    "chapters": {
+      "getting-started": {
+        "title": "Getting started with Probook",
+        "description": "Create your account and discover the dashboard."
+      },
+      "clients": {
+        "title": "Clients",
+        "description": "Client records, contacts and the phone book."
+      },
+      "products": {
+        "title": "Products and catalogue",
+        "description": "Categories, products, services, opening stock, adjustments and packs."
+      },
+      "quotes": {
+        "title": "Quotes",
+        "description": "Price a job, give a discount, watch the margin, label it and turn it into an invoice."
+      },
+      "invoices": {
+        "title": "Invoices and payments",
+        "description": "Issue, collect in several payments, write a credit note and archive."
+      },
+      "point-of-sale": {
+        "title": "Point of sale",
+        "description": "Sell at the counter and choose the payment method."
+      },
+      "purchases": {
+        "title": "Suppliers and purchases",
+        "description": "Restock list, purchase orders, goods received, returns and supplier statement."
+      },
+      "stock-locations": {
+        "title": "Stock across locations",
+        "description": "Locations, transfers between shop and warehouse, low-stock alerts."
+      },
+      "delivery-notes-and-expenses": {
+        "title": "Deliveries and expenses",
+        "description": "Delivery notes and expenses tracked by category."
+      },
+      "reports": {
+        "title": "Reports",
+        "description": "Business overview, expenses by category, VAT and accounting export."
+      },
+      "settings": {
+        "title": "Settings",
+        "description": "Company identity, logo, tax regime, stamp duty and employee accounts."
+      },
+      "subscription": {
+        "title": "Subscription",
+        "description": "The three plans, or build your own plan module by module."
+      },
+      "phone-quote-on-site": {
+        "title": "A quote at the client's",
+        "description": "Price a job from your phone, discount and margin included."
+      },
+      "phone-collect-payment": {
+        "title": "Collect a payment on the go",
+        "description": "Find an unpaid invoice and record the payment."
+      },
+      "phone-counter-sale": {
+        "title": "The till on your phone",
+        "description": "Sell at the counter in compact view, every payment method."
+      },
+      "phone-track-activity": {
+        "title": "Keep track of the business",
+        "description": "Record an expense and check the reports from your phone."
+      }
+    }
   }
 }

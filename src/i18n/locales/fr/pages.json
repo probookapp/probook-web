@@ -200,5 +200,97 @@
         "content": "Si vous avez des questions concernant cette Politique de confidentialité ou nos pratiques en matière de données, veuillez nous contacter à support@probookapp.net."
       }
     }
+  },
+  "guide": {
+    "title": "Guide d'utilisation",
+    "subtitle": "Probook en vidéo, chapitre par chapitre : de la création du compte au premier rapport. Chaque vidéo est filmée dans la vraie application.",
+    "phoneIntro": "Quatre courtes vidéos au format téléphone : ce qu'on fait debout, chez le client ou au comptoir.",
+    "chapter": "Chapitre {{number}}",
+    "transcript": "Ce que montre la vidéo",
+    "comingSoon": "La vidéo de ce chapitre arrive bientôt. En attendant, voici ce qu'elle montre, étape par étape.",
+    "play": "Lire la vidéo : {{title}}",
+    "watchOnYouTube": "Voir sur YouTube",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "backToGuide": "Tout le guide",
+    "ctaTitle": "Prêt à essayer ?",
+    "ctaSubtitle": "10 jours d'essai gratuit, toutes les fonctions incluses.",
+    "ctaButton": "Créer mon compte",
+    "help": "Guide vidéo de cette page",
+    "groups": {
+      "start": "Démarrer",
+      "sell": "Vendre",
+      "stock": "Acheter et stocker",
+      "deliver": "Livrer et dépenser",
+      "manage": "Piloter",
+      "account": "Votre compte",
+      "phone": "Sur le téléphone"
+    },
+    "chapters": {
+      "getting-started": {
+        "title": "Démarrer avec Probook",
+        "description": "Créer son compte et découvrir le tableau de bord."
+      },
+      "clients": {
+        "title": "Les clients",
+        "description": "Fichier clients, contacts et annuaire."
+      },
+      "products": {
+        "title": "Produits et catalogue",
+        "description": "Catégories, produits, services, stock de départ, ajustements et packs."
+      },
+      "quotes": {
+        "title": "Les devis",
+        "description": "Chiffrer, accorder une remise, suivre la marge, étiqueter et convertir en facture."
+      },
+      "invoices": {
+        "title": "Factures et paiements",
+        "description": "Émettre, encaisser en plusieurs fois, établir un avoir et archiver."
+      },
+      "point-of-sale": {
+        "title": "La caisse",
+        "description": "Vendre au comptoir et choisir le mode de règlement."
+      },
+      "purchases": {
+        "title": "Fournisseurs et achats",
+        "description": "Liste de réapprovisionnement, bons de commande, réception, retours et relevé fournisseur."
+      },
+      "stock-locations": {
+        "title": "Stock multi-sites",
+        "description": "Emplacements, transferts entre magasin et dépôt, alertes de stock faible."
+      },
+      "delivery-notes-and-expenses": {
+        "title": "Livraisons et dépenses",
+        "description": "Bons de livraison et suivi des dépenses par poste."
+      },
+      "reports": {
+        "title": "Les rapports",
+        "description": "Pilotage de l'activité, dépenses par poste, TVA et export comptable."
+      },
+      "settings": {
+        "title": "Les paramètres",
+        "description": "Identité, logo, régime fiscal, droit de timbre et comptes employés."
+      },
+      "subscription": {
+        "title": "L'abonnement",
+        "description": "Les trois offres, ou composer son abonnement module par module."
+      },
+      "phone-quote-on-site": {
+        "title": "Un devis chez le client",
+        "description": "Chiffrer depuis le téléphone, remise et marge comprises."
+      },
+      "phone-collect-payment": {
+        "title": "Encaisser en déplacement",
+        "description": "Retrouver une facture impayée et enregistrer le règlement."
+      },
+      "phone-counter-sale": {
+        "title": "La caisse sur téléphone",
+        "description": "Vendre au comptoir en vue compacte, tous modes de règlement."
+      },
+      "phone-track-activity": {
+        "title": "Suivre l'activité",
+        "description": "Saisir une dépense et consulter les rapports depuis le téléphone."
+      }
+    }
   }
 }

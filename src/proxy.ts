@@ -87,7 +87,8 @@ function buildCsp(nonce: string): string {
     // blob: is how a generated PDF is handed to the reader — the tab opened for
     // it holds the document in a frame. Without it the tab stays blank, and the
     // only trace is a policy violation in the console.
-    "frame-src 'self' blob: https://www.facebook.com",
+    // youtube-nocookie: the /guide videos, loaded only once a visitor presses play.
+    "frame-src 'self' blob: https://www.facebook.com https://www.youtube-nocookie.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self' https://www.facebook.com",
@@ -247,7 +248,12 @@ export async function proxy(req: NextRequest) {
 
   // Public pages (landing, login, signup, offline) — no auth required
   const publicPaths = ["/", "/login", "/signup", "/offline", "/pricing", "/about", "/contact", "/faq", "/terms", "/privacy", "/forgot-password", "/reset-password", "/verify-email"];
-  if (publicPaths.includes(pathWithoutLocale)) {
+  // The video guide is public too, chapter pages included.
+  if (
+    publicPaths.includes(pathWithoutLocale) ||
+    pathWithoutLocale === "/guide" ||
+    pathWithoutLocale.startsWith("/guide/")
+  ) {
     return response;
   }
 

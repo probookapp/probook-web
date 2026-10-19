@@ -33,7 +33,8 @@
     "guide:build": "dotenv -e .env.test -v GUIDE_LOCALE=fr -- node scripts/build-guide-videos.mjs",
     "guide:build:en": "dotenv -e .env.test -v GUIDE_LOCALE=en -- node scripts/build-guide-videos.mjs",
     "guide:build:ar": "dotenv -e .env.test -v GUIDE_LOCALE=ar -- node scripts/build-guide-videos.mjs",
-    "guide:build:fr": "npm run guide:build"
+    "guide:build:fr": "npm run guide:build",
+    "guide:content": "node scripts/build-guide-content.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",

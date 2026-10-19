@@ -41,6 +41,11 @@ export function Footer() {
                   {t("landing.footer.pricing")}
                 </Link>
               </li>
+              <li>
+                <Link href={`/${locale}/guide`} className="inline-flex min-h-10 lg:min-h-0 items-center hover:text-white transition-colors">
+                  {t("landing.footer.guide")}
+                </Link>
+              </li>
             </ul>
           </div>
           <div>

@@ -46,6 +46,11 @@ const ROUTES = [
   "invoices/new",
   "delivery-notes/new",
   "invoices/credit-notes",
+  // The public video guide: its hub, a desktop chapter and a phone one, whose
+  // player frames differ.
+  "guide",
+  "guide/quotes",
+  "guide/phone-quote-on-site",
 ];
 
 const PHONE = { width: 390, height: 844 };

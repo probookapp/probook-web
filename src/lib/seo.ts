@@ -42,6 +42,11 @@ export const seo = {
     fr: { title: "FAQ", description: "Questions frequemment posees sur Probook. Trouvez des reponses sur les fonctionnalites, les tarifs et la prise en main." },
     ar: { title: "الأسئلة الشائعة", description: "الأسئلة المتكررة حول Probook. اعثر على إجابات حول الميزات والأسعار وكيفية البدء." },
   },
+  guide: {
+    en: { title: "User guide", description: "Learn Probook on video, chapter by chapter: quotes, invoices, point of sale, stock, purchases and reports, filmed in the real application." },
+    fr: { title: "Guide d'utilisation", description: "Apprenez Probook en vidéo, chapitre par chapitre : devis, factures, caisse, stock, achats et rapports, filmés dans la vraie application." },
+    ar: { title: "دليل الاستخدام", description: "تعلّم Probook بالفيديو، فصلاً بفصل: عروض الأسعار، الفواتير، الصندوق، المخزون، المشتريات والتقارير، مُصوَّرة داخل التطبيق الحقيقي." },
+  },
   privacy: {
     en: { title: "Privacy Policy", description: "How Probook collects, uses, and protects your data. Read our full privacy policy." },
     fr: { title: "Politique de confidentialite", description: "Comment Probook collecte, utilise et protege vos donnees. Lisez notre politique de confidentialite." },
@@ -90,11 +95,18 @@ type PageKey = keyof typeof seo;
 export function generatePageMetadata(
   pageKey: Exclude<PageKey, "siteName" | "siteUrl" | "default">,
   locale: string,
-  opts?: { noindex?: boolean; path?: string }
+  opts?: {
+    noindex?: boolean;
+    path?: string;
+    /** For a page whose text is its own, like one chapter of the guide. */
+    title?: string;
+    description?: string;
+  }
 ): Metadata {
   const loc = (["en", "fr", "ar"].includes(locale) ? locale : "en") as Locale;
   const page = seo[pageKey] as Record<Locale, { title: string; description: string }>;
-  const { title, description } = page[loc];
+  const title = opts?.title ?? page[loc].title;
+  const description = opts?.description ?? page[loc].description;
 
   const pageUrl = opts?.path ? `${SITE_URL}/${loc}${opts.path}` : `${SITE_URL}/${loc}`;
 
