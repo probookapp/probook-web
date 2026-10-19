@@ -292,5 +292,11 @@
         "description": "Saisir une dépense et consulter les rapports depuis le téléphone."
       }
     }
+  },
+  "notFound": {
+    "title": "Cette page n'existe pas",
+    "subtitle": "Le lien est peut-être ancien, ou l'adresse contient une faute de frappe.",
+    "home": "Retour à l'accueil",
+    "guide": "Voir le guide"
   }
 }

@@ -292,5 +292,11 @@
         "description": "Record an expense and check the reports from your phone."
       }
     }
+  },
+  "notFound": {
+    "title": "This page does not exist",
+    "subtitle": "The link may be out of date, or the address may contain a typo.",
+    "home": "Back to home",
+    "guide": "See the guide"
   }
 }

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { cookies, headers } from "next/headers";
 import { SentryProvider } from "@/components/providers/SentryProvider";
+import { ThemeBootstrapScript } from "@/components/providers/ThemeBootstrapScript";
 import "./globals.css";
 
 /**
@@ -94,21 +95,7 @@ export default async function RootLayout({
     >
       <head>
         <meta name="facebook-domain-verification" content="4arj80yrn0r1yulikcr92ihluf0g90" />
-        {/*
-          suppressHydrationWarning is required, not cosmetic: React deliberately
-          omits `nonce` from the props it sends to the client, so the browser
-          hydrates this tag with nonce="" against the server's real value and
-          reports a mismatch on every page load. The nonce still ships in the
-          SSR HTML, which is all the CSP needs — the script never re-runs on the
-          client. Without this, a genuine hydration bug would be lost in the noise.
-        */}
-        <script
-          nonce={nonce}
-          suppressHydrationWarning
-          dangerouslySetInnerHTML={{
-            __html: `(function(){try{var d=document.documentElement;var t=localStorage.getItem('probook_theme');var dark=t==='dark'||((!t||t==='system')&&window.matchMedia('(prefers-color-scheme:dark)').matches);d.classList.remove('light','dark');d.classList.add(dark?'dark':'light')}catch(e){}})()`,
-          }}
-        />
+        <ThemeBootstrapScript nonce={nonce} />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#12333a" />
         <meta name="mobile-web-app-capable" content="yes" />
