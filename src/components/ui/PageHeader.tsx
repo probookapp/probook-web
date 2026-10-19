@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "./Button";
 import { Menu, MenuContent, MenuItem, MenuTrigger } from "./Menu";
 import type { RowAction } from "./RowActions";
+import { GuideHelpLink } from "@/components/shared/GuideHelpLink";
 
 /** The page's one creating action: "New quote", "New client"… */
 export interface PagePrimaryAction {
@@ -98,7 +99,10 @@ export function PageHeader({ title, subtitle, primaryAction, secondaryActions, a
     >
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3 sm:items-center">
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl sm:text-2xl font-bold text-(--color-text-primary)">{title}</h1>
+          <div className="flex items-center gap-1.5">
+            <h1 className="min-w-0 text-xl sm:text-2xl font-bold text-(--color-text-primary)">{title}</h1>
+            <GuideHelpLink />
+          </div>
           {subtitle && <p className="text-sm sm:text-base text-(--color-text-secondary)">{subtitle}</p>}
         </div>
 
