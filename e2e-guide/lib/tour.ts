@@ -607,14 +607,6 @@ export class Tour {
       .nth(index);
   }
 
-  /**
-   * A POS overlay. The till's modals are plain fixed panels rather than Radix
-   * dialogs, so `dialog()` does not see them.
-   */
-  posOverlay(): Locator {
-    return this.page.locator("div.fixed.inset-0").filter({ visible: true }).last();
-  }
-
   /** Wait for a toast so the viewer sees the confirmation before moving on. */
   async expectToast(text?: string | RegExp) {
     const toast = this.page.locator("[role='status'], .toast, [data-toast]").first();

@@ -138,7 +138,7 @@ test.describe("a sale settled by more than one method", () => {
       .click();
 
     await page.getByRole("button").filter({ hasText: /Payer|Encaisser/i }).first().click();
-    const modal = page.locator("div.fixed.inset-0").last();
+    const modal = page.getByRole("dialog", { name: "Paiement" });
 
     // Take 5 000 in cash, then bank it and pay the rest by card.
     await modal.locator("#pos-cash-given").fill("5000");

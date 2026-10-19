@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Banknote, CreditCard, FileCheck, Landmark, UserRound } from "lucide-react";
-import { FitAmount } from "@/components/ui";
+import { FitAmount, Modal, ModalFooter, useModalDirty } from "@/components/ui";
 import { formatCurrency } from "@/lib/utils";
 import { computeStampDuty, stampDutyApplies } from "@/lib/stamp-duty";
 import { missingChequeMentions } from "@/lib/cheque-mentions";
@@ -71,14 +71,26 @@ const LABEL_KEYS: Record<PosPaymentMethod, string> = {
   CREDIT: "credit",
 };
 
-export function PaymentModal({
-  open,
+export function PaymentModal({ open, onClose, ...form }: PaymentModalProps) {
+  const { t } = useTranslation("pos");
+
+  return (
+    <Modal isOpen={open} onClose={onClose} title={t("payment")} size="md">
+      <PaymentForm onClose={onClose} {...form} />
+    </Modal>
+  );
+}
+
+// Inside the dialog, so every sale opens on a blank payment. Held by the
+// always-mounted shell, the state outlived the dialog: a card line banked or
+// the cash handed over for one customer was still there for the next.
+function PaymentForm({
   onClose,
   onConfirm,
   totalAmount,
   isLoading,
   hasClient = false,
-}: PaymentModalProps) {
+}: Omit<PaymentModalProps, "open">) {
   const { t } = useTranslation("pos");
   const { data: settings } = useCompanySettings();
   const [paymentMethod, setPaymentMethod] = useState<PosPaymentMethod>("CASH");
@@ -90,7 +102,12 @@ export function PaymentModal({
   const [partialAmount, setPartialAmount] = useState<string>("");
   const [banked, setBanked] = useState<SettledLine[]>([]);
 
-  if (!open) return null;
+  // A split half-banked or the cash already counted: Escape or a stray tap on
+  // the backdrop asks before throwing it away.
+  useModalDirty(
+    banked.length > 0 ||
+      [cashGiven, reference, chequeDate, chequeNumber, chequeBank, partialAmount].some((v) => v !== "")
+  );
 
   const isCash = paymentMethod === "CASH";
   const isCredit = paymentMethod === "CREDIT";
@@ -246,266 +263,261 @@ export function PaymentModal({
     Math.ceil(cashTarget / 500) * 500,
   ].filter((v, i, a) => a.indexOf(v) === i && v >= cashTarget);
 
+
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 overflow-y-auto">
-      <div className="bg-(--color-bg-primary) rounded-xl shadow-xl w-full max-w-md mx-4 my-4">
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-(--color-border-primary)">
-          <h2 className="text-xl font-bold">{t("payment")}</h2>
-          <button onClick={onClose} aria-label={t("close")} className="-me-1.5 p-2.5 hover:bg-(--color-bg-secondary) rounded-md">
-            <X className="h-5 w-5" />
-          </button>
-        </div>
-
-        {/* Content */}
-        <div className="p-4 space-y-5">
-          {/* Total */}
-          <div className="text-center">
-            <p className="text-sm text-(--color-text-secondary)">{t("totalToPay")}</p>
-            <p className="text-4xl font-bold"><FitAmount>{formatAmount(dueNow)}</FitAmount></p>
-            {stampDuty > 0 && (
-              // Named and itemised: the customer is paying a tax on top of the
-              // goods, not a higher price for them.
-              <p className="mt-1 text-xs text-(--color-text-secondary)">
-                {t("stampDutyLine", {
-                  goods: formatAmount(totalAmount),
-                  duty: formatAmount(stampDuty),
-                })}
-              </p>
-            )}
-          </div>
-
-          {/* What has already been settled on this sale */}
-          {banked.length > 0 && (
-            <ul className="space-y-1.5">
-              {banked.map((line, i) => (
-                <li
-                  key={i}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-(--color-border-primary) px-3 py-2"
-                >
-                  <span className="text-sm font-medium">{t(LABEL_KEYS[line.method])}</span>
-                  <span className="flex items-center gap-3">
-                    <span className="text-sm font-mono tabular-nums">
-                      {formatAmount(line.amount)}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setBanked((prev) => prev.filter((_, j) => j !== i))}
-                      aria-label={t("removePayment")}
-                      className="p-2.5 rounded-md hover:bg-(--color-bg-secondary)"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
-                  </span>
-                </li>
-              ))}
-              <li className="flex items-center justify-between px-3 pt-1 text-sm text-(--color-text-secondary)">
-                <span>{t("remainingToSettle")}</span>
-                <span className="font-mono tabular-nums">{formatAmount(cashTarget)}</span>
-              </li>
-            </ul>
-          )}
-
-          {/* Payment method selection */}
-          <div className="grid grid-cols-3 gap-2">
-            {POS_PAYMENT_METHODS.map((method) => {
-              const Icon = ICONS[method];
-              const active = paymentMethod === method;
-              return (
-                <button
-                  key={method}
-                  onClick={() => setPaymentMethod(method)}
-                  aria-pressed={active}
-                  className={`p-3 rounded-lg border-2 flex flex-col items-center gap-1.5 transition-colors ${
-                    active
-                      ? "border-primary-600 bg-primary-50 dark:bg-primary-900/20"
-                      : "border-(--color-border-primary) hover:border-(--color-border-secondary)"
-                  }`}
-                >
-                  <Icon className="h-6 w-6" />
-                  <span className="text-sm font-medium">{t(LABEL_KEYS[method])}</span>
-                </button>
-              );
+    <div className="space-y-5">
+      {/* Total */}
+      <div className="text-center">
+        <p className="text-sm text-(--color-text-secondary)">{t("totalToPay")}</p>
+        <p className="text-4xl font-bold"><FitAmount>{formatAmount(dueNow)}</FitAmount></p>
+        {stampDuty > 0 && (
+          // Named and itemised: the customer is paying a tax on top of the
+          // goods, not a higher price for them.
+          <p className="mt-1 text-xs text-(--color-text-secondary) wrap-anywhere">
+            {t("stampDutyLine", {
+              goods: formatAmount(totalAmount),
+              duty: formatAmount(stampDuty),
             })}
-          </div>
+          </p>
+        )}
+      </div>
 
-          {/* Cash input */}
-          {isCash && (
-            <div className="space-y-3">
-              <div>
-                <label htmlFor="pos-cash-given" className="block text-sm font-medium mb-1">
-                  {t("cashGiven")}
-                </label>
-                <input
-                  id="pos-cash-given"
-                  name="pos-cash-given"
-                  type="number"
-                  value={cashGiven}
-                  onChange={(e) => setCashGiven(e.target.value)}
-                  className="w-full px-4 py-3 border border-(--color-border-input) rounded-lg text-2xl text-center font-bold bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  placeholder="0.00"
-                  autoFocus
-                />
-              </div>
-
-              {/* Quick amounts */}
-              <div className="flex gap-2 flex-wrap">
-                {quickAmounts.slice(0, 4).map((amount) => (
-                  <button
-                    key={amount}
-                    onClick={() => setCashGiven(amount.toString())}
-                    className="px-4 py-2 border border-(--color-border-primary) rounded-lg hover:bg-(--color-bg-secondary) text-sm font-medium transition-colors"
-                  >
-                    {formatAmount(amount)}
-                  </button>
-                ))}
-              </div>
-
-              {/* Change */}
-              {cashAmount >= dueNow && (
-                <div className="p-4 bg-green-100 dark:bg-green-900/30 rounded-lg text-center">
-                  <p className="text-sm text-green-700 dark:text-green-300">{t("change")}</p>
-                  <p className="text-3xl font-bold text-green-700 dark:text-green-300">
-                    <FitAmount>{formatAmount(change)}</FitAmount>
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Part payment for the non-cash methods */}
-          {!isCash && !isCredit && (
-            <div>
-              <label htmlFor="pos-partial-amount" className="block text-sm font-medium mb-1">
-                {t("amountReceived")}
-              </label>
-              <input
-                id="pos-partial-amount"
-                name="pos-partial-amount"
-                type="number"
-                value={partialAmount}
-                onChange={(e) => setPartialAmount(e.target.value)}
-                className="w-full px-4 py-3 border border-(--color-border-input) rounded-lg text-xl text-center font-bold bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder={formatAmount(totalAmount)}
-              />
-              <p className="mt-1 text-xs text-(--color-text-secondary)">{t("amountReceivedHint")}</p>
-            </div>
-          )}
-
-          {/* The three mentions article 258 conditions the exemption on */}
-          {chequeMentionsRequired && (
-            <div className="space-y-3">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="pos-cheque-date" className="block text-sm font-medium mb-1">
-                    {t("chequeDate")}
-                  </label>
-                  <input
-                    id="pos-cheque-date"
-                    name="pos-cheque-date"
-                    type="date"
-                    value={chequeDate}
-                    onChange={(e) => setChequeDate(e.target.value)}
-                    className="w-full px-3 py-2 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="pos-cheque-number" className="block text-sm font-medium mb-1">
-                    {t("chequeNumber")}
-                  </label>
-                  <input
-                    id="pos-cheque-number"
-                    name="pos-cheque-number"
-                    type="text"
-                    inputMode="numeric"
-                    autoComplete="off"
-                    value={chequeNumber}
-                    onChange={(e) => setChequeNumber(e.target.value)}
-                    className="w-full px-3 py-2 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
-                  />
-                </div>
-              </div>
-              <div>
-                <label htmlFor="pos-cheque-bank" className="block text-sm font-medium mb-1">
-                  {t("chequeBank")}
-                </label>
-                <input
-                  id="pos-cheque-bank"
-                  name="pos-cheque-bank"
-                  type="text"
-                  autoComplete="off"
-                  value={chequeBank}
-                  onChange={(e) => setChequeBank(e.target.value)}
-                  className="w-full px-3 py-2 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
-                />
-              </div>
-              <p className="text-xs text-(--color-text-secondary)">{t("chequeMentionsHint")}</p>
-            </div>
-          )}
-
-          {/* Cheque number / transfer reference */}
-          {!chequeMentionsRequired && methodTakesReference(paymentMethod) && (
-            <div>
-              <label htmlFor="pos-payment-reference" className="block text-sm font-medium mb-1">
-                {t("paymentReference")}
-              </label>
-              <input
-                id="pos-payment-reference"
-                name="pos-payment-reference"
-                type="text"
-                value={reference}
-                onChange={(e) => setReference(e.target.value)}
-                autoComplete="off"
-                className="w-full px-3 py-2 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
-                placeholder={t("paymentReferencePlaceholder")}
-              />
-            </div>
-          )}
-
-          {/* Settle part of the sale now and the rest another way */}
-          {canAddLine && (
-            <button
-              type="button"
-              onClick={addLine}
-              className="w-full px-4 py-2.5 rounded-lg border border-dashed border-(--color-border-secondary) text-sm font-medium hover:bg-(--color-bg-secondary) transition-colors"
+      {/* What has already been settled on this sale. Each row wraps its
+          figure under the method rather than overflowing when both cannot
+          share a phone's width. */}
+      {banked.length > 0 && (
+        <ul className="space-y-1.5">
+          {banked.map((line, i) => (
+            <li
+              key={i}
+              className="flex flex-wrap items-center justify-between gap-x-3 rounded-lg border border-(--color-border-primary) ps-3 pe-1 py-1"
             >
-              {t("addPayment", { amount: formatAmount(settledNow) })}
-            </button>
-          )}
+              <span className="min-w-0 wrap-anywhere text-sm font-medium">{t(LABEL_KEYS[line.method])}</span>
+              <span className="ms-auto flex shrink-0 items-center gap-1">
+                <span className="text-sm font-mono tabular-nums whitespace-nowrap">
+                  {formatAmount(line.amount)}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setBanked((prev) => prev.filter((_, j) => j !== i))}
+                  aria-label={t("removePayment")}
+                  className="shrink-0 p-2.5 rounded-md hover:bg-(--color-bg-secondary)"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </span>
+            </li>
+          ))}
+          <li className="flex flex-wrap items-center justify-between gap-x-4 px-3 pt-1 text-sm text-(--color-text-secondary)">
+            <span className="min-w-0 wrap-anywhere">{t("remainingToSettle")}</span>
+            <span className="ms-auto shrink-0 font-mono tabular-nums whitespace-nowrap">
+              {formatAmount(cashTarget)}
+            </span>
+          </li>
+        </ul>
+      )}
 
-          {/* What is left on the client's account */}
-          {leavesBalance && (
-            <div
-              className={`p-3 rounded-lg text-center ${
-                hasClient
-                  ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
-                  : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"
+      {/* Payment method selection. min-w-0 lets a column shrink below its
+          label on a narrow phone; the label wraps instead. */}
+      <div className="grid grid-cols-3 gap-2">
+        {POS_PAYMENT_METHODS.map((method) => {
+          const Icon = ICONS[method];
+          const active = paymentMethod === method;
+          return (
+            <button
+              key={method}
+              onClick={() => setPaymentMethod(method)}
+              aria-pressed={active}
+              className={`min-w-0 p-3 rounded-lg border-2 flex flex-col items-center gap-1.5 transition-colors ${
+                active
+                  ? "border-primary-600 bg-primary-50 dark:bg-primary-900/20"
+                  : "border-(--color-border-primary) hover:border-(--color-border-secondary)"
               }`}
             >
-              <p className="text-sm">{t("leftOnAccount")}</p>
-              <p className="text-2xl font-bold"><FitAmount>{formatAmount(remaining)}</FitAmount></p>
-              {!hasClient && <p className="mt-1 text-xs">{t("creditNeedsClient")}</p>}
+              <Icon className="h-6 w-6 shrink-0" />
+              <span className="max-w-full text-center wrap-anywhere text-sm font-medium">
+                {t(LABEL_KEYS[method])}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Cash input */}
+      {isCash && (
+        <div className="space-y-3">
+          <div>
+            <label htmlFor="pos-cash-given" className="block text-sm font-medium mb-1">
+              {t("cashGiven")}
+            </label>
+            <input
+              id="pos-cash-given"
+              name="pos-cash-given"
+              type="number"
+              value={cashGiven}
+              onChange={(e) => setCashGiven(e.target.value)}
+              className="w-full px-4 py-3 border border-(--color-border-input) rounded-lg text-2xl text-center font-bold tabular-nums bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
+              placeholder="0.00"
+              autoFocus
+            />
+          </div>
+
+          {/* Quick amounts */}
+          <div className="flex gap-2 flex-wrap">
+            {quickAmounts.slice(0, 4).map((amount) => (
+              <button
+                key={amount}
+                onClick={() => setCashGiven(amount.toString())}
+                className="max-w-full px-4 py-2 border border-(--color-border-primary) rounded-lg hover:bg-(--color-bg-secondary) text-sm font-medium tabular-nums whitespace-nowrap transition-colors"
+              >
+                {formatAmount(amount)}
+              </button>
+            ))}
+          </div>
+
+          {/* Change */}
+          {cashAmount >= dueNow && (
+            <div className="p-4 bg-green-100 dark:bg-green-900/30 rounded-lg text-center">
+              <p className="text-sm text-green-700 dark:text-green-300">{t("change")}</p>
+              <p className="text-3xl font-bold text-green-700 dark:text-green-300">
+                <FitAmount>{formatAmount(change)}</FitAmount>
+              </p>
             </div>
           )}
         </div>
+      )}
 
-        {/* Footer */}
-        <div className="p-4 border-t border-(--color-border-primary) flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-3 border border-(--color-border-primary) rounded-lg hover:bg-(--color-bg-secondary) font-medium transition-colors"
-          >
-            {t("cancel")}
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={!isValid || isLoading}
-            className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isLoading ? t("loading") : t("confirm")}
-          </button>
+      {/* Part payment for the non-cash methods */}
+      {!isCash && !isCredit && (
+        <div>
+          <label htmlFor="pos-partial-amount" className="block text-sm font-medium mb-1">
+            {t("amountReceived")}
+          </label>
+          <input
+            id="pos-partial-amount"
+            name="pos-partial-amount"
+            type="number"
+            value={partialAmount}
+            onChange={(e) => setPartialAmount(e.target.value)}
+            className="w-full px-4 py-3 border border-(--color-border-input) rounded-lg text-xl text-center font-bold tabular-nums bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder={formatAmount(totalAmount)}
+          />
+          <p className="mt-1 text-xs text-(--color-text-secondary)">{t("amountReceivedHint")}</p>
         </div>
-      </div>
+      )}
+
+      {/* The three mentions article 258 conditions the exemption on */}
+      {chequeMentionsRequired && (
+        <div className="space-y-3">
+          {/* Stacked on a phone: a date input will not shrink to half of one. */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="min-w-0">
+              <label htmlFor="pos-cheque-date" className="block text-sm font-medium mb-1">
+                {t("chequeDate")}
+              </label>
+              <input
+                id="pos-cheque-date"
+                name="pos-cheque-date"
+                type="date"
+                value={chequeDate}
+                onChange={(e) => setChequeDate(e.target.value)}
+                className="w-full min-w-0 px-3 py-2 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+            <div className="min-w-0">
+              <label htmlFor="pos-cheque-number" className="block text-sm font-medium mb-1">
+                {t("chequeNumber")}
+              </label>
+              <input
+                id="pos-cheque-number"
+                name="pos-cheque-number"
+                type="text"
+                inputMode="numeric"
+                autoComplete="off"
+                value={chequeNumber}
+                onChange={(e) => setChequeNumber(e.target.value)}
+                className="w-full min-w-0 px-3 py-2 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="pos-cheque-bank" className="block text-sm font-medium mb-1">
+              {t("chequeBank")}
+            </label>
+            <input
+              id="pos-cheque-bank"
+              name="pos-cheque-bank"
+              type="text"
+              autoComplete="off"
+              value={chequeBank}
+              onChange={(e) => setChequeBank(e.target.value)}
+              className="w-full px-3 py-2 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
+            />
+          </div>
+          <p className="text-xs text-(--color-text-secondary)">{t("chequeMentionsHint")}</p>
+        </div>
+      )}
+
+      {/* Cheque number / transfer reference */}
+      {!chequeMentionsRequired && methodTakesReference(paymentMethod) && (
+        <div>
+          <label htmlFor="pos-payment-reference" className="block text-sm font-medium mb-1">
+            {t("paymentReference")}
+          </label>
+          <input
+            id="pos-payment-reference"
+            name="pos-payment-reference"
+            type="text"
+            value={reference}
+            onChange={(e) => setReference(e.target.value)}
+            autoComplete="off"
+            className="w-full px-3 py-2 border border-(--color-border-input) rounded-lg bg-(--color-bg-input) focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder={t("paymentReferencePlaceholder")}
+          />
+        </div>
+      )}
+
+      {/* Settle part of the sale now and the rest another way */}
+      {canAddLine && (
+        <button
+          type="button"
+          onClick={addLine}
+          className="w-full px-4 py-2.5 rounded-lg border border-dashed border-(--color-border-secondary) text-sm font-medium wrap-anywhere hover:bg-(--color-bg-secondary) transition-colors"
+        >
+          {t("addPayment", { amount: formatAmount(settledNow) })}
+        </button>
+      )}
+
+      {/* What is left on the client's account */}
+      {leavesBalance && (
+        <div
+          className={`p-3 rounded-lg text-center ${
+            hasClient
+              ? "bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300"
+              : "bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300"
+          }`}
+        >
+          <p className="text-sm">{t("leftOnAccount")}</p>
+          <p className="text-2xl font-bold"><FitAmount>{formatAmount(remaining)}</FitAmount></p>
+          {!hasClient && <p className="mt-1 text-xs">{t("creditNeedsClient")}</p>}
+        </div>
+      )}
+
+      <ModalFooter>
+        <button
+          onClick={onClose}
+          className="flex-1 px-4 py-3 border border-(--color-border-primary) rounded-lg hover:bg-(--color-bg-secondary) font-medium transition-colors"
+        >
+          {t("cancel")}
+        </button>
+        <button
+          onClick={handleConfirm}
+          disabled={!isValid || isLoading}
+          className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        >
+          {isLoading ? t("loading") : t("confirm")}
+        </button>
+      </ModalFooter>
     </div>
   );
 }

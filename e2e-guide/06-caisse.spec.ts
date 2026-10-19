@@ -107,7 +107,7 @@ test("Chapitre 6 — Vendre au comptoir avec la caisse", async ({ page }) => {
   });
 
   // Scope to the payment panel: the till behind it is full of buttons too.
-  const payModal = tour.posOverlay();
+  const payModal = tour.dialog();
   await tour.say(
     "Cinq façons de régler : espèces, carte, chèque, virement, ou sur le compte du client."
   );
@@ -140,7 +140,7 @@ test("Chapitre 6 — Vendre au comptoir avec la caisse", async ({ page }) => {
   await tour.click(tour.button(t("pos:menu")), { settleMs: 700 });
   await tour.click(page.getByRole("button", { name: t("pos:cashMovement") }), { settleMs: 1200 });
 
-  const movement = tour.posOverlay();
+  const movement = tour.dialog();
   await tour.click(movement.getByRole("button", { name: t("pos:cashOut") }));
   await tour.set(movement.locator('input[type="number"]').first(), "2000");
   await tour.type(movement.locator('input[type="text"]').first(), LABELS.supplies);
@@ -149,7 +149,9 @@ test("Chapitre 6 — Vendre au comptoir avec la caisse", async ({ page }) => {
   await tour.say("Le mouvement s'ajoute à la liste ; la caisse reste ouverte pour en saisir d'autres.");
   await tour.pause(1500);
   // The panel intentionally stays open to record several movements in a row.
-  await tour.click(movement.locator("button").first(), { settleMs: 800 });
+  await tour.click(movement.getByRole("button", { name: t("pos:close"), exact: true }).last(), {
+    settleMs: 800,
+  });
 
   // ─── historique ───
   await tour.say("L'historique liste les tickets de la session, et permet d'en annuler un.");
@@ -174,7 +176,7 @@ test("Chapitre 6 — Vendre au comptoir avec la caisse", async ({ page }) => {
   await tour.pause(2600);
 
   await tour.say("On saisit les espèces réellement comptées.");
-  const closeDialog = tour.posOverlay();
+  const closeDialog = tour.dialog();
   await tour.set(closeDialog.locator('input[type="number"]').first(), "48000");
   await tour.say("L'écart éventuel est signalé immédiatement.");
   await tour.pause(2000);

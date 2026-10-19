@@ -36,7 +36,7 @@ test("Mobile 3 — Vendre au comptoir", async ({ page }) => {
     // run leaves its session behind. Only fill the float if the dialog is really
     // there; otherwise the click landed on an already-open till and there is
     // nothing to do.
-    const openDialog = tour.posOverlay();
+    const openDialog = tour.dialog();
     const float = openDialog.locator('input[type="number"]').first();
     if (await float.isVisible({ timeout: 4000 }).catch(() => false)) {
       await tour.set(float, "5000");
@@ -116,7 +116,7 @@ test("Mobile 3 — Vendre au comptoir", async ({ page }) => {
   await tour.say("On passe au paiement.");
   await tour.click(payButton, { settleMs: 1400 });
 
-  const payModal = tour.posOverlay();
+  const payModal = tour.dialog();
   await tour.say(
     "Espèces, carte, chèque, virement, ou sur le compte du client. Seules les espèces bougent le tiroir."
   );

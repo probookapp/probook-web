@@ -209,7 +209,7 @@ test.describe("Cheque mentions at the counter", () => {
 
     await page.getByRole("button").filter({ hasText: /Payer|Encaisser/i }).first().click();
 
-    const modal = page.locator("div.fixed.inset-0").last();
+    const modal = page.getByRole("dialog", { name: "Paiement" });
     await modal.getByRole("button").filter({ hasText: /^Chèque$/i }).first().click();
 
     // The three boxes article 258 names, each one actually on screen.
@@ -246,7 +246,7 @@ test.describe("Cheque mentions at the counter", () => {
       .click();
     await page.getByRole("button").filter({ hasText: /Payer|Encaisser/i }).first().click();
 
-    const modal = page.locator("div.fixed.inset-0").last();
+    const modal = page.getByRole("dialog", { name: "Paiement" });
     await modal.getByRole("button").filter({ hasText: /^Chèque$/i }).first().click();
 
     // No duty can arise, so there is no exemption to justify and no paperwork to
