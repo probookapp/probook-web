@@ -1,6 +1,20 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 import { signUp, stubServiceWorker } from "./helpers";
 import { setupPlatformAdmin, adminGet, adminPost, adminPut, adminDelete, createTestPlan } from "./admin-helpers";
+
+/**
+ * The tenant this test signed up, found by its name. "The newest tenant" is
+ * whatever another run on the shared test database signed up last: suspending
+ * or renaming it locked that run out halfway (the guide's shop, once).
+ */
+async function ownTenant(page: Page, company: string): Promise<Record<string, unknown>> {
+  const tenants = await adminGet(page, "/api/admin/tenants");
+  const tenant = (tenants.body as unknown as Array<Record<string, unknown>>).find(
+    (t) => t.name === company
+  );
+  expect(tenant, `tenant ${company} is not listed`).toBeTruthy();
+  return tenant as Record<string, unknown>;
+}
 
 test.describe("Admin panel", () => {
   test.beforeEach(async ({ page }) => {
@@ -85,11 +99,10 @@ test.describe("Admin: tenants", () => {
   });
 
   test("activate and suspend tenant", async ({ page }) => {
-    await signUp(page);
+    const { company } = await signUp(page);
     await setupPlatformAdmin(page);
 
-    const tenants = await adminGet(page, "/api/admin/tenants");
-    const tenant = (tenants.body as unknown as Array<Record<string, unknown>>)[0];
+    const tenant = await ownTenant(page, company);
 
     // Activate
     const activated = await adminPost(page, `/api/admin/tenants/${tenant.id}/activate`);
@@ -103,11 +116,10 @@ test.describe("Admin: tenants", () => {
   });
 
   test("update tenant name", async ({ page }) => {
-    await signUp(page);
+    const { company } = await signUp(page);
     await setupPlatformAdmin(page);
 
-    const tenants = await adminGet(page, "/api/admin/tenants");
-    const tenant = (tenants.body as unknown as Array<Record<string, unknown>>)[0];
+    const tenant = await ownTenant(page, company);
 
     const updated = await adminPut(page, `/api/admin/tenants/${tenant.id}`, {
       name: "Renamed Tenant",
