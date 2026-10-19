@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Pencil, ArrowRight, Mail, Truck, PackageX } from "lucide-react";
+import { ArrowLeft, Pencil, ArrowRight, Mail, Truck, PackageX, Receipt } from "lucide-react";
 import {
   Button,
   Card,
@@ -20,6 +20,7 @@ import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCompanySettings } from "@/features/settings";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
+import { getApiErrorMessage, isApiError } from "@/lib/api-adapter";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { DocumentTagsRow } from "@/components/documents/DocumentTagsRow";
 import { useDocumentCatalog } from "@/hooks/useDocumentCatalog";
@@ -62,16 +63,31 @@ export function QuoteViewPage() {
 
   const handleConvert = async () => {
     if (isDemoMode) { showSubscribePrompt(); return; }
-    await convertToInvoice.mutateAsync(quote.id);
-    setShowConvertModal(false);
-    router.push("/invoices");
+    try {
+      const invoice = await convertToInvoice.mutateAsync(quote.id);
+      setShowConvertModal(false);
+      router.push(`/invoices/${invoice.id}`);
+    } catch (err) {
+      setShowConvertModal(false);
+      toast.error(
+        isApiError(err, 409)
+          ? t("quotes:alreadyConverted")
+          : getApiErrorMessage(err, t("common:messages.error"))
+      );
+    }
   };
 
   const handleConvertToDeliveryNote = async () => {
     if (isDemoMode) { showSubscribePrompt(); return; }
-    const deliveryNote = await convertToDeliveryNote.mutateAsync(quote.id);
-    router.push(`/delivery-notes/${deliveryNote.id}`);
+    try {
+      const deliveryNote = await convertToDeliveryNote.mutateAsync(quote.id);
+      router.push(`/delivery-notes/${deliveryNote.id}`);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, t("common:messages.error")));
+    }
   };
+
+  const convertedInvoice = quote.invoices?.[0];
 
   const handleSendEmail = () => {
     if (!quote.client?.email) {
@@ -145,11 +161,22 @@ export function QuoteViewPage() {
                   {t("quotes:createDeliveryNote")}
                 </Button>
               )}
-              {canConvertToInvoice && (
-                <Button size="sm" onClick={() => setShowConvertModal(true)}>
-                  <ArrowRight className="h-4 w-4 me-2" />
-                  {t("quotes:actions.convertToInvoice")}
+              {convertedInvoice ? (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => router.push(`/invoices/${convertedInvoice.id}`)}
+                >
+                  <Receipt className="h-4 w-4 me-2" />
+                  {t("quotes:actions.viewInvoice")} {convertedInvoice.invoice_number}
                 </Button>
+              ) : (
+                canConvertToInvoice && (
+                  <Button size="sm" onClick={() => setShowConvertModal(true)}>
+                    <ArrowRight className="h-4 w-4 me-2" />
+                    {t("quotes:actions.convertToInvoice")}
+                  </Button>
+                )
               )}
             </>
           )}

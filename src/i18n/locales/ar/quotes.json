@@ -89,6 +89,7 @@
   },
   "actions": {
     "convertToInvoice": "تحويل إلى فاتورة",
+    "viewInvoice": "عرض الفاتورة",
     "duplicate": "نسخ",
     "downloadPdf": "تحميل PDF",
     "sendByEmail": "إرسال بالبريد الإلكتروني",
@@ -104,6 +105,7 @@
   },
   "confirmDelete": "هل أنت متأكد من حذف عرض السعر هذا؟",
   "confirmConvert": "تحويل عرض السعر هذا إلى فاتورة؟",
+  "alreadyConverted": "تم تحويل عرض السعر هذا إلى فاتورة مسبقاً.",
   "discount": {
     "label": "تخفيض تجاري",
     "percent": "تخفيض (%)",

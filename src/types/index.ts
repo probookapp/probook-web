@@ -563,6 +563,8 @@ export interface Quote {
   archived_at?: string | null;
   /** Free labels, flattened out of the join rows by the API. */
   tags?: Tag[];
+  /** The invoice this quote was converted to — empty until it is converted. */
+  invoices?: { id: string; invoice_number: string }[];
   lines: QuoteLine[];
   created_at: string;
   updated_at: string;

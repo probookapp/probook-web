@@ -1,5 +1,6 @@
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { quoteApi } from "@/lib/api";
+import { isApiError } from "@/lib/api-adapter";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { DEMO_QUOTES } from "@/lib/demo-data";
 import { LIST_PAGE_SIZE } from "@/lib/pagination";
@@ -108,6 +109,11 @@ export function useConvertQuoteToInvoice() {
       queryClient.invalidateQueries({ queryKey: ["quotes"] });
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
+    },
+    // 409 = already converted elsewhere (another tab, a colleague): refetch so
+    // the screen shows the invoice link instead of the convert button.
+    onError: (err) => {
+      if (isApiError(err, 409)) queryClient.invalidateQueries({ queryKey: ["quotes"] });
     },
   });
 }

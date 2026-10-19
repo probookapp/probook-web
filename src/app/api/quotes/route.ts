@@ -13,6 +13,7 @@ import { parseArchivedFilter, parseStatusFilter, QUOTE_STATUSES } from "@/lib/do
 import { allocateDocumentNumber } from "@/lib/document-numbering";
 import { flattenTags, parseTagFilter, TAGS_INCLUDE } from "@/lib/document-tags";
 import { ownTagIds } from "@/lib/document-tags-server";
+import { CONVERTED_INVOICE_INCLUDE } from "@/lib/quote-conversion";
 
 
 function isUniqueViolation(err: unknown): boolean {
@@ -53,7 +54,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
       // Labels ride along with the lean rows: they are five words, and a list
       // that showed them only after a second request would flicker.
-      include: { client: { select: { id: true, name: true } }, ...TAGS_INCLUDE },
+      include: { client: { select: { id: true, name: true } }, ...TAGS_INCLUDE, ...CONVERTED_INVOICE_INCLUDE },
     });
     const data = rows.map(flattenTags);
     return NextResponse.json(
@@ -64,7 +65,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   const quotes = await prisma.quote.findMany({
     where: { tenantId, ...statusFilter, ...archivedFilter, ...tagFilter },
     orderBy: { createdAt: "desc" },
-    include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE },
+    include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE, ...CONVERTED_INVOICE_INCLUDE },
   });
   return NextResponse.json(toSnakeCase(quotes.map(flattenTags)));
 });

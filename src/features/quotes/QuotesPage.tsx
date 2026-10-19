@@ -13,6 +13,7 @@ import {
   Archive,
   ArchiveRestore,
   FileDown,
+  Receipt,
   Tag as TagIcon,
 } from "lucide-react";
 import {
@@ -58,6 +59,8 @@ import { exportToCsv } from "@/lib/csv-export";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { RestockPanel } from "./components/RestockPanel";
 import type { QuoteListItem } from "@/types";
+import { toast } from "@/stores/useToastStore";
+import { getApiErrorMessage, isApiError } from "@/lib/api-adapter";
 
 export function QuotesPage() {
   const { t } = useTranslation(["quotes", "common"]);
@@ -158,15 +161,30 @@ export function QuotesPage() {
 
   const handleDelete = async (id: string) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
-    await deleteQuote.mutateAsync(id);
-    setDeleteConfirmId(null);
+    try {
+      await deleteQuote.mutateAsync(id);
+      setDeleteConfirmId(null);
+    } catch (err) {
+      toast.error(getApiErrorMessage(err, t("common:messages.error")));
+    }
   };
 
   const handleConvert = async (quote: QuoteListItem) => {
     if (isDemoMode) { showSubscribePrompt(); return; }
-    await convertToInvoice.mutateAsync(quote.id);
-    setConvertConfirm(null);
-    router.push("/invoices");
+    try {
+      const invoice = await convertToInvoice.mutateAsync(quote.id);
+      setConvertConfirm(null);
+      router.push(`/invoices/${invoice.id}`);
+    } catch (err) {
+      // An uncaught rejection here left the modal open with no message, so
+      // people tapped again — and Sentry got the 409 as a crash.
+      setConvertConfirm(null);
+      toast.error(
+        isApiError(err, 409)
+          ? t("quotes:alreadyConverted")
+          : getApiErrorMessage(err, t("common:messages.error"))
+      );
+    }
   };
 
   if (isLoading) {
@@ -186,7 +204,14 @@ export function QuotesPage() {
       onSelect: () => setConvertConfirm(quote),
       primary: true,
       tone: "success",
-      hidden: !(quote.status === "ACCEPTED" && canConvertToInvoice),
+      hidden: !(quote.status === "ACCEPTED" && canConvertToInvoice && !quote.invoices?.length),
+    },
+    {
+      key: "invoice",
+      label: t("quotes:actions.viewInvoice"),
+      icon: Receipt,
+      onSelect: () => quote.invoices?.[0] && router.push(`/invoices/${quote.invoices[0].id}`),
+      hidden: !quote.invoices?.length,
     },
     {
       key: "view",

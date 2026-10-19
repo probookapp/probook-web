@@ -10,6 +10,7 @@ import { updateQuoteSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 import { flattenTags, TAGS_INCLUDE } from "@/lib/document-tags";
 import { ownTagIds } from "@/lib/document-tags-server";
+import { CONVERTED_INVOICE_INCLUDE } from "@/lib/quote-conversion";
 
 
 export const GET = withAuth(async (req, { tenantId, session, params }) => {
@@ -17,7 +18,7 @@ export const GET = withAuth(async (req, { tenantId, session, params }) => {
   if (denied) return denied;
   const quote = await prisma.quote.findFirst({
     where: { tenantId, id: params?.id },
-    include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE },
+    include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE, ...CONVERTED_INVOICE_INCLUDE },
   });
   if (!quote) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(toSnakeCase(flattenTags(quote)));

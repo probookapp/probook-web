@@ -85,6 +85,7 @@
   },
   "actions": {
     "convertToInvoice": "Convertir en facture",
+    "viewInvoice": "Voir la facture",
     "duplicate": "Dupliquer",
     "downloadPdf": "Télécharger PDF",
     "sendByEmail": "Envoyer par email",
@@ -100,6 +101,7 @@
   },
   "confirmDelete": "Êtes-vous sûr de vouloir supprimer ce devis ?",
   "confirmConvert": "Convertir ce devis en facture ?",
+  "alreadyConverted": "Ce devis a déjà été converti en facture.",
   "discount": {
     "label": "Remise commerciale",
     "percent": "Remise (%)",
