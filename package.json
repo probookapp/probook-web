@@ -34,12 +34,13 @@
     "guide:build:en": "dotenv -e .env.test -v GUIDE_LOCALE=en -- node scripts/build-guide-videos.mjs",
     "guide:build:ar": "dotenv -e .env.test -v GUIDE_LOCALE=ar -- node scripts/build-guide-videos.mjs",
     "guide:build:fr": "npm run guide:build",
-    "guide:content": "node scripts/build-guide-content.mjs"
+    "guide:content": "node scripts/build-guide-content.mjs",
+    "guide:voice": "dotenv -e .env.test -- node scripts/build-guide-voice.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
-    "@prisma/adapter-pg": "^7.5.0",
-    "@prisma/client": "^7.4.2",
+    "@prisma/adapter-pg": "^7.10.1",
+    "@prisma/client": "^7.10.1",
     "@radix-ui/react-dialog": "^1.1.19",
     "@radix-ui/react-dropdown-menu": "^2.2.1",
     "@react-pdf/renderer": "^4.3.2",
@@ -51,7 +52,6 @@
     "@tiptap/extension-color": "^3.20.1",
     "@tiptap/extension-font-family": "^3.20.1",
     "@tiptap/extension-text-style": "^3.20.1",
-    "@tiptap/extension-underline": "^3.20.1",
     "@tiptap/react": "^3.20.1",
     "@tiptap/starter-kit": "^3.20.1",
     "@types/qrcode": "^1.5.6",
@@ -66,7 +66,7 @@
     "jose": "^6.2.1",
     "lucide-react": "^0.577.0",
     "next": "~16.3.8",
-    "pg": "^8.20.0",
+    "pg": "^8.23.1",
     "qrcode": "^1.5.4",
     "react": "19.2.3",
     "react-dom": "19.2.3",
@@ -99,7 +99,7 @@
     "dotenv-cli": "^11.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
-    "prisma": "^7.4.2",
+    "prisma": "^7.10.1",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^5.0.3"
