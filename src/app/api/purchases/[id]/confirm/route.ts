@@ -6,6 +6,7 @@ import { applyStockChange, getProductQuantities } from "@/lib/stock";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { requirePermission } from "@/lib/permissions-server";
 import { num } from "@/lib/money";
+import { getOrderSettled, paymentStatusFor } from "@/lib/supplier-account";
 
 // Confirm / receive a purchase order. Supports partial goods receipt: pass a
 // `lines` array with the cumulative received quantity per line. When `lines` is
@@ -192,14 +193,24 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
               reason: `Purchase Order ${order.orderNumber}`,
             },
           });
+          // The cash left the till to pay this supplier: record it on their
+          // account too, or the balance keeps showing it as owed.
+          await tx.supplierPayment.create({
+            data: {
+              tenantId,
+              supplierId: order.supplierId,
+              purchaseOrderId: order.id,
+              amount,
+              paymentDate: new Date(),
+              paymentMethod: "CASH",
+              fromRegister: true,
+            },
+          });
         }
 
         paidFromRegister = true;
-        paymentStatus = allReceived
-          ? "PAID"
-          : newReceivedValue > 0
-            ? "PARTIAL"
-            : paymentStatus;
+        const settled = (await getOrderSettled(tx, tenantId, [order.id])).get(order.id) ?? 0;
+        paymentStatus = paymentStatusFor(num(order.total), settled);
       }
 
       return tx.purchaseOrder.update({
