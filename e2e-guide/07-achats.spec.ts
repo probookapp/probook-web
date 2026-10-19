@@ -126,6 +126,59 @@ test("Chapitre 7 — Fournisseurs et réapprovisionnement", async ({ page }) => 
     settleMs: 1800,
   });
 
-  await tour.say("Total dû, total payé et solde, avec le détail des commandes impayées.");
+  await tour.say("Achats reçus, montant réglé et solde, avec ce qui reste à payer sur chaque commande.");
+  await tour.pause(2400);
+
+  // ─── retour de marchandise (avoir fournisseur) ───
+  await tour.say(
+    "Deux téléviseurs sont arrivés abîmés. On les renvoie au fournisseur, qui garde leur valeur comme un versement."
+  );
+  await tour.click(tour.dialog().getByRole("button", { name: t("suppliers:credits.returnGoods") }), {
+    settleMs: 1600,
+  });
+
+  // The return is written on its own page, supplier already chosen.
+  const ret = page.locator("main");
+  const orderPicker = ret.locator('select[name="return-order"]');
+  await expect(orderPicker.locator("option")).toHaveCount(2);
+  const orderValue = await orderPicker.locator("option").nth(1).getAttribute("value");
+  await tour.say("On part de la commande : Probook sait ce qui a été reçu et ce qui peut repartir.");
+  await tour.choose(orderPicker, { value: orderValue ?? "" });
+  await tour.set(ret.locator('input[name^="return-qty-"]').first(), "2");
+  await tour.type(ret.locator('input[name="return-reason"]'), "Écrans abîmés au transport");
+  await tour.pause(1200);
+  await tour.click(ret.getByRole("button", { name: t("common:buttons.create"), exact: true }), {
+    settleMs: 1800,
+  });
+  await expect(ret.getByText(t("purchases:returns.lines"))).toBeVisible();
+  await tour.say("Les deux téléviseurs sortent du stock, et leur valeur vient en déduction de ce que l'on doit.");
+  await tour.pause(1600);
+
+  // ─── ajustement et relevé ───
+  await tour.nav("/suppliers");
+  await tour.clickRowAction(SUPPLIER.name, t("suppliers:credits.title"), { settleMs: 1600 });
+  await tour.say(
+    "Le fournisseur accorde aussi une remise par téléphone : on ajuste le solde, toujours avec un motif."
+  );
+  await tour.click(tour.dialog().getByRole("button", { name: t("suppliers:credits.adjust") }), {
+    settleMs: 1000,
+  });
+  const adjust = tour.dialog();
+  await tour.set(adjust.locator('input[name="adjustment-amount"]'), "5000");
+  await tour.type(adjust.locator('textarea[name="adjustment-reason"]'), "Remise commerciale accordée");
+  await tour.click(adjust.getByRole("button", { name: t("suppliers:adjustment.save") }), {
+    settleMs: 1600,
+  });
+
+  await tour.say(
+    "Le relevé reprend tout, ligne par ligne : achats, paiements, retours et ajustements, avec le solde au fil de l'eau."
+  );
+  await tour.click(tour.dialog().getByRole("button", { name: t("suppliers:credits.viewStatement") }), {
+    settleMs: 1600,
+  });
+  await expect(tour.dialog().getByText(t("suppliers:statement.types.return")).first()).toBeAttached();
+  await tour.say(
+    "Si l'on a payé plus que ce que l'on doit, le solde passe en crédit en votre faveur, chez le fournisseur."
+  );
   await tour.pause(2400);
 });
