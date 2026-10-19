@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The generated Prisma client: megabytes of code nobody writes, which made
+    // every lint run parse it (and Babel print a note per file over 500 KB).
+    "src/generated/**",
   ]),
 ]);
 
