@@ -105,6 +105,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
   { label: "Archiver un document soldé", chapter: "05-factures", evidence: "common:buttons.archive" },
   { label: "Vente au comptoir", chapter: "06-caisse", evidence: "pos:searchProducts" },
   { label: "Modes de règlement", chapter: "06-caisse", evidence: "pos:cheque" },
+  { label: "Ce que les devis demandent et qui manque", chapter: "07-achats", evidence: "quotes:restock.show" },
   { label: "Réception d'une commande", chapter: "07-achats", evidence: "purchases:" },
   { label: "Créer un produit depuis un achat", chapter: "07-achats", evidence: "purchases:newProduct.button" },
   { label: "Retour de marchandise au fournisseur", chapter: "07-achats", evidence: "suppliers:credits.returnGoods" },

@@ -2,15 +2,82 @@ import { test, expect } from "./lib/test";
 import { Tour } from "./lib/tour";
 import { resume } from "./lib/session";
 import { t } from "./lib/i18n";
-import { PRODUCTS, SUPPLIER } from "./lib/data";
+import { CLIENT_2, PRODUCTS, SUPPLIER } from "./lib/data";
+
+/** What the order below buys, and therefore what the restock list must ask for. */
+const TV_TO_ORDER = 10;
+
+/**
+ * A quote for more televisions than the shelf holds, written off camera.
+ *
+ * The restock list only shows a shortfall, and the earlier chapters leave
+ * enough stock for every quote they write. Sizing it from the live stock keeps
+ * the missing quantity at exactly what the order buys, whatever the till and
+ * the credit note did to the count before this chapter.
+ */
+async function aQuoteTheShelfCannotCover(page: import("@playwright/test").Page) {
+  await page.evaluate(
+    async ({ clientName, tv, extra }) => {
+      const get = (url: string) => fetch(url, { credentials: "include" }).then((r) => r.json());
+      const clients: { id: string; name: string }[] = await get("/api/clients");
+      const products: { id: string; reference: string | null; quantity: number }[] =
+        await get("/api/products");
+      const client = clients.find((c) => c.name === clientName)!;
+      const product = products.find((p) => p.reference === tv.reference)!;
+      const today = new Date();
+      const in30 = new Date(today.getTime() + 30 * 86_400_000);
+      await fetch("/api/quotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          client_id: client.id,
+          issue_date: today.toISOString().slice(0, 10),
+          validity_date: in30.toISOString().slice(0, 10),
+          status: "SENT",
+          lines: [
+            {
+              description: tv.designation,
+              quantity: product.quantity + extra,
+              unit_price: Number(tv.salePrice),
+              tax_rate: 19,
+              product_id: product.id,
+            },
+          ],
+        }),
+      });
+    },
+    { clientName: CLIENT_2.name, tv: PRODUCTS.tv, extra: TV_TO_ORDER }
+  );
+}
 
 test("Chapitre 7 — Fournisseurs et réapprovisionnement", async ({ page }) => {
   const tour = await Tour.open(page, "7 · Achats");
   await resume(page, "suppliers");
+  await aQuoteTheShelfCannotCover(page);
+  await page.goto(page.url().replace(/\/suppliers.*$/, "/quotes"));
+  await page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
   await tour.titleCard("Les achats", "Chapitre 7 — fournisseurs, commandes, réception");
 
+  // ─── liste de réapprovisionnement ───
+  await tour.say(
+    "Le stock baisse, et un client vient de demander plus de téléviseurs qu'il n'en reste en rayon. Combien faut-il commander ?"
+  );
+  await tour.say(
+    "Un devis ne réserve pas le stock : on peut chiffrer ce qu'on n'a pas encore. Probook additionne alors, en haut des devis, ce qui manque pour tous les honorer."
+  );
+  await tour.click(tour.button(t("quotes:restock.show")), { settleMs: 1200 });
+  await expect(
+    page.getByText(t("quotes:restock.toBuy").replace("{{count}}", String(TV_TO_ORDER)))
+  ).toBeVisible();
+  await tour.say(
+    "Pour chaque article : ce que les devis demandent, ce qu'il y a en rayon, et la quantité à acheter — ici dix téléviseurs, avec le devis qui les attend."
+  );
+  await tour.pause(2400);
+
   // ─── fournisseur ───
-  await tour.say("Le stock baisse : il faut réapprovisionner. Commençons par créer le fournisseur.");
+  await tour.say("Commençons par créer le fournisseur.");
+  await tour.nav("/suppliers");
   await tour.click(tour.button(t("suppliers:newSupplier")));
 
   const form = tour.dialog();
