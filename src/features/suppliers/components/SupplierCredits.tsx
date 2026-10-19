@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { DollarSign } from "lucide-react";
+import { DollarSign, FileText, PackageMinus, Scale } from "lucide-react";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import {
   Button,
@@ -16,10 +16,14 @@ import {
 } from "@/components/ui";
 import { Badge } from "@/components/ui/Badge";
 import { supplierCreditApi } from "@/lib/api";
+import { DEMO_PURCHASES } from "@/lib/demo-data";
+import { useRouter } from "@/lib/navigation";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { SupplierPaymentModal } from "./SupplierPaymentModal";
+import { SupplierAdjustmentModal } from "./SupplierAdjustmentModal";
+import { SupplierStatement } from "./SupplierStatement";
 import { useAuthStore } from "@/stores/useAuthStore";
-import type { Supplier, SupplierPayment } from "@/types";
+import type { Supplier, SupplierCreditSummary, SupplierPayment } from "@/types";
 
 interface SupplierCreditsProps {
   supplier: Supplier;
@@ -38,25 +42,62 @@ function getPaymentStatusVariant(status: string): "default" | "success" | "warni
   }
 }
 
+/** The demo supplier's account, derived from the demo orders so the two agree. */
+function demoSummary(supplier: Supplier): SupplierCreditSummary {
+  const orders = DEMO_PURCHASES.filter(
+    (o) => o.supplier_id === supplier.id && (o.status === "CONFIRMED" || o.status === "PARTIALLY_RECEIVED")
+  );
+  const totalOwed = orders.reduce((sum, o) => sum + o.total, 0);
+  return {
+    supplier_id: supplier.id,
+    supplier_name: supplier.name,
+    opening_balance: 0,
+    total_owed: totalOwed,
+    total_adjustments: 0,
+    total_paid: 0,
+    total_returned: 0,
+    balance: totalOwed,
+    unpaid_orders: orders.map((o) => ({
+      id: o.id,
+      order_number: o.order_number,
+      order_date: o.order_date,
+      status: o.status,
+      payment_status: o.payment_status,
+      total: o.total,
+      amount_settled: 0,
+      remaining: o.total,
+    })),
+  };
+}
+
+/**
+ * The supplier's account: what was received, what was settled (payments and
+ * returns kept as credit), and the balance in either direction. Positive is
+ * what the business owes; negative is credit the supplier holds for it.
+ */
 export function SupplierCredits({ supplier }: SupplierCreditsProps) {
   const { t } = useTranslation("suppliers");
+  const { t: tPurchases } = useTranslation("purchases");
+  const router = useRouter();
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
-  // Recording a supplier payment is gated on the suppliers module (edit).
-  const canRecordPayment = useAuthStore((s) => s.hasPermission("suppliers", "edit"));
+  // Payments and adjustments are gated on the suppliers module (edit); a
+  // return is a purchasing document.
+  const canEdit = useAuthStore((s) => s.hasPermission("suppliers", "edit"));
+  const canReturn = useAuthStore((s) => s.hasPermission("purchases", "create"));
 
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const [isAdjustmentOpen, setIsAdjustmentOpen] = useState(false);
+  const [isStatementOpen, setIsStatementOpen] = useState(false);
 
   const { data: creditSummary, isLoading: isLoadingCredits } = useQuery({
-    queryKey: ["supplier-credits", supplier.id],
-    queryFn: () => isDemoMode
-      ? ({ supplier_id: supplier.id, supplier_name: supplier.name, total_owed: 101150, total_paid: 0, balance: 101150, unpaid_orders: [] } as import("@/types").SupplierCreditSummary)
-      : supplierCreditApi.getCredits(supplier.id),
+    queryKey: ["supplier-credits", supplier.id, { demo: isDemoMode }],
+    queryFn: () => (isDemoMode ? demoSummary(supplier) : supplierCreditApi.getCredits(supplier.id)),
     staleTime: isDemoMode ? Infinity : undefined,
   });
 
   const { data: payments, isLoading: isLoadingPayments } = useQuery({
-    queryKey: ["supplier-payments", supplier.id],
-    queryFn: () => isDemoMode ? ([] as SupplierPayment[]) : supplierCreditApi.getPayments(supplier.id),
+    queryKey: ["supplier-payments", supplier.id, { demo: isDemoMode }],
+    queryFn: () => (isDemoMode ? ([] as SupplierPayment[]) : supplierCreditApi.getPayments(supplier.id)),
     staleTime: isDemoMode ? Infinity : undefined,
   });
 
@@ -70,8 +111,31 @@ export function SupplierCredits({ supplier }: SupplierCreditsProps) {
 
   const totalOwed = creditSummary?.total_owed ?? 0;
   const totalPaid = creditSummary?.total_paid ?? 0;
+  const totalReturned = creditSummary?.total_returned ?? 0;
+  const openingAndAdjustments =
+    (creditSummary?.opening_balance ?? 0) + (creditSummary?.total_adjustments ?? 0);
   const balance = creditSummary?.balance ?? 0;
   const unpaidOrders = creditSummary?.unpaid_orders ?? [];
+  // The order's payment status in words: the raw "UNPAID" used to be shown.
+  const paymentStatusLabel = (status: string) =>
+    tPurchases(`paymentStatus.${status}`, { defaultValue: status });
+  const paymentLabel = (payment: SupplierPayment) =>
+    payment.from_register
+      ? t("credits.fromRegister")
+      : t(`credits.methods.${payment.payment_method}`, { defaultValue: payment.payment_method });
+  const paymentReference = (payment: SupplierPayment) =>
+    payment.reference || payment.purchase_order?.order_number || (payment.purchase_order_id ? "" : t("credits.onAccount"));
+
+  const guard = (action: () => void) => () => (isDemoMode ? showSubscribePrompt() : action());
+
+  const balanceTone =
+    balance > 0.005
+      ? "text-red-600 dark:text-red-400"
+      : balance < -0.005
+        ? "text-green-600 dark:text-green-400"
+        : "text-(--color-text-primary)";
+  const balanceCaption =
+    balance > 0.005 ? t("credits.youOwe") : balance < -0.005 ? t("credits.inYourFavour") : t("credits.settledUp");
 
   return (
     <div className="@container space-y-6">
@@ -84,61 +148,107 @@ export function SupplierCredits({ supplier }: SupplierCreditsProps) {
           <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">
             <FitAmount>{formatCurrency(totalOwed)}</FitAmount>
           </p>
-        </div>
-        <div className="min-w-0 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t("credits.totalPaid")}</p>
-          <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">
-            <FitAmount>{formatCurrency(totalPaid)}</FitAmount>
-          </p>
-        </div>
-        <div className="min-w-0 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
-          <p className="text-sm text-gray-500 dark:text-gray-400">{t("credits.balance")}</p>
-          <p
-            className={`text-xl font-semibold mt-1 ${
-              balance > 0
-                ? "text-red-600 dark:text-red-400"
-                : "text-green-600 dark:text-green-400"
-            }`}
-          >
-            <FitAmount>{formatCurrency(balance)}</FitAmount>
-          </p>
-          {balance === 0 && (
-            <p className="text-xs text-green-600 dark:text-green-400 mt-0.5">
-              {t("credits.noBalance")}
+          {Math.abs(openingAndAdjustments) >= 0.005 && (
+            <p className="text-xs text-(--color-text-secondary) mt-0.5 wrap-anywhere">
+              {t("credits.openingAndAdjustments", { amount: formatCurrency(openingAndAdjustments) })}
             </p>
           )}
         </div>
+        <div className="min-w-0 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t("credits.settled")}</p>
+          <p className="text-xl font-semibold text-gray-900 dark:text-gray-100 mt-1">
+            <FitAmount>{formatCurrency(totalPaid + totalReturned)}</FitAmount>
+          </p>
+          {totalReturned > 0 && (
+            <p className="text-xs text-(--color-text-secondary) mt-0.5 wrap-anywhere">
+              {t("credits.settledDetail", { amount: formatCurrency(totalReturned) })}
+            </p>
+          )}
+        </div>
+        <div className="min-w-0 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
+          <p className="text-sm text-gray-500 dark:text-gray-400">{t("credits.balance")}</p>
+          <p className={`text-xl font-semibold mt-1 ${balanceTone}`}>
+            <FitAmount>{formatCurrency(Math.abs(balance))}</FitAmount>
+          </p>
+          <p className={`text-xs mt-0.5 ${balanceTone}`}>{balanceCaption}</p>
+        </div>
       </div>
 
-      {/* Record Payment Button */}
-      {canRecordPayment && (
-        <div className="flex justify-end">
-          <Button size="sm" onClick={() => isDemoMode ? showSubscribePrompt() : setIsPaymentModalOpen(true)}>
+      {/* Actions */}
+      <div className="flex flex-wrap justify-end gap-2">
+        <Button variant="secondary" size="sm" onClick={guard(() => setIsStatementOpen(true))}>
+          <FileText className="h-4 w-4 me-2" />
+          {t("credits.viewStatement")}
+        </Button>
+        {canReturn && (
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={guard(() => router.push(`/purchases/returns/new?supplier=${supplier.id}`))}
+          >
+            <PackageMinus className="h-4 w-4 me-2" />
+            {t("credits.returnGoods")}
+          </Button>
+        )}
+        {canEdit && (
+          <Button variant="secondary" size="sm" onClick={guard(() => setIsAdjustmentOpen(true))}>
+            <Scale className="h-4 w-4 me-2" />
+            {t("credits.adjust")}
+          </Button>
+        )}
+        {canEdit && (
+          <Button size="sm" onClick={guard(() => setIsPaymentModalOpen(true))}>
             <DollarSign className="h-4 w-4 me-2" />
             {t("credits.recordPayment")}
           </Button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Unpaid Purchase Orders */}
       <div>
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">
           {t("credits.unpaidOrders")}
         </h3>
-        <div className="overflow-x-auto">
+        {/* Cards while the dialog is narrow (a phone), the table once it is
+            wide enough — measured on the dialog (@container above). */}
+        <ul className="@md:hidden divide-y divide-(--color-border-primary) rounded-lg border border-(--color-border-primary)">
+          {unpaidOrders.length > 0 ? (
+            unpaidOrders.map((order) => (
+              <li key={order.id} className="flex items-start gap-3 px-3 py-2.5">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium text-(--color-text-primary) wrap-anywhere">{order.order_number}</p>
+                  <p className="text-xs text-(--color-text-secondary)">{formatDate(order.order_date)}</p>
+                  <div className="mt-1">
+                    <Badge variant={getPaymentStatusVariant(order.payment_status)}>
+                      {paymentStatusLabel(order.payment_status)}
+                    </Badge>
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1 text-end">
+                  <FitAmount className="text-sm font-medium">{formatCurrency(order.remaining)}</FitAmount>
+                  <p className="text-xs text-(--color-text-secondary)">{t("credits.remaining")}</p>
+                </div>
+              </li>
+            ))
+          ) : (
+            <li className="px-3 py-6 text-center text-sm text-(--color-text-secondary)">{t("credits.noUnpaidOrders")}</li>
+          )}
+        </ul>
+        <div className="hidden @md:block overflow-x-auto">
           <Table className="min-w-full">
             <TableHeader>
               <TableRow>
                 <TableHead>{t("credits.orderNumber")}</TableHead>
                 <TableHead>{t("credits.orderDate")}</TableHead>
                 <TableHead className="text-end">{t("credits.orderTotal")}</TableHead>
+                <TableHead className="text-end">{t("credits.remaining")}</TableHead>
                 <TableHead>{t("credits.orderStatus")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {unpaidOrders.length > 0 ? (
                 unpaidOrders.map((order) => (
-                  <TableRow key={order.id}>
+                  <TableRow key={order.id} onActivate={() => router.push(`/purchases/${order.id}`)}>
                     <TableCell className="font-medium text-gray-900 dark:text-gray-100">
                       {order.order_number}
                     </TableCell>
@@ -148,16 +258,19 @@ export function SupplierCredits({ supplier }: SupplierCreditsProps) {
                     <TableNumericCell className="text-gray-600 dark:text-gray-400">
                       {formatCurrency(order.total)}
                     </TableNumericCell>
+                    <TableNumericCell className="font-medium text-gray-900 dark:text-gray-100">
+                      {formatCurrency(order.remaining)}
+                    </TableNumericCell>
                     <TableCell>
                       <Badge variant={getPaymentStatusVariant(order.payment_status)}>
-                        {order.payment_status}
+                        {paymentStatusLabel(order.payment_status)}
                       </Badge>
                     </TableCell>
                   </TableRow>
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                  <TableCell colSpan={5} className="text-center text-gray-500 dark:text-gray-400 py-8">
                     {t("credits.noUnpaidOrders")}
                   </TableCell>
                 </TableRow>
@@ -172,7 +285,25 @@ export function SupplierCredits({ supplier }: SupplierCreditsProps) {
         <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-3">
           {t("credits.paymentHistory")}
         </h3>
-        <div className="overflow-x-auto">
+        <ul className="@md:hidden divide-y divide-(--color-border-primary) rounded-lg border border-(--color-border-primary)">
+          {payments && payments.length > 0 ? (
+            payments.map((payment: SupplierPayment) => (
+              <li key={payment.id} className="flex items-start gap-3 px-3 py-2.5">
+                <div className="min-w-0 flex-1 wrap-anywhere">
+                  <p className="text-sm text-(--color-text-primary)">{formatDate(payment.payment_date)}</p>
+                  <p className="text-xs text-(--color-text-secondary)">
+                    {paymentLabel(payment)}
+                    {paymentReference(payment) ? ` · ${paymentReference(payment)}` : ""}
+                  </p>
+                </div>
+                <FitAmount className="min-w-0 flex-1 text-end text-sm font-medium">{formatCurrency(payment.amount)}</FitAmount>
+              </li>
+            ))
+          ) : (
+            <li className="px-3 py-6 text-center text-sm text-(--color-text-secondary)">{t("credits.noPayments")}</li>
+          )}
+        </ul>
+        <div className="hidden @md:block overflow-x-auto">
           <Table className="min-w-full">
             <TableHeader>
               <TableRow>
@@ -193,10 +324,10 @@ export function SupplierCredits({ supplier }: SupplierCreditsProps) {
                       {formatCurrency(payment.amount)}
                     </TableNumericCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
-                      {t(`credits.methods.${payment.payment_method}`, { defaultValue: payment.payment_method })}
+                      {paymentLabel(payment)}
                     </TableCell>
                     <TableCell className="text-gray-600 dark:text-gray-400">
-                      {payment.reference || "-"}
+                      {paymentReference(payment) || "-"}
                     </TableCell>
                   </TableRow>
                 ))
@@ -212,12 +343,22 @@ export function SupplierCredits({ supplier }: SupplierCreditsProps) {
         </div>
       </div>
 
-      {/* Payment Modal */}
       <SupplierPaymentModal
         open={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         supplierId={supplier.id}
         unpaidOrders={unpaidOrders}
+      />
+      <SupplierAdjustmentModal
+        open={isAdjustmentOpen}
+        onClose={() => setIsAdjustmentOpen(false)}
+        supplierId={supplier.id}
+      />
+      <SupplierStatement
+        isOpen={isStatementOpen}
+        onClose={() => setIsStatementOpen(false)}
+        supplierId={supplier.id}
+        supplierName={supplier.name}
       />
     </div>
   );

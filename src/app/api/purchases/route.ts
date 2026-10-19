@@ -20,6 +20,10 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "purchases", "view");
   if (denied) return denied;
 
+  // Optional supplier filter: the return form lists one supplier's orders.
+  const supplierId = new URL(req.url).searchParams.get("supplier_id");
+  const where = { tenantId, ...(supplierId ? { supplierId } : {}) };
+
   // Opt-in cursor pagination (audit SALE-23): lean rows — scalars + supplier
   // name, no line arrays (the confirm/edit flows load lines per order).
   const page = parseListPagination(req);
@@ -31,7 +35,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
         }))?.id ?? null
       : null;
     const data = await prisma.purchaseOrder.findMany({
-      where: { tenantId },
+      where,
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: page.limit,
       ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
@@ -43,7 +47,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   }
 
   const orders = await prisma.purchaseOrder.findMany({
-    where: { tenantId },
+    where,
     orderBy: { createdAt: "desc" },
     include: {
       supplier: true,

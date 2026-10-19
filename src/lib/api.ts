@@ -29,6 +29,12 @@ import type {
   SupplierPayment,
   CreateSupplierPaymentInput,
   SupplierCreditSummary,
+  SupplierBalance,
+  SupplierStatement,
+  SupplierAdjustment,
+  CreateSupplierAdjustmentInput,
+  SupplierReturn,
+  CreateSupplierReturnInput,
   Tag,
   TagInput,
   ProductCategory,
@@ -358,6 +364,9 @@ export const purchaseApi = {
   getPage: (p: CursorPageParams) =>
     apiCall<CursorPage<PurchaseOrderListItem>>("get_purchases", pageArgs(p)),
   getById: (id: string) => apiCall<PurchaseOrder>("get_purchase", { id }),
+  /** One supplier's orders, lean rows (no lines): the return form picks from them. */
+  getForSupplier: (supplierId: string) =>
+    apiCall<CursorPage<PurchaseOrderListItem>>("get_purchases", { supplierId, limit: 100 }),
   create: (input: CreatePurchaseOrderInput) => apiCall<PurchaseOrder>("create_purchase", { input }),
   update: (input: UpdatePurchaseOrderInput) => apiCall<PurchaseOrder>("update_purchase", { input }),
   delete: (id: string) => apiCall<void>("delete_purchase", { id }),
@@ -372,6 +381,28 @@ export const supplierCreditApi = {
   getPayments: (supplierId: string) => apiCall<SupplierPayment[]>("get_supplier_payments", { supplierId }),
   createPayment: (supplierId: string, input: CreateSupplierPaymentInput) =>
     apiCall<SupplierPayment>("create_supplier_payment", { supplierId, input }),
+  getBalances: () => apiCall<SupplierBalance[]>("get_supplier_balances"),
+  getStatement: (supplierId: string, range?: { startDate?: string; endDate?: string }) =>
+    apiCall<SupplierStatement>("get_supplier_statement", {
+      supplierId,
+      startDate: range?.startDate,
+      endDate: range?.endDate,
+    }),
+  createAdjustment: (supplierId: string, input: CreateSupplierAdjustmentInput) =>
+    apiCall<SupplierAdjustment>("create_supplier_adjustment", { supplierId, input }),
+  deleteAdjustment: (supplierId: string, id: string) =>
+    apiCall<void>("delete_supplier_adjustment", { supplierId, id }),
+};
+
+// Supplier return commands
+export const supplierReturnApi = {
+  getPage: (p: CursorPageParams) =>
+    apiCall<CursorPage<SupplierReturn>>("get_supplier_returns", pageArgs(p)),
+  getForOrder: (purchaseOrderId: string) =>
+    apiCall<SupplierReturn[]>("get_supplier_returns", { purchaseOrderId }),
+  getById: (id: string) => apiCall<SupplierReturn>("get_supplier_return", { id }),
+  create: (input: CreateSupplierReturnInput) => apiCall<SupplierReturn>("create_supplier_return", { input }),
+  delete: (id: string) => apiCall<void>("delete_supplier_return", { id }),
 };
 
 // Dashboard commands
@@ -607,6 +638,7 @@ export const locationsApi = {
 
 export const stockTransfersApi = {
   getAll: () => apiCall<Record<string, unknown>[]>("get_stock_transfers"),
+  getById: (id: string) => apiCall<Record<string, unknown>>("get_stock_transfer", { id }),
   create: (input: {
     from_location_id: string;
     to_location_id: string;

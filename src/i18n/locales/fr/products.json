@@ -187,7 +187,10 @@
       "sale": "Vente",
       "purchase": "Achat",
       "adjustment": "Ajustement",
-      "return": "Retour"
+      "return": "Retour",
+      "transfer_in": "Transfert entrant",
+      "transfer_out": "Transfert sortant",
+      "supplier_return": "Retour fournisseur"
     }
   },
   "lowStock": {

@@ -10,8 +10,9 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   if (denied) return denied;
   const ids = await validateBody(req, batchDeleteSchema);
   if (isValidationError(ids)) return ids;
+  // Orders carrying a payment (an advance) are skipped: cancel them instead.
   const result = await prisma.purchaseOrder.deleteMany({
-    where: { tenantId, id: { in: ids }, status: "PENDING" },
+    where: { tenantId, id: { in: ids }, status: "PENDING", payments: { none: {} } },
   });
   return NextResponse.json(result.count);
 });

@@ -440,7 +440,11 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   },
 
   // Purchase Orders
-  get_purchases: { method: "GET", path: "/api/purchases", query: listQuery() },
+  get_purchases: {
+    method: "GET",
+    path: "/api/purchases",
+    query: listQuery((a): Record<string, string> => (a.supplierId ? { supplier_id: String(a.supplierId) } : {})),
+  },
   get_purchase: { method: "GET", path: (a) => `/api/purchases/${a.id}` },
   create_purchase: { method: "POST", path: "/api/purchases", body: (a) => a.input },
   update_purchase: {
@@ -478,6 +482,41 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     path: (a) => `/api/suppliers/${a.supplierId}/payments`,
     body: (a) => a.input,
   },
+  get_supplier_balances: { method: "GET", path: "/api/suppliers/balances" },
+  get_supplier_statement: {
+    method: "GET",
+    path: (a) => `/api/suppliers/${a.supplierId}/statement`,
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.startDate) q.startDate = String(a.startDate);
+      if (a.endDate) q.endDate = String(a.endDate);
+      return q;
+    },
+  },
+  create_supplier_adjustment: {
+    method: "POST",
+    path: (a) => `/api/suppliers/${a.supplierId}/adjustments`,
+    body: (a) => a.input,
+  },
+  delete_supplier_adjustment: {
+    method: "DELETE",
+    path: (a) => `/api/suppliers/${a.supplierId}/adjustments/${a.id}`,
+  },
+
+  // Supplier returns
+  get_supplier_returns: {
+    method: "GET",
+    path: "/api/supplier-returns",
+    query: listQuery((a) => {
+      const q: Record<string, string> = {};
+      if (a.supplierId) q.supplier_id = String(a.supplierId);
+      if (a.purchaseOrderId) q.purchase_order_id = String(a.purchaseOrderId);
+      return q;
+    }),
+  },
+  get_supplier_return: { method: "GET", path: (a) => `/api/supplier-returns/${a.id}` },
+  create_supplier_return: { method: "POST", path: "/api/supplier-returns", body: (a) => a.input },
+  delete_supplier_return: { method: "DELETE", path: (a) => `/api/supplier-returns/${a.id}` },
 
   // Delivery Notes
   get_delivery_notes: { method: "GET", path: "/api/delivery-notes", query: listQuery() },
@@ -785,6 +824,7 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
 
   // Stock transfers
   get_stock_transfers: { method: "GET", path: "/api/stock-transfers" },
+  get_stock_transfer: { method: "GET", path: (a) => `/api/stock-transfers/${a.id}` },
   create_stock_transfer: {
     method: "POST",
     path: "/api/stock-transfers",

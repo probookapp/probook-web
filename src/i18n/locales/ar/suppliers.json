@@ -16,7 +16,11 @@
     "email": "البريد الإلكتروني",
     "phone": "الهاتف",
     "address": "العنوان",
-    "notes": "ملاحظات"
+    "notes": "ملاحظات",
+    "balance": "الرصيد",
+    "openingBalance": "الرصيد الافتتاحي",
+    "openingBalanceHint": "ما كان بينك وبين هذا المورد قبل استخدام التطبيق.",
+    "openingDirection": "اتجاه الرصيد الافتتاحي"
   },
   "products": {
     "title": "المنتجات المرتبطة",
@@ -29,7 +33,8 @@
   },
   "validation": {
     "nameRequired": "اسم المورد مطلوب",
-    "emailInvalid": "يرجى إدخال عنوان بريد إلكتروني صالح"
+    "emailInvalid": "يرجى إدخال عنوان بريد إلكتروني صالح",
+    "amountInvalid": "يرجى إدخال مبلغ صحيح"
   },
   "messages": {
     "created": "تم إنشاء المورد بنجاح",
@@ -38,16 +43,16 @@
     "updateError": "فشل في تحديث المورد",
     "deleted": "تم حذف المورد بنجاح",
     "deleteError": "فشل في حذف المورد",
-    "deleteBlocked": "لا يمكن حذف مورد لديه طلبات شراء",
+    "deleteBlocked": "لا يمكن حذف مورد لديه أوامر شراء أو مدفوعات أو تسويات أو مرتجعات",
     "productLinked": "تم ربط المنتج بنجاح",
     "productLinkError": "فشل في ربط المنتج",
     "productUnlinked": "تم إلغاء ربط المنتج بنجاح",
     "productUnlinkError": "فشل في إلغاء ربط المنتج"
   },
   "credits": {
-    "title": "ائتمانات المورد",
-    "totalOwed": "إجمالي المستحق",
-    "totalPaid": "إجمالي المدفوع",
+    "title": "حساب المورد",
+    "totalOwed": "المشتريات المستلمة",
+    "totalPaid": "المدفوع",
     "balance": "الرصيد",
     "noBalance": "لا يوجد رصيد مستحق",
     "unpaidOrders": "أوامر الشراء غير المدفوعة",
@@ -65,7 +70,7 @@
     "paymentReference": "المرجع",
     "paymentNotes": "ملاحظات",
     "linkToOrder": "ربط بأمر شراء (اختياري)",
-    "noLink": "دفعة عامة",
+    "noLink": "دفعة على الحساب (بدون أمر شراء)",
     "methods": {
       "CASH": "نقدي",
       "BANK_TRANSFER": "تحويل بنكي",
@@ -73,6 +78,71 @@
       "OTHER": "أخرى"
     },
     "paymentRecorded": "تم تسجيل الدفعة بنجاح",
-    "paymentError": "فشل في تسجيل الدفعة"
+    "paymentError": "فشل في تسجيل الدفعة",
+    "settled": "المسدد",
+    "settledDetail": "منها {{amount}} مرتجعات",
+    "openingAndAdjustments": "الرصيد الافتتاحي والتسويات: {{amount}}",
+    "youOwe": "أنت مدين",
+    "inYourFavour": "رصيد لصالحك",
+    "settledUp": "الحساب مسدد",
+    "remaining": "المتبقي للدفع",
+    "adjust": "تسوية الرصيد",
+    "returnGoods": "إرجاع بضاعة",
+    "viewStatement": "كشف الحساب",
+    "fromRegister": "الصندوق",
+    "onAccount": "دفعة على الحساب",
+    "onAccountHint": "بدون أمر شراء، تذهب الدفعة إلى حساب المورد: تخفض ما تدين به له، أو تصبح رصيدا لصالحك.",
+    "overpayError": "المبلغ يتجاوز المتبقي للدفع على هذا الأمر ({{amount}})",
+    "creditShort": "رصيد لك"
+  },
+  "direction": {
+    "owe": "أنا مدين له",
+    "credit": "هو مدين لي (رصيد لصالحي)"
+  },
+  "adjustment": {
+    "title": "تسوية الرصيد",
+    "direction": "الاتجاه",
+    "increase": "أنا مدين للمورد بأكثر",
+    "decrease": "أنا مدين له بأقل (رصيد لصالحي)",
+    "amount": "المبلغ",
+    "date": "التاريخ",
+    "reason": "السبب",
+    "reasonPlaceholder": "مثلا: خصم ممنوح، خطأ في الفاتورة، دين قديم…",
+    "reasonRequired": "اذكر سبب التسوية",
+    "save": "حفظ التسوية",
+    "saved": "تم حفظ التسوية",
+    "error": "خطأ أثناء حفظ التسوية",
+    "deleteTitle": "حذف التسوية",
+    "deleteConfirm": "سيتم حذف هذه التسوية من حساب المورد.",
+    "deleted": "تم حذف التسوية"
+  },
+  "statement": {
+    "title": "كشف حساب المورد",
+    "startDate": "من",
+    "endDate": "إلى",
+    "from": "من",
+    "to": "إلى",
+    "openingBalance": "الرصيد الافتتاحي",
+    "closingBalance": "الرصيد الختامي",
+    "totalDebit": "إجمالي المستحق",
+    "totalCredit": "إجمالي المسدد",
+    "noEntries": "لا توجد حركات في هذه الفترة",
+    "exportPdf": "تصدير PDF",
+    "exportError": "خطأ أثناء تصدير الكشف",
+    "types": {
+      "opening": "الرصيد الافتتاحي",
+      "order": "شراء",
+      "adjustment": "تسوية",
+      "payment": "دفعة",
+      "return": "إرجاع"
+    },
+    "columns": {
+      "date": "التاريخ",
+      "type": "النوع",
+      "reference": "المرجع",
+      "debit": "المستحق",
+      "credit": "المسدد",
+      "balance": "الرصيد"
+    }
   }
 }

@@ -16,7 +16,11 @@
     "email": "Email",
     "phone": "Phone",
     "address": "Address",
-    "notes": "Notes"
+    "notes": "Notes",
+    "balance": "Balance",
+    "openingBalance": "Opening balance",
+    "openingBalanceHint": "What stood between you and this supplier before you used the app.",
+    "openingDirection": "Opening balance direction"
   },
   "products": {
     "title": "Linked Products",
@@ -29,7 +33,8 @@
   },
   "validation": {
     "nameRequired": "Supplier name is required",
-    "emailInvalid": "Please enter a valid email address"
+    "emailInvalid": "Please enter a valid email address",
+    "amountInvalid": "Please enter a valid amount"
   },
   "messages": {
     "created": "Supplier created successfully",
@@ -38,16 +43,16 @@
     "updateError": "Failed to update supplier",
     "deleted": "Supplier deleted successfully",
     "deleteError": "Failed to delete supplier",
-    "deleteBlocked": "Cannot delete supplier with existing purchase orders",
+    "deleteBlocked": "Cannot delete a supplier that has purchase orders, payments, adjustments or returns",
     "productLinked": "Product linked successfully",
     "productLinkError": "Failed to link product",
     "productUnlinked": "Product unlinked successfully",
     "productUnlinkError": "Failed to unlink product"
   },
   "credits": {
-    "title": "Supplier Credits",
-    "totalOwed": "Total Owed",
-    "totalPaid": "Total Paid",
+    "title": "Supplier account",
+    "totalOwed": "Goods received",
+    "totalPaid": "Paid",
     "balance": "Balance",
     "noBalance": "No outstanding balance",
     "unpaidOrders": "Unpaid Purchase Orders",
@@ -65,7 +70,7 @@
     "paymentReference": "Reference",
     "paymentNotes": "Notes",
     "linkToOrder": "Link to purchase order (optional)",
-    "noLink": "General payment",
+    "noLink": "On account (no purchase order)",
     "methods": {
       "CASH": "Cash",
       "BANK_TRANSFER": "Bank Transfer",
@@ -73,6 +78,71 @@
       "OTHER": "Other"
     },
     "paymentRecorded": "Payment recorded successfully",
-    "paymentError": "Failed to record payment"
+    "paymentError": "Failed to record payment",
+    "settled": "Settled",
+    "settledDetail": "of which {{amount}} in returns",
+    "openingAndAdjustments": "Opening balance and adjustments: {{amount}}",
+    "youOwe": "You owe",
+    "inYourFavour": "Credit in your favour",
+    "settledUp": "Account settled",
+    "remaining": "Left to pay",
+    "adjust": "Adjust balance",
+    "returnGoods": "Return goods",
+    "viewStatement": "Account statement",
+    "fromRegister": "Till",
+    "onAccount": "Payment on account",
+    "onAccountHint": "Without a purchase order, the payment goes to the supplier's account: it reduces what you owe, or becomes credit in your favour.",
+    "overpayError": "The amount is more than what is left to pay on this order ({{amount}})",
+    "creditShort": "credit"
+  },
+  "direction": {
+    "owe": "I owe them",
+    "credit": "They owe me (credit in my favour)"
+  },
+  "adjustment": {
+    "title": "Adjust balance",
+    "direction": "Direction",
+    "increase": "I owe the supplier more",
+    "decrease": "I owe them less (credit in my favour)",
+    "amount": "Amount",
+    "date": "Date",
+    "reason": "Reason",
+    "reasonPlaceholder": "E.g. discount granted, invoice error, old debt…",
+    "reasonRequired": "Give a reason for the adjustment",
+    "save": "Save adjustment",
+    "saved": "Adjustment saved",
+    "error": "Error saving the adjustment",
+    "deleteTitle": "Delete adjustment",
+    "deleteConfirm": "This adjustment will be removed from the supplier's account.",
+    "deleted": "Adjustment deleted"
+  },
+  "statement": {
+    "title": "Supplier statement",
+    "startDate": "From",
+    "endDate": "To",
+    "from": "From",
+    "to": "To",
+    "openingBalance": "Opening balance",
+    "closingBalance": "Closing balance",
+    "totalDebit": "Total owed",
+    "totalCredit": "Total settled",
+    "noEntries": "No entries for this period",
+    "exportPdf": "Export PDF",
+    "exportError": "Error exporting the statement",
+    "types": {
+      "opening": "Opening balance",
+      "order": "Purchase",
+      "adjustment": "Adjustment",
+      "payment": "Payment",
+      "return": "Return"
+    },
+    "columns": {
+      "date": "Date",
+      "type": "Type",
+      "reference": "Reference",
+      "debit": "Owed",
+      "credit": "Settled",
+      "balance": "Balance"
+    }
   }
 }

@@ -222,6 +222,35 @@ export const supplierPaymentSchema = z.object({
   notes: optionalString,
 });
 
+// Signed like the supplier balance: positive adds to what the business owes,
+// negative is credit in its favour.
+const signedMoney = z.coerce.number().min(-MONEY_MAX, "Value is too large").max(MONEY_MAX, "Value is too large");
+
+export const supplierAdjustmentSchema = z.object({
+  amount: signedMoney.refine((v) => Math.abs(v) >= 0.01, "Amount must not be zero"),
+  adjustment_date: requiredString("Adjustment date"),
+  reason: requiredString("Reason").max(500),
+});
+
+const supplierReturnLineSchema = z.object({
+  product_id: requiredString("Product ID"),
+  variant_id: optionalString,
+  purchase_order_line_id: optionalString,
+  quantity: z.coerce.number().min(0.01, "Quantity must be positive"),
+  unit_price: positiveNumber,
+  tax_rate: z.coerce.number().min(0).max(100).default(0),
+});
+
+export const supplierReturnSchema = z.object({
+  supplier_id: requiredString("Supplier ID"),
+  purchase_order_id: optionalString,
+  location_id: optionalString,
+  return_date: requiredString("Return date"),
+  reason: optionalString,
+  notes: optionalString,
+  lines: z.array(supplierReturnLineSchema).min(1, "At least one line is required"),
+});
+
 // ─── Categories ─────────────────────────────────────────────────────────────
 
 export const categorySchema = z.object({
@@ -252,6 +281,9 @@ export const supplierSchema = z.object({
   phone: optionalString,
   address: optionalString,
   notes: optionalString,
+  // Positive when the business owed the supplier before using the app,
+  // negative when the supplier owed the business. Omitted keeps the stored one.
+  opening_balance: signedMoney.optional(),
 });
 
 // ─── Product Suppliers ──────────────────────────────────────────────────────
@@ -980,6 +1012,8 @@ export const importBackupSchema = z.object({
   credit_notes: z.array(z.any()).optional(),
   purchase_orders: z.array(z.any()).optional(),
   supplier_payments: z.array(z.any()).optional(),
+  supplier_adjustments: z.array(z.any()).optional(),
+  supplier_returns: z.array(z.any()).optional(),
   stock_levels: z.array(z.any()).optional(),
   stock_movements: z.array(z.any()).optional(),
   stock_transfers: z.array(z.any()).optional(),

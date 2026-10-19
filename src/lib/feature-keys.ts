@@ -63,6 +63,7 @@ const GATED_PREFIXES: ReadonlyArray<readonly [string, FeatureKey]> = [
   ["/api/pos", FEATURE_KEYS.POS],
   ["/api/purchases", FEATURE_KEYS.PURCHASING],
   ["/api/suppliers", FEATURE_KEYS.PURCHASING],
+  ["/api/supplier-returns", FEATURE_KEYS.PURCHASING],
   ["/api/product-suppliers", FEATURE_KEYS.PURCHASING],
   ["/api/delivery-notes", FEATURE_KEYS.DELIVERY_NOTES],
   ["/api/expenses", FEATURE_KEYS.EXPENSES],

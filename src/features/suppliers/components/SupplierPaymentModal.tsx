@@ -9,14 +9,16 @@ import {
 } from "@/components/ui";
 import { supplierCreditApi } from "@/lib/api";
 import { useToastStore } from "@/stores/useToastStore";
-import { formatDateISO } from "@/lib/utils";
-import type { PurchaseOrder, CreateSupplierPaymentInput } from "@/types";
+import { formatCurrency, formatDateISO } from "@/lib/utils";
+import { isApiError } from "@/lib/api-adapter";
+import { invalidateSupplierAccount } from "../hooks/useSupplierAccount";
+import type { SupplierUnpaidOrder, CreateSupplierPaymentInput } from "@/types";
 
 interface SupplierPaymentModalProps {
   open: boolean;
   onClose: () => void;
   supplierId: string;
-  unpaidOrders: PurchaseOrder[];
+  unpaidOrders: SupplierUnpaidOrder[];
 }
 
 const PAYMENT_METHODS = ["CASH", "BANK_TRANSFER", "CHECK", "OTHER"] as const;
@@ -43,14 +45,21 @@ export function SupplierPaymentModal({
     mutationFn: (input: CreateSupplierPaymentInput) =>
       supplierCreditApi.createPayment(supplierId, input),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["supplier-credits", supplierId] });
-      queryClient.invalidateQueries({ queryKey: ["supplier-payments", supplierId] });
+      invalidateSupplierAccount(queryClient);
       queryClient.invalidateQueries({ queryKey: ["purchases"] });
       addToast({ type: "success", message: t("credits.paymentRecorded") });
       handleClose();
     },
-    onError: () => {
-      addToast({ type: "error", message: t("credits.paymentError") });
+    onError: (err) => {
+      // More than is left on the order: say how much is left.
+      const order = unpaidOrders.find((o) => o.id === purchaseOrderId);
+      addToast({
+        type: "error",
+        message:
+          isApiError(err, 400) && order
+            ? t("credits.overpayError", { amount: formatCurrency(order.remaining) })
+            : t("credits.paymentError"),
+      });
     },
   });
 
@@ -156,7 +165,8 @@ export function SupplierPaymentModal({
                 if (orderId) {
                   const order = unpaidOrders.find((o) => o.id === orderId);
                   if (order) {
-                    setAmount(order.total.toFixed(2));
+                    // What is left on it, not its total: part may be paid already.
+                    setAmount(String(Math.round(order.remaining * 100) / 100));
                   }
                 }
               }}
@@ -165,12 +175,16 @@ export function SupplierPaymentModal({
               <option value="">{t("credits.noLink")}</option>
               {unpaidOrders.map((order) => (
                 <option key={order.id} value={order.id}>
-                  {order.order_number} - {order.total.toFixed(2)}
+                  {order.order_number} - {formatCurrency(order.remaining)}
                 </option>
               ))}
             </select>
           </div>
         </div>
+
+        {!purchaseOrderId && (
+          <p className="text-xs text-(--color-text-secondary)">{t("credits.onAccountHint")}</p>
+        )}
 
         <Input
           label={t("credits.paymentReference")}

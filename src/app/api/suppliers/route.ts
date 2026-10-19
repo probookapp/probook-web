@@ -46,6 +46,7 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       phone: body.phone || null,
       address: body.address || null,
       notes: body.notes || null,
+      openingBalance: body.opening_balance ?? 0,
     },
   });
   return NextResponse.json(toSnakeCase(supplier));

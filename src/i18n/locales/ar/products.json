@@ -187,7 +187,10 @@
       "sale": "بيع",
       "purchase": "شراء",
       "adjustment": "تعديل",
-      "return": "إرجاع"
+      "return": "إرجاع",
+      "transfer_in": "تحويل وارد",
+      "transfer_out": "تحويل صادر",
+      "supplier_return": "إرجاع إلى المورد"
     }
   },
   "lowStock": {

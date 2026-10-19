@@ -14,6 +14,7 @@ import {
   TableRow,
   TableHead,
   TableCell,
+  TableNumericCell,
   Input,
   PageHeader,
   RowActions,
@@ -28,6 +29,8 @@ import { useTableColumns } from "@/hooks/useTableColumns";
 import { SupplierForm } from "./components/SupplierForm";
 import { SupplierProducts } from "./components/SupplierProducts";
 import { SupplierCredits } from "./components/SupplierCredits";
+import { SupplierBalanceAmount } from "./components/SupplierBalanceAmount";
+import { useSupplierBalances } from "./hooks/useSupplierAccount";
 import { ImportDialog } from "@/components/shared/ImportDialog";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { isApiError } from "@/lib/api-adapter";
@@ -75,6 +78,7 @@ export function SuppliersPage() {
   const updateSupplier = useUpdateSupplier();
   const deleteSupplier = useDeleteSupplier();
   const batchDeleteSuppliers = useBatchDeleteSuppliers();
+  const { data: balances } = useSupplierBalances();
 
   // Search filters client-side within the loaded pages (the route has no
   // server-side search filter).
@@ -101,6 +105,7 @@ export function SuppliersPage() {
       { key: "email", label: t("fields.email"), isEmpty: (s) => !s.email },
       { key: "phone", label: t("fields.phone"), isEmpty: (s) => !s.phone },
       { key: "address", label: t("fields.address"), isEmpty: (s) => !s.address },
+      { key: "balance", label: t("fields.balance"), isEmpty: (s) => !balances?.get(s.id) },
       { key: "actions", label: "", hideable: false },
     ],
     filteredSuppliers
@@ -125,6 +130,8 @@ export function SuppliersPage() {
       phone: data.phone || null,
       address: data.address || null,
       notes: data.notes || null,
+      opening_balance:
+        (Number(data.opening_amount) || 0) * (data.opening_direction === "credit" ? -1 : 1),
     };
 
     try {
@@ -257,6 +264,11 @@ export function SuppliersPage() {
                   }
                   title={supplier.name}
                   meta={[supplier.phone, supplier.email, supplier.address].filter(Boolean).join(" · ")}
+                  amount={
+                    balances?.get(supplier.id) ? (
+                      <SupplierBalanceAmount balance={balances.get(supplier.id)!} />
+                    ) : undefined
+                  }
                   actions={<RowActions actions={supplierActions(supplier)} />}
                 />
               ))
@@ -284,6 +296,7 @@ export function SuppliersPage() {
                 {columns.show("email") && <TableHead>{t("fields.email")}</TableHead>}
                 {columns.show("phone") && <TableHead>{t("fields.phone")}</TableHead>}
                 {columns.show("address") && <TableHead>{t("fields.address")}</TableHead>}
+                {columns.show("balance") && <TableHead className="text-end">{t("fields.balance")}</TableHead>}
                 <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
               </TableRow>
             </TableHeader>
@@ -308,6 +321,11 @@ export function SuppliersPage() {
                     {columns.show("email") && <TableCell className="text-gray-600 dark:text-gray-400">{supplier.email || "-"}</TableCell>}
                     {columns.show("phone") && <TableCell className="text-gray-600 dark:text-gray-400">{supplier.phone || "-"}</TableCell>}
                     {columns.show("address") && <TableCell className="text-gray-600 dark:text-gray-400">{supplier.address || "-"}</TableCell>}
+                    {columns.show("balance") && (
+                      <TableNumericCell className="font-medium whitespace-nowrap">
+                        <SupplierBalanceAmount balance={balances?.get(supplier.id) ?? 0} />
+                      </TableNumericCell>
+                    )}
                     <TableCell>
                       <RowActions actions={supplierActions(supplier)} />
                     </TableCell>
@@ -361,7 +379,7 @@ export function SuppliersPage() {
         title={tCommon("messages.confirmDelete")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("deleteConfirmation")}
         </p>
         <div className="flex justify-end gap-3">
@@ -393,7 +411,7 @@ export function SuppliersPage() {
         isOpen={!!creditsSupplier}
         onClose={() => setCreditsSupplier(null)}
         title={creditsSupplier ? `${t("credits.title")} - ${creditsSupplier.name}` : t("credits.title")}
-        size="lg"
+        size="xl"
       >
         {creditsSupplier && <SupplierCredits supplier={creditsSupplier} />}
       </Modal>

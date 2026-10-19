@@ -17,6 +17,7 @@ function typeVariant(type: StockMovementType): "success" | "danger" | "warning" 
     case "initial":
       return "success";
     case "sale":
+    case "supplier_return":
       return "danger";
     case "adjustment":
       return "warning";
@@ -33,7 +34,7 @@ export function StockMovementsModal({ isOpen, onClose, product }: StockMovements
     <Modal isOpen={isOpen} onClose={onClose} title={t("movements.title")} size="lg">
       <div className="space-y-3">
         {product && (
-          <p className="text-sm text-gray-600 dark:text-gray-400">{product.designation}</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 wrap-anywhere">{product.designation}</p>
         )}
 
         {isLoading ? (
@@ -49,10 +50,10 @@ export function StockMovementsModal({ isOpen, onClose, product }: StockMovements
             {movements.map((m) => (
               <div key={m.id} className="flex items-center gap-3 py-2.5">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                     <Badge variant={typeVariant(m.type)}>{t(`movements.types.${m.type}`)}</Badge>
                     {m.variant_name && (
-                      <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <span className="min-w-0 text-xs text-gray-500 dark:text-gray-400 wrap-anywhere">
                         {m.variant_name}
                       </span>
                     )}

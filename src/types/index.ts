@@ -267,7 +267,15 @@ export interface ConfirmPurchaseOrderInput {
 }
 
 // Inventory / stock ledger types
-export type StockMovementType = "initial" | "sale" | "purchase" | "adjustment" | "return";
+export type StockMovementType =
+  | "initial"
+  | "sale"
+  | "purchase"
+  | "adjustment"
+  | "return"
+  | "transfer_in"
+  | "transfer_out"
+  | "supplier_return";
 
 export interface StockMovement {
   id: string;
@@ -359,6 +367,9 @@ export interface SupplierPayment {
   payment_method: string;
   reference: string | null;
   notes: string | null;
+  /** Cash taken from a till when the goods were received. */
+  from_register: boolean;
+  purchase_order?: { id: string; order_number: string } | null;
   created_at: string;
 }
 
@@ -371,13 +382,129 @@ export interface CreateSupplierPaymentInput {
   notes?: string | null;
 }
 
+/** A received order not fully settled yet, with what is left on it. */
+export interface SupplierUnpaidOrder {
+  id: string;
+  order_number: string;
+  order_date: string;
+  status: string;
+  payment_status: string;
+  total: number;
+  amount_settled: number;
+  remaining: number;
+}
+
+/**
+ * The supplier's account. One sign throughout: balance > 0 is what the
+ * business owes, balance < 0 is credit the supplier holds for it.
+ */
 export interface SupplierCreditSummary {
   supplier_id: string;
   supplier_name: string;
+  opening_balance: number;
   total_owed: number;
+  total_adjustments: number;
   total_paid: number;
+  total_returned: number;
   balance: number;
-  unpaid_orders: PurchaseOrder[];
+  unpaid_orders: SupplierUnpaidOrder[];
+}
+
+export interface SupplierBalance {
+  supplier_id: string;
+  balance: number;
+}
+
+export interface SupplierAdjustment {
+  id: string;
+  supplier_id: string;
+  /** Positive adds to what the business owes, negative is credit in its favour. */
+  amount: number;
+  adjustment_date: string;
+  reason: string;
+  created_at: string;
+}
+
+export interface CreateSupplierAdjustmentInput {
+  amount: number;
+  adjustment_date: string;
+  reason: string;
+}
+
+export type SupplierLedgerType = "opening" | "order" | "adjustment" | "payment" | "return";
+
+export interface SupplierStatementEntry {
+  date: string;
+  type: SupplierLedgerType;
+  reference: string;
+  label: string | null;
+  record_id: string | null;
+  debit: number;
+  credit: number;
+  running_balance: number;
+}
+
+export interface SupplierStatement {
+  supplier: { id: string; name: string };
+  start_date: string | null;
+  end_date: string | null;
+  opening_balance: number;
+  entries: SupplierStatementEntry[];
+  totals: { total_debit: number; total_credit: number; closing_balance: number };
+}
+
+// Supplier return (goods sent back, kept by the supplier as credit)
+export interface SupplierReturnLine {
+  id: string;
+  return_id: string;
+  purchase_order_line_id: string | null;
+  product_id: string;
+  variant_id: string | null;
+  quantity: number;
+  unit_price: number;
+  tax_rate: number;
+  subtotal: number;
+  tax_amount: number;
+  total: number;
+  product?: Product;
+  variant?: ProductVariant | null;
+}
+
+export interface SupplierReturn {
+  id: string;
+  return_number: string;
+  supplier_id: string;
+  purchase_order_id: string | null;
+  location_id: string | null;
+  return_date: string;
+  reason: string | null;
+  notes: string | null;
+  subtotal: number;
+  tax_amount: number;
+  total: number;
+  created_at: string;
+  updated_at: string;
+  supplier?: Pick<Supplier, "id" | "name"> & Partial<Supplier>;
+  purchase_order?: { id: string; order_number: string } | null;
+  location?: { id: string; name: string } | null;
+  lines?: SupplierReturnLine[];
+}
+
+export interface CreateSupplierReturnInput {
+  supplier_id: string;
+  purchase_order_id?: string | null;
+  location_id?: string | null;
+  return_date: string;
+  reason?: string | null;
+  notes?: string | null;
+  lines: {
+    product_id: string;
+    variant_id?: string | null;
+    purchase_order_line_id?: string | null;
+    quantity: number;
+    unit_price: number;
+    tax_rate: number;
+  }[];
 }
 
 // Tag types
@@ -791,6 +918,8 @@ export interface Supplier {
   phone: string | null;
   address: string | null;
   notes: string | null;
+  /** Owed before the app: positive = the business owed them, negative = they owed it. */
+  opening_balance: number;
   created_at: string;
   updated_at: string;
 }
@@ -801,6 +930,7 @@ export interface CreateSupplierInput {
   phone?: string | null;
   address?: string | null;
   notes?: string | null;
+  opening_balance?: number;
 }
 
 export interface UpdateSupplierInput extends CreateSupplierInput {

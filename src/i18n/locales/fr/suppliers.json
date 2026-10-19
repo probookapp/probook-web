@@ -16,7 +16,11 @@
     "email": "Email",
     "phone": "Téléphone",
     "address": "Adresse",
-    "notes": "Notes"
+    "notes": "Notes",
+    "balance": "Solde",
+    "openingBalance": "Solde initial",
+    "openingBalanceHint": "Ce qui restait entre vous et ce fournisseur avant d'utiliser l'application.",
+    "openingDirection": "Sens du solde initial"
   },
   "products": {
     "title": "Produits liés",
@@ -29,7 +33,8 @@
   },
   "validation": {
     "nameRequired": "Le nom du fournisseur est requis",
-    "emailInvalid": "Veuillez entrer une adresse email valide"
+    "emailInvalid": "Veuillez entrer une adresse email valide",
+    "amountInvalid": "Veuillez entrer un montant valide"
   },
   "messages": {
     "created": "Fournisseur créé avec succès",
@@ -38,16 +43,16 @@
     "updateError": "Erreur lors de la mise à jour du fournisseur",
     "deleted": "Fournisseur supprimé avec succès",
     "deleteError": "Erreur lors de la suppression du fournisseur",
-    "deleteBlocked": "Impossible de supprimer un fournisseur ayant des bons de commande",
+    "deleteBlocked": "Impossible de supprimer un fournisseur qui a des bons de commande, des paiements, des ajustements ou des retours",
     "productLinked": "Produit lié avec succès",
     "productLinkError": "Erreur lors de la liaison du produit",
     "productUnlinked": "Produit délié avec succès",
     "productUnlinkError": "Erreur lors de la suppression du lien"
   },
   "credits": {
-    "title": "Crédits fournisseur",
-    "totalOwed": "Total dû",
-    "totalPaid": "Total payé",
+    "title": "Compte fournisseur",
+    "totalOwed": "Achats reçus",
+    "totalPaid": "Payé",
     "balance": "Solde",
     "noBalance": "Aucun solde en cours",
     "unpaidOrders": "Bons de commande impayés",
@@ -65,7 +70,7 @@
     "paymentReference": "Référence",
     "paymentNotes": "Notes",
     "linkToOrder": "Lier à un bon de commande (optionnel)",
-    "noLink": "Paiement général",
+    "noLink": "Versement au compte (sans bon de commande)",
     "methods": {
       "CASH": "Espèces",
       "BANK_TRANSFER": "Virement bancaire",
@@ -73,6 +78,71 @@
       "OTHER": "Autre"
     },
     "paymentRecorded": "Paiement enregistré avec succès",
-    "paymentError": "Erreur lors de l'enregistrement du paiement"
+    "paymentError": "Erreur lors de l'enregistrement du paiement",
+    "settled": "Réglé",
+    "settledDetail": "dont {{amount}} en retours",
+    "openingAndAdjustments": "Solde initial et ajustements : {{amount}}",
+    "youOwe": "Vous devez",
+    "inYourFavour": "Crédit en votre faveur",
+    "settledUp": "Compte soldé",
+    "remaining": "Reste à payer",
+    "adjust": "Ajuster le solde",
+    "returnGoods": "Retour de marchandise",
+    "viewStatement": "Relevé de compte",
+    "fromRegister": "Caisse",
+    "onAccount": "Versement au compte",
+    "onAccountHint": "Sans bon de commande, le paiement va au compte du fournisseur : il réduit ce que vous lui devez, ou devient un crédit en votre faveur.",
+    "overpayError": "Le montant dépasse le reste à payer de ce bon ({{amount}})",
+    "creditShort": "crédit"
+  },
+  "direction": {
+    "owe": "Je lui dois",
+    "credit": "Il me doit (crédit en ma faveur)"
+  },
+  "adjustment": {
+    "title": "Ajuster le solde",
+    "direction": "Sens",
+    "increase": "J'en dois plus au fournisseur",
+    "decrease": "Je lui dois moins (crédit en ma faveur)",
+    "amount": "Montant",
+    "date": "Date",
+    "reason": "Motif",
+    "reasonPlaceholder": "Ex. remise accordée, erreur de facture, ancienne dette…",
+    "reasonRequired": "Indiquez le motif de l'ajustement",
+    "save": "Enregistrer l'ajustement",
+    "saved": "Ajustement enregistré",
+    "error": "Erreur lors de l'enregistrement de l'ajustement",
+    "deleteTitle": "Supprimer l'ajustement",
+    "deleteConfirm": "Cet ajustement sera retiré du compte du fournisseur.",
+    "deleted": "Ajustement supprimé"
+  },
+  "statement": {
+    "title": "Relevé fournisseur",
+    "startDate": "Du",
+    "endDate": "Au",
+    "from": "Du",
+    "to": "Au",
+    "openingBalance": "Solde à l'ouverture",
+    "closingBalance": "Solde final",
+    "totalDebit": "Total dû",
+    "totalCredit": "Total réglé",
+    "noEntries": "Aucun mouvement sur cette période",
+    "exportPdf": "Exporter en PDF",
+    "exportError": "Erreur lors de l'export du relevé",
+    "types": {
+      "opening": "Solde initial",
+      "order": "Achat",
+      "adjustment": "Ajustement",
+      "payment": "Paiement",
+      "return": "Retour"
+    },
+    "columns": {
+      "date": "Date",
+      "type": "Type",
+      "reference": "Référence",
+      "debit": "Dû",
+      "credit": "Réglé",
+      "balance": "Solde"
+    }
   }
 }

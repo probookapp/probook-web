@@ -11,13 +11,16 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   const ids = await validateBody(req, batchDeleteSchema);
   if (isValidationError(ids)) return ids;
 
-  // Exclude suppliers that have purchase orders
-  const suppliersWithOrders = await prisma.purchaseOrder.findMany({
-    where: { tenantId, supplierId: { in: ids } },
-    select: { supplierId: true },
-    distinct: ["supplierId"],
-  });
-  const blockedIds = new Set(suppliersWithOrders.map((s) => s.supplierId));
+  // Exclude suppliers that have purchase orders or an account history
+  // (payments, adjustments, returns).
+  const scope = { where: { tenantId, supplierId: { in: ids } }, select: { supplierId: true }, distinct: ["supplierId" as const] };
+  const blocked = await Promise.all([
+    prisma.purchaseOrder.findMany(scope),
+    prisma.supplierPayment.findMany(scope),
+    prisma.supplierAdjustment.findMany(scope),
+    prisma.supplierReturn.findMany(scope),
+  ]);
+  const blockedIds = new Set(blocked.flat().map((s) => s.supplierId));
   const deletableIds = ids.filter((id: string) => !blockedIds.has(id));
 
   if (deletableIds.length === 0 && blockedIds.size > 0) {

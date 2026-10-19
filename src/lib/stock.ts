@@ -17,7 +17,8 @@ export type StockMovementType =
   | "adjustment"
   | "return"
   | "transfer_in"
-  | "transfer_out";
+  | "transfer_out"
+  | "supplier_return";
 
 type Db = Prisma.TransactionClient | typeof prisma;
 

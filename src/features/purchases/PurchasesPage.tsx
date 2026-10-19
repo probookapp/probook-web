@@ -8,6 +8,7 @@ import {
   CheckCircle,
   XCircle,
   Eye,
+  PackageMinus,
 } from "lucide-react";
 import {
   Button,
@@ -251,6 +252,14 @@ export function PurchasesPage() {
       <PageHeader
         title={t("title")}
         subtitle={t("subtitle")}
+        secondaryActions={[
+          {
+            key: "returns",
+            label: t("returns.title"),
+            icon: PackageMinus,
+            onSelect: () => router.push("/purchases/returns"),
+          },
+        ]}
         primaryAction={canCreate ? { label: t("newPurchase"), icon: Plus, onClick: () => openForm() } : undefined}
       />
 
@@ -452,7 +461,7 @@ export function PurchasesPage() {
         title={tCommon("messages.confirmDelete")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("deleteConfirmation")}
         </p>
         <div className="flex justify-end gap-3">
@@ -479,7 +488,7 @@ export function PurchasesPage() {
         title={t("cancelModal.title")}
         size="sm"
       >
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
+        <p className="text-gray-600 dark:text-gray-400 mb-6 wrap-anywhere">
           {t("cancelModal.description")}
         </p>
         <div className="flex justify-end gap-3">

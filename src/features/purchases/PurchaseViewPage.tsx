@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
-import { ArrowLeft, CheckCircle, Pencil, Trash2, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle, PackageMinus, Pencil, Trash2, XCircle } from "lucide-react";
 import {
   Badge,
   Button,
@@ -30,6 +30,7 @@ import {
   useCancelPurchase,
   useDeletePurchase,
 } from "./hooks/usePurchases";
+import { useOrderReturns } from "./hooks/useSupplierReturns";
 import { getPaymentBadgeVariant, getStatusBadgeVariant } from "./purchaseStatus";
 import type { ConfirmPurchaseOrderInput } from "@/types";
 
@@ -45,11 +46,13 @@ export function PurchaseViewPage() {
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const canEdit = useAuthStore((s) => s.hasPermission("purchases", "edit"));
   const canDelete = useAuthStore((s) => s.hasPermission("purchases", "delete"));
+  const canCreate = useAuthStore((s) => s.hasPermission("purchases", "create"));
 
   const { data: order, isLoading } = usePurchase(id || "");
   const confirmPurchase = useConfirmPurchase();
   const cancelPurchase = useCancelPurchase();
   const deletePurchase = useDeletePurchase();
+  const { data: orderReturns } = useOrderReturns(id || null);
 
   const [receiving, setReceiving] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -100,6 +103,8 @@ export function PurchaseViewPage() {
 
   const isPending = order.status === "PENDING";
   const isReceivable = isPending || order.status === "PARTIALLY_RECEIVED";
+  // Goods that arrived can go back to the supplier, who keeps them as credit.
+  const isReturnable = order.status === "CONFIRMED" || order.status === "PARTIALLY_RECEIVED";
   const showReceived = !isPending;
   const lines = order.lines ?? [];
   const lineLabel = (line: (typeof lines)[number]) =>
@@ -152,6 +157,18 @@ export function PurchaseViewPage() {
                 {t("actions.cancel")}
               </Button>
             </>
+          )}
+          {isReturnable && canCreate && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={guard(() =>
+                router.push(`/purchases/returns/new?supplier=${order.supplier_id}&order=${order.id}`)
+              )}
+            >
+              <PackageMinus className="h-4 w-4 me-2" />
+              {t("actions.returnGoods")}
+            </Button>
           )}
           {isPending && canDelete && (
             <Button variant="secondary" size="sm" onClick={guard(() => setDeleting(true))}>
@@ -303,6 +320,36 @@ export function PurchaseViewPage() {
         </CardContent>
       </Card>
 
+      {orderReturns && orderReturns.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">{t("returns.onOrder")}</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <ul className="divide-y divide-(--color-border-primary)">
+              {orderReturns.map((r) => (
+                <li key={r.id}>
+                  <button
+                    type="button"
+                    onClick={() => router.push(`/purchases/returns/${r.id}`)}
+                    className="flex w-full items-start gap-3 px-4 py-3 text-start hover:bg-(--color-bg-secondary)"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium font-mono text-(--color-text-primary)">{r.return_number}</p>
+                      <p className="text-xs text-(--color-text-secondary) wrap-anywhere">
+                        {formatDate(r.return_date)}
+                        {r.reason ? ` · ${r.reason}` : ""}
+                      </p>
+                    </div>
+                    <span className="shrink-0 text-sm font-medium tabular-nums">{formatCurrency(r.total)}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
       {order.notes && (
         <Card>
           <CardHeader>
@@ -329,7 +376,7 @@ export function PurchaseViewPage() {
         title={t("cancelModal.title")}
         size="sm"
       >
-        <p className="text-(--color-text-secondary) mb-6">{t("cancelModal.description")}</p>
+        <p className="text-(--color-text-secondary) mb-6 wrap-anywhere">{t("cancelModal.description")}</p>
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={() => setCancelling(false)}>
             {tCommon("buttons.cancel")}
@@ -346,7 +393,7 @@ export function PurchaseViewPage() {
         title={tCommon("messages.confirmDelete")}
         size="sm"
       >
-        <p className="text-(--color-text-secondary) mb-6">{t("deleteConfirmation")}</p>
+        <p className="text-(--color-text-secondary) mb-6 wrap-anywhere">{t("deleteConfirmation")}</p>
         <div className="flex justify-end gap-3">
           <Button variant="secondary" onClick={() => setDeleting(false)}>
             {tCommon("buttons.cancel")}

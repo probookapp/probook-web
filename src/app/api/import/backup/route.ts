@@ -189,6 +189,8 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
       const creditNotes = list(src, "credit_notes");
       const purchaseOrders = list(src, "purchase_orders");
       const supplierPayments = list(src, "supplier_payments");
+      const supplierAdjustments = list(src, "supplier_adjustments");
+      const supplierReturns = list(src, "supplier_returns");
       const posSessions = list(src, "pos_sessions");
       const posTransactions = list(src, "pos_transactions");
       const posCashMovements = list(src, "pos_cash_movements");
@@ -215,6 +217,10 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
       });
       await tx.posTransaction.deleteMany({ where: { tenantId } });
       await tx.posSession.deleteMany({ where: { tenantId } });
+      // Return lines hold RESTRICT keys to products: before the catalogue goes.
+      await tx.supplierReturnLine.deleteMany({ where: { supplierReturn: { tenantId } } });
+      await tx.supplierReturn.deleteMany({ where: { tenantId } });
+      await tx.supplierAdjustment.deleteMany({ where: { tenantId } });
       await tx.supplierPayment.deleteMany({ where: { tenantId } });
       await tx.purchaseOrderLine.deleteMany({ where: { order: { tenantId } } });
       await tx.purchaseOrder.deleteMany({ where: { tenantId } });
@@ -602,6 +608,7 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
             phone: str(s, "phone"),
             address: str(s, "address"),
             notes: str(s, "notes"),
+            openingBalance: num(s, "opening_balance", 0),
             createdAt: reqDate(s, "created_at"),
           })),
         });
@@ -1035,11 +1042,67 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
             paymentMethod: str(p, "payment_method") ?? "CASH",
             reference: str(p, "reference"),
             notes: str(p, "notes"),
+            fromRegister: bool(p, "from_register"),
             createdAt: reqDate(p, "created_at"),
           })),
         });
         imported.supplier_payments = supplierPayments.length;
       }
+
+      // ─── 17a. Supplier account: adjustments, returns (+lines) ───
+      if (supplierAdjustments.length) {
+        await tx.supplierAdjustment.createMany({
+          data: supplierAdjustments.map((a) => ({
+            id: idOf(a),
+            tenantId,
+            supplierId: reqStr(a, "supplier_id"),
+            amount: num(a, "amount", 0),
+            adjustmentDate: reqDate(a, "adjustment_date"),
+            reason: reqStr(a, "reason"),
+            userId: str(a, "user_id"),
+            createdAt: reqDate(a, "created_at"),
+          })),
+        });
+        imported.supplier_adjustments = supplierAdjustments.length;
+      }
+      for (const r of supplierReturns) {
+        const lines = list(r, "lines");
+        await tx.supplierReturn.create({
+          data: {
+            id: idOf(r),
+            tenantId,
+            returnNumber: reqStr(r, "return_number"),
+            supplierId: reqStr(r, "supplier_id"),
+            purchaseOrderId: str(r, "purchase_order_id"),
+            locationId: str(r, "location_id"),
+            returnDate: reqDate(r, "return_date"),
+            reason: str(r, "reason"),
+            notes: str(r, "notes"),
+            subtotal: num(r, "subtotal", 0),
+            taxAmount: num(r, "tax_amount", 0),
+            total: num(r, "total", 0),
+            userId: str(r, "user_id"),
+            createdAt: reqDate(r, "created_at"),
+            lines: {
+              createMany: {
+                data: lines.map((l) => ({
+                  id: idOf(l),
+                  purchaseOrderLineId: str(l, "purchase_order_line_id"),
+                  productId: reqStr(l, "product_id"),
+                  variantId: str(l, "variant_id"),
+                  quantity: num(l, "quantity", 0),
+                  unitPrice: num(l, "unit_price", 0),
+                  taxRate: num(l, "tax_rate", 0),
+                  subtotal: num(l, "subtotal", 0),
+                  taxAmount: num(l, "tax_amount", 0),
+                  total: num(l, "total", 0),
+                })),
+              },
+            },
+          },
+        });
+      }
+      if (supplierReturns.length) imported.supplier_returns = supplierReturns.length;
 
       // ─── 17b. POS history ───
       // Restorable at last, now that users exist. Every one of these rows has a

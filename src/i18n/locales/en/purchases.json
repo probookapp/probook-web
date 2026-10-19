@@ -52,7 +52,8 @@
   },
   "actions": {
     "confirm": "Confirm Receipt",
-    "cancel": "Cancel Order"
+    "cancel": "Cancel Order",
+    "returnGoods": "Return items"
   },
   "confirmModal": {
     "title": "Confirm Purchase Order",
@@ -94,7 +95,8 @@
     "confirmed": "Purchase order confirmed",
     "confirmError": "Failed to confirm purchase order",
     "cancelled": "Purchase order cancelled",
-    "cancelError": "Failed to cancel purchase order"
+    "cancelError": "Failed to cancel purchase order",
+    "deleteHasPayments": "A payment was already made on this order: cancel it instead of deleting it"
   },
   "filters": {
     "all": "All",
@@ -107,5 +109,36 @@
     "button": "Create product",
     "title": "New product",
     "offline": "Offline: the product will be created once you reconnect, but it can't be added to this order yet."
+  },
+  "returns": {
+    "title": "Supplier returns",
+    "subtitle": "Goods sent back and kept as credit by the supplier",
+    "listTitle": "Returns",
+    "newReturn": "New return",
+    "viewReturn": "Return {{number}}",
+    "searchPlaceholder": "Search returns…",
+    "noReturns": "No supplier returns",
+    "number": "Return no.",
+    "date": "Return date",
+    "reason": "Reason",
+    "reasonPlaceholder": "E.g. damaged goods, wrong delivery…",
+    "fromOrder": "Original purchase order",
+    "noOrder": "None (free return)",
+    "location": "Taken from location",
+    "lines": "Returned items",
+    "returnable": "Received {{received}}, already returned {{returned}}",
+    "returnQty": "Qty returned",
+    "nothingToReturn": "Everything received on this order has already been returned.",
+    "creditHint": "The return's value comes off what you owe the supplier. If it is more than your debt, it becomes credit in your favour.",
+    "onOrder": "Returns on this order",
+    "deleteTitle": "Cancel this return",
+    "confirmDelete": "The items go back into stock and the credit is removed from the supplier's account.",
+    "created": "Return recorded",
+    "deleted": "Return cancelled",
+    "errors": {
+      "INSUFFICIENT_STOCK": "Not enough stock at this location for this return",
+      "OVER_RECEIVED": "You cannot return more than was received",
+      "NOT_STOCKED": "Only stocked products can be returned"
+    }
   }
 }

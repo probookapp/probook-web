@@ -52,7 +52,8 @@
   },
   "actions": {
     "confirm": "Confirmer la réception",
-    "cancel": "Annuler la commande"
+    "cancel": "Annuler la commande",
+    "returnGoods": "Retourner des articles"
   },
   "confirmModal": {
     "title": "Confirmer le bon de commande",
@@ -94,7 +95,8 @@
     "confirmed": "Bon de commande confirmé",
     "confirmError": "Erreur lors de la confirmation du bon de commande",
     "cancelled": "Bon de commande annulé",
-    "cancelError": "Erreur lors de l'annulation du bon de commande"
+    "cancelError": "Erreur lors de l'annulation du bon de commande",
+    "deleteHasPayments": "Un paiement a déjà été versé sur ce bon : annulez-le plutôt que de le supprimer"
   },
   "filters": {
     "all": "Tous",
@@ -107,5 +109,36 @@
     "button": "Créer un produit",
     "title": "Nouveau produit",
     "offline": "Hors ligne : le produit sera créé à la reconnexion, mais il ne peut pas encore être ajouté à cette commande."
+  },
+  "returns": {
+    "title": "Retours fournisseurs",
+    "subtitle": "Marchandise renvoyée, gardée en avoir par le fournisseur",
+    "listTitle": "Liste des retours",
+    "newReturn": "Nouveau retour",
+    "viewReturn": "Retour {{number}}",
+    "searchPlaceholder": "Rechercher un retour…",
+    "noReturns": "Aucun retour fournisseur",
+    "number": "N° retour",
+    "date": "Date du retour",
+    "reason": "Motif",
+    "reasonPlaceholder": "Ex. marchandise abîmée, erreur de livraison…",
+    "fromOrder": "Bon de commande d'origine",
+    "noOrder": "Aucun (retour libre)",
+    "location": "Emplacement de sortie",
+    "lines": "Articles retournés",
+    "returnable": "Reçu {{received}}, déjà retourné {{returned}}",
+    "returnQty": "Qté retournée",
+    "nothingToReturn": "Tout ce qui a été reçu sur ce bon a déjà été retourné.",
+    "creditHint": "Le montant du retour est déduit de ce que vous devez au fournisseur. S'il dépasse votre dette, il devient un crédit en votre faveur.",
+    "onOrder": "Retours sur ce bon",
+    "deleteTitle": "Annuler ce retour",
+    "confirmDelete": "Les articles reviennent en stock et l'avoir est retiré du compte du fournisseur.",
+    "created": "Retour enregistré",
+    "deleted": "Retour annulé",
+    "errors": {
+      "INSUFFICIENT_STOCK": "Stock insuffisant à cet emplacement pour ce retour",
+      "OVER_RECEIVED": "Vous ne pouvez pas retourner plus que la quantité reçue",
+      "NOT_STOCKED": "Seuls les produits stockés peuvent être retournés"
+    }
   }
 }

@@ -187,7 +187,10 @@
       "sale": "Sale",
       "purchase": "Purchase",
       "adjustment": "Adjustment",
-      "return": "Return"
+      "return": "Return",
+      "transfer_in": "Transfer in",
+      "transfer_out": "Transfer out",
+      "supplier_return": "Supplier return"
     }
   },
   "lowStock": {

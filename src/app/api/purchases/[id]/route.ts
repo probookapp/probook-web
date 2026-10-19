@@ -5,6 +5,7 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { rejectUnstockableProducts } from "@/lib/bundles-server";
 import { purchaseOrderSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
+import { refreshOrderPaymentStatus } from "@/lib/supplier-account";
 
 interface LineInput {
   product_id: string;
@@ -91,6 +92,8 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
     },
     include: { lines: true },
   });
+  // An advance may already sit on it: a new total moves its payment status.
+  await refreshOrderPaymentStatus(prisma, tenantId, order.id);
 
   return NextResponse.json(toSnakeCase(order));
 });
@@ -104,6 +107,15 @@ export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (existing.status !== "PENDING") {
     return NextResponse.json({ error: "Only PENDING orders can be deleted" }, { status: 400 });
+  }
+  // An advance already paid on it stays on the supplier's account: the order
+  // can be cancelled, not erased from under its payment.
+  const paid = await prisma.supplierPayment.count({ where: { tenantId, purchaseOrderId: existing.id } });
+  if (paid > 0) {
+    return NextResponse.json(
+      { error: "Cannot delete an order with payments: cancel it instead", code: "HAS_PAYMENTS" },
+      { status: 409 }
+    );
   }
 
   await prisma.purchaseOrder.delete({ where: { tenantId, id: params?.id } });

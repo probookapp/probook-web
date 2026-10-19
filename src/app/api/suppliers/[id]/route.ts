@@ -26,6 +26,7 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
       phone: body.phone || null,
       address: body.address || null,
       notes: body.notes || null,
+      ...(body.opening_balance !== undefined ? { openingBalance: body.opening_balance } : {}),
     },
   });
   return NextResponse.json(toSnakeCase(supplier));
@@ -43,6 +44,19 @@ export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
   if (purchaseCount > 0) {
     return NextResponse.json(
       { error: "Cannot delete supplier with existing purchase orders" },
+      { status: 409 }
+    );
+  }
+  // Nor one with an account history: payments, adjustments and returns would
+  // be orphaned (and the foreign keys refuse it anyway).
+  const [payments, adjustments, returns] = await Promise.all([
+    prisma.supplierPayment.count({ where: { tenantId, supplierId } }),
+    prisma.supplierAdjustment.count({ where: { tenantId, supplierId } }),
+    prisma.supplierReturn.count({ where: { tenantId, supplierId } }),
+  ]);
+  if (payments + adjustments + returns > 0) {
+    return NextResponse.json(
+      { error: "Cannot delete supplier with account history" },
       { status: 409 }
     );
   }

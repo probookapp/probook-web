@@ -3,47 +3,61 @@ import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { num } from "@/lib/money";
 import { PAYABLE_PURCHASE_STATUSES } from "@/lib/purchase-status";
+import { getOrderSettled, getSupplierBalances } from "@/lib/supplier-account";
 
+// GET /api/suppliers/[id]/credits: the supplier's account at a glance.
+// balance > 0 is what the business owes, balance < 0 is credit the supplier
+// holds for it (see src/lib/supplier-account.ts).
 export const GET = withAuth(async (req, { tenantId, params }) => {
+  const supplierId = params?.id as string;
   const supplier = await prisma.supplier.findFirst({
-    where: { tenantId, id: params?.id },
+    where: { tenantId, id: supplierId },
   });
   if (!supplier) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  // Every order whose goods have arrived, whatever its payment status = the
-  // total ever owed. Part-delivered orders count: the stock is on the shelf.
-  const allConfirmedOrders = await prisma.purchaseOrder.findMany({
-    where: {
-      tenantId,
-      supplierId: params?.id,
-      status: { in: [...PAYABLE_PURCHASE_STATUSES] },
-    },
-    include: { lines: { include: { product: true, variant: true } } },
+  const [orders, adjustments, payments, returns, balances] = await Promise.all([
+    // Every order whose goods have arrived, whatever its payment status.
+    // Part-delivered orders count: the stock is on the shelf.
+    prisma.purchaseOrder.findMany({
+      where: { tenantId, supplierId, status: { in: [...PAYABLE_PURCHASE_STATUSES] } },
+      orderBy: { orderDate: "desc" },
+      select: {
+        id: true,
+        orderNumber: true,
+        orderDate: true,
+        status: true,
+        paymentStatus: true,
+        total: true,
+      },
+    }),
+    prisma.supplierAdjustment.aggregate({ where: { tenantId, supplierId }, _sum: { amount: true } }),
+    prisma.supplierPayment.aggregate({ where: { tenantId, supplierId }, _sum: { amount: true } }),
+    prisma.supplierReturn.aggregate({ where: { tenantId, supplierId }, _sum: { total: true } }),
+    getSupplierBalances(prisma, tenantId, [supplierId]),
+  ]);
+
+  const totalOwed = orders.reduce((sum, o) => sum + num(o.total), 0);
+  const unpaid = orders.filter((o) => o.paymentStatus !== "PAID");
+  const settled = await getOrderSettled(prisma, tenantId, unpaid.map((o) => o.id));
+  const unpaidOrders = unpaid.map((o) => {
+    const amountSettled = settled.get(o.id) ?? 0;
+    return {
+      ...o,
+      amountSettled,
+      remaining: Math.max(0, num(o.total) - amountSettled),
+    };
   });
-
-  const totalOwed = allConfirmedOrders.reduce((sum, o) => sum + num(o.total), 0);
-
-  // All payments ever made to this supplier
-  const payments = await prisma.supplierPayment.aggregate({
-    where: { tenantId, supplierId: params?.id },
-    _sum: { amount: true },
-  });
-  const totalPaid = num(payments._sum.amount);
-
-  const balance = totalOwed - totalPaid;
-
-  // Only return orders that still have outstanding balance for the UI list
-  const unpaidOrders = allConfirmedOrders.filter(
-    (o) => o.paymentStatus !== "PAID"
-  );
 
   return NextResponse.json(
     toSnakeCase({
-      supplierId: params?.id,
+      supplierId,
       supplierName: supplier.name,
+      openingBalance: num(supplier.openingBalance),
       totalOwed,
-      totalPaid,
-      balance,
+      totalAdjustments: num(adjustments._sum.amount),
+      totalPaid: num(payments._sum.amount),
+      totalReturned: num(returns._sum.total),
+      balance: balances.get(supplierId) ?? 0,
       unpaidOrders,
     })
   );

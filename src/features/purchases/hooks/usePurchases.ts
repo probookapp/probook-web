@@ -5,6 +5,8 @@ import { useToastStore } from "@/stores/useToastStore";
 import { useTranslation } from "react-i18next";
 import { DEMO_PURCHASES } from "@/lib/demo-data";
 import { LIST_PAGE_SIZE } from "@/lib/pagination";
+import { isApiError } from "@/lib/api-adapter";
+import { invalidateSupplierAccount } from "@/features/suppliers/hooks/useSupplierAccount";
 import type {
   CreatePurchaseOrderInput,
   UpdatePurchaseOrderInput,
@@ -106,8 +108,12 @@ export function useDeletePurchase() {
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
       addToast({ type: "success", message: t("messages.deleted") });
     },
-    onError: () => {
-      addToast({ type: "error", message: t("messages.deleteError") });
+    onError: (err) => {
+      addToast({
+        type: "error",
+        // An advance was paid on it: it can be cancelled, not deleted.
+        message: isApiError(err, 409) ? t("messages.deleteHasPayments") : t("messages.deleteError"),
+      });
     },
   });
 }
@@ -143,8 +149,8 @@ export function useConfirmPurchase() {
       queryClient.invalidateQueries({ queryKey: ["dashboard-stats"] });
       queryClient.invalidateQueries({ queryKey: ["products"] });
       queryClient.invalidateQueries({ queryKey: ["pos-products"] });
-      queryClient.invalidateQueries({ queryKey: ["supplier-credits"] });
-      queryClient.invalidateQueries({ queryKey: ["supplier-payments"] });
+      // A receipt paid from the till is a supplier payment too.
+      invalidateSupplierAccount(queryClient);
       addToast({ type: "success", message: t("messages.confirmed") });
     },
     onError: () => {
