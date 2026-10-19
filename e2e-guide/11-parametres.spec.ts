@@ -1,16 +1,16 @@
+import fs from "fs";
+import path from "path";
 import { test, expect } from "./lib/test";
 import { Tour } from "./lib/tour";
 import { resume } from "./lib/session";
 import { t } from "./lib/i18n";
 import { BIZ, CLIENT, PRODUCTS } from "./lib/data";
 
-/** A tiny opaque PNG, used as the company logo in the branding demo. */
-const LOGO_PNG = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAYAAACqaXHeAAAAT0lEQVR42u3PMQEAAAgDoC251a3g" +
-    "LwSgOTcVAgQIECBAgAABAgQIECBAgAABAgQIECBAgAABAgQIECBAgAABAgQIECBAgAABAgQIEHAt" +
-    "H0kAAT8m3kUAAAAASUVORK5CYII=",
-  "base64"
-);
+/**
+ * The company logo uploaded on camera. A real-looking mark rather than a flat
+ * square, since it is shown on the settings page and on every document after.
+ */
+const LOGO_PNG = fs.readFileSync(path.resolve(__dirname, "assets", "logo-electro-souk.png"));
 
 test("Chapitre 11 — Paramétrer son entreprise", async ({ page }) => {
   const tour = await Tour.open(page, "11 · Paramètres");
@@ -37,6 +37,9 @@ test("Chapitre 11 — Paramétrer son entreprise", async ({ page }) => {
     mimeType: "image/png",
     buffer: LOGO_PNG,
   });
+  // The upload used to fail silently in the test environment and the take
+  // showed an error toast; the logo itself is the proof it went through.
+  await expect(page.getByRole("img", { name: t("settings:branding.logoAlt") })).toBeVisible();
   await tour.pause(2000);
 
   // ─── régime fiscal ───

@@ -1,6 +1,6 @@
 # Guide d'utilisation — tournage automatisé
 
-Onze chapitres qui pilotent la vraie application, en français, sur la base de
+Douze chapitres qui pilotent la vraie application, en français, sur la base de
 test locale. Chaque chapitre est **à la fois** un test d'interface et une prise
 de vue : ce qui est filmé est donc, par construction, ce qui a été vérifié.
 
@@ -54,6 +54,10 @@ et les chapitres suivants s'appuient sur les données créés par les précéden
 | `GUIDE_HEADED` | — | `1` : navigateur visible pendant le tournage |
 | `GUIDE_SLOWMO` | `220` | Pause entre chaque action, en ms |
 | `GUIDE_WIDTH` / `GUIDE_HEIGHT` | `1920` / `1080` | Définition d'enregistrement |
+
+`.env.test` doit contenir `STORAGE_DRIVER=inline` : le Supabase de test est
+fictif, et sans ce réglage l'envoi du logo échoue au chapitre 11 (le logo est
+alors stocké dans la base, en `data:` URL — jamais en production).
 
 ## Refilmer un seul chapitre
 

@@ -27,6 +27,15 @@ export async function uploadFile(
   file: Buffer,
   contentType: string,
 ): Promise<string> {
+  // The test environment points at a dummy Supabase host, so every upload
+  // failed there and the guide filmed a logo that never arrived. Inline media
+  // is a shape the app already stores and restores (see api/export), so the
+  // file goes into the row itself. Never in production: a database full of
+  // images is exactly what the bucket is for.
+  if (process.env.STORAGE_DRIVER === "inline" && process.env.NODE_ENV !== "production") {
+    return `data:${contentType};base64,${file.toString("base64")}`;
+  }
+
   const path = filePath(tenantId, folder, filename);
 
   const supabase = getSupabase();
@@ -45,6 +54,7 @@ export async function deleteFile(
   folder: string,
   filename: string,
 ): Promise<void> {
+  if (process.env.STORAGE_DRIVER === "inline" && process.env.NODE_ENV !== "production") return;
   const path = filePath(tenantId, folder, filename);
   const { error } = await getSupabase().storage.from(BUCKET).remove([path]);
   if (error) throw new Error(`Storage delete failed: ${error.message}`);
