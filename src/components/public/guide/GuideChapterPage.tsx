@@ -70,7 +70,7 @@ export function GuideChapterPage({ slug, transcript }: GuideChapterPageProps) {
         ) : (
           <div className="flex items-start gap-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-5 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
             <PlayCircle className="mt-0.5 h-5 w-5 shrink-0 text-gray-400" />
-            <p>{t("guide.comingSoon")}</p>
+            <p className="min-w-0 flex-1">{t("guide.comingSoon")}</p>
           </div>
         )}
 
@@ -85,7 +85,7 @@ export function GuideChapterPage({ slug, transcript }: GuideChapterPageProps) {
                 <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold tabular-nums text-gray-500 dark:bg-gray-800 dark:text-gray-400">
                   {i + 1}
                 </span>
-                <span className="min-w-0 leading-relaxed">{line}</span>
+                <span className="min-w-0 flex-1 leading-relaxed">{line}</span>
               </li>
             ))}
           </ol>
