@@ -386,7 +386,7 @@ export function PurchasesPage() {
                             <span />
                           )}
                         </TableCell>
-                        <TableCell className="font-medium text-gray-900 dark:text-gray-100">
+                        <TableCell className="whitespace-nowrap font-mono font-medium text-gray-900 dark:text-gray-100">
                           {purchase.order_number}
                         </TableCell>
                         {columns.show("supplier") && (

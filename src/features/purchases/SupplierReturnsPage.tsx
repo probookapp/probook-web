@@ -178,14 +178,14 @@ export function SupplierReturnsPage() {
                   {columns.show("order") && <TableHead>{t("returns.fromOrder")}</TableHead>}
                   {columns.show("reason") && <TableHead>{t("returns.reason")}</TableHead>}
                   {columns.show("total") && <TableHead className="text-end">{t("fields.total")}</TableHead>}
-                  <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
+                  <TableHead className="w-px text-end">{/* Icons only below: the word would size the column. */}<span className="sr-only">{tCommon("buttons.actions")}</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered && filtered.length > 0 ? (
                   filtered.map((r) => (
                     <TableRow key={r.id} onActivate={() => open(r.id)}>
-                      <TableCell className="font-mono font-medium">{r.return_number}</TableCell>
+                      <TableCell className="whitespace-nowrap font-mono font-medium">{r.return_number}</TableCell>
                       {columns.show("supplier") && <TableCell>{r.supplier?.name || "-"}</TableCell>}
                       {columns.show("date") && <TableCell>{formatDate(r.return_date)}</TableCell>}
                       {columns.show("order") && <TableCell>{r.purchase_order?.order_number || "-"}</TableCell>}

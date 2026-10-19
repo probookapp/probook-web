@@ -344,7 +344,7 @@ export function CouponsPage() {
                     []) as PlanRestriction[];
                   return (
                     <TableRow key={String(coupon.id)} onActivate={() => handleOpenEdit(coupon)}>
-                      <TableCell className="font-mono font-semibold">
+                      <TableCell className="whitespace-nowrap font-mono font-semibold">
                         {String(coupon.code || "-")}
                       </TableCell>
                       {columns.show("type") && (

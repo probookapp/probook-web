@@ -56,9 +56,11 @@ import { apiErrorCode, getApiErrorMessage } from "@/lib/api-adapter";
 import { productSupplierApi, locationsApi, productBundleApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/useAuthStore";
 import type { Product } from "@/types";
+import { productOnHand } from "@/lib/product-stock";
 import type { ProductFormData } from "./schemas/productSchema";
 
 type TabType = "products" | "categories";
+
 
 export function ProductsPage() {
   const { t } = useTranslation("products");
@@ -459,8 +461,8 @@ export function ProductsPage() {
                           </Badge>
                         )
                       ) : !product.is_service ? (
-                        <Badge variant={(product.quantity ?? 0) > 0 ? "success" : "danger"}>
-                          {t("fields.quantity")}: {product.quantity ?? 0}
+                        <Badge variant={(productOnHand(product) ?? 0) > 0 ? "success" : "danger"}>
+                          {t("fields.quantity")}: {(productOnHand(product) ?? 0)}
                         </Badge>
                       ) : undefined
                     }
@@ -501,10 +503,10 @@ export function ProductsPage() {
                   <TableHead>{t("fields.designation")}</TableHead>
                   {columns.show("category") && <TableHead>{t("fields.category")}</TableHead>}
                   {columns.show("suppliers") && <TableHead>{t("fields.suppliers")}</TableHead>}
-                  {columns.show("purchasePrice") && <TableHead className="text-end whitespace-nowrap">{t("fields.purchasePriceHt")}</TableHead>}
-                  {columns.show("price") && <TableHead className="text-end whitespace-nowrap">{t("fields.priceHT")}</TableHead>}
-                  {columns.show("quantity") && <TableHead>{t("fields.quantity")}</TableHead>}
-                  <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
+                  {columns.show("purchasePrice") && <TableHead className="text-end">{t("fields.purchasePriceHt")}</TableHead>}
+                  {columns.show("price") && <TableHead className="text-end">{t("fields.priceHT")}</TableHead>}
+                  {/* "Stock", not "Quantity": what is on the shelf, and short enough not to size the column. */}{columns.show("quantity") && <TableHead>{t("fields.stockColumn")}</TableHead>}
+                  <TableHead className="w-px text-end">{/* Icons only below: the word would size the column. */}<span className="sr-only">{tCommon("buttons.actions")}</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -518,32 +520,36 @@ export function ProductsPage() {
                       </TableCell>
                       {columns.show("type") && (
                         <TableCell>
+                          {/* The icon alone, named for screen readers and on hover: with
+                              the label the column took a hundred pixels, enough to
+                              push the table past a 1280 px laptop screen. */}
                           {product.is_bundle ? (
-                            <Badge variant="warning">
-                              <Boxes className="h-3 w-3 me-1" />
-                              {t("types.bundle")}
+                            <Badge variant="warning" title={t("types.bundle")}>
+                              <Boxes className="h-3.5 w-3.5" aria-hidden />
+                              <span className="sr-only">{t("types.bundle")}</span>
                             </Badge>
                           ) : product.is_service ? (
-                            <Badge variant="info">
-                              <Briefcase className="h-3 w-3 me-1" />
-                              {t("types.service")}
+                            <Badge variant="info" title={t("types.service")}>
+                              <Briefcase className="h-3.5 w-3.5" aria-hidden />
+                              <span className="sr-only">{t("types.service")}</span>
                             </Badge>
                           ) : (
-                            <Badge variant="default">
-                              <Package className="h-3 w-3 me-1" />
-                              {t("types.product")}
+                            <Badge variant="default" title={t("types.product")}>
+                              <Package className="h-3.5 w-3.5" aria-hidden />
+                              <span className="sr-only">{t("types.product")}</span>
                             </Badge>
                           )}
                         </TableCell>
                       )}
                       {columns.show("reference") && (
                         <TableCell className="font-mono text-sm text-gray-600 dark:text-gray-400">
+                          {/* Free to wrap: a reference only breaks at its hyphens, never mid-segment. */}
                           {product.reference || "-"}
                         </TableCell>
                       )}
                       {/* A floor under the name: the figures are nowrap, so without one the
                           designation was the column that gave way, a word per line. */}
-                      <TableCell className="min-w-48 font-medium text-gray-900 dark:text-gray-100">{product.designation}</TableCell>
+                      <TableCell className="min-w-32 font-medium text-gray-900 dark:text-gray-100">{product.designation}</TableCell>
                       {columns.show("category") && (
                         <TableCell className="text-gray-600 dark:text-gray-400">
                           {getCategoryName(product.category_id) ? (
@@ -592,8 +598,8 @@ export function ProductsPage() {
                           <span className="text-gray-400 dark:text-gray-500">-</span>
                         ) : (
                           <div className="flex items-center gap-1.5">
-                            <Badge variant={(product.quantity ?? 0) > 0 ? "success" : "danger"}>
-                              {product.quantity ?? 0}
+                            <Badge variant={(productOnHand(product) ?? 0) > 0 ? "success" : "danger"}>
+                              {(productOnHand(product) ?? 0)}
                             </Badge>
                             {multiLocation && (
                               <button

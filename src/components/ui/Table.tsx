@@ -10,8 +10,11 @@ import { ACTIVATABLE, activateProps } from "./activate";
 
 export function Table({ className, ...props }: HTMLAttributes<HTMLTableElement>) {
   // The scroll lives here so a wide table never makes the page itself slide.
+  // `relative` makes it the containing block of anything absolutely placed
+  // inside — a screen-reader-only header label among them — which would
+  // otherwise escape the scroll box and widen the page by the table's hidden part.
   return (
-    <div className="w-full overflow-x-auto">
+    <div className="relative w-full overflow-x-auto">
       <table className={cn("w-full caption-bottom text-sm", className)} {...props} />
     </div>
   );
@@ -53,7 +56,7 @@ export function TableHead({ className, ...props }: ThHTMLAttributes<HTMLTableCel
   return (
     <th
       className={cn(
-        "h-10 px-4 text-start align-middle",
+        "h-10 px-3 text-start align-middle",
         "text-xs font-semibold uppercase tracking-wider text-(--color-text-tertiary)",
         "bg-(--color-bg-secondary)",
         className
@@ -64,7 +67,7 @@ export function TableHead({ className, ...props }: ThHTMLAttributes<HTMLTableCel
 }
 
 export function TableCell({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn("px-4 py-3 align-middle", className)} {...props} />;
+  return <td className={cn("px-3 py-3 align-middle", className)} {...props} />;
 }
 
 /**
@@ -84,5 +87,5 @@ export const NUMERIC_CELL = "text-end font-mono tabular-nums whitespace-nowrap";
 
 /** For money and quantities, in tables built from these primitives. */
 export function TableNumericCell({ className, ...props }: TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn("px-4 py-3 align-middle", NUMERIC_CELL, className)} {...props} />;
+  return <td className={cn("px-3 py-3 align-middle", NUMERIC_CELL, className)} {...props} />;
 }

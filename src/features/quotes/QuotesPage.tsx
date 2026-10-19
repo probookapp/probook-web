@@ -376,7 +376,7 @@ export function QuotesPage() {
                 {columns.show("status") && <TableHead>{t("quotes:fields.status")}</TableHead>}
                 {columns.show("tags") && <TableHead>{t("common:tags.label")}</TableHead>}
                 {columns.show("total") && <TableHead className="text-end">{t("quotes:fields.totalTtc")}</TableHead>}
-                <TableHead className="w-px text-end">{t("common:buttons.actions")}</TableHead>
+                <TableHead className="w-px text-end">{/* Icons only below: the word would size the column. */}<span className="sr-only">{t("common:buttons.actions")}</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -393,7 +393,7 @@ export function QuotesPage() {
                         />
                       </label>
                     </TableCell>
-                    <TableCell className="font-mono font-medium">
+                    <TableCell className="whitespace-nowrap font-mono font-medium">
                       {quote.quote_number}
                     </TableCell>
                     {columns.show("client") && <TableCell>{quote.client?.name || "-"}</TableCell>}

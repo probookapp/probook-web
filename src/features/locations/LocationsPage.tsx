@@ -248,7 +248,7 @@ export function LocationsPage() {
                       {locationColumns.show("type") && <TableHead>{t("fields.type")}</TableHead>}
                       {locationColumns.show("address") && <TableHead>{t("fields.address")}</TableHead>}
                       {locationColumns.show("default") && <TableHead>{t("fields.default")}</TableHead>}
-                      <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
+                      <TableHead className="w-px text-end">{/* Icons only below: the word would size the column. */}<span className="sr-only">{tCommon("buttons.actions")}</span></TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

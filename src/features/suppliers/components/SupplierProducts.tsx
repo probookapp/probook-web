@@ -221,7 +221,7 @@ export function SupplierProducts({ supplierId }: SupplierProductsProps) {
               {columns.show("reference") && <TableHead>{tCommon("labels.reference")}</TableHead>}
               {columns.show("purchasePrice") && <TableHead className="text-end">{t("products.purchasePrice")}</TableHead>}
               {columns.show("unitPrice") && <TableHead className="text-end">{tCommon("labels.unitPrice")}</TableHead>}
-              <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
+              <TableHead className="w-px text-end">{/* Icons only below: the word would size the column. */}<span className="sr-only">{tCommon("buttons.actions")}</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

@@ -321,7 +321,7 @@ export function ClientsPage() {
                 {columns.show("phone") && <TableHead>{t("fields.phone")}</TableHead>}
                 {columns.show("city") && <TableHead>{t("fields.city")}</TableHead>}
                 {columns.show("outstanding") && <TableHead className="text-end">{t("statement.outstanding")}</TableHead>}
-                <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
+                <TableHead className="w-px text-end">{/* Icons only below: the word would size the column. */}<span className="sr-only">{tCommon("buttons.actions")}</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

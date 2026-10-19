@@ -46,6 +46,7 @@
     "priceHT": "Selling Price (excl. VAT)",
     "vat": "VAT",
     "quantity": "Quantity",
+    "stockColumn": "Stock",
     "suppliers": "Supplier(s)"
   },
   "units": {

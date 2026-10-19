@@ -440,7 +440,7 @@ export function SubscriptionInvoicesPage() {
                           />
                         )}
                       </TableCell>
-                      <TableCell className="font-mono font-semibold">
+                      <TableCell className="whitespace-nowrap font-mono font-semibold">
                         {String(invoice.invoice_number || "-")}
                       </TableCell>
                       {columns.show("tenant") && <TableCell>{String(tenant.name || "-")}</TableCell>}

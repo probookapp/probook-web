@@ -46,6 +46,7 @@
     "priceHT": "سعر البيع (بدون ضريبة)",
     "vat": "الضريبة",
     "quantity": "الكمية",
+    "stockColumn": "المخزون",
     "suppliers": "المورد(ون)"
   },
   "units": {

@@ -360,7 +360,7 @@ export function DeliveryNotesPage() {
                 {columns.show("status") && <TableHead>{t("delivery:fields.status")}</TableHead>}
                 {columns.show("tags") && <TableHead>{t("common:tags.label")}</TableHead>}
                 {columns.show("linkedQuote") && <TableHead>{t("delivery:fields.linkedQuote")}</TableHead>}
-                <TableHead className="w-px text-end">{t("common:buttons.actions")}</TableHead>
+                <TableHead className="w-px text-end">{/* Icons only below: the word would size the column. */}<span className="sr-only">{t("common:buttons.actions")}</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -377,7 +377,7 @@ export function DeliveryNotesPage() {
                         />
                       </label>
                     </TableCell>
-                    <TableCell className="font-mono font-medium">
+                    <TableCell className="whitespace-nowrap font-mono font-medium">
                       {note.delivery_note_number}
                     </TableCell>
                     {columns.show("client") && <TableCell>{note.client?.name || "-"}</TableCell>}

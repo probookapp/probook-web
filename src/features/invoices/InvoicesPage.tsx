@@ -388,7 +388,7 @@ export function InvoicesPage() {
                 {columns.show("status") && <TableHead>{t("invoices:fields.status")}</TableHead>}
                 {columns.show("tags") && <TableHead>{t("common:tags.label")}</TableHead>}
                 {columns.show("total") && <TableHead className="text-end">{t("invoices:fields.totalTtc")}</TableHead>}
-                <TableHead className="w-px text-end">{t("common:buttons.actions")}</TableHead>
+                <TableHead className="w-px text-end">{/* Icons only below: the word would size the column. */}<span className="sr-only">{t("common:buttons.actions")}</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -407,7 +407,7 @@ export function InvoicesPage() {
                         </label>
                       ) : null}
                     </TableCell>
-                    <TableCell className="font-mono font-medium">
+                    <TableCell className="whitespace-nowrap font-mono font-medium">
                       {invoice.invoice_number}
                     </TableCell>
                     {columns.show("client") && <TableCell>{invoice.client?.name || "-"}</TableCell>}

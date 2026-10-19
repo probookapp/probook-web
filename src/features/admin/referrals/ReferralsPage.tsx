@@ -227,7 +227,7 @@ export function ReferralsPage() {
                         {tenant ? String(tenant.name || "-") : "-"}
                       </TableCell>
                       {columns.show("code") && (
-                        <TableCell className="font-mono text-gray-600 dark:text-gray-400">
+                        <TableCell className="whitespace-nowrap font-mono text-gray-600 dark:text-gray-400">
                           {String(rc.code || "-")}
                         </TableCell>
                       )}

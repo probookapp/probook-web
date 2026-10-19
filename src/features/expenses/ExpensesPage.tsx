@@ -309,7 +309,7 @@ export function ExpensesPage() {
                 {columns.show("amount") && <TableHead className="text-end">{t("fields.amount")}</TableHead>}
                 {columns.show("date") && <TableHead>{t("fields.date")}</TableHead>}
                 {columns.show("notes") && <TableHead>{t("fields.notes")}</TableHead>}
-                <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
+                <TableHead className="w-px text-end">{/* Icons only below: the word would size the column. */}<span className="sr-only">{tCommon("buttons.actions")}</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

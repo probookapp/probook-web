@@ -46,6 +46,7 @@
     "priceHT": "Prix de vente HT",
     "vat": "TVA",
     "quantity": "Quantité",
+    "stockColumn": "Stock",
     "suppliers": "Fournisseur(s)"
   },
   "units": {

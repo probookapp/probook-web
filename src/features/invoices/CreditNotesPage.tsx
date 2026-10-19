@@ -182,14 +182,14 @@ export function CreditNotesPage() {
                   {columns.show("issueDate") && <TableHead>{t("invoices:fields.issueDate")}</TableHead>}
                   {columns.show("restocked") && <TableHead>{t("invoices:creditNotes.restocked")}</TableHead>}
                   {columns.show("total") && <TableHead className="text-end">{t("invoices:fields.totalTtc")}</TableHead>}
-                  <TableHead className="w-px text-end">{t("common:buttons.actions")}</TableHead>
+                  <TableHead className="w-px text-end">{/* Icons only below: the word would size the column. */}<span className="sr-only">{t("common:buttons.actions")}</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered && filtered.length > 0 ? (
                   filtered.map((cn) => (
                     <TableRow key={cn.id} onActivate={() => router.push(`/invoices/credit-notes/${cn.id}`)}>
-                      <TableCell className="font-mono font-medium">{cn.credit_note_number}</TableCell>
+                      <TableCell className="whitespace-nowrap font-mono font-medium">{cn.credit_note_number}</TableCell>
                       {columns.show("client") && <TableCell>{cn.client?.name || "-"}</TableCell>}
                       {columns.show("issueDate") && <TableCell>{formatDate(cn.issue_date)}</TableCell>}
                       {columns.show("restocked") && (

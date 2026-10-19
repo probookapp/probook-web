@@ -527,7 +527,7 @@ export function ReportsPage() {
                   <TableBody>
                     {progress?.awaiting_payment.map((row) => (
                       <TableRow key={row.id} onActivate={() => router.push(`/invoices/${row.id}`)}>
-                        <TableCell className="font-mono">{row.number}</TableCell>
+                        <TableCell className="whitespace-nowrap font-mono">{row.number}</TableCell>
                         <TableCell>{row.client || "-"}</TableCell>
                         <TableCell>
                           {row.due_date ? formatDate(row.due_date) : "-"}
@@ -564,7 +564,7 @@ export function ReportsPage() {
                   <TableBody>
                     {progress?.awaiting_invoice.map((row) => (
                       <TableRow key={row.id} onActivate={() => router.push(`/quotes/${row.id}`)}>
-                        <TableCell className="font-mono">{row.number}</TableCell>
+                        <TableCell className="whitespace-nowrap font-mono">{row.number}</TableCell>
                         <TableCell>{row.client || "-"}</TableCell>
                         <TableCell>{formatDate(row.date)}</TableCell>
                         <TableNumericCell>{formatCurrency(row.amount)}</TableNumericCell>
@@ -1060,7 +1060,7 @@ export function ReportsPage() {
                 {outstandingData && outstandingData.length > 0 ? (
                   outstandingData.map((row) => (
                     <TableRow key={row.invoice_id} onActivate={() => router.push(`/invoices/${row.invoice_id}`)}>
-                      <TableCell className="font-mono font-medium">
+                      <TableCell className="whitespace-nowrap font-mono font-medium">
                         {row.invoice_number}
                       </TableCell>
                       {outstandingColumns.show("client") && <TableCell>{row.client_name}</TableCell>}
@@ -1825,7 +1825,7 @@ export function ReportsPage() {
                     <TableRow key={`${row.type}-${row.document}-${i}`}>
                       {show("date") && <TableCell>{formatDate(row.date)}</TableCell>}
                       {show("entryType") && <TableCell>{t(`reports:accountingExport.types.${row.type}`)}</TableCell>}
-                      <TableCell className="font-mono">{row.document || "-"}</TableCell>
+                      <TableCell className="whitespace-nowrap font-mono">{row.document || "-"}</TableCell>
                       {show("party") && <TableCell>{row.party || "-"}</TableCell>}
                       {showDiscount && (
                         <TableNumericCell>

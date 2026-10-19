@@ -297,7 +297,7 @@ export function SuppliersPage() {
                 {columns.show("phone") && <TableHead>{t("fields.phone")}</TableHead>}
                 {columns.show("address") && <TableHead>{t("fields.address")}</TableHead>}
                 {columns.show("balance") && <TableHead className="text-end">{t("fields.balance")}</TableHead>}
-                <TableHead className="w-px text-end">{tCommon("buttons.actions")}</TableHead>
+                <TableHead className="w-px text-end">{/* Icons only below: the word would size the column. */}<span className="sr-only">{tCommon("buttons.actions")}</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
