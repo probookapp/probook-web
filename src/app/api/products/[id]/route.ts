@@ -14,13 +14,14 @@ export const GET = withAuth(async (req, { tenantId, params }) => {
   });
   if (!product) return NextResponse.json({ error: "Not found" }, { status: 404 });
   // On-hand is computed from stock_levels; response shape is unchanged.
-  const { byProduct, byVariant } = await getProductQuantities(prisma, tenantId, {
+  const { byProduct, byVariant, byProductVariants } = await getProductQuantities(prisma, tenantId, {
     productIds: [product.id],
   });
   const [withDetails] = await withBundleDetails(prisma, tenantId, [
     {
       ...product,
       quantity: byProduct.get(product.id) ?? 0,
+      ...(product.hasVariants ? { variantsQuantity: byProductVariants.get(product.id) ?? 0 } : {}),
       variants: product.variants.map((v) => ({ ...v, quantity: byVariant.get(v.id) ?? 0 })),
     },
   ]);
@@ -107,13 +108,14 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
 
   // Attach the post-update computed on-hand so the response shape (and value)
   // matches what the aggregate column used to report.
-  const { byProduct, byVariant } = await getProductQuantities(prisma, tenantId, {
+  const { byProduct, byVariant, byProductVariants } = await getProductQuantities(prisma, tenantId, {
     productIds: [productId],
   });
   const [withDetails] = await withBundleDetails(prisma, tenantId, [
     {
       ...product,
       quantity: byProduct.get(productId) ?? 0,
+      ...(product.hasVariants ? { variantsQuantity: byProductVariants.get(productId) ?? 0 } : {}),
       variants: product.variants.map((v) => ({ ...v, quantity: byVariant.get(v.id) ?? 0 })),
     },
   ]);

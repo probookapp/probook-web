@@ -61,6 +61,10 @@ export async function getDefaultLocationId(db: Db, tenantId: string): Promise<st
  *   semantics the old aggregate `Product.quantity` column had: variant stock is
  *   tracked on the variant, not mirrored onto the parent product.
  * - `byVariant` sums per-variant rows.
+ * - `byProductVariants` sums those variant rows per parent product: what a
+ *   product with variants has on hand in all. Display only — it is a separate
+ *   map precisely so `byProduct` keeps its meaning for the callers that write
+ *   stock (adjustments, weighted cost, backups).
  *
  * One groupBy per map, so attaching quantities to a whole product list costs
  * two queries regardless of list size. Missing keys mean zero on-hand.
@@ -69,7 +73,11 @@ export async function getProductQuantities(
   db: Db,
   tenantId: string,
   opts?: { productIds?: string[]; variantIds?: string[] }
-): Promise<{ byProduct: Map<string, number>; byVariant: Map<string, number> }> {
+): Promise<{
+  byProduct: Map<string, number>;
+  byVariant: Map<string, number>;
+  byProductVariants: Map<string, number>;
+}> {
   const productWhere: Prisma.StockLevelWhereInput = {
     tenantId,
     variantId: null,
@@ -83,7 +91,7 @@ export async function getProductQuantities(
       : {}),
   };
 
-  const [productSums, variantSums] = await Promise.all([
+  const [productSums, variantSums, perProductVariantSums] = await Promise.all([
     db.stockLevel.groupBy({
       by: ["productId"],
       where: productWhere,
@@ -91,6 +99,11 @@ export async function getProductQuantities(
     }),
     db.stockLevel.groupBy({
       by: ["variantId"],
+      where: variantWhere,
+      _sum: { quantity: true },
+    }),
+    db.stockLevel.groupBy({
+      by: ["productId"],
       where: variantWhere,
       _sum: { quantity: true },
     }),
@@ -104,7 +117,11 @@ export async function getProductQuantities(
   for (const row of variantSums) {
     if (row.variantId) byVariant.set(row.variantId, row._sum.quantity ?? 0);
   }
-  return { byProduct, byVariant };
+  const byProductVariants = new Map<string, number>();
+  for (const row of perProductVariantSums) {
+    byProductVariants.set(row.productId, row._sum.quantity ?? 0);
+  }
+  return { byProduct, byVariant, byProductVariants };
 }
 
 export interface StockChangeInput {

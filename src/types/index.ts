@@ -118,6 +118,8 @@ export interface Product {
   prices?: ProductPrice[];
   // Variants
   has_variants: boolean;
+  /** With variants, `quantity` is the stock held on none of them; this is the stock on all of them. */
+  variants_quantity?: number;
   variants?: ProductVariant[];
   /**
    * A pack: sold as one line, made of the products in bundle_components. Its

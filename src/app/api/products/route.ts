@@ -35,7 +35,7 @@ export const GET = withAuth(async (req, { tenantId }) => {
         variants: fields.includes("variants"),
       },
     });
-    const { byProduct, byVariant } = await getProductQuantities(prisma, tenantId, {
+    const { byProduct, byVariant, byProductVariants } = await getProductQuantities(prisma, tenantId, {
       productIds: rows.map((p) => p.id),
     });
     const data = await withBundleDetails(prisma, tenantId, rows.map((p) => {
@@ -43,6 +43,8 @@ export const GET = withAuth(async (req, { tenantId }) => {
       return {
         ...p,
         quantity: byProduct.get(p.id) ?? 0,
+      // Stock of a product with variants lives on them; this is their total.
+      ...(p.hasVariants ? { variantsQuantity: byProductVariants.get(p.id) ?? 0 } : {}),
         ...(variants
           ? { variants: variants.map((v) => ({ ...v, quantity: byVariant.get(v.id) ?? 0 })) }
           : {}),
@@ -66,13 +68,15 @@ export const GET = withAuth(async (req, { tenantId }) => {
   // On-hand is computed from stock_levels (single source of truth) — one
   // groupBy pair for the whole list, then attached so the response shape is
   // unchanged (`quantity` on products and, when included, on variants).
-  const { byProduct, byVariant } = await getProductQuantities(prisma, tenantId);
+  const { byProduct, byVariant, byProductVariants } = await getProductQuantities(prisma, tenantId);
   // Packs hold no stock row: their count is what their components can make up.
   const withQuantities = await withBundleDetails(prisma, tenantId, products.map((p) => {
     const variants = (p as { variants?: { id: string }[] }).variants;
     return {
       ...p,
       quantity: byProduct.get(p.id) ?? 0,
+      // Stock of a product with variants lives on them; this is their total.
+      ...(p.hasVariants ? { variantsQuantity: byProductVariants.get(p.id) ?? 0 } : {}),
       ...(variants
         ? { variants: variants.map((v) => ({ ...v, quantity: byVariant.get(v.id) ?? 0 })) }
         : {}),

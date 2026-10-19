@@ -14,6 +14,7 @@ import { formatCurrency } from "@/lib/utils";
 import { useProductViewMode } from "../hooks/useProductViewMode";
 import Image from "next/image";
 import { isEmptyPack } from "@/lib/bundles";
+import { productOnHand } from "@/lib/product-stock";
 
 const formatAmount = formatCurrency;
 
@@ -26,6 +27,7 @@ function ProductTile({
 }) {
   const { t } = useTranslation("pos");
   const { data: photoBase64 } = useProductPhoto(product.id);
+  const onHand = productOnHand(product);
 
   return (
     <button
@@ -60,15 +62,15 @@ function ProductTile({
             {formatAmount(product.unit_price * (1 + product.tax_rate / 100))}
           </span>
         </div>
-        {product.quantity !== null &&
-          product.quantity <= 5 &&
+        {onHand !== null &&
+          onHand <= 5 &&
           !product.is_service && (
             <p
-              className={`text-xs mt-0.5 ${product.quantity === 0 ? "text-red-600 dark:text-red-400" : "text-orange-500 dark:text-orange-400"}`}
+              className={`text-xs mt-0.5 ${onHand === 0 ? "text-red-600 dark:text-red-400" : "text-orange-500 dark:text-orange-400"}`}
             >
-              {product.quantity === 0
+              {onHand === 0
                 ? t("outOfStock")
-                : t("lowStock", { count: product.quantity })}
+                : t("lowStock", { count: onHand })}
             </p>
           )}
       </div>
@@ -86,9 +88,9 @@ function ProductTile({
  */
 function ProductRow({ product, onClick }: { product: Product; onClick: () => void }) {
   const { t } = useTranslation("pos");
-  const outOfStock = product.quantity === 0 && !product.is_service;
-  const lowStock =
-    product.quantity !== null && product.quantity > 0 && product.quantity <= 5 && !product.is_service;
+  const onHand = productOnHand(product);
+  const outOfStock = onHand === 0 && !product.is_service;
+  const lowStock = onHand !== null && onHand > 0 && onHand <= 5 && !product.is_service;
 
   return (
     <button
@@ -102,7 +104,7 @@ function ProductRow({ product, onClick }: { product: Product; onClick: () => voi
           {outOfStock && <span className="ms-2 text-red-600 dark:text-red-400">{t("outOfStock")}</span>}
           {lowStock && (
             <span className="ms-2 text-orange-500 dark:text-orange-400">
-              {t("lowStock", { count: product.quantity ?? 0 })}
+              {t("lowStock", { count: onHand ?? 0 })}
             </span>
           )}
         </p>
