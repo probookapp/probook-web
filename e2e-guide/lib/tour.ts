@@ -1,7 +1,11 @@
-import { type Page, type Locator, expect } from "@playwright/test";
+import fs from "fs";
+import path from "path";
+import { type Page, type Locator, type TestInfo, expect } from "@playwright/test";
 import { LOCALE, narrate } from "./locale";
 import { Inspector } from "./inspector";
 import { t } from "./i18n";
+import { Camera } from "./camera";
+import { cachedClip, voiceSettings } from "../../scripts/guide-voice.mjs";
 
 export { LOCALE } from "./locale";
 
@@ -16,11 +20,51 @@ export const FAST = process.env.GUIDE_FAST === "1";
 /** Lets the shared afterEach give the closing caption its reading time. */
 const OPEN_TOURS = new WeakMap<Page, Tour>();
 
+const ROOT = path.resolve(__dirname, "..", "..");
+
+/**
+ * Where the narration is drawn.
+ *
+ * "post" (the default): nothing in the page; the build script burns styled
+ * subtitles from the timeline, so the camera's zoom never enlarges or crops
+ * them. "page": the old caption bar, drawn by the page itself.
+ */
+const CAPTIONS_IN_PAGE = process.env.GUIDE_CAPTIONS === "page";
+
+const VOICE = voiceSettings();
+
+/** Silence left between one sentence and the next. */
+const VOICE_GAP_MS = 320;
+
+/**
+ * When each page's video started. Playwright starts recording as the page is
+ * created, before the chapter's first line runs; the shared beforeEach stamps
+ * it so the timeline's times are times in the video.
+ */
+const VIDEO_STARTS = new WeakMap<Page, number>();
+
+export function markVideoStart(page: Page) {
+  VIDEO_STARTS.set(page, Date.now());
+}
+
+/** The closing card, the same at the end of every chapter. */
+const END_CARD: Record<string, { title: string; subtitle: string }> = {
+  fr: { title: "Essayez Probook gratuitement", subtitle: "10 jours, toutes les fonctions — probookapp.net" },
+  en: { title: "Try Probook for free", subtitle: "10 days, every feature — probookapp.net" },
+  ar: { title: "جرّب Probook مجاناً", subtitle: "10 أيام، بكل الميزات — probookapp.net" },
+};
+
+/** One thing that happened on film, timed from the start of the video. */
+export type TimelineEvent =
+  | { type: "say"; t: number; text: string; clip: string | null; ms: number }
+  | { type: "card"; t: number; title: string; subtitle: string; end?: boolean }
+  | { type: "end"; t: number };
+
 export function tourFor(page: Page): Tour | undefined {
   return OPEN_TOURS.get(page);
 }
 
-/** Reading pace for the on-screen caption bar (ms). */
+/** Reading pace for a caption with no voice (ms). */
 function readingTime(text: string): number {
   if (FAST) return 0;
   return Math.min(5200, Math.max(1100, 850 + text.length * 42));
@@ -245,7 +289,20 @@ export class Tour {
   constructor(
     readonly page: Page,
     private readonly chip: string
-  ) {}
+  ) {
+    // The phone chapters are framed by the phone itself: no camera there.
+    const width = page.viewportSize()?.width ?? 1920;
+    this.camera = width >= 1024 && process.env.GUIDE_CAMERA !== "0" ? new Camera(page, FAST) : null;
+  }
+
+  private readonly camera: Camera | null;
+
+  /** What happened when, for the build script: voice, subtitles, trimming. */
+  private readonly events: TimelineEvent[] = [];
+
+  private now() {
+    return Date.now() - (VIDEO_STARTS.get(this.page) ?? Date.now());
+  }
 
   /**
    * Watches the whole walk. The chapters touch every feature; this is what
@@ -284,9 +341,18 @@ export class Tour {
     this.inspector?.atStep(text);
     await this.inspector?.sweepToasts();
     await this.inspector?.sweepMissingKeys();
+    // With a voice, the clip must exist before filming starts: synthesizing
+    // here would put dead air in the take. Checked in verification runs too,
+    // so a missing clip is found in seconds.
+    const clip = cachedClip(ROOT, LOCALE, line, VOICE);
+    if (VOICE.provider !== "off" && !clip) {
+      throw new Error(
+        `No ${LOCALE} voice clip for ${JSON.stringify(line)} — run \`npm run guide:voice -- ${LOCALE}\``
+      );
+    }
     if (FAST) return;
     await this.holdCaption();
-    if (await this.runtime()) {
+    if (CAPTIONS_IN_PAGE && (await this.runtime())) {
       await this.page.evaluate(
         ([t, c]) => {
           window.__tour?.chip(c);
@@ -295,16 +361,15 @@ export class Tour {
         [line, this.chip] as const
       );
     }
-    // Timed on the line that is actually shown: the same sentence is a
-    // different length in each language, and pacing on the French would rush
-    // the others off screen.
+    this.events.push({ type: "say", t: this.now(), text: line, clip: clip?.file ?? null, ms: clip?.durationMs ?? 0 });
+    // Timed on the line that is actually spoken: the clip's own length, or a
+    // reading time in its language when there is no voice — the same sentence
+    // is a different length in each language.
     //
-    // Only a lead-in is held here. The rest of the reading time is owed to the
-    // *next* caption, which waits for it before replacing this one — so the
-    // actions a line describes play while that line is on screen, instead of
-    // after it. Holding the full time here made every caption run a beat ahead
-    // of the thing it was describing.
-    const total = holdMs ?? readingTime(line);
+    // Only a lead-in is held here. The rest is owed to the *next* line, which
+    // waits for it before starting — so the actions a sentence describes play
+    // while it is being said, instead of after it.
+    const total = holdMs ?? (clip ? clip.durationMs + VOICE_GAP_MS : readingTime(line));
     const lead = Math.min(900, Math.round(total * 0.35));
     await this.page.waitForTimeout(lead);
     this.captionUntil = Date.now() + (total - lead);
@@ -325,11 +390,35 @@ export class Tour {
     const card = [narrate(title), narrate(subtitle)] as const;
     if (FAST) return;
     await this.holdCaption();
+    await this.camera?.wide();
     if (!(await this.runtime())) return;
+    this.events.push({ type: "card", t: this.now(), title: card[0], subtitle: card[1] });
     await this.page.evaluate(([t, s]) => window.__tour?.card(t, s), card);
     await this.page.waitForTimeout(holdMs);
     await this.page.evaluate(() => window.__tour?.hideCard());
     await this.page.waitForTimeout(700);
+  }
+
+  /**
+   * Close the take: let the last sentence finish, show the closing card, and
+   * write the timeline next to the video for the build script.
+   */
+  async finish(testInfo: TestInfo) {
+    await this.holdCaption();
+    if (FAST) return;
+    await this.camera?.wide().catch(() => {});
+    const card = END_CARD[LOCALE] ?? END_CARD.fr;
+    if (await this.runtime()) {
+      this.events.push({ type: "card", t: this.now(), title: card.title, subtitle: card.subtitle, end: true });
+      await this.page.evaluate(([t, s]) => window.__tour?.card(t, s), [card.title, card.subtitle] as const);
+      await this.page.waitForTimeout(3200);
+    }
+    this.events.push({ type: "end", t: this.now() });
+    fs.mkdirSync(testInfo.outputDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(testInfo.outputDir, "timeline.json"),
+      JSON.stringify({ locale: LOCALE, voice: VOICE, events: this.events }, null, 2)
+    );
   }
 
   async captionPosition(p: "top" | "bottom") {
@@ -358,6 +447,7 @@ export class Tour {
   // ─── navigation ───
 
   async goto(path: string) {
+    await this.camera?.wide();
     await this.page.goto(`/${LOCALE}/${path}`.replace(/\/+$/, ""));
     await this.settle();
     await this.pause(600);
@@ -371,6 +461,7 @@ export class Tour {
    * here keeps the chapters identical at both widths.
    */
   async nav(route: string) {
+    await this.camera?.wide();
     const link = this.page.locator(`aside a[href="/${LOCALE}${route}"]`).first();
 
     // The off-canvas sidebar is translated out of frame, not hidden, so
@@ -399,7 +490,7 @@ export class Tour {
    * maths — the one part only the recording exercises — untested, and a
    * chapter that verifies green would still be able to fail mid-take.
    */
-  async point(target: Locator) {
+  async point(target: Locator, kind: "click" | "field" = "click") {
     const loc = target.first();
 
     // Finding the element and scrolling to it are retried together. Only the
@@ -410,6 +501,12 @@ export class Tour {
     for (let attempt = 0; ; attempt++) {
       try {
         await loc.waitFor({ state: "visible", timeout: attempt === 0 ? 30_000 : 8_000 });
+        // Out of the zoomed frame, nothing can be reached: step back first.
+        await this.camera?.settle();
+        if (this.camera?.zoomed) {
+          const before = await loc.boundingBox();
+          if (!before || !(await this.camera.shows(before))) await this.camera.wide();
+        }
         await loc.scrollIntoViewIfNeeded();
         break;
       } catch (err) {
@@ -431,14 +528,82 @@ export class Tour {
     }
     if (!box) return loc;
 
+    if (this.camera) {
+      box = (await this.aim(loc, box, kind)) ?? box;
+    }
+
     await this.page.evaluate(
       (b) => window.__tour?.spot(b),
       { x: box.x, y: box.y, w: box.width, h: box.height }
     );
     await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, {
-      steps: 24,
+      steps: FAST ? 1 : 18,
     });
     return loc;
+  }
+
+  /**
+   * Choose what the camera frames for this target, and frame it.
+   *
+   * A dialog is framed whole: it is the scene. A form field outside one gets
+   * its neighbourhood, wide enough to keep the fields around it in view. Any
+   * other click stays inside the current frame when it can, and goes wide
+   * when it cannot. Returns the target's box once the camera has settled.
+   */
+  private async aim(
+    loc: Locator,
+    box: { x: number; y: number; width: number; height: number },
+    kind: "click" | "field"
+  ) {
+    const camera = this.camera!;
+    const dialog = await loc
+      .evaluate((el) => {
+        const d = el.closest('[role="dialog"]');
+        if (!d) return null;
+        const r = d.getBoundingClientRect();
+        return { x: r.x, y: r.y, width: r.width, height: r.height };
+      })
+      .catch(() => null);
+
+    if (dialog) {
+      await camera.frame(dialog, { dialog: true });
+    } else if (kind === "field" && camera.zoomed && (await camera.shows(box))) {
+      // Already in frame: the next field of the same block. No camera move.
+    } else if (kind === "field") {
+      // The block the field belongs to, edge to edge — a whole line of the
+      // document, a whole settings card — rather than a window centred on the
+      // field, which cut the line's description off and let the sidebar in.
+      const vp = this.page.viewportSize() ?? { width: 1920, height: 1080 };
+      const block = await loc
+        .evaluate((el, maxWidth) => {
+          for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+            const r = p.getBoundingClientRect();
+            if (r.width >= 900 && r.width <= maxWidth) return { x: r.x, width: r.width };
+            if (r.width > maxWidth) break;
+          }
+          return null;
+        }, vp.width * 0.9)
+        .catch(() => null);
+      const w = block ? block.width : Math.min(vp.width, Math.max(1240, box.width + 200));
+      const x = block ? block.x : box.x + box.width / 2 - w / 2;
+      const h = (w * vp.height) / vp.width;
+      await camera.frame({ x, y: box.y + box.height / 2 - h / 2, width: w, height: h });
+    } else if (camera.zoomed && !(await camera.shows(box))) {
+      await camera.wide();
+    }
+    return loc.boundingBox();
+  }
+
+  /**
+   * Click without letting Playwright scroll the target "into view": under a
+   * pinch that snaps the zoomed view away. point() has already made sure the
+   * target is visible and on screen; this checks the rest of what a normal
+   * click would.
+   */
+  private async press(loc: Locator) {
+    if (!this.camera?.zoomed) return loc.click();
+    await expect(loc).toBeEnabled({ timeout: 10_000 });
+    return loc.click({ force: true });
   }
 
   private async clearSpot() {
@@ -448,45 +613,48 @@ export class Tour {
   /** Move to the target, then click it with full actionability checks. */
   async click(target: Locator, opts: { settleMs?: number } = {}) {
     const loc = await this.point(target);
-    await this.pause(250);
+    await this.pause(180);
     try {
-      await loc.click();
+      await this.press(loc);
     } catch (err) {
       // Same race, one step later: the row can remount while the pointer is
       // travelling to it. Re-point and click once more before giving up.
       if (!String(err).includes("not attached")) throw err;
       const again = await this.point(target);
-      await again.click();
+      await this.press(again);
     }
     await this.clearSpot();
-    await this.pause(opts.settleMs ?? 450);
+    await this.pause(opts.settleMs ?? 320);
+    // The click may have closed the framed dialog or changed page.
+    await this.camera?.settle();
   }
 
   /** Type character by character so the viewer sees the field being filled. */
   async type(target: Locator, text: string, opts: { clear?: boolean } = {}) {
-    const loc = await this.point(target);
-    await loc.click();
+    const loc = await this.point(target, "field");
+    await this.press(loc);
     if (opts.clear !== false) await loc.fill("");
     if (FAST) await loc.fill(text);
-    else await loc.pressSequentially(text, { delay: 38 });
+    // Brisk but legible; a long text is typed faster so it does not drag.
+    else await loc.pressSequentially(text, { delay: text.length > 40 ? 14 : 24 });
     await this.clearSpot();
-    await this.pause(300);
+    await this.pause(220);
   }
 
   /** Set a value in one shot (date pickers, long numbers). */
   async set(target: Locator, value: string) {
-    const loc = await this.point(target);
+    const loc = await this.point(target, "field");
     await loc.fill(value);
     await this.clearSpot();
-    await this.pause(350);
+    await this.pause(280);
   }
 
   /** Native <select>, by value or by visible label. */
   async choose(target: Locator, value: string | { label: string } | { value: string }) {
-    const loc = await this.point(target);
+    const loc = await this.point(target, "field");
     await loc.selectOption(value);
     await this.clearSpot();
-    await this.pause(450);
+    await this.pause(320);
   }
 
   /**
@@ -499,8 +667,8 @@ export class Tour {
     if (opts.search) {
       const search = root.locator('input[type="text"]').first();
       if (FAST) await search.fill(opts.search);
-      else await search.pressSequentially(opts.search, { delay: 45 });
-      await this.page.waitForTimeout(FAST ? 400 : 350);
+      else await search.pressSequentially(opts.search, { delay: 30 });
+      await this.page.waitForTimeout(FAST ? 400 : 300);
     }
     const option = this.page
       .locator('li[role="option"]')

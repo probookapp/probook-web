@@ -16,6 +16,8 @@
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { editTake } from "./guide-edit.mjs";
+import { makeThumbnails } from "./guide-thumbnails.mjs";
 
 const MOBILE = process.argv.includes("--mobile");
 
@@ -75,6 +77,16 @@ const MOBILE_TITLES = {
 };
 
 const TITLES = MOBILE ? MOBILE_TITLES : DESKTOP_TITLES;
+
+/**
+ * The music bed: a track chosen by hand (e.g. from YouTube's Audio Library)
+ * at e2e-guide/assets/music.mp3, else the one scripts/make-guide-music.mjs
+ * synthesizes, else none.
+ */
+const MUSIC = [
+  path.join(ROOT, "e2e-guide", "assets", "music.mp3"),
+  path.join(ROOT, "guide-output", "music", "bed.wav"),
+].find((f) => fs.existsSync(f)) ?? null;
 
 /**
  * Playwright renders the page at the VIEWPORT size and pads the rest of the
@@ -137,6 +149,7 @@ fs.rmSync(CHAPTERS, { recursive: true, force: true });
 fs.mkdirSync(CHAPTERS, { recursive: true });
 
 const produced = [];
+const thumbnails = [];
 for (const take of ordered) {
   // A chapter with no entry here used to fall back to Playwright's directory
   // name — a deliverable called
@@ -152,6 +165,27 @@ for (const take of ordered) {
   const name = `${TITLES[take.number]}.mp4`;
   const out = path.join(CHAPTERS, name);
   console.log(`→ ${name}`);
+  // A take filmed with a timeline gets the full edit: sync, trim, voice,
+  // music, subtitles (scripts/guide-edit.mjs). An older take is transcoded.
+  const timelineFile = path.join(RAW, take.dir, "timeline.json");
+  if (fs.existsSync(timelineFile)) {
+    const r = editTake({ video: take.video, timelineFile, out, music: MUSIC, frame: FRAME });
+    const card = JSON.parse(fs.readFileSync(timelineFile, "utf8")).events.find((e) => e.type === "card");
+    thumbnails.push({
+      video: out,
+      out: out.replace(/\.mp4$/, ".png"),
+      title: card.title,
+      // "Chapitre 4 — chiffrer, envoyer, convertir" → "Chapitre 4"
+      kicker: card.subtitle.split(/\s[—:–-]\s/)[0],
+      atS: r.duration * 0.45,
+      portrait: MOBILE,
+    });
+    console.log(
+      `   ${r.duration.toFixed(1)} s, ${r.clips} voice clips, ${r.cues} subtitles, sync ${r.offsetS >= 0 ? "+" : ""}${r.offsetS.toFixed(2)} s`
+    );
+    produced.push(out);
+    continue;
+  }
   ffmpeg([
     "-i",
     take.video,
@@ -178,6 +212,11 @@ for (const take of ordered) {
     out,
   ]);
   produced.push(out);
+}
+
+if (thumbnails.length) {
+  console.log(`→ ${thumbnails.length} miniatures`);
+  await makeThumbnails(ROOT, thumbnails);
 }
 
 // Same codec and resolution throughout, so the full cut is a stream copy.

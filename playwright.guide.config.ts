@@ -89,7 +89,7 @@ export default defineConfig({
     launchOptions: {
       // Every Playwright action pauses this long — the single biggest lever on
       // how "followable" the footage is. Keep in sync with GUIDE_SLOWMO.
-      slowMo: FAST ? 0 : Number(process.env.GUIDE_SLOWMO || 220),
+      slowMo: FAST ? 0 : Number(process.env.GUIDE_SLOWMO || 80),
       args: [`--window-size=${WIDTH},${HEIGHT}`, "--hide-scrollbars"],
     },
   },
