@@ -17,10 +17,6 @@ import fs from "node:fs";
 import path from "node:path";
 import { execFileSync, spawnSync } from "node:child_process";
 
-function run(cmd, args, opts = {}) {
-  return execFileSync(cmd, args, { encoding: "utf8", maxBuffer: 64 * 1024 * 1024, ...opts });
-}
-
 /** Seconds at which the first title card appears in the raw video. */
 function findCard(video, expectedS) {
   // The scene changes close to where the timeline says the card went up. The

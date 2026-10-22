@@ -7,7 +7,6 @@
  * from HTML so the type and the colours match the product.
  */
 import fs from "node:fs";
-import path from "node:path";
 import { createRequire } from "node:module";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
