@@ -200,14 +200,20 @@ test("Chapitre 4 — Du devis à la facture", async ({ page }) => {
     settleMs: 2000,
   });
 
-  await expect(page).toHaveURL(/\/invoices/);
-  await expect(tour.row(CLIENT.name)).toBeVisible();
+  // The conversion opens the invoice itself, not the list.
+  await expect(page).toHaveURL(/\/invoices\/[0-9a-f-]{36}/);
+  const invoice = page.locator("main");
+  await expect(invoice.getByText(CLIENT.name).filter({ visible: true }).first()).toBeVisible();
+  // 3 TVs, 3 installations, 3 mounts = 160 500 HT, 5 % off, 19 % VAT. Checked
+  // because a camera move once nudged a focused quantity from 3 to 2.98 and
+  // nothing else noticed: the take would have filmed a wrong invoice.
+  await expect(invoice.getByText(/181[\s\u202f\u00a0]445,25/).first()).toBeVisible();
   await tour.say("La facture est créée, reprenant lignes, quantités et montants du devis.");
 
   // ─── l'étiquette a suivi ───
   await tour.say(
     "Et l'étiquette a suivi : le même mot sur le devis, sur la facture et sur le bon de livraison. Un chantier ne change pas de nom en changeant de document."
   );
-  await expect(tour.row(CLIENT.name).getByText(TAG_NAME)).toBeVisible();
+  await tour.point(invoice.getByText(TAG_NAME).filter({ visible: true }).first());
   await tour.pause(1600);
 });
