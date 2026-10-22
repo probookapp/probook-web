@@ -172,12 +172,13 @@ for (const take of ordered) {
     const r = editTake({ video: take.video, timelineFile, out, music: MUSIC, frame: FRAME });
     const card = JSON.parse(fs.readFileSync(timelineFile, "utf8")).events.find((e) => e.type === "card");
     thumbnails.push({
-      video: out,
+      // From the raw take, which carries no subtitles, at the same moment.
+      video: take.video,
       out: out.replace(/\.mp4$/, ".png"),
       title: card.title,
       // "Chapitre 4 — chiffrer, envoyer, convertir" → "Chapitre 4"
       kicker: card.subtitle.split(/\s[—:–-]\s/)[0],
-      atS: r.duration * 0.45,
+      atS: r.trimS + r.duration * 0.45,
       portrait: MOBILE,
     });
     console.log(
