@@ -33,7 +33,15 @@ export function ServiceWorkerRegistration() {
       .register(`/sw.js?build=${encodeURIComponent(process.env.SW_BUILD_ID ?? "")}`)
       .then((reg) => {
         // A tab left open across a deploy still picks up sw.js changes.
-        interval = setInterval(() => reg.update(), 60 * 60 * 1000);
+        // update() rejects when the new worker fails to install (a dropped
+        // connection while it precaches — Sentry PROBOOK-WEB-T, Firefox). The
+        // current worker stays in charge and the next tick retries, so that
+        // is not an error worth an unhandled rejection.
+        interval = setInterval(() => {
+          reg.update().catch((err) => {
+            console.warn("Service worker update failed:", err);
+          });
+        }, 60 * 60 * 1000);
       })
       .catch((err) => {
         console.warn("Service worker registration failed:", err);
