@@ -4,6 +4,11 @@ on:
   push:
     branches: [master]
   pull_request:
+  # The full e2e run, @sweep tests included (see the e2e job): weekly, and on
+  # demand from the Actions tab.
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -34,8 +39,13 @@ jobs:
     # `playwright install` ("does not support chromium on ubuntu26.04-x64").
     # Move this together with a Playwright upgrade that supports the new image.
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    # Push/PR runs skip the @sweep tests (e2e/modal-stress.spec.ts: one dialog
+    # sweep alone took 28 min on the runner); the scheduled/manual run takes
+    # everything and gets the time for it. playwright.config reads FULL_SUITE
+    # for its globalTimeout, which must stay under this limit.
+    timeout-minutes: ${{ (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch') && 150 || 45 }}
     env:
+      FULL_SUITE: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' }}
       # The one place the port is written. playwright.config.ts reads E2E_PORT
       # too, so the server and the suite cannot drift apart again — which is
       # how CI came to start the app on 3001 while the suite dialled 3021.
@@ -106,7 +116,12 @@ jobs:
       # Installing only chromium would fail that project on the runner.
       - run: npx playwright install --with-deps chromium firefox
       - name: Run e2e suite
-        run: npx dotenv -e .env.test -- npx playwright test
+        run: |
+          if [ "$FULL_SUITE" = "true" ]; then
+            npx dotenv -e .env.test -- npx playwright test
+          else
+            npx dotenv -e .env.test -- npx playwright test --grep-invert @sweep
+          fi
       # Not just failure(): a run killed by timeout-minutes is "cancelled", and
       # that is exactly the run whose report says which test hung.
       - uses: actions/upload-artifact@v6

@@ -429,7 +429,10 @@ function report(name: string, result: SweepResult) {
   );
 }
 
-test.describe("Dialogs under stress", () => {
+// @sweep: over half an hour for the three, so push/PR CI leaves them out (the
+// first run with them hit the 45 min job limit) and the weekly full run in
+// .github/workflows/ci.yml takes them. Locally: npx playwright test --grep @sweep
+test.describe("Dialogs under stress", { tag: "@sweep" }, () => {
   test.setTimeout(30 * 60_000);
 
   test("every dialog of the application holds up to long words, big numbers and narrow screens", async ({ page }) => {

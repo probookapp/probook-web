@@ -46,7 +46,10 @@ export default defineConfig({
   // globalTimeout ends the run before the job limit so the HTML report is
   // still written and uploaded.
   reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "html",
-  globalTimeout: process.env.CI ? 38 * 60_000 : undefined,
+  // Kept under the job's timeout-minutes (45, or 150 for the full run).
+  globalTimeout: process.env.CI
+    ? (process.env.FULL_SUITE === "true" ? 140 : 38) * 60_000
+    : undefined,
   use: {
     baseURL: BASE_URL,
     trace: "on-first-retry",
