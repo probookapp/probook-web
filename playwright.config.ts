@@ -40,7 +40,13 @@ export default defineConfig({
   // dashboard. Playwright's 30 s default cut that short often enough to look
   // like a product failure — and it capped the 45 s the helper itself waits.
   timeout: 90_000,
-  reporter: "html",
+  // On CI the dot reporter only flushed a line per ~80 tests, so when a run
+  // stalled (2026-10-19: 15 tests in 30 min, then the job's 45 min limit) the
+  // log could not say which test. `list` prints each test with its duration;
+  // globalTimeout ends the run before the job limit so the HTML report is
+  // still written and uploaded.
+  reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : "html",
+  globalTimeout: process.env.CI ? 38 * 60_000 : undefined,
   use: {
     baseURL: BASE_URL,
     trace: "on-first-retry",
