@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname, useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
@@ -46,8 +47,19 @@ export function Sidebar({ onClose }: SidebarProps) {
   const { data: entitlements } = useEntitlements();
   const queryClient = useQueryClient();
 
+  // Clearing the local data takes a moment on a phone, and the button stayed
+  // live meanwhile: a second tap reached the server with the session already
+  // gone, got a 401, and that rejection went to Sentry (PROBOOK-WEB-V).
+  const [loggingOut, setLoggingOut] = useState(false);
   const handleLogout = async () => {
-    await authApi.logout();
+    if (loggingOut) return;
+    setLoggingOut(true);
+    try {
+      await authApi.logout();
+    } catch {
+      // Offline or session already gone: the local data must go regardless,
+      // or the next person on this device lands in the account.
+    }
     await clearAllUserData(queryClient);
     clearUser();
   };
@@ -223,6 +235,7 @@ export function Sidebar({ onClose }: SidebarProps) {
             </div>
             <button
               onClick={() => runGuarded(() => void handleLogout())}
+              disabled={loggingOut}
               className="p-3 -me-2 lg:p-1.5 lg:me-0 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
               aria-label={t("logout")}
               title={t("logout")}
