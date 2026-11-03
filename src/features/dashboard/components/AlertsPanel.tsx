@@ -12,6 +12,8 @@ import {
   useSendReminderEmail,
 } from "@/features/reminders/hooks/useReminders";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
+import { useEntitlements } from "@/hooks/useEntitlements";
+import { FEATURE_KEYS } from "@/lib/feature-keys";
 import { formatCurrency } from "@/lib/utils";
 import type { Alert, Reminder } from "@/types";
 
@@ -183,9 +185,15 @@ export function AlertsPanel() {
 
   // Raise reminders for anything newly due, so the actions below have a row to
   // act on. The sweep is idempotent, so landing on the dashboard twice is free.
+  // It is a write under /api/reminders, so the server refuses it (403) when the
+  // offer leaves reminders out — wait for the entitlements instead of firing a
+  // request that can only fail on every dashboard visit. useFeature() would
+  // not do: it reads "included" while the entitlements are still loading.
+  const { data: entitlements } = useEntitlements();
+  const canSweep = !!entitlements && entitlements[FEATURE_KEYS.REMINDERS]?.included !== false;
   useEffect(() => {
-    if (!isDemoMode) checkAndCreate.mutate();
-  }, [isDemoMode]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!isDemoMode && canSweep) checkAndCreate.mutate();
+  }, [isDemoMode, canSweep]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // An alert and its reminder describe the same document, which is what lets
   // one line carry both the fact and the actions.
