@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { applyStockChange } from "@/lib/stock";
 import { requirePermission } from "@/lib/permissions-server";
 import { num } from "@/lib/money";
+import { appendJournal, journalAmount, negate, posSaleContent } from "@/lib/pos-journal";
 
 // Sentinel thrown inside the transaction when another request cancelled first;
 // rolls everything back so a double-cancel can never double-restock.
@@ -67,6 +68,35 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
         },
       });
       if (flipped.count !== 1) throw ALREADY_CANCELLED;
+
+      // The sale stays in the journal as it was; the cancellation is its
+      // "moins", the same lines and payments, negated.
+      const operator = await tx.user.findFirst({
+        where: { tenantId, id: session.userId },
+        select: { displayName: true },
+      });
+      const sale = posSaleContent(transaction);
+      const { lines, payments } = negate(sale.lines, sale.payments);
+      await appendJournal(tx, {
+        tenantId,
+        kind: "CANCELLATION",
+        referenceId: transaction.id,
+        amount: -num(transaction.finalAmount),
+        payload: {
+          ticketNumber: transaction.ticketNumber,
+          reason: body.reason ?? null,
+          register: { id: transaction.registerId, name: null },
+          operator: { id: session.userId, name: operator?.displayName ?? null },
+          lines,
+          totals: {
+            ht: journalAmount(-num(transaction.subtotal)),
+            vat: journalAmount(-num(transaction.taxAmount)),
+            ttc: journalAmount(-num(transaction.finalAmount)),
+            stampDuty: journalAmount(-num(transaction.stampDuty)),
+          },
+          payments,
+        },
+      });
 
       // Restore stock through the inventory ledger (mirror of the sale decrement).
       for (const line of transaction.lines) {

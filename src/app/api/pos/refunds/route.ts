@@ -32,6 +32,8 @@ const lineKey = (
   designation: string
 ) => `${productId ?? ""}::${variantId ?? ""}::${designation}`;
 
+import { appendJournal, journalAmount } from "@/lib/pos-journal";
+
 export const POST = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "pos", "delete");
   if (denied) return denied;
@@ -204,7 +206,47 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
         });
       }
 
-      return { creditNote: cn, cashRefundAmount: paidInCash ? cashOut : 0 };
+      const cashRefunded = paidInCash ? cashOut : 0;
+      // The refund is a "moins" in the secured journal: the credit note's lines,
+      // negated, and how the money went back (cash from the till, the rest
+      // through the sale's other methods).
+      const operator = await tx.user.findFirst({
+        where: { tenantId, id: session.userId },
+        select: { displayName: true },
+      });
+      const otherRefunded = num(cn.total) - cashRefunded;
+      await appendJournal(tx, {
+        tenantId,
+        kind: "REFUND",
+        referenceId: cn.id,
+        amount: -num(cn.total),
+        payload: {
+          ticketNumber: transaction.ticketNumber,
+          creditNoteNumber: cn.creditNoteNumber,
+          register: { id: transaction.registerId, name: null },
+          operator: { id: session.userId, name: operator?.displayName ?? null },
+          lines: cn.lines.map((l) => ({
+            label: l.description,
+            quantity: -l.quantity,
+            unitPrice: journalAmount(l.unitPrice),
+            vatRate: l.taxRate,
+            ht: journalAmount(-num(l.subtotal)),
+            vat: journalAmount(-num(l.taxAmount)),
+            ttc: journalAmount(-num(l.total)),
+          })),
+          totals: {
+            ht: journalAmount(-num(cn.subtotal)),
+            vat: journalAmount(-num(cn.taxAmount)),
+            ttc: journalAmount(-num(cn.total)),
+          },
+          payments: [
+            ...(cashRefunded > 0 ? [{ method: "CASH", amount: journalAmount(-cashRefunded) }] : []),
+            ...(otherRefunded > 0.0005 ? [{ method: "OTHER", amount: journalAmount(-otherRefunded) }] : []),
+          ],
+        },
+      });
+
+      return { creditNote: cn, cashRefundAmount: cashRefunded };
     }));
   } catch (err) {
     if (err instanceof CreditNoteError) {

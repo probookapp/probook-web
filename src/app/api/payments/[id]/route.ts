@@ -6,6 +6,7 @@ import { validateBody, isValidationError } from "@/lib/validate";
 import { updatePaymentSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 import { num } from "@/lib/money";
+import { journalInvoicePayment } from "@/lib/pos-journal";
 
 const EPSILON = 0.01;
 
@@ -85,6 +86,13 @@ export const PUT = withAuth(async (req, { tenantId, session, params }) => {
         }
       }
 
+      // In the secured journal an edit is the old payment taken back and the
+      // new one recorded, the original entry is never rewritten.
+      const before = await tx.payment.findFirst({ where: { tenantId, id: existing.id } });
+      if (before) {
+        await journalInvoicePayment(tx, { tenantId, userId: session.userId, kind: "PAYMENT_REVERSAL", payment: before });
+      }
+
       const updated = await tx.payment.update({
         where: { tenantId, id: params?.id },
         data: {
@@ -96,6 +104,7 @@ export const PUT = withAuth(async (req, { tenantId, session, params }) => {
         },
       });
 
+      await journalInvoicePayment(tx, { tenantId, userId: session.userId, kind: "PAYMENT", payment: updated });
       await syncInvoiceStatus(tx, tenantId, existing.invoiceId);
       return updated;
     });
@@ -120,7 +129,8 @@ export const DELETE = withAuth(async (req, { tenantId, session, params }) => {
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   await prisma.$transaction(async (tx) => {
-    await tx.payment.delete({ where: { tenantId, id: params?.id } });
+    const deleted = await tx.payment.delete({ where: { tenantId, id: params?.id } });
+    await journalInvoicePayment(tx, { tenantId, userId: session.userId, kind: "PAYMENT_REVERSAL", payment: deleted });
     // A deleted payment may un-pay the invoice — recompute its status (SALE-8).
     await syncInvoiceStatus(tx, tenantId, existing.invoiceId);
   });

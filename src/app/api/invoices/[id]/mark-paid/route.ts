@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requirePermission } from "@/lib/permissions-server";
 import { invoiceMarkPaidSchema } from "@/lib/validations";
 import { num } from "@/lib/money";
+import { journalInvoicePayment } from "@/lib/pos-journal";
 
 const EPSILON = 0.01;
 
@@ -49,7 +50,7 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
     });
 
     if (flipped.count === 1 && remaining > EPSILON) {
-      await tx.payment.create({
+      const created = await tx.payment.create({
         data: {
           tenantId,
           invoiceId: invoice.id,
@@ -60,6 +61,7 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
           notes: body?.notes || null,
         },
       });
+      await journalInvoicePayment(tx, { tenantId, userId: session.userId, kind: "PAYMENT", payment: created });
     }
 
     return tx.invoice.findFirst({

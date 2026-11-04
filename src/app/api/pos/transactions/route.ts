@@ -11,6 +11,7 @@ import { computeStampDuty, stampDutyApplies } from "@/lib/stamp-duty";
 import { movesTheDrawer } from "@/lib/pos-payment-methods";
 import { missingChequeMentions } from "@/lib/cheque-mentions";
 import { normalizeBundleLines } from "@/lib/bundles-server";
+import { appendJournal, posSalePayload } from "@/lib/pos-journal";
 
 interface PosLineInput {
   product_id?: string | null;
@@ -347,6 +348,23 @@ export const POST = withAuth(async (req, { tenantId, session: authSession }) => 
               });
             }
           }
+
+          // Sealed in the secured journal with the sale, or not at all.
+          const [registerRow, operatorRow] = await Promise.all([
+            tx.posRegister.findFirst({ where: { tenantId, id: body.register_id }, select: { name: true } }),
+            tx.user.findFirst({ where: { tenantId, id: authSession.userId }, select: { displayName: true } }),
+          ]);
+          await appendJournal(tx, {
+            tenantId,
+            kind: "SALE",
+            referenceId: created.id,
+            amount: num(created.finalAmount),
+            payload: posSalePayload(
+              created,
+              { id: body.register_id, name: registerRow?.name ?? null },
+              { id: authSession.userId, name: operatorRow?.displayName ?? null }
+            ),
+          });
 
           return created;
         });

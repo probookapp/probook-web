@@ -17,6 +17,10 @@
     {
       "path": "/api/cron/subscriptions",
       "schedule": "0 2 * * *"
+    },
+    {
+      "path": "/api/cron/pos-closures",
+      "schedule": "0 1 * * *"
     }
   ]
 }

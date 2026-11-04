@@ -8,6 +8,7 @@ import { requirePermission } from "@/lib/permissions-server";
 import { num } from "@/lib/money";
 import { stampDutyApplies } from "@/lib/stamp-duty";
 import { missingChequeMentions } from "@/lib/cheque-mentions";
+import { journalInvoicePayment } from "@/lib/pos-journal";
 
 const EPSILON = 0.01;
 
@@ -143,6 +144,8 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
           idempotencyKey,
         },
       });
+
+      await journalInvoicePayment(tx, { tenantId, userId: session.userId, kind: "PAYMENT", payment: created });
 
       if (paidSoFar + body.amount >= amountOwed - EPSILON && invoice.status !== "PAID") {
         await tx.invoice.update({
