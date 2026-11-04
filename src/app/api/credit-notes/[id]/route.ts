@@ -25,6 +25,16 @@ export const DELETE = withAuth(async (req, { tenantId, session, params }) => {
 
   const existing = await prisma.creditNote.findFirst({ where: { tenantId, id: params?.id } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  // An issued credit note is an invoice in law: its number belongs to an
+  // unbroken sequence and the document cannot disappear (CGI ann. II
+  // art. 242 nonies A; Algerian decree 05-468 art. 10). It is cancelled by a
+  // new invoice, never deleted. Only a draft can go.
+  if (existing.status !== "DRAFT") {
+    return NextResponse.json(
+      { error: "An issued credit note cannot be deleted. Issue an invoice to cancel it.", code: "CREDIT_NOTE_ISSUED" },
+      { status: 409 }
+    );
+  }
 
   await prisma.$transaction(async (tx) => {
     // If the credit note restocked returned items, reverse those ledger entries

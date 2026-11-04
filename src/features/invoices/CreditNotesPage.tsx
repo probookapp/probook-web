@@ -88,20 +88,26 @@ export function CreditNotesPage() {
   }
 
   /** The row's actions, shared by the table row and the phone card. */
-  const creditNoteActions = (id: string): RowAction[] => [
+  // Only a draft can be deleted: an issued credit note keeps its place in
+  // the numbering for good (see DELETE /api/credit-notes/[id]).
+  const creditNoteActions = (id: string, status: string): RowAction[] => [
     {
       key: "view",
       label: t("common:buttons.view"),
       icon: Eye,
       onSelect: () => router.push(`/invoices/credit-notes/${id}`),
     },
-    {
-      key: "delete",
-      label: t("common:buttons.delete"),
-      icon: Trash2,
-      onSelect: () => setDeleteConfirmId(id),
-      danger: true,
-    },
+    ...(status === "DRAFT"
+      ? [
+          {
+            key: "delete",
+            label: t("common:buttons.delete"),
+            icon: Trash2,
+            onSelect: () => setDeleteConfirmId(id),
+            danger: true,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -163,7 +169,7 @@ export function CreditNotesPage() {
                     badge={cn.restocked && <Badge variant="success">{t("invoices:creditNotes.restocked")}</Badge>}
                     meta={<><span className="font-mono">{cn.credit_note_number}</span> · {formatDate(cn.issue_date)}</>}
                     amount={formatCurrency(cn.total)}
-                    actions={<RowActions actions={creditNoteActions(cn.id)} />}
+                    actions={<RowActions actions={creditNoteActions(cn.id, cn.status)} />}
                   />
                 </li>
               ))
@@ -205,7 +211,7 @@ export function CreditNotesPage() {
                         <TableNumericCell className="font-medium">{formatCurrency(cn.total)}</TableNumericCell>
                       )}
                       <TableCell>
-                        <RowActions actions={creditNoteActions(cn.id)} />
+                        <RowActions actions={creditNoteActions(cn.id, cn.status)} />
                       </TableCell>
                     </TableRow>
                   ))
