@@ -46,6 +46,8 @@ import { useRouter } from "@/lib/navigation";
 import type { ReportPDFColumn } from "@/features/pdf/ReportPDF";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { locationsApi } from "@/lib/api";
+import { API_BASE_URL } from "@/lib/config";
+import { claimDownloadTab, deliverPdf } from "@/features/pdf/pdf-delivery";
 import { useLowStock } from "@/features/products/hooks/useStock";
 import {
   useRevenueByMonth,
@@ -1773,6 +1775,7 @@ export function ReportsPage() {
             <p className="text-sm text-(--color-text-secondary)">
               {t("reports:accountingExport.description")}
             </p>
+            <p className="text-xs text-(--color-text-secondary)">{t("reports:accountingExport.fecHint")}</p>
             <div className="flex flex-wrap justify-end gap-2">
               <ColumnPicker columns={accountingColumns} />
               <Button
@@ -1782,6 +1785,31 @@ export function ReportsPage() {
               >
                 <Download className="h-4 w-4 me-2" />
                 {t("reports:accountingExport.downloadJournal")}
+              </Button>
+              {/* The same period as double-entry lines, in the FEC layout an
+                  accountant imports (src/lib/fec.ts). */}
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={async () => {
+                  const tab = claimDownloadTab();
+                  try {
+                    const res = await fetch(
+                      `${API_BASE_URL}/api/reports/fec?startDate=${startDate}&endDate=${endDate}`,
+                      { credentials: "include" }
+                    );
+                    if (!res.ok) throw new Error(String(res.status));
+                    const name =
+                      /filename="([^"]+)"/.exec(res.headers.get("content-disposition") ?? "")?.[1] ?? "FEC.txt";
+                    deliverPdf(await res.blob(), name, tab, t("common:pdfViewer.openPdf"));
+                  } catch {
+                    tab?.close();
+                    toast.error(t("reports:accountingExport.fecFailed"));
+                  }
+                }}
+              >
+                <Download className="h-4 w-4 me-2" />
+                {t("reports:accountingExport.downloadFec")}
               </Button>
               {counts.map((c) => (
                 <Button

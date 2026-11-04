@@ -188,7 +188,10 @@
       "payment": "Payment",
       "expense": "Expense"
     },
-    "truncatedNote": "Showing the first 100 of {{count}} entries. Export the CSV for the full journal."
+    "truncatedNote": "Showing the first 100 of {{count}} entries. Export the CSV for the full journal.",
+    "downloadFec": "FEC export",
+    "fecFailed": "The FEC export could not be generated.",
+    "fecHint": "The FEC file holds the period's sales, credit notes, till sales, purchases and settlements as double-entry lines, for your accountant."
   },
   "filters": {
     "dateRange": "Date Range",

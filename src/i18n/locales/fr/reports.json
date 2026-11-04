@@ -188,7 +188,10 @@
       "payment": "Règlement",
       "expense": "Dépense"
     },
-    "truncatedNote": "Affichage des 100 premières lignes sur {{count}}. Exportez le CSV pour le journal complet."
+    "truncatedNote": "Affichage des 100 premières lignes sur {{count}}. Exportez le CSV pour le journal complet.",
+    "downloadFec": "Export FEC",
+    "fecFailed": "L'export FEC n'a pas pu être généré.",
+    "fecHint": "Le fichier FEC reprend ventes, avoirs, ventes en caisse, achats et règlements de la période sous forme d'écritures en partie double, à transmettre à votre expert-comptable."
   },
   "filters": {
     "dateRange": "Période",
