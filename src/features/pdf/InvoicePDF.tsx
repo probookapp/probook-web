@@ -15,6 +15,14 @@ import { DocumentHeading } from "./DocumentHeading";
 import { bundleRoles, isPresentationLine } from "@/lib/bundles";
 import { vatBreakdown } from "@/lib/document-totals";
 import { DEFAULT_CURRENCY } from "@/lib/currencies";
+import {
+  buyerMentions,
+  legalCompanyName,
+  invoiceFooterMentions,
+  isInvoicePaymentMethod,
+  requiresAmountInWords,
+  requiresStampAndSignature,
+} from "@/lib/legal-mentions";
 
 
 interface InvoicePDFProps {
@@ -72,10 +80,27 @@ export function InvoicePDF({
     discountAmount: invoice.discount_amount,
     currency,
   });
+  // The stored subtotal, tax and total already include shipping (see
+  // calculateDocumentTotals). They used to be added a second time here, so a
+  // document with shipping printed a total higher than the one it was paid at.
+  const shippingVat = Math.max(0, invoice.tax_amount - vatRates.reduce((sum, r) => sum + r.tax, 0));
   const documentDiscount = Math.max(
     0,
     linesSubtotal - (invoice.subtotal - (invoice.shipping_cost || 0))
   );
+
+  // Mentions the regime asks for (src/lib/legal-mentions.ts).
+  const clientLegal = buyerMentions(invoice.client);
+  const footerMentions = invoiceFooterMentions(company, invoice.client, invoice);
+  const paymentMethod = isInvoicePaymentMethod(invoice.payment_method)
+    ? t(`legal.paymentMethods.${invoice.payment_method}`)
+    : null;
+  // The total in words is a French formula ("arrêté à la somme de") and
+  // numberToFrenchWords only speaks French, so on its own it is printed on
+  // French documents only. In Algeria the decree makes it mandatory whatever
+  // the document's language: there it is printed in French, label included,
+  // so the line stays one coherent sentence.
+  const wordsLocale = locale === "fr" ? "fr" : requiresAmountInWords(company) ? "fr" : null;
 
   const getStatusStyle = () => {
     switch (invoice.status) {
@@ -105,6 +130,7 @@ export function InvoicePDF({
           dates={[
             { label: t("invoice.issueDate"), value: formatDate(invoice.issue_date, locale) },
             { label: t("invoice.dueDate"), value: formatDate(invoice.due_date, locale) },
+            ...(paymentMethod ? [{ label: t("legal.paymentMethod"), value: paymentMethod }] : []),
           ]}
           recipientLabel={t("invoice.billTo")}
         >
@@ -117,9 +143,22 @@ export function InvoicePDF({
               {invoice.client.postal_code} {invoice.client.city}
             </Text>
           )}
+          {invoice.client?.phone && (
+            <Text style={styles.clientDetail}>{t("common.phone")}: {invoice.client.phone}</Text>
+          )}
           {invoice.client?.email && (
             <Text style={styles.clientDetail}>{invoice.client.email}</Text>
           )}
+          {invoice.delivery_address && (
+            <Text style={styles.clientDetail}>
+              {t("legal.deliveryAddress")}: {invoice.delivery_address}
+            </Text>
+          )}
+          {clientLegal.map((m) => (
+            <Text key={m.key} style={styles.clientDetail}>
+              {pdfString(m.key, locale, m.values)}
+            </Text>
+          ))}
           {renderIdentifiers(company, invoice.client).map((id) => (
             <Text key={id.label} style={styles.clientDetail}>
               {id.label}: {id.value}
@@ -244,13 +283,13 @@ export function InvoicePDF({
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>{t("invoice.totals.subtotalHt")}</Text>
               <Text style={styles.totalValue}>
-                {pdfCurrency(invoice.subtotal, locale, currency)}
+                {pdfCurrency(invoice.subtotal - ((invoice.shipping_cost || 0)), locale, currency)}
               </Text>
             </View>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>{t("invoice.totals.vatProducts")}</Text>
               <Text style={styles.totalValue}>
-                {pdfCurrency(invoice.tax_amount, locale, currency)}
+                {pdfCurrency(invoice.tax_amount - shippingVat, locale, currency)}
               </Text>
             </View>
             {vatRates.length > 1 &&
@@ -273,7 +312,7 @@ export function InvoicePDF({
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>{t("invoice.totals.shippingVat")} ({invoice.shipping_tax_rate}%)</Text>
                   <Text style={styles.totalValue}>
-                    {pdfCurrency(invoice.shipping_cost * (invoice.shipping_tax_rate / 100), locale, currency)}
+                    {pdfCurrency(shippingVat, locale, currency)}
                   </Text>
                 </View>
               </>
@@ -282,20 +321,14 @@ export function InvoicePDF({
               <Text style={styles.totalLabelFinal}>{t("invoice.totals.totalTtc")}</Text>
               <Text style={styles.totalValueFinal}>
                 {pdfCurrency(
-                  invoice.total +
-                  (invoice.shipping_cost > 0
-                    ? invoice.shipping_cost + invoice.shipping_cost * (invoice.shipping_tax_rate / 100)
-                    : 0),
+                  invoice.total,
                   locale,
                   currency
                 )}
               </Text>
             </View>
             {invoice.stamp_duty > 0 && (() => {
-              const grandTotal = invoice.total +
-                (invoice.shipping_cost > 0
-                  ? invoice.shipping_cost + invoice.shipping_cost * (invoice.shipping_tax_rate / 100)
-                  : 0);
+              const grandTotal = invoice.total;
               return (
                 <>
                   <View style={styles.totalRow}>
@@ -315,10 +348,7 @@ export function InvoicePDF({
               );
             })()}
             {(invoice.down_payment_percent > 0 || invoice.down_payment_amount > 0) && (() => {
-              const totalWithShipping = invoice.total +
-                (invoice.shipping_cost > 0
-                  ? invoice.shipping_cost + invoice.shipping_cost * (invoice.shipping_tax_rate / 100)
-                  : 0);
+              const totalWithShipping = invoice.total;
               const downPaymentValue = invoice.down_payment_amount > 0
                 ? invoice.down_payment_amount
                 : totalWithShipping * (invoice.down_payment_percent / 100);
@@ -341,24 +371,15 @@ export function InvoicePDF({
                 </>
               );
             })()}
-            {/* The amount in words is a French legal formula ("arrêté à la
-                somme de"), and numberToFrenchWords only speaks French. Printed
-                on an Arabic or English document it is a sentence in the wrong
-                language on a legal record, which is worse than its absence —
-                so it appears on French documents only. An Arabic invoice
-                needing its own formula is a question for an accountant, not
-                one to invent here. */}
-            {locale === "fr" && (
+            {/* See wordsLocale above. */}
+            {wordsLocale && (
             <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#e5e2dc" }}>
               <Text style={{ fontSize: 8, color: "#837d73", fontStyle: "italic" }}>
-                {t("invoice.amountInWords")}: {(() => {
+                {pdfString("invoice.amountInWords", wordsLocale)}: {(() => {
                   const curr = currency;
                   const words = CURRENCY_WORDS[curr] || { main: curr.toLowerCase(), sub: "centime" };
                   return numberToFrenchWords(
                     invoice.total +
-                    (invoice.shipping_cost > 0
-                      ? invoice.shipping_cost + invoice.shipping_cost * (invoice.shipping_tax_rate / 100)
-                      : 0) +
                     (invoice.stamp_duty || 0),
                     words.main,
                     words.sub
@@ -386,13 +407,38 @@ export function InvoicePDF({
           </View>
         )}
 
+        {/* Mandatory mentions, in the flow rather than the fixed footer: there
+            can be four of them, and the footer is drawn over the page. */}
+        {footerMentions.length > 0 && (
+          <View style={{ marginTop: 10 }} wrap={false}>
+            {footerMentions.map((m) => (
+              <Text key={m.key} style={{ fontSize: 7.5, color: "#635e56", marginBottom: 1 }}>
+                {pdfString(m.key, locale, m.values)}
+              </Text>
+            ))}
+          </View>
+        )}
+
+        {/* Algeria, decree 05-468 art. 4: a printed invoice bears the seller's
+            wet stamp and signature. */}
+        {requiresStampAndSignature(company) && (
+          <View style={{ marginTop: 16, alignItems: "flex-end" }} wrap={false}>
+            <View style={{ width: "40%" }}>
+              <Text style={{ fontSize: 9, fontWeight: "bold", marginBottom: 5 }}>
+                {t("legal.stampAndSignature")}
+              </Text>
+              <View style={{ borderWidth: 1, borderColor: "#d1ccc4", height: 60, borderRadius: 4 }} />
+            </View>
+          </View>
+        )}
+
         {/* Footer */}
         <View style={styles.footer} fixed>
           {company.legal_mentions && (
             <Text style={styles.footerText}>{company.legal_mentions}</Text>
           )}
           <Text style={styles.footerText}>
-            {company.company_name}
+            {legalCompanyName(company)}
             {identifierSummary(company, company) &&
               ` - ${identifierSummary(company, company)}`}
           </Text>

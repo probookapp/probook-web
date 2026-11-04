@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useParams, useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Pencil, CheckCircle, Send, ShieldCheck, ShieldAlert, Truck, Mail, Undo2 } from "lucide-react";
+import { ArrowLeft, Pencil, CheckCircle, Send, ShieldCheck, ShieldAlert, Truck, Mail, Undo2, FileCode2 } from "lucide-react";
 import {
   Button,
   Card,
@@ -18,20 +18,24 @@ import { PaymentsList } from "./components";
 import { CreateCreditNoteModal } from "./components/CreateCreditNoteModal";
 import { useInvoice, useMarkInvoicePaid, useIssueInvoice, useVerifyInvoiceIntegrity, useConvertInvoiceToDeliveryNote } from "./hooks/useInvoices";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
-import { useCompanySettings } from "@/features/settings";
+import { useCompanySettings, useLogoBase64 } from "@/features/settings";
+import { claimDownloadTab, deliverPdf, reportPdfFailure } from "@/features/pdf/pdf-delivery";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { DocumentTagsRow } from "@/components/documents/DocumentTagsRow";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { toast } from "@/stores/useToastStore";
 import { apiErrorCode, getApiErrorMessage } from "@/lib/api-adapter";
 import { DocumentLinesTable } from "@/components/documents/DocumentLinesTable";
+import { companyComplianceIssues, invoiceComplianceIssues } from "@/lib/legal-mentions";
 
 export function InvoiceViewPage() {
-  const { t } = useTranslation(["invoices", "common"]);
+  const { t } = useTranslation(["invoices", "common", "settings"]);
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const [showCreditNoteModal, setShowCreditNoteModal] = useState(false);
+  const [facturxPending, setFacturxPending] = useState(false);
+  const { data: logoBase64 } = useLogoBase64();
 
   const { isDemoMode, showSubscribePrompt } = useDemoMode();
   const { hasPermission } = useAuthStore();
@@ -81,6 +85,34 @@ export function InvoiceViewPage() {
       return;
     }
     setShowEmailDialog(true);
+  };
+
+  // Before it is issued, say what the law requires and the invoice lacks:
+  // afterwards it is frozen and nothing can be added to it.
+  const complianceIssues =
+    invoice.status === "DRAFT" && company
+      ? [
+          ...companyComplianceIssues(company),
+          ...invoiceComplianceIssues(company, invoice.client, invoice),
+        ]
+      : [];
+
+  // Factur-X: the French electronic invoice (PDF/A-3 + EN 16931 XML). Loaded on
+  // the click, like every PDF: the renderer is heavy.
+  const handleFacturx = async () => {
+    if (!company || facturxPending) return;
+    setFacturxPending(true);
+    const tab = claimDownloadTab();
+    try {
+      const { renderFacturxPdf } = await import("@/features/pdf/facturx-download");
+      const blob = await renderFacturxPdf(invoice, company, logoBase64);
+      deliverPdf(blob, `${invoice.invoice_number}-factur-x.pdf`, tab, t("common:pdfViewer.openPdf"));
+    } catch (err) {
+      tab?.close();
+      toast.error(reportPdfFailure(err, "download", t("invoices:facturx.failed")));
+    } finally {
+      setFacturxPending(false);
+    }
   };
 
   const getEmailSubject = () => `${t("invoices:title")} ${invoice.invoice_number}`;
@@ -173,6 +205,29 @@ export function InvoiceViewPage() {
           )}
         </div>
       </div>
+
+      {complianceIssues.length > 0 && (
+        <div
+          role="status"
+          className="rounded-lg border border-warning-200 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-950 dark:text-warning-200"
+        >
+          <p className="flex items-center gap-2 font-medium">
+            <ShieldAlert className="h-4 w-4 shrink-0" />
+            {t("settings:legalCompliance.invoiceTitle")}
+          </p>
+          <p className="mt-1">{t("settings:legalCompliance.missing")}</p>
+          <ul className="mt-1 list-disc ps-5">
+            {complianceIssues.map((issue) => (
+              <li key={issue.key}>{t(`settings:legalCompliance.issues.${issue.key}`)}</li>
+            ))}
+          </ul>
+          {complianceIssues.some((issue) => issue.scope === "company") && (
+            <Button variant="secondary" size="sm" className="mt-2" onClick={() => router.push("/settings")}>
+              {t("settings:legalCompliance.fixSettings")}
+            </Button>
+          )}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
@@ -276,6 +331,15 @@ export function InvoiceViewPage() {
             <CardContent className="pt-0">
               {company && (
                 <PDFViewer type="invoice" document={invoice} company={company} />
+              )}
+              {company?.fiscal_profile === "FR" && invoice.status !== "DRAFT" && (
+                <div className="mt-3">
+                  <Button variant="secondary" size="sm" onClick={handleFacturx} isLoading={facturxPending}>
+                    <FileCode2 className="h-4 w-4 me-2" />
+                    {t("invoices:facturx.download")}
+                  </Button>
+                  <p className="mt-1 text-xs text-(--color-text-secondary)">{t("invoices:facturx.hint")}</p>
+                </div>
               )}
             </CardContent>
           </Card>

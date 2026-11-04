@@ -64,6 +64,8 @@ model Tenant {
   stockLevels          StockLevel[]
   stockTransfers       StockTransfer[]
   tags                 Tag[]
+  posJournalEntries    PosJournalEntry[]
+  posClosures          PosClosure[]
 
   @@map("tenants")
 }
@@ -247,6 +249,12 @@ model Client {
   vatNumber  String?  @map("vat_number")
   nis        String?
   art        String?
+  // A private individual rather than a business. Decides which legal mentions
+  // an invoice owes them: no B2B late-payment clauses in France, and only
+  // name + address in Algeria (decree 05-468 art. 3).
+  isConsumer Boolean  @default(false) @map("is_consumer")
+  legalForm  String?  @map("legal_form")
+  activity   String?
   notes      String?
   createdAt  DateTime @default(now()) @map("created_at")
   updatedAt  DateTime @updatedAt @map("updated_at")
@@ -578,6 +586,19 @@ model Invoice {
   isCashSale           Boolean   @default(false) @map("is_cash_sale") // droit de timbre only applies to cash settlements
   stampDutyExempt      Boolean   @default(false) @map("stamp_duty_exempt") // legal exemption: no timbre even when cash
   stampDuty            Decimal   @default(0) @map("stamp_duty") @db.Decimal(16, 3) // droit de timbre snapshot (cash invoices, above threshold)
+  // How the client is to pay (CASH | CHEQUE | TRANSFER | CARD). Decree 05-468
+  // art. 3 makes the "mode de paiement" a mandatory mention in Algeria.
+  paymentMethod        String?   @map("payment_method")
+  // French e-invoicing mentions (CGI ann. II art. 242 nonies A; EN 16931 for
+  // Factur-X, see src/lib/facturx.ts):
+  //   deliveryAddress   where the goods go, when not the client's address
+  //   operationNature   GOODS | SERVICES | MIXED (derived from the lines when null)
+  //   vatExemption      the legal ground of 0 % lines: INTRA_EU | EXPORT |
+  //                     REVERSE_CHARGE | OTHER (with vatExemptionNote)
+  deliveryAddress      String?   @map("delivery_address")
+  operationNature      String?   @map("operation_nature")
+  vatExemption         String?   @map("vat_exemption")
+  vatExemptionNote     String?   @map("vat_exemption_note")
   // Client-minted dedupe key so offline replays / lost-response retries cannot create the document twice.
   idempotencyKey       String?   @map("idempotency_key")
   createdAt            DateTime  @default(now()) @map("created_at")
@@ -763,6 +784,21 @@ model CompanySettings {
   stampDutyRate          Float?   @default(1.0) @map("stamp_duty_rate") // percentage
   stampDutyThreshold     Decimal? @default(0) @map("stamp_duty_threshold") @db.Decimal(16, 3) // min TTC for timbre to apply
   printBundleDetail      Boolean  @default(true) @map("print_bundle_detail") // packs list their components on quote/invoice PDFs
+  // Legal identity printed under the company name (see src/lib/legal-mentions.ts):
+  // the Algerian decree 05-468 art. 3 asks for the legal form, the nature of
+  // the activity and the share capital; French invoices for the legal form and
+  // capital of a company, or the "EI" mention of an individual entrepreneur.
+  legalForm              String?  @map("legal_form") // a LEGAL_FORMS code for the fiscal profile
+  shareCapital           Decimal? @map("share_capital") @db.Decimal(16, 3)
+  activity               String? // nature de l'activité
+  // France: franchise en base de TVA, invoices then carry the exemption mention.
+  vatFranchise           Boolean  @default(false) @map("vat_franchise")
+  // France, business clients: the late-penalty rate and early-payment discount
+  // printed on every invoice. Null prints the legal default / "néant".
+  latePenaltyRate        String?  @map("late_penalty_rate")
+  earlyPaymentDiscount   String?  @map("early_payment_discount")
+  // France: option for paying VAT on debits (services), a mandatory mention.
+  vatOnDebits            Boolean  @default(false) @map("vat_on_debits")
   updatedAt              DateTime @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -1246,6 +1282,71 @@ model PosPrinterConfig {
   @@index([tenantId])
   @@index([registerId])
   @@map("pos_printer_configs")
+}
+
+// ========== Secured cash journal (art. 286 I 3° bis CGI) ==========
+//
+// Every customer payment the software records, a till sale, its cancellation
+// or refund, a payment on an invoice, is sealed here as it happens: an
+// append-only, per-tenant chain where each entry's HMAC covers the previous
+// entry's. The rows a screen shows (pos_transactions, payments) can change
+// status; this journal never changes. A database trigger refuses UPDATE and
+// DELETE on both tables below (except the cascade of a tenant deletion).
+// See src/lib/pos-journal.ts and src/lib/pos-closures.ts.
+
+model PosJournalEntry {
+  id          String   @id @default(uuid())
+  tenantId    String   @map("tenant_id")
+  /// 1, 2, 3… per tenant, no gaps.
+  sequence    Int
+  /// SALE | CANCELLATION | REFUND | PAYMENT | PAYMENT_REVERSAL | CLOSURE | ARCHIVE
+  kind        String
+  /// The record the event is about (POS transaction, credit note, payment…).
+  referenceId String?  @map("reference_id")
+  /// Signed amount including taxes: corrections are "moins" entries, never edits.
+  amount      Decimal  @default(0) @db.Decimal(16, 3)
+  occurredAt  DateTime @map("occurred_at")
+  /// The event's data as recorded: lines, totals, payments, operator, register.
+  payload     Json
+  previousHash String  @map("previous_hash")
+  hash        String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, sequence])
+  @@index([tenantId, occurredAt])
+  @@map("pos_journal_entries")
+}
+
+/// Daily, monthly and yearly closures with their cumulative totals. Each one
+/// is itself sealed as a CLOSURE entry of the journal.
+model PosClosure {
+  id               String   @id @default(uuid())
+  tenantId         String   @map("tenant_id")
+  /// DAY | MONTH | YEAR
+  periodType       String   @map("period_type")
+  /// "2026-11-03" | "2026-11" | "2026", in the tenant's local time.
+  periodKey        String   @map("period_key")
+  firstSequence    Int?     @map("first_sequence")
+  lastSequence     Int?     @map("last_sequence")
+  entryCount       Int      @map("entry_count")
+  totalTtc         Decimal  @map("total_ttc") @db.Decimal(16, 3)
+  /// Totals by event kind, by payment method and VAT by rate.
+  breakdown        Json
+  /// Cumulative total since the start of the period's year.
+  grandTotalPeriod Decimal  @map("grand_total_period") @db.Decimal(16, 3)
+  /// Cumulative total since the first entry, never reset.
+  perpetualTotal   Decimal  @map("perpetual_total") @db.Decimal(16, 3)
+  journalSequence  Int      @map("journal_sequence")
+  hash             String
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, periodType, periodKey])
+  @@index([tenantId, periodType])
+  @@map("pos_closures")
 }
 
 // ========== Platform Admin ==========

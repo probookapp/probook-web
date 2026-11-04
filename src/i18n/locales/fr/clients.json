@@ -21,7 +21,11 @@
     "country": "Pays",
     "siret": "SIRET",
     "vatNumber": "Numéro de TVA",
-    "notes": "Notes"
+    "notes": "Notes",
+    "isConsumer": "Particulier (client non professionnel)",
+    "isConsumerHint": "Une facture à un particulier ne porte que son nom et son adresse, sans les clauses réservées aux professionnels.",
+    "legalForm": "Forme juridique",
+    "activity": "Nature de l'activité"
   },
   "contacts": {
     "title": "Contacts",

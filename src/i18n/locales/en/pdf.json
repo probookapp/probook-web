@@ -117,5 +117,50 @@
     "euros": "euros",
     "cent": "cent",
     "cents": "cents"
+  },
+  "legal": {
+    "forms": {
+      "PP": "Sole trader",
+      "EI": "Individual entrepreneur (EI)",
+      "EURL": "EURL",
+      "SARL": "SARL",
+      "SPA": "SPA",
+      "SNC": "SNC",
+      "SCS": "SCS",
+      "SAS": "SAS",
+      "SASU": "SASU",
+      "SA": "SA"
+    },
+    "formWithCapital": "{{form}} with a share capital of {{capital}}",
+    "activity": "Activity: {{activity}}",
+    "paymentMethod": "Payment method",
+    "paymentMethods": {
+      "CASH": "Cash",
+      "CHEQUE": "Cheque",
+      "TRANSFER": "Bank transfer",
+      "CARD": "Card"
+    },
+    "stampAndSignature": "Stamp and signature",
+    "fr": {
+      "vatFranchise": "VAT not applicable, art. 293 B of the CGI",
+      "latePenalty": "Late payment penalties: {{rate}}, due from the day after the due date.",
+      "latePenaltyDefault": "Late payment penalties: ECB refinancing rate plus 10 points, due from the day after the due date.",
+      "recoveryIndemnity": "Fixed compensation for recovery costs in case of late payment: €40.",
+      "earlyDiscount": "Discount for early payment: {{terms}}.",
+      "earlyDiscountNone": "Discount for early payment: none.",
+      "exemption": {
+        "INTRA_EU": "VAT exempt, article 262 ter I of the CGI (intra-EU supply).",
+        "EXPORT": "VAT exempt, article 262 I of the CGI (export).",
+        "REVERSE_CHARGE": "Reverse charge: VAT due by the customer."
+      },
+      "exemptionOther": "VAT exempt: {{note}}.",
+      "operationNature": {
+        "GOODS": "Nature of the operations: supply of goods.",
+        "SERVICES": "Nature of the operations: supply of services.",
+        "MIXED": "Nature of the operations: supply of goods and services."
+      },
+      "vatOnDebits": "Option to pay VAT on debits."
+    },
+    "deliveryAddress": "Delivery address"
   }
 }

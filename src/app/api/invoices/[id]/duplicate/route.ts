@@ -55,6 +55,17 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
             // lines (see src/lib/document-totals.ts).
             discountPercent: original.discountPercent,
             discountAmount: original.discountAmount,
+            // How it is settled carries over too. Left out, the copy fell back
+            // to the column default (not cash), so a cash invoice's duplicate
+            // silently lost its droit de timbre, and its payment method, a
+            // mandatory mention in Algeria.
+            isCashSale: original.isCashSale,
+            stampDutyExempt: original.stampDutyExempt,
+            paymentMethod: original.paymentMethod,
+            deliveryAddress: original.deliveryAddress,
+            operationNature: original.operationNature,
+            vatExemption: original.vatExemption,
+            vatExemptionNote: original.vatExemptionNote,
             lines: {
               create: original.lines.map((line) => ({
                 productId: line.productId,

@@ -43,6 +43,7 @@ import { toast } from "@/stores/useToastStore";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
 import { getApiErrorMessage } from "@/lib/api-adapter";
 import { DEFAULT_IS_CASH_SALE, stampDutyApplies } from "@/lib/stamp-duty";
+import { INVOICE_PAYMENT_METHODS, OPERATION_NATURES, VAT_EXEMPTIONS } from "@/lib/legal-mentions";
 import { stockShortfalls } from "@/lib/stock-shortfalls";
 import { useDocumentCatalog } from "@/hooks/useDocumentCatalog";
 
@@ -78,6 +79,13 @@ const createInvoiceFormSchema = (t: (key: string) => string) => z.object({
   discount_amount: z.coerce.number().min(0).optional(),
   is_cash_sale: z.boolean().optional(),
   stamp_duty_exempt: z.boolean().optional(),
+  // How the client is to pay; a mandatory mention in Algeria (decree 05-468).
+  payment_method: z.string().nullable().optional(),
+  // French e-invoicing mentions (see src/lib/legal-mentions.ts).
+  delivery_address: z.string().nullable().optional(),
+  operation_nature: z.string().nullable().optional(),
+  vat_exemption: z.string().nullable().optional(),
+  vat_exemption_note: z.string().nullable().optional(),
   // Labels, on creation only: afterwards they change from the invoice's own page,
   // which works even once it is issued and frozen. See DocumentTagsRow.
   tag_ids: z.array(z.string()).optional(),
@@ -138,6 +146,11 @@ export function InvoiceFormPage() {
       // when stamp duty is enabled in settings). Uncheck for transfer/cheque.
       is_cash_sale: DEFAULT_IS_CASH_SALE,
       stamp_duty_exempt: false,
+      payment_method: "",
+      delivery_address: "",
+      operation_nature: "",
+      vat_exemption: "",
+      vat_exemption_note: "",
       tag_ids: [],
       lines: [{ description: "", quantity: 1, unit_price: 0, tax_rate: defaultTaxRate }],
     },
@@ -257,6 +270,11 @@ export function InvoiceFormPage() {
       discount_amount: invoice.discount_amount ?? 0,
       is_cash_sale: invoice.is_cash_sale ?? false,
       stamp_duty_exempt: invoice.stamp_duty_exempt ?? false,
+      payment_method: invoice.payment_method ?? "",
+      delivery_address: invoice.delivery_address ?? "",
+      operation_nature: invoice.operation_nature ?? "",
+      vat_exemption: invoice.vat_exemption ?? "",
+      vat_exemption_note: invoice.vat_exemption_note ?? "",
       // A pack comes back as one line carrying its components.
       lines: collapseDocumentLines(invoice.lines).map((line) => ({
         product_id: line.product_id,
@@ -355,6 +373,31 @@ export function InvoiceFormPage() {
       return newSet;
     });
   };
+
+  // Labels reuse the payment form's wording (common:payments.methods).
+  const METHOD_LABEL_KEYS = { CASH: "cash", CHEQUE: "check", TRANSFER: "transfer", CARD: "card" } as const;
+  const paymentMethodOptions = [
+    { value: "", label: t("invoices:fields.paymentMethodNone") },
+    ...INVOICE_PAYMENT_METHODS.map((m) => ({
+      value: m,
+      label: t(`common:payments.methods.${METHOD_LABEL_KEYS[m]}`),
+    })),
+  ];
+
+  // French invoices state what they bill and, for 0 % lines, why.
+  const isFrench = settings?.fiscal_profile === "FR";
+  const hasZeroRateLine = (watchedLines ?? []).some(
+    (l) => !l?.is_subtotal_line && Number(l?.tax_rate) === 0 && Number(l?.unit_price) > 0
+  );
+  const watchedExemption = useWatch({ control, name: "vat_exemption" });
+  const operationNatureOptions = [
+    { value: "", label: t("invoices:fields.operationNatureAuto") },
+    ...OPERATION_NATURES.map((n) => ({ value: n, label: t(`invoices:operationNature.${n}`) })),
+  ];
+  const exemptionOptions = [
+    { value: "", label: t("invoices:fields.paymentMethodNone") },
+    ...VAT_EXEMPTIONS.map((e) => ({ value: e, label: t(`invoices:vatExemption.${e}`) })),
+  ];
 
   const onSubmit = async (data: InvoiceFormData) => {
     if (!canManage) return;
@@ -460,6 +503,18 @@ export function InvoiceFormPage() {
                 {...register("due_date")}
                 error={errors.due_date?.message}
               />
+              <Select
+                label={t("invoices:fields.paymentMethod")}
+                options={paymentMethodOptions}
+                {...register("payment_method", {
+                  // Choosing how the client pays answers the cash-sale question
+                  // the droit de timbre depends on, so the two cannot disagree.
+                  onChange: (e) => {
+                    const method = e.target.value as string;
+                    if (method) setValue("is_cash_sale", method === "CASH", { shouldDirty: true });
+                  },
+                })}
+              />
               {isEditing && (
                 <Select
                   label={t("invoices:fields.status")}
@@ -468,6 +523,40 @@ export function InvoiceFormPage() {
                 />
               )}
             </div>
+            {isFrench && (
+              <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <Select
+                  label={t("invoices:fields.operationNature")}
+                  options={operationNatureOptions}
+                  {...register("operation_nature")}
+                />
+                <div className="lg:col-span-3">
+                  <Input
+                    label={t("invoices:fields.deliveryAddress")}
+                    placeholder={t("invoices:fields.deliveryAddressPlaceholder")}
+                    {...register("delivery_address")}
+                  />
+                </div>
+                {hasZeroRateLine && !settings?.vat_franchise && (
+                  <>
+                    <Select
+                      label={t("invoices:fields.vatExemption")}
+                      options={exemptionOptions}
+                      {...register("vat_exemption")}
+                    />
+                    {watchedExemption === "OTHER" && (
+                      <div className="lg:col-span-3">
+                        <Input
+                          label={t("invoices:fields.vatExemptionNote")}
+                          placeholder={t("invoices:fields.vatExemptionNotePlaceholder")}
+                          {...register("vat_exemption_note")}
+                        />
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
             {/* Only while creating. An existing invoice is labelled from its own
                 page instead, because that is the only place that still works
                 once it has been issued. */}

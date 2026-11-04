@@ -21,7 +21,16 @@
     "stampDuty": "Droit de timbre",
     "totalWithStamp": "Total à payer (timbre inclus)",
     "notes": "Notes",
-    "notesHtml": "Notes (HTML)"
+    "notesHtml": "Notes (HTML)",
+    "paymentMethod": "Mode de paiement",
+    "paymentMethodNone": "Non précisé",
+    "operationNature": "Nature des opérations",
+    "operationNatureAuto": "Automatique (selon les produits)",
+    "deliveryAddress": "Adresse de livraison (si différente)",
+    "deliveryAddressPlaceholder": "Laisser vide si livraison à l'adresse du client",
+    "vatExemption": "Motif d'exonération (lignes à 0 %)",
+    "vatExemptionNote": "Base légale de l'exonération",
+    "vatExemptionNotePlaceholder": "Ex. article 261 4 4° du CGI"
   },
   "lines": {
     "title": "Lignes de la facture",
@@ -167,5 +176,21 @@
     "label": "Marge",
     "cost": "Coût d'achat",
     "partial": "Marge partielle : certaines lignes n'ont pas de prix d'achat renseigné."
+  },
+  "operationNature": {
+    "GOODS": "Livraisons de biens",
+    "SERVICES": "Prestations de services",
+    "MIXED": "Biens et services"
+  },
+  "vatExemption": {
+    "INTRA_EU": "Livraison intracommunautaire",
+    "EXPORT": "Exportation hors UE",
+    "REVERSE_CHARGE": "Autoliquidation",
+    "OTHER": "Autre (préciser)"
+  },
+  "facturx": {
+    "download": "Télécharger en Factur-X",
+    "hint": "Facture électronique au format Factur-X (PDF/A-3 avec données EN 16931), lisible par les plateformes de facturation électronique.",
+    "failed": "La facture Factur-X n'a pas pu être générée."
   }
 }

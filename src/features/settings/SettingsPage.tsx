@@ -8,6 +8,7 @@ import { toast } from "@/stores/useToastStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { UserManagement } from "./components/UserManagement";
 import { BackupSection } from "./components/BackupSection";
+import { PosComplianceSection } from "./components/PosComplianceSection";
 import { SecuritySection } from "./components/SecuritySection";
 import { PrinterManagement } from "./components/PrinterManagement";
 import { DashboardCustomization } from "./components/DashboardCustomization";
@@ -44,6 +45,7 @@ import {
   vatRateOptions,
 } from "@/lib/fiscal-profiles";
 import { CURRENCY_OPTIONS, DEFAULT_CURRENCY } from "@/lib/currencies";
+import { LEGAL_FORMS, companyComplianceIssues } from "@/lib/legal-mentions";
 import { useFeature, FEATURE_KEYS } from "@/hooks/useEntitlements";
 
 const FALLBACK_CURRENCY = DEFAULT_CURRENCY;
@@ -94,6 +96,14 @@ const createSettingsSchema = (t: (key: string) => string) => z.object({
   stamp_duty_rate: z.coerce.number().min(0).max(100),
   stamp_duty_threshold: z.coerce.number().min(0),
   print_bundle_detail: z.boolean(),
+  // Legal identity and invoice mentions (src/lib/legal-mentions.ts)
+  legal_form: z.string().nullable().optional(),
+  share_capital: z.coerce.number().min(0),
+  activity: z.string().nullable().optional(),
+  vat_franchise: z.boolean(),
+  late_penalty_rate: z.string().nullable().optional(),
+  early_payment_discount: z.string().nullable().optional(),
+  vat_on_debits: z.boolean(),
 });
 
 type SettingsFormData = z.output<ReturnType<typeof createSettingsSchema>>;
@@ -209,6 +219,13 @@ export function SettingsPage() {
       stamp_duty_rate: 1,
       stamp_duty_threshold: 0,
       print_bundle_detail: true,
+      legal_form: "",
+      share_capital: 0,
+      activity: "",
+      vat_franchise: false,
+      late_penalty_rate: "",
+      early_payment_discount: "",
+      vat_on_debits: false,
     },
   });
 
@@ -228,6 +245,17 @@ export function SettingsPage() {
     value: id,
     label: tCommon(`fiscalProfiles.${id}`),
   }));
+  const legalFormOptions = [
+    { value: "", label: tCommon("legalForms.none") },
+    ...LEGAL_FORMS[activeProfile.id].map((code) => ({
+      value: code,
+      label: tCommon(`legalForms.${code}`),
+    })),
+  ];
+  // What the saved settings still lack for an invoice to carry every mention
+  // the regime requires, checked against what is saved, since that is what
+  // the next invoice will print.
+  const complianceIssues = settings ? companyComplianceIssues(settings) : [];
 
   useEffect(() => {
     if (settings && !isDirty) {
@@ -266,6 +294,13 @@ export function SettingsPage() {
         stamp_duty_rate: settings.stamp_duty_rate ?? 1,
         stamp_duty_threshold: settings.stamp_duty_threshold ?? 0,
         print_bundle_detail: settings.print_bundle_detail ?? true,
+        legal_form: settings.legal_form ?? "",
+        share_capital: settings.share_capital ?? 0,
+        activity: settings.activity ?? "",
+        vat_franchise: settings.vat_franchise ?? false,
+        late_penalty_rate: settings.late_penalty_rate ?? "",
+        early_payment_discount: settings.early_payment_discount ?? "",
+        vat_on_debits: settings.vat_on_debits ?? false,
       });
     }
     // Only when the form holds nothing of the user's: every refetch of the
@@ -561,12 +596,98 @@ export function SettingsPage() {
                 />
               ))}
             </div>
-            <Textarea
-              label={t("legal.legalMentions")}
-              placeholder={t("legal.legalMentionsPlaceholder")}
-              {...register("legal_mentions")}
-              error={errors.legal_mentions?.message}
-            />
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Select
+                // Remounted per regime: the forms on offer differ.
+                key={`legal-form-${activeProfile.id}`}
+                label={t("legal.legalForm")}
+                options={legalFormOptions}
+                {...register("legal_form")}
+                error={errors.legal_form?.message}
+              />
+              <Input
+                label={t("legal.shareCapital")}
+                type="number"
+                step="0.01"
+                min="0"
+                {...register("share_capital")}
+                error={errors.share_capital?.message}
+              />
+              <Input
+                label={t("legal.activity")}
+                placeholder={t("legal.activityPlaceholder")}
+                {...register("activity")}
+                error={errors.activity?.message}
+              />
+            </div>
+            {activeProfile.id === "FR" && (
+              <div className="space-y-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <label className="flex items-center gap-3 py-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 shrink-0 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    {...register("vat_franchise")}
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{t("legal.vatFranchise")}</span>
+                </label>
+                <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400">{t("legal.vatFranchiseHint")}</p>
+                <label className="flex items-center gap-3 py-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 shrink-0 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                    {...register("vat_on_debits")}
+                  />
+                  <span className="text-sm text-gray-700 dark:text-gray-300">{t("legal.vatOnDebits")}</span>
+                </label>
+                <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400">{t("legal.vatOnDebitsHint")}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Input
+                    label={t("legal.latePenaltyRate")}
+                    placeholder={t("legal.latePenaltyRatePlaceholder")}
+                    {...register("late_penalty_rate")}
+                    error={errors.late_penalty_rate?.message}
+                  />
+                  <Input
+                    label={t("legal.earlyPaymentDiscount")}
+                    placeholder={t("legal.earlyPaymentDiscountPlaceholder")}
+                    {...register("early_payment_discount")}
+                    error={errors.early_payment_discount?.message}
+                  />
+                </div>
+                <p className="-mt-2 text-xs text-gray-500 dark:text-gray-400">{t("legal.b2bHint")}</p>
+              </div>
+            )}
+            <div
+              role="status"
+              className={
+                complianceIssues.length === 0
+                  ? "rounded-lg border border-success-200 bg-success-50 p-3 text-sm text-success-800 dark:border-success-800 dark:bg-success-950 dark:text-success-200"
+                  : "rounded-lg border border-warning-200 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-950 dark:text-warning-200"
+              }
+            >
+              <p className="font-medium">{t("legalCompliance.title")}</p>
+              {complianceIssues.length === 0 ? (
+                <p className="mt-1">{t("legalCompliance.ok")}</p>
+              ) : (
+                <>
+                  <p className="mt-1">{t("legalCompliance.missing")}</p>
+                  <ul className="mt-1 list-disc ps-5">
+                    {complianceIssues.map((issue) => (
+                      <li key={issue.key}>{t(`legalCompliance.issues.${issue.key}`)}</li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </div>
+            <div>
+              <Textarea
+                label={t("legal.legalMentions")}
+                placeholder={t("legal.legalMentionsPlaceholder")}
+                {...register("legal_mentions")}
+                error={errors.legal_mentions?.message}
+              />
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("legal.legalMentionsHint")}</p>
+            </div>
             <Textarea
               label={t("legal.bankDetails")}
               placeholder={t("legal.bankDetailsPlaceholder")}
@@ -797,6 +918,9 @@ export function SettingsPage() {
           <DashboardCustomization />
         </CardContent>
       </Card>
+
+      {/* Secured cash journal: chain, closures, archives, attestation */}
+      {currentUser?.role === 'admin' && <PosComplianceSection />}
 
       {/* Security: 2FA & Sessions */}
       <SecuritySection totpEnabled={false} />

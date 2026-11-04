@@ -526,5 +526,19 @@
     "packContains": "Contains:",
     "packMixedVat": "Mixed VAT",
     "packMixedVatShort": "Mixed"
+  },
+  "legalForms": {
+    "none": "Not specified",
+    "PP": "Sole trader",
+    "EI": "Individual entrepreneur (EI, micro-enterprise)",
+    "EURL": "EURL",
+    "SARL": "SARL",
+    "SPA": "SPA",
+    "SNC": "SNC",
+    "SCS": "SCS",
+    "SAS": "SAS",
+    "SASU": "SASU",
+    "SA": "SA",
+    "OTHER": "Other"
   }
 }

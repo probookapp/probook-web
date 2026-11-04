@@ -3,6 +3,7 @@ import { FISCAL_PROFILE_IDS } from "./fiscal-profiles";
 import { REFERENCE_CURRENCY } from "./currencies";
 import { EXPENSE_CATEGORY_MAX_LENGTH } from "./expense-categories";
 import { POS_PAYMENT_METHODS } from "./pos-payment-methods";
+import { INVOICE_PAYMENT_METHODS, OPERATION_NATURES, VAT_EXEMPTIONS } from "./legal-mentions";
 import { CASH_MOVEMENT_TYPES } from "./pos-cash-movements";
 import { TAG_COLORS, TAG_MAX_LENGTH, normalizeTagName } from "./tag-colors";
 
@@ -125,6 +126,10 @@ export const clientSchema = z.object({
   vat_number: optionalString,
   nis: optionalString,
   art: optionalString,
+  // A private individual: decides which legal mentions the invoice owes.
+  is_consumer: z.boolean().optional(),
+  legal_form: optionalString,
+  activity: optionalString,
   notes: optionalString,
 });
 
@@ -375,6 +380,13 @@ export const createInvoiceSchema = z.object({
   is_down_payment_invoice: z.boolean().default(false),
   is_cash_sale: z.boolean().optional(),
   stamp_duty_exempt: z.boolean().optional(),
+  // Mandatory mention in Algeria (decree 05-468 art. 3); empty means not stated.
+  payment_method: z.enum(INVOICE_PAYMENT_METHODS).or(z.literal("")).nullable().optional(),
+  // French e-invoicing mentions; empty means "not stated" (nature: derived).
+  delivery_address: optionalString,
+  operation_nature: z.enum(OPERATION_NATURES).or(z.literal("")).nullable().optional(),
+  vat_exemption: z.enum(VAT_EXEMPTIONS).or(z.literal("")).nullable().optional(),
+  vat_exemption_note: optionalString,
   parent_quote_id: optionalString,
   // Client-minted dedupe key: offline replays / lost-response retries send the
   // same key and get the already-created invoice back instead of a duplicate.
@@ -405,6 +417,13 @@ export const updateInvoiceSchema = z.object({
   is_down_payment_invoice: z.boolean().default(false),
   is_cash_sale: z.boolean().optional(),
   stamp_duty_exempt: z.boolean().optional(),
+  // Mandatory mention in Algeria (decree 05-468 art. 3); empty means not stated.
+  payment_method: z.enum(INVOICE_PAYMENT_METHODS).or(z.literal("")).nullable().optional(),
+  // French e-invoicing mentions; empty means "not stated" (nature: derived).
+  delivery_address: optionalString,
+  operation_nature: z.enum(OPERATION_NATURES).or(z.literal("")).nullable().optional(),
+  vat_exemption: z.enum(VAT_EXEMPTIONS).or(z.literal("")).nullable().optional(),
+  vat_exemption_note: optionalString,
   parent_quote_id: optionalString,
   lines: z.array(documentLineSchema).min(1, "At least one line is required"),
 });
@@ -588,6 +607,14 @@ export const settingsSchema = z.object({
   stamp_duty_threshold: z.coerce.number().min(0).optional(),
   // Whether a pack lists its components on quote and invoice PDFs.
   print_bundle_detail: z.boolean().optional(),
+  // Legal identity and invoice mentions (src/lib/legal-mentions.ts).
+  legal_form: optionalString,
+  share_capital: z.coerce.number().min(0).max(MONEY_MAX).nullable().optional(),
+  activity: optionalString,
+  vat_franchise: z.boolean().optional(),
+  late_penalty_rate: optionalString,
+  early_payment_discount: optionalString,
+  vat_on_debits: z.boolean().optional(),
   // Owner's dashboard card order/visibility (persisted cross-device).
   dashboard_layout: z.record(z.string(), z.unknown()).nullable().optional(),
 }).partial();

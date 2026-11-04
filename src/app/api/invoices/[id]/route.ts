@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { calculateDocumentTotals } from "@/lib/document-totals";
 import { documentLineRows } from "@/lib/bundles";
 import { normalizeBundleLines } from "@/lib/bundles-server";
+import { resolveOperationNature } from "@/lib/operation-nature-server";
 import { requirePermission } from "@/lib/permissions-server";
 import { flattenTags, TAGS_INCLUDE } from "@/lib/document-tags";
 import { validateBody, isValidationError } from "@/lib/validate";
@@ -60,6 +61,7 @@ export const PUT = withAuth(async (req, { session, tenantId, params }) => {
   }
 
   const lines = bundleLines;
+  const operationNature = await resolveOperationNature(tenantId, body.operation_nature, bundleLines);
   // Rounding follows the tenant's currency (millimes vs centimes).
   const settings = await prisma.companySettings.findFirst({
     where: { tenantId },
@@ -89,6 +91,11 @@ export const PUT = withAuth(async (req, { session, tenantId, params }) => {
       isCashSale: body.is_cash_sale ?? DEFAULT_IS_CASH_SALE,
       stampDutyExempt: body.stamp_duty_exempt ?? false,
       stampDuty: 0,
+      paymentMethod: body.payment_method !== undefined ? body.payment_method || null : undefined,
+      deliveryAddress: body.delivery_address !== undefined ? body.delivery_address || null : undefined,
+      operationNature,
+      vatExemption: body.vat_exemption !== undefined ? body.vat_exemption || null : undefined,
+      vatExemptionNote: body.vat_exemption_note !== undefined ? body.vat_exemption_note || null : undefined,
       notes: body.notes || null,
       notesHtml: body.notes_html || null,
       shippingCost: body.shipping_cost || 0,

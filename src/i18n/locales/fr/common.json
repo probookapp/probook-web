@@ -526,5 +526,19 @@
     "packContains": "Contient :",
     "packMixedVat": "TVA mixte",
     "packMixedVatShort": "Mixte"
+  },
+  "legalForms": {
+    "none": "Non renseignée",
+    "PP": "Personne physique",
+    "EI": "Entrepreneur individuel (EI, micro-entreprise)",
+    "EURL": "EURL",
+    "SARL": "SARL",
+    "SPA": "SPA",
+    "SNC": "SNC",
+    "SCS": "SCS",
+    "SAS": "SAS",
+    "SASU": "SASU",
+    "SA": "SA",
+    "OTHER": "Autre"
   }
 }

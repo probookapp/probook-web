@@ -20,6 +20,10 @@ export const createClientSchema = (t: (key: string) => string) => z.object({
   vat_number: z.string().nullable().optional(),
   nis: z.string().nullable().optional(),
   art: z.string().nullable().optional(),
+  // Which legal mentions an invoice owes this client (src/lib/legal-mentions.ts).
+  is_consumer: z.boolean().optional(),
+  legal_form: z.string().nullable().optional(),
+  activity: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
 });
 

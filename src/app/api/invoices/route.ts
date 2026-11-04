@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { calculateDocumentTotals } from "@/lib/document-totals";
 import { documentLineRows } from "@/lib/bundles";
 import { normalizeBundleLines } from "@/lib/bundles-server";
+import { resolveOperationNature } from "@/lib/operation-nature-server";
 import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/permissions-server";
 import { parseArchivedFilter, parseStatusFilter, INVOICE_STATUSES } from "@/lib/document-status";
@@ -120,6 +121,7 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
   const paymentTerms = settings?.defaultPaymentTerms ?? 30;
 
   const lines = bundleLines;
+  const operationNature = await resolveOperationNature(tenantId, body.operation_nature, bundleLines);
   const totals = calculateDocumentTotals({
     lines,
     shippingCost: body.shipping_cost || 0,
@@ -176,6 +178,11 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
             isCashSale,
             stampDutyExempt,
             stampDuty,
+            paymentMethod: body.payment_method || null,
+            deliveryAddress: body.delivery_address || null,
+            operationNature,
+            vatExemption: body.vat_exemption || null,
+            vatExemptionNote: body.vat_exemption_note || null,
             notes: body.notes || null,
             notesHtml: body.notes_html || null,
             shippingCost: body.shipping_cost || 0,

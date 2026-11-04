@@ -5,6 +5,7 @@ import { Prisma } from "@/generated/prisma/client";
 import { requirePermission } from "@/lib/permissions-server";
 import { allocateDocumentNumber } from "@/lib/document-numbering";
 import { flattenTags, TAGS_INCLUDE } from "@/lib/document-tags";
+import { DEFAULT_IS_CASH_SALE } from "@/lib/stamp-duty";
 
 /** Business-rule failure inside the create transaction → mapped to an HTTP error. */
 class ConvertError extends Error {
@@ -76,6 +77,10 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
               // reconstructed from its own lines (src/lib/document-totals.ts).
               discountPercent: quote.discountPercent,
               discountAmount: quote.discountAmount,
+              // Same default as an invoice created from the form: left out, the
+              // column default (not cash) silently dropped the droit de timbre
+              // on every invoice converted from a quote.
+              isCashSale: DEFAULT_IS_CASH_SALE,
               // The labels come along: the invoice for the Hydra site is still
               // the Hydra site, and that is exactly when you need to find it.
               tags: { create: quote.tags.map((row) => ({ tagId: row.tagId })) },

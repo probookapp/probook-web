@@ -21,7 +21,16 @@
     "stampDuty": "Stamp duty",
     "totalWithStamp": "Total payable (incl. stamp duty)",
     "notes": "Notes",
-    "notesHtml": "Notes (HTML)"
+    "notesHtml": "Notes (HTML)",
+    "paymentMethod": "Payment method",
+    "paymentMethodNone": "Not specified",
+    "operationNature": "Nature of the operations",
+    "operationNatureAuto": "Automatic (from the products)",
+    "deliveryAddress": "Delivery address (if different)",
+    "deliveryAddressPlaceholder": "Leave empty to deliver to the client's address",
+    "vatExemption": "Exemption ground (0% lines)",
+    "vatExemptionNote": "Legal basis of the exemption",
+    "vatExemptionNotePlaceholder": "E.g. article 261 4 4° of the CGI"
   },
   "lines": {
     "title": "Invoice Lines",
@@ -167,5 +176,21 @@
     "label": "Margin",
     "cost": "Cost",
     "partial": "Partial margin: some lines have no purchase price recorded."
+  },
+  "operationNature": {
+    "GOODS": "Supply of goods",
+    "SERVICES": "Supply of services",
+    "MIXED": "Goods and services"
+  },
+  "vatExemption": {
+    "INTRA_EU": "Intra-EU supply",
+    "EXPORT": "Export outside the EU",
+    "REVERSE_CHARGE": "Reverse charge",
+    "OTHER": "Other (specify)"
+  },
+  "facturx": {
+    "download": "Download as Factur-X",
+    "hint": "Electronic invoice in Factur-X format (PDF/A-3 with EN 16931 data), readable by e-invoicing platforms.",
+    "failed": "The Factur-X invoice could not be generated."
   }
 }

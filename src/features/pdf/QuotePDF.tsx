@@ -15,6 +15,7 @@ import { DocumentHeading } from "./DocumentHeading";
 import { bundleRoles, isPresentationLine } from "@/lib/bundles";
 import { vatBreakdown } from "@/lib/document-totals";
 import { DEFAULT_CURRENCY } from "@/lib/currencies";
+import { legalCompanyName } from "@/lib/legal-mentions";
 
 
 interface QuotePDFProps {
@@ -85,6 +86,10 @@ export function QuotePDF({
     discountAmount: quote.discount_amount,
     currency,
   });
+  // The stored subtotal, tax and total already include shipping (see
+  // calculateDocumentTotals). They used to be added a second time here, so a
+  // document with shipping printed a total higher than the one it was paid at.
+  const shippingVat = Math.max(0, quote.tax_amount - vatRates.reduce((sum, r) => sum + r.tax, 0));
   const documentDiscount = Math.max(
     0,
     linesSubtotal - (quote.subtotal - (quote.shipping_cost || 0))
@@ -242,13 +247,13 @@ export function QuotePDF({
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>{t("quote.totals.subtotalHt")}</Text>
               <Text style={styles.totalValue}>
-                {pdfCurrency(quote.subtotal, locale, currency)}
+                {pdfCurrency(quote.subtotal - ((quote.shipping_cost || 0)), locale, currency)}
               </Text>
             </View>
             <View style={styles.totalRow}>
               <Text style={styles.totalLabel}>{t("quote.totals.vatProducts")}</Text>
               <Text style={styles.totalValue}>
-                {pdfCurrency(quote.tax_amount, locale, currency)}
+                {pdfCurrency(quote.tax_amount - shippingVat, locale, currency)}
               </Text>
             </View>
             {vatRates.length > 1 &&
@@ -271,7 +276,7 @@ export function QuotePDF({
                 <View style={styles.totalRow}>
                   <Text style={styles.totalLabel}>{t("quote.totals.shippingVat")} ({quote.shipping_tax_rate}%)</Text>
                   <Text style={styles.totalValue}>
-                    {pdfCurrency(quote.shipping_cost * (quote.shipping_tax_rate / 100), locale, currency)}
+                    {pdfCurrency(shippingVat, locale, currency)}
                   </Text>
                 </View>
               </>
@@ -280,20 +285,14 @@ export function QuotePDF({
               <Text style={styles.totalLabelFinal}>{t("quote.totals.totalTtc")}</Text>
               <Text style={styles.totalValueFinal}>
                 {pdfCurrency(
-                  quote.total +
-                  (quote.shipping_cost > 0
-                    ? quote.shipping_cost + quote.shipping_cost * (quote.shipping_tax_rate / 100)
-                    : 0),
+                  quote.total,
                   locale,
                   currency
                 )}
               </Text>
             </View>
             {(quote.down_payment_percent > 0 || quote.down_payment_amount > 0) && (() => {
-              const totalWithShipping = quote.total +
-                (quote.shipping_cost > 0
-                  ? quote.shipping_cost + quote.shipping_cost * (quote.shipping_tax_rate / 100)
-                  : 0);
+              const totalWithShipping = quote.total;
               const downPaymentValue = quote.down_payment_amount > 0
                 ? quote.down_payment_amount
                 : totalWithShipping * (quote.down_payment_percent / 100);
@@ -322,10 +321,7 @@ export function QuotePDF({
                   const curr = currency;
                   const words = CURRENCY_WORDS[curr] || { main: curr.toLowerCase(), sub: "centime" };
                   return numberToFrenchWords(
-                    quote.total +
-                    (quote.shipping_cost > 0
-                      ? quote.shipping_cost + quote.shipping_cost * (quote.shipping_tax_rate / 100)
-                      : 0),
+                    quote.total,
                     words.main,
                     words.sub
                   );
@@ -356,7 +352,7 @@ export function QuotePDF({
             <Text style={styles.footerText}>{company.legal_mentions}</Text>
           )}
           <Text style={styles.footerText}>
-            {company.company_name}
+            {legalCompanyName(company)}
             {identifierSummary(company, company) &&
               ` - ${identifierSummary(company, company)}`}
           </Text>

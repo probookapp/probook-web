@@ -117,5 +117,50 @@
     "euros": "euros",
     "cent": "centime",
     "cents": "centimes"
+  },
+  "legal": {
+    "forms": {
+      "PP": "Personne physique",
+      "EI": "Entrepreneur individuel (EI)",
+      "EURL": "EURL",
+      "SARL": "SARL",
+      "SPA": "SPA",
+      "SNC": "SNC",
+      "SCS": "SCS",
+      "SAS": "SAS",
+      "SASU": "SASU",
+      "SA": "SA"
+    },
+    "formWithCapital": "{{form}} au capital de {{capital}}",
+    "activity": "Activité : {{activity}}",
+    "paymentMethod": "Mode de paiement",
+    "paymentMethods": {
+      "CASH": "Espèces",
+      "CHEQUE": "Chèque",
+      "TRANSFER": "Virement",
+      "CARD": "Carte bancaire"
+    },
+    "stampAndSignature": "Cachet et signature",
+    "fr": {
+      "vatFranchise": "TVA non applicable, art. 293 B du CGI",
+      "latePenalty": "Pénalités de retard : {{rate}}, exigibles dès le lendemain de la date d'échéance.",
+      "latePenaltyDefault": "Pénalités de retard : taux de refinancement de la BCE majoré de 10 points, exigibles dès le lendemain de la date d'échéance.",
+      "recoveryIndemnity": "Indemnité forfaitaire pour frais de recouvrement en cas de retard de paiement : 40 €.",
+      "earlyDiscount": "Escompte pour paiement anticipé : {{terms}}.",
+      "earlyDiscountNone": "Escompte pour paiement anticipé : néant.",
+      "exemption": {
+        "INTRA_EU": "Exonération de TVA, article 262 ter I du CGI (livraison intracommunautaire).",
+        "EXPORT": "Exonération de TVA, article 262 I du CGI (exportation).",
+        "REVERSE_CHARGE": "Autoliquidation : TVA due par le preneur."
+      },
+      "exemptionOther": "Exonération de TVA : {{note}}.",
+      "operationNature": {
+        "GOODS": "Nature des opérations : livraisons de biens.",
+        "SERVICES": "Nature des opérations : prestations de services.",
+        "MIXED": "Nature des opérations : livraisons de biens et prestations de services."
+      },
+      "vatOnDebits": "Option pour le paiement de la taxe d'après les débits."
+    },
+    "deliveryAddress": "Adresse de livraison"
   }
 }

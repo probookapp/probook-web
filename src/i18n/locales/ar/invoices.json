@@ -21,7 +21,16 @@
     "stampDuty": "رسم الطابع",
     "totalWithStamp": "المبلغ الإجمالي للدفع (شامل رسم الطابع)",
     "notes": "ملاحظات",
-    "notesHtml": "ملاحظات (HTML)"
+    "notesHtml": "ملاحظات (HTML)",
+    "paymentMethod": "طريقة الدفع",
+    "paymentMethodNone": "غير محددة",
+    "operationNature": "طبيعة العمليات",
+    "operationNatureAuto": "تلقائي (حسب المنتجات)",
+    "deliveryAddress": "عنوان التسليم (إن كان مختلفًا)",
+    "deliveryAddressPlaceholder": "اتركه فارغًا للتسليم إلى عنوان الزبون",
+    "vatExemption": "سبب الإعفاء (الأسطر بنسبة 0 %)",
+    "vatExemptionNote": "الأساس القانوني للإعفاء",
+    "vatExemptionNotePlaceholder": "مثال: المادة 261 4 4° من القانون العام للضرائب"
   },
   "lines": {
     "title": "بنود الفاتورة",
@@ -171,5 +180,21 @@
     "label": "الهامش",
     "cost": "سعر الشراء",
     "partial": "هامش جزئي: بعض السطور بدون سعر شراء مسجّل."
+  },
+  "operationNature": {
+    "GOODS": "تسليم سلع",
+    "SERVICES": "تقديم خدمات",
+    "MIXED": "سلع وخدمات"
+  },
+  "vatExemption": {
+    "INTRA_EU": "تسليم داخل الاتحاد الأوروبي",
+    "EXPORT": "تصدير خارج الاتحاد الأوروبي",
+    "REVERSE_CHARGE": "التصفية الذاتية",
+    "OTHER": "أخرى (حدّد)"
+  },
+  "facturx": {
+    "download": "تحميل بصيغة Factur-X",
+    "hint": "فاتورة إلكترونية بصيغة Factur-X (PDF/A-3 مع بيانات EN 16931)، مقروءة من منصات الفوترة الإلكترونية.",
+    "failed": "تعذّر إنشاء فاتورة Factur-X."
   }
 }

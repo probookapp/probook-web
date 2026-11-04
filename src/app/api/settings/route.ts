@@ -56,6 +56,14 @@ export const PUT = withAuth(async (req, { tenantId, session }) => {
   if (body.stamp_duty_rate !== undefined) updateData.stampDutyRate = body.stamp_duty_rate;
   if (body.stamp_duty_threshold !== undefined) updateData.stampDutyThreshold = body.stamp_duty_threshold;
   if (body.print_bundle_detail !== undefined) updateData.printBundleDetail = body.print_bundle_detail;
+  if (body.legal_form !== undefined) updateData.legalForm = body.legal_form || null;
+  // 0 means "none stated", never a capital of zero.
+  if (body.share_capital !== undefined) updateData.shareCapital = body.share_capital ? body.share_capital : null;
+  if (body.activity !== undefined) updateData.activity = body.activity || null;
+  if (body.vat_franchise !== undefined) updateData.vatFranchise = body.vat_franchise;
+  if (body.late_penalty_rate !== undefined) updateData.latePenaltyRate = body.late_penalty_rate || null;
+  if (body.early_payment_discount !== undefined) updateData.earlyPaymentDiscount = body.early_payment_discount || null;
+  if (body.vat_on_debits !== undefined) updateData.vatOnDebits = body.vat_on_debits;
   if (body.dashboard_layout !== undefined) updateData.dashboardLayout = body.dashboard_layout;
 
   const settings = await prisma.companySettings.upsert({

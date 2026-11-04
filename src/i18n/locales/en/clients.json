@@ -21,7 +21,11 @@
     "country": "Country",
     "siret": "SIRET",
     "vatNumber": "VAT Number",
-    "notes": "Notes"
+    "notes": "Notes",
+    "isConsumer": "Private individual (not a business)",
+    "isConsumerHint": "An invoice to an individual carries only their name and address, without the clauses meant for businesses.",
+    "legalForm": "Legal form",
+    "activity": "Nature of the activity"
   },
   "contacts": {
     "title": "Contacts",

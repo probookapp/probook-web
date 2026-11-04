@@ -10,6 +10,7 @@ import type { DeliveryNote, CompanySettings } from "@/types";
 import { pdfString } from "./strings";
 import { DocumentHeading } from "./DocumentHeading";
 import { bundleRoles } from "@/lib/bundles";
+import { legalCompanyName } from "@/lib/legal-mentions";
 
 
 interface DeliveryNotePDFProps {
@@ -170,7 +171,7 @@ export function DeliveryNotePDF({
         {/* Footer */}
         <View style={styles.footer} fixed>
           <Text style={styles.footerText}>
-            {company.company_name}
+            {legalCompanyName(company)}
             {identifierSummary(company, company) &&
               ` - ${identifierSummary(company, company)}`}
           </Text>

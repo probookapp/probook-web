@@ -4,6 +4,9 @@ import { styles } from "./styles";
 import { renderIdentifiers } from "./identifiers";
 import { pdfString } from "./strings";
 import type { CompanySettings } from "@/types";
+import { legalCompanyName, sellerMentions } from "@/lib/legal-mentions";
+import { DEFAULT_CURRENCY } from "@/lib/currencies";
+import { pdfCurrency } from "./text";
 
 /**
  * The top of a quote, an invoice or a delivery note: who sends it, what it is,
@@ -35,6 +38,11 @@ export function DocumentHeading({
   /** The recipient's name and details, under `recipientLabel`. */
   children: ReactNode;
 }) {
+  // Legal form with its capital and the nature of the activity: mandatory in
+  // Algeria (decree 05-468 art. 3), and the form + capital of a French company.
+  const legalLines = sellerMentions(company, (amount) =>
+    pdfCurrency(amount, locale, company.currency || DEFAULT_CURRENCY)
+  );
   return (
     <>
       <View style={styles.header}>
@@ -44,7 +52,12 @@ export function DocumentHeading({
             <Image src={logoBase64} style={styles.logo} />
           )}
           <View>
-            <Text style={styles.companyName}>{company.company_name}</Text>
+            <Text style={styles.companyName}>{legalCompanyName(company)}</Text>
+            {legalLines.map((m) => (
+              <Text key={m.key} style={styles.companyDetail}>
+                {pdfString(m.key, locale, m.values)}
+              </Text>
+            ))}
             {company.address && <Text style={styles.companyDetail}>{company.address}</Text>}
             {(company.postal_code || company.city) && (
               <Text style={styles.companyDetail}>

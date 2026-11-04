@@ -572,6 +572,9 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
             vatNumber: str(c, "vat_number"),
             nis: str(c, "nis"),
             art: str(c, "art"),
+            isConsumer: bool(c, "is_consumer"),
+            legalForm: str(c, "legal_form"),
+            activity: str(c, "activity"),
             notes: str(c, "notes"),
             createdAt: reqDate(c, "created_at"),
           })),
@@ -800,6 +803,11 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
             // data and break verification for cash-sale invoices.
             isCashSale,
             stampDutyExempt,
+            paymentMethod: str(inv, "payment_method"),
+            deliveryAddress: str(inv, "delivery_address"),
+            operationNature: str(inv, "operation_nature"),
+            vatExemption: str(inv, "vat_exemption"),
+            vatExemptionNote: str(inv, "vat_exemption_note"),
             // Offline-replay dedupe key: restored verbatim so a queued retry
             // from before the backup still cannot double-create the document.
             idempotencyKey: str(inv, "idempotency_key"),
@@ -1444,6 +1452,13 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
           // threshold to 0, turning the duty on for every cash sale.
           stampDutyThreshold: num(s, "stamp_duty_threshold", 0),
           printBundleDetail: bool(s, "print_bundle_detail", true),
+          legalForm: str(s, "legal_form"),
+          shareCapital: num(s, "share_capital", 0) || null,
+          activity: str(s, "activity"),
+          vatFranchise: bool(s, "vat_franchise"),
+          latePenaltyRate: str(s, "late_penalty_rate"),
+          earlyPaymentDiscount: str(s, "early_payment_discount"),
+          vatOnDebits: bool(s, "vat_on_debits"),
         };
         await tx.companySettings.upsert({
           where: { tenantId },

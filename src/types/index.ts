@@ -14,6 +14,10 @@ export interface Client {
   vat_number: string | null;
   nis: string | null;
   art: string | null;
+  /** A private individual, not a business (see src/lib/legal-mentions.ts). */
+  is_consumer: boolean;
+  legal_form: string | null;
+  activity: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -31,6 +35,9 @@ export interface CreateClientInput {
   vat_number?: string | null;
   nis?: string | null;
   art?: string | null;
+  is_consumer?: boolean;
+  legal_form?: string | null;
+  activity?: string | null;
   notes?: string | null;
 }
 
@@ -652,6 +659,13 @@ export interface Invoice {
   stamp_duty_exempt: boolean;
   // Droit de timbre (stamp duty) snapshot taken at issue time; 0 when disabled/non-cash/exempt.
   stamp_duty: number;
+  /** CASH | CHEQUE | TRANSFER | CARD, or null when not stated. */
+  payment_method: string | null;
+  /** French e-invoicing mentions (src/lib/legal-mentions.ts). */
+  delivery_address: string | null;
+  operation_nature: string | null;
+  vat_exemption: string | null;
+  vat_exemption_note: string | null;
   notes: string | null;
   notes_html: string | null;
   integrity_hash: string | null;
@@ -717,6 +731,11 @@ export interface CreateInvoiceInput {
   is_down_payment_invoice?: boolean;
   is_cash_sale?: boolean;
   stamp_duty_exempt?: boolean;
+  payment_method?: string | null;
+  delivery_address?: string | null;
+  operation_nature?: string | null;
+  vat_exemption?: string | null;
+  vat_exemption_note?: string | null;
   parent_quote_id?: string | null;
   /** Labels to attach at creation; afterwards they go through `tagApi.setOn`. */
   tag_ids?: string[];
@@ -831,6 +850,14 @@ export interface CompanySettings {
   stamp_duty_threshold: number | null;
   // Quote and invoice PDFs: a pack lists its components under it
   print_bundle_detail: boolean;
+  // Legal identity and invoice mentions (src/lib/legal-mentions.ts)
+  legal_form: string | null;
+  share_capital: number | null;
+  activity: string | null;
+  vat_franchise: boolean;
+  late_penalty_rate: string | null;
+  early_payment_discount: string | null;
+  vat_on_debits: boolean;
   dashboard_layout: { order?: string[]; hidden?: string[] } | null;
   updated_at: string;
 }
@@ -871,6 +898,13 @@ export interface UpdateCompanySettingsInput {
   stamp_duty_rate?: number;
   stamp_duty_threshold?: number;
   print_bundle_detail?: boolean;
+  legal_form?: string | null;
+  share_capital?: number | null;
+  activity?: string | null;
+  vat_franchise?: boolean;
+  late_penalty_rate?: string | null;
+  early_payment_discount?: string | null;
+  vat_on_debits?: boolean;
 }
 
 export interface UpdateAppSettingsInput {

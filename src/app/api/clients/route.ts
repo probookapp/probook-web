@@ -57,6 +57,10 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       vatNumber: body.vat_number || null,
       nis: body.nis || null,
       art: body.art || null,
+      // Left alone when the caller does not send them (older offline clients).
+      isConsumer: body.is_consumer ?? undefined,
+      legalForm: body.legal_form !== undefined ? body.legal_form || null : undefined,
+      activity: body.activity !== undefined ? body.activity || null : undefined,
       notes: body.notes || null,
     } satisfies Prisma.ClientUncheckedCreateInput,
   });
