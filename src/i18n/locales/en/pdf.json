@@ -162,5 +162,13 @@
       "vatOnDebits": "Option to pay VAT on debits."
     },
     "deliveryAddress": "Delivery address"
+  },
+  "creditNote": {
+    "title": "CREDIT NOTE",
+    "issued": "ISSUED",
+    "issueDate": "Issue Date",
+    "originalInvoice": "Credit note on invoice no. {{number}} of {{date}}",
+    "reason": "Reason",
+    "totalCredited": "Total credited (incl. VAT)"
   }
 }

@@ -1,6 +1,7 @@
+import { useState } from "react";
 import { useParams, useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, Undo2, FileText } from "lucide-react";
+import { ArrowLeft, Undo2, FileText, FileDown, FileCode2 } from "lucide-react";
 import {
   Button,
   Card,
@@ -12,6 +13,9 @@ import {
 import { useCreditNote } from "./hooks/useCreditNotes";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { DocumentLinesTable } from "@/components/documents/DocumentLinesTable";
+import { useCompanySettings, useLogoBase64 } from "@/features/settings";
+import { claimDownloadTab, deliverPdf, reportPdfFailure } from "@/features/pdf/pdf-delivery";
+import { toast } from "@/stores/useToastStore";
 
 export function CreditNoteViewPage() {
   const { t } = useTranslation(["invoices", "common"]);
@@ -19,6 +23,9 @@ export function CreditNoteViewPage() {
   const router = useRouter();
 
   const { data: creditNote, isLoading } = useCreditNote(id ?? "");
+  const { data: company } = useCompanySettings();
+  const { data: logoBase64 } = useLogoBase64();
+  const [pending, setPending] = useState<"pdf" | "facturx" | null>(null);
 
   if (isLoading || !creditNote) {
     return (
@@ -27,6 +34,27 @@ export function CreditNoteViewPage() {
       </div>
     );
   }
+
+  // Both are drawn on the click: the PDF engine is loaded only then.
+  const download = async (kind: "pdf" | "facturx") => {
+    if (!company || pending) return;
+    setPending(kind);
+    const tab = claimDownloadTab();
+    try {
+      const mod = await import("@/features/pdf/facturx-download");
+      const blob =
+        kind === "pdf"
+          ? await mod.renderCreditNotePdf(creditNote, company, logoBase64)
+          : await mod.renderCreditNoteFacturx(creditNote, company, logoBase64);
+      const name = kind === "pdf" ? `${creditNote.credit_note_number}.pdf` : `${creditNote.credit_note_number}-factur-x.pdf`;
+      deliverPdf(blob, name, tab, t("common:pdfViewer.openPdf"));
+    } catch (err) {
+      tab?.close();
+      toast.error(reportPdfFailure(err, "download", t("invoices:creditNotes.pdfFailed")));
+    } finally {
+      setPending(null);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -121,6 +149,24 @@ export function CreditNoteViewPage() {
               )}
               {creditNote.client?.phone && (
                 <p className="text-sm text-(--color-text-secondary)">{creditNote.client.phone}</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">{t("invoices:pdfDocument")}</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 flex flex-col gap-2">
+              <Button variant="secondary" size="sm" onClick={() => download("pdf")} isLoading={pending === "pdf"} disabled={!company}>
+                <FileDown className="h-4 w-4 me-2" />
+                {t("invoices:creditNotes.downloadPdf")}
+              </Button>
+              {company?.fiscal_profile === "FR" && creditNote.status !== "DRAFT" && (
+                <Button variant="secondary" size="sm" onClick={() => download("facturx")} isLoading={pending === "facturx"}>
+                  <FileCode2 className="h-4 w-4 me-2" />
+                  {t("invoices:creditNotes.downloadFacturx")}
+                </Button>
               )}
             </CardContent>
           </Card>

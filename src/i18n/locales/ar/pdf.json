@@ -162,5 +162,13 @@
       "vatOnDebits": "خيار دفع الرسم حسب الفوترة (الديون)."
     },
     "deliveryAddress": "عنوان التسليم"
+  },
+  "creditNote": {
+    "title": "إشعار دائن",
+    "issued": "صادر",
+    "issueDate": "تاريخ الإصدار",
+    "originalInvoice": "إشعار دائن على الفاتورة رقم {{number}} بتاريخ {{date}}",
+    "reason": "السبب",
+    "totalCredited": "مجموع الإشعار الدائن بالرسوم"
   }
 }

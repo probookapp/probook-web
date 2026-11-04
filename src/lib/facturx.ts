@@ -60,6 +60,10 @@ export interface FacturxInput {
   vatExemptionNote?: string | null;
   vatOnDebits?: boolean;
   operationNature?: string | null;
+  /** A credit note (381) names the invoice it corrects (BT-25/BT-26). */
+  precedingInvoice?: { number: string; issueDate?: Date | null } | null;
+  /** Payment terms as text (BT-20), e.g. how a credit note is settled. */
+  paymentTerms?: string | null;
   /** Free-text notes, each with its UNTDID 4451 subject code (PMT, PMD, AAB, REG…). */
   notes?: Array<{ subject: string; content: string }>;
 }
@@ -312,8 +316,13 @@ export function buildFacturxXml(input: FacturxInput): string {
   }
 
   // A due date, or terms, is required whenever something remains to be paid (BR-CO-25).
-  if (input.dueDate) {
-    out.push(`<ram:SpecifiedTradePaymentTerms><ram:DueDateDateTime><udt:DateTimeString format="102">${ymd(input.dueDate)}</udt:DateTimeString></ram:DueDateDateTime></ram:SpecifiedTradePaymentTerms>`);
+  if (input.dueDate || input.paymentTerms) {
+    out.push("<ram:SpecifiedTradePaymentTerms>");
+    if (input.paymentTerms) out.push(`<ram:Description>${xml(input.paymentTerms)}</ram:Description>`);
+    if (input.dueDate) {
+      out.push(`<ram:DueDateDateTime><udt:DateTimeString format="102">${ymd(input.dueDate)}</udt:DateTimeString></ram:DueDateDateTime>`);
+    }
+    out.push("</ram:SpecifiedTradePaymentTerms>");
   }
   out.push(
     "<ram:SpecifiedTradeSettlementHeaderMonetarySummation>",
@@ -326,6 +335,16 @@ export function buildFacturxXml(input: FacturxInput): string {
     `<ram:TotalPrepaidAmount>${amt(paid)}</ram:TotalPrepaidAmount>`,
     `<ram:DuePayableAmount>${amt(due)}</ram:DuePayableAmount>`,
     "</ram:SpecifiedTradeSettlementHeaderMonetarySummation>",
+    ...(input.precedingInvoice
+      ? [
+          "<ram:InvoiceReferencedDocument>",
+          `<ram:IssuerAssignedID>${xml(input.precedingInvoice.number)}</ram:IssuerAssignedID>`,
+          ...(input.precedingInvoice.issueDate
+            ? [`<ram:FormattedIssueDateTime><qdt:DateTimeString format="102">${ymd(input.precedingInvoice.issueDate)}</qdt:DateTimeString></ram:FormattedIssueDateTime>`]
+            : []),
+          "</ram:InvoiceReferencedDocument>",
+        ]
+      : []),
     "</ram:ApplicableHeaderTradeSettlement>",
     "</rsm:SupplyChainTradeTransaction>",
     "</rsm:CrossIndustryInvoice>"

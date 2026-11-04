@@ -164,7 +164,10 @@
     "detailsTitle": "Credit Note Details",
     "relatedInvoice": "Related Invoice",
     "stockRestored": "Returned items were restocked",
-    "stockNotRestored": "Stock was not modified"
+    "stockNotRestored": "Stock was not modified",
+    "downloadPdf": "Download PDF",
+    "downloadFacturx": "Download as Factur-X",
+    "pdfFailed": "The credit note PDF could not be generated."
   },
   "discount": {
     "label": "Discount",

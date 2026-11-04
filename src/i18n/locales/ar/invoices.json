@@ -168,7 +168,10 @@
     "detailsTitle": "تفاصيل الإشعار الدائن",
     "relatedInvoice": "الفاتورة المرتبطة",
     "stockRestored": "تمت إعادة العناصر المرتجعة إلى المخزون",
-    "stockNotRestored": "لم يتم تعديل المخزون"
+    "stockNotRestored": "لم يتم تعديل المخزون",
+    "downloadPdf": "تحميل PDF",
+    "downloadFacturx": "تحميل بصيغة Factur-X",
+    "pdfFailed": "تعذّر إنشاء ملف PDF للإشعار الدائن."
   },
   "discount": {
     "label": "تخفيض تجاري",

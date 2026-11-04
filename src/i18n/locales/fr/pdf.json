@@ -162,5 +162,13 @@
       "vatOnDebits": "Option pour le paiement de la taxe d'après les débits."
     },
     "deliveryAddress": "Adresse de livraison"
+  },
+  "creditNote": {
+    "title": "AVOIR",
+    "issued": "ÉMIS",
+    "issueDate": "Date d'émission",
+    "originalInvoice": "Avoir sur la facture n° {{number}} du {{date}}",
+    "reason": "Motif",
+    "totalCredited": "Total de l'avoir TTC"
   }
 }

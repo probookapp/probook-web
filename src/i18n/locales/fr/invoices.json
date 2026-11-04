@@ -164,7 +164,10 @@
     "detailsTitle": "Détails de l'avoir",
     "relatedInvoice": "Facture liée",
     "stockRestored": "Les articles retournés ont été réintégrés en stock",
-    "stockNotRestored": "Le stock n'a pas été modifié"
+    "stockNotRestored": "Le stock n'a pas été modifié",
+    "downloadPdf": "Télécharger le PDF",
+    "downloadFacturx": "Télécharger en Factur-X",
+    "pdfFailed": "Le PDF de l'avoir n'a pas pu être généré."
   },
   "discount": {
     "label": "Remise commerciale",

@@ -101,6 +101,24 @@ describe("Factur-X CII (EN 16931)", () => {
     expect(one(xml, "DueDateTypeCode")).toBe("5");
   });
 
+  it("writes a credit note: type 381, the invoice it corrects, its terms", () => {
+    const xml = buildFacturxXml({
+      ...base,
+      typeCode: "381",
+      dueDate: null,
+      precedingInvoice: { number: "FAC-9", issueDate: new Date("2026-10-01") },
+      paymentTerms: "Avoir à déduire du prochain règlement.",
+      lines: [{ description: "Retour", quantity: 1, unitPrice: 50, taxRate: 20 }],
+    });
+    expect(one(xml, "TypeCode")).toBe("381");
+    expect(one(xml, "IssuerAssignedID")).toBe("FAC-9");
+    expect(xml).toContain('<qdt:DateTimeString format="102">20261001</qdt:DateTimeString>');
+    expect(one(xml, "Description")).toBe("Avoir à déduire du prochain règlement.");
+    expect(one(xml, "GrandTotalAmount")).toBe("60.00");
+    // The reference sits after the totals, where the schema expects it.
+    expect(xml.indexOf("InvoiceReferencedDocument")).toBeGreaterThan(xml.indexOf("DuePayableAmount"));
+  });
+
   it("reads SIRENs and country codes", () => {
     expect(sirenOf("123 456 789 00012")).toBe("123456789");
     expect(sirenOf("12345")).toBeNull();
