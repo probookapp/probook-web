@@ -540,5 +540,59 @@
     "SASU": "SASU",
     "SA": "SA",
     "OTHER": "Other"
+  },
+  "tour": {
+    "counter": "{{current}} / {{total}}",
+    "skip": "Skip the tour",
+    "finish": "Done",
+    "welcome": {
+      "title": "Welcome to Probook, {{name}}",
+      "body": "In one minute, see where everything is. You can replay the tour at any time.",
+      "sell": {
+        "title": "Sell",
+        "body": "quotes, invoices"
+      },
+      "manage": {
+        "title": "Manage",
+        "body": "clients, stock"
+      },
+      "follow": {
+        "title": "Track",
+        "body": "reports"
+      },
+      "start": "Take the tour · 1 min",
+      "later": "Later",
+      "replayHint": "The ? button at the bottom of the menu replays it."
+    },
+    "office": {
+      "base": {
+        "title": "Your clients and products",
+        "body": "Start here. Once entered, they fill in your quotes and invoices for you."
+      },
+      "documents": {
+        "title": "Quotes, invoices, delivery notes",
+        "body": "An accepted quote becomes an invoice in one click, then a delivery note. All three stay linked."
+      },
+      "dashboard": {
+        "title": "Your business at a glance",
+        "body": "These figures update on their own. Click one to open the matching list."
+      },
+      "pos": {
+        "title": "Till mode",
+        "body": "For counter sales: a dedicated screen, fast checkout, and it keeps working without a connection."
+      },
+      "reports": {
+        "title": "Your numbers",
+        "body": "Revenue, unpaid invoices, margins and stock, all in one place."
+      },
+      "settings": {
+        "title": "Your company details",
+        "body": "Logo, tax identifiers, contact details: they appear on every document. Fill them in first."
+      },
+      "help": {
+        "title": "Need a refresher?",
+        "body": "This button replays the tour at any time."
+      }
+    }
   }
 }

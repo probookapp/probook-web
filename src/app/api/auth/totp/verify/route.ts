@@ -4,6 +4,7 @@ import { createToken, setSessionCookie, hashToken, verifyPassword, verifyTotpCha
 import { verifyTOTP } from "@/lib/totp";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { totpVerifySchema } from "@/lib/validations";
+import { serializeUserInfo } from "@/lib/user-info";
 
 const TOTP_MAX_ATTEMPTS = 5;
 const TOTP_LOCKOUT_MINUTES = 15;
@@ -143,19 +144,10 @@ export async function POST(req: NextRequest) {
     });
 
     const permissions = await prisma.userPermission.findMany({
-      where: { userId: user.id, granted: true },
+      where: { userId: user.id },
     });
 
-    return NextResponse.json({
-      id: user.id,
-      username: user.username,
-      display_name: user.displayName,
-      role: user.role,
-      is_active: user.isActive,
-      permissions: permissions.map((p) => p.permissionKey),
-      created_at: user.createdAt.toISOString(),
-      updated_at: user.updatedAt.toISOString(),
-    });
+    return NextResponse.json(serializeUserInfo(user, permissions));
   } catch (error: unknown) {
     console.error("TOTP verify error:", error);
     return NextResponse.json(

@@ -2,6 +2,15 @@ import { apiCall } from "./api-adapter";
 import { API_BASE_URL } from "./config";
 import type { TaggableDocument } from "./document-tags";
 import type { TablePreferences, TablePreferenceUpdate } from "./table-preferences";
+import type { TourKey } from "./tours";
+
+export interface OnboardingProgress {
+  company_setup: boolean;
+  first_client: boolean;
+  first_product: boolean;
+  first_quote: boolean;
+  first_invoice: boolean;
+}
 import type {
   Client,
   CreateClientInput,
@@ -615,6 +624,9 @@ export const authApi = {
   getTablePreferences: () => apiCall<TablePreferences>("get_table_preferences"),
   updateTablePreference: (input: TablePreferenceUpdate) =>
     apiCall<TablePreferences>("update_table_preference", { input }),
+  // Guided tours seen for good, and the account's first steps
+  completeTour: (tour: TourKey) => apiCall<{ tours_completed: TourKey[] }>("complete_tour", { tour }),
+  getOnboardingProgress: () => apiCall<OnboardingProgress>("get_onboarding_progress"),
 };
 
 // POS commands

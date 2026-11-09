@@ -4,6 +4,7 @@ import { Menu } from "lucide-react";
 import { Sidebar } from "./Sidebar";
 import { ToastContainer } from "@/components/ui";
 import { OfflineIndicator } from "./OfflineIndicator";
+import { OfficeTour } from "@/components/tour/OfficeTour";
 
 interface LayoutProps {
   children: ReactNode;
@@ -19,6 +20,7 @@ export function Layout({ children, topBanner }: LayoutProps) {
       {/* Toast notifications */}
       <ToastContainer />
       <OfflineIndicator />
+      <OfficeTour setSidebarOpen={setIsSidebarOpen} />
 
       {/* Mobile sidebar overlay */}
       {isSidebarOpen && (

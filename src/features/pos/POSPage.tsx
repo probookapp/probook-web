@@ -42,6 +42,8 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { DEFAULT_CURRENCY } from "@/lib/currencies";
 import { expandEditorLines, tillLineAmounts } from "@/lib/bundles";
 import type { Product, ProductVariant } from "@/types";
+import { useTourStore } from "@/stores/useTourStore";
+import { PosTour } from "./components/PosTour";
 
 export function POSPage() {
   const { t } = useTranslation("pos");
@@ -57,6 +59,7 @@ export function POSPage() {
   const [offlinePending, setOfflinePending] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [mobileTab, setMobileTab] = useState<"cart" | "products">("products");
+  const startTour = useTourStore((s) => s.start);
 
   const {
     currentSession,
@@ -664,6 +667,7 @@ export function POSPage() {
           onCloseSession={() => setShowCloseSessionModal(true)}
           onTransactionHistory={() => setShowTransactionHistory(true)}
           onCashMovement={() => setShowCashMovement(true)}
+          onReplayTour={() => startTour("pos")}
         />
       </header>
 
@@ -696,7 +700,7 @@ export function POSPage() {
       {/* Main content */}
       <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
         {/* Cart section (60% on desktop, full on mobile when tab active) */}
-        <div className={`lg:w-3/5 flex flex-col bg-(--color-bg-primary) lg:border-e border-(--color-border-primary) ${
+        <div data-tour="pos-cart" className={`lg:w-3/5 flex flex-col bg-(--color-bg-primary) lg:border-e border-(--color-border-primary) ${
           mobileTab === "cart" ? "flex" : "hidden lg:flex"
         }`}>
           <CartDisplay />
@@ -708,6 +712,7 @@ export function POSPage() {
               <button
                 onClick={() => setShowPaymentModal(true)}
                 disabled={items.length === 0}
+                data-tour="pos-pay"
                 className="w-full py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-xl disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 {t("pay")} - {formatCurrency(getFinalAmount())}
@@ -763,6 +768,8 @@ export function POSPage() {
         onClose={() => setShowCashMovement(false)}
         sessionId={currentSession.id}
       />
+
+      <PosTour showTab={setMobileTab} />
     </div>
   );
 }

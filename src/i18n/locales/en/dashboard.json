@@ -53,5 +53,18 @@
     "newQuote": "New Quote",
     "newClient": "New Client"
   },
-  "noData": "No data available"
+  "noData": "No data available",
+  "gettingStarted": {
+    "title": "Getting started",
+    "progress": "{{done}} of {{total}} done",
+    "companySetup": "Complete your company details",
+    "firstClient": "Add a client",
+    "firstProduct": "Add a product",
+    "firstQuote": "Create a quote",
+    "firstInvoice": "Create an invoice",
+    "go": "Go",
+    "done": "done",
+    "autoTick": "Ticks itself once it's done",
+    "hide": "Hide"
+  }
 }

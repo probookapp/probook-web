@@ -91,6 +91,9 @@ model User {
   /// Per-table list preferences: `{ [tableKey]: { hidden: string[] } }`. See
   /// src/lib/table-preferences.ts — the shape is validated there, not here.
   tablePreferences Json?    @map("table_preferences")
+  /// Guided tours finished or dismissed for good: a JSON array of keys from
+  /// src/lib/tours.ts ("office", "pos", "checklist"). Read leniently there.
+  toursCompleted   Json?    @map("tours_completed")
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 

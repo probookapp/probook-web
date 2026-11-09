@@ -214,7 +214,7 @@ export function ProductSearch({ onProductSelect, onVariantSelect }: ProductSearc
     <div className="flex flex-col h-full">
       {/* Search input */}
       <div className="p-4 border-b border-(--color-border-primary)">
-        <div className="relative">
+        <div className="relative" data-tour="pos-search">
           <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-(--color-text-secondary)" />
           <input
             type="text"

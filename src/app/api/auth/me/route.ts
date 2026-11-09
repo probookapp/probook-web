@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { serializeUserInfo } from "@/lib/user-info";
 
 export async function GET() {
   const session = await getSession();
@@ -19,23 +20,5 @@ export async function GET() {
     where: { userId: user.id },
   });
 
-  return NextResponse.json({
-    id: user.id,
-    username: user.username,
-    display_name: user.displayName,
-    email: user.email,
-    email_verified: user.emailVerified,
-    role: user.role,
-    is_active: user.isActive,
-    permissions: permissions.filter((p) => p.canView).map((p) => p.permissionKey),
-    permission_details: permissions.map((p) => ({
-      key: p.permissionKey,
-      can_view: p.canView,
-      can_create: p.canCreate,
-      can_edit: p.canEdit,
-      can_delete: p.canDelete,
-    })),
-    created_at: user.createdAt.toISOString(),
-    updated_at: user.updatedAt.toISOString(),
-  });
+  return NextResponse.json(serializeUserInfo(user, permissions));
 }

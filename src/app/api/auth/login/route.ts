@@ -6,6 +6,7 @@ import { checkAccountLocked, checkAccountLockedByIp, recordLoginAttempt } from "
 import { validateBody, isValidationError } from "@/lib/validate";
 import { loginSchema } from "@/lib/validations";
 import { getClientIp } from "@/lib/client-ip";
+import { serializeUserInfo } from "@/lib/user-info";
 
 export async function POST(req: NextRequest) {
   try {
@@ -126,25 +127,7 @@ export async function POST(req: NextRequest) {
       where: { userId: user.id },
     });
 
-    return NextResponse.json({
-      id: user.id,
-      username: user.username,
-      display_name: user.displayName,
-      email: user.email,
-      email_verified: user.emailVerified,
-      role: user.role,
-      is_active: user.isActive,
-      permissions: permissions.filter((p) => p.canView).map((p) => p.permissionKey),
-      permission_details: permissions.map((p) => ({
-        key: p.permissionKey,
-        can_view: p.canView,
-        can_create: p.canCreate,
-        can_edit: p.canEdit,
-        can_delete: p.canDelete,
-      })),
-      created_at: user.createdAt.toISOString(),
-      updated_at: user.updatedAt.toISOString(),
-    });
+    return NextResponse.json(serializeUserInfo(user, permissions));
   } catch (error: unknown) {
     console.error("Login error:", error);
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });

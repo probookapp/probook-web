@@ -150,5 +150,26 @@
   "gridView": "Tile view",
   "decreaseQuantity": "Decrease quantity",
   "increaseQuantity": "Increase quantity",
-  "removeItem": "Remove item from cart"
+  "removeItem": "Remove item from cart",
+  "replayTour": "Replay the tour",
+  "tour": {
+    "label": "Till",
+    "finish": "Let's go",
+    "search": {
+      "title": "Scan or search",
+      "body": "The barcode scanner works at any time, no need to click the field. Otherwise, type a name or tap a product."
+    },
+    "cart": {
+      "title": "The cart",
+      "body": "Change a quantity with − and +, or remove a line. The total follows."
+    },
+    "pay": {
+      "title": "Take payment",
+      "body": "Cash, card or both. For cash, the change to give back is shown. Without a connection, the sale is kept and sent once the network is back."
+    },
+    "menu": {
+      "title": "The till menu",
+      "body": "Sales history, cash in and out, and closing the till at the end of the day."
+    }
+  }
 }

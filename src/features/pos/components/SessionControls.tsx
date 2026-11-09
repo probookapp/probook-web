@@ -8,6 +8,7 @@ import {
   Trash2,
   Sun,
   Moon,
+  CircleHelp,
 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "@/lib/navigation";
@@ -19,12 +20,14 @@ interface SessionControlsProps {
   onCloseSession: () => void;
   onTransactionHistory: () => void;
   onCashMovement: () => void;
+  onReplayTour: () => void;
 }
 
 export function SessionControls({
   onCloseSession,
   onTransactionHistory,
   onCashMovement,
+  onReplayTour,
 }: SessionControlsProps) {
   const { t } = useTranslation("pos");
   const router = useRouter();
@@ -52,6 +55,7 @@ export function SessionControls({
         )}
         <button
           onClick={() => setShowMenu(!showMenu)}
+          data-tour="pos-menu"
           className="px-3 py-2.5 text-sm font-medium bg-white/15 hover:bg-white/25 rounded-lg flex items-center gap-1.5 transition-colors"
         >
           {t("menu")}
@@ -90,16 +94,26 @@ export function SessionControls({
               {t("cashMovement")}
             </button>
             )}
+            {/* Both labels rendered, the theme's own class picks one: markup
+                that branches on the theme is a hydration mismatch. */}
             <button
               onClick={toggleTheme}
               className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-start text-sm transition-colors"
             >
-              {resolvedTheme === "dark" ? (
-                <Sun className="h-4 w-4 text-(--color-text-secondary)" />
-              ) : (
-                <Moon className="h-4 w-4 text-(--color-text-secondary)" />
-              )}
-              {resolvedTheme === "dark" ? t("lightMode") : t("darkMode")}
+              <Sun className="hidden dark:block h-4 w-4 text-(--color-text-secondary)" />
+              <Moon className="dark:hidden h-4 w-4 text-(--color-text-secondary)" />
+              <span className="hidden dark:inline">{t("lightMode")}</span>
+              <span className="dark:hidden">{t("darkMode")}</span>
+            </button>
+            <button
+              onClick={() => {
+                setShowMenu(false);
+                onReplayTour();
+              }}
+              className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-(--color-bg-secondary) text-start text-sm transition-colors"
+            >
+              <CircleHelp className="h-4 w-4 text-(--color-text-secondary)" />
+              {t("replayTour")}
             </button>
             <div className="my-1 border-t border-(--color-border-primary)" />
             <button

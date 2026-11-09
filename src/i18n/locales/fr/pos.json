@@ -150,5 +150,26 @@
   "gridView": "Vue en vignettes",
   "decreaseQuantity": "Diminuer la quantité",
   "increaseQuantity": "Augmenter la quantité",
-  "removeItem": "Retirer l'article du panier"
+  "removeItem": "Retirer l'article du panier",
+  "replayTour": "Revoir la visite",
+  "tour": {
+    "label": "Caisse",
+    "finish": "C'est parti",
+    "search": {
+      "title": "Scannez ou cherchez",
+      "body": "Le lecteur de code-barres marche à tout moment, sans cliquer dans le champ. Sinon, tapez un nom ou touchez un produit."
+    },
+    "cart": {
+      "title": "Le panier",
+      "body": "Changez une quantité avec − et +, ou retirez une ligne. Le total suit."
+    },
+    "pay": {
+      "title": "Encaisser",
+      "body": "Espèces, carte ou les deux. En espèces, la monnaie à rendre s'affiche. Sans connexion, la vente est gardée et envoyée au retour du réseau."
+    },
+    "menu": {
+      "title": "Le menu de la caisse",
+      "body": "Historique des ventes, entrées et sorties d'espèces, et fermeture de caisse en fin de journée."
+    }
+  }
 }

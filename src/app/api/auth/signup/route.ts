@@ -9,6 +9,7 @@ import { getClientIp } from "@/lib/client-ip";
 import { isUsernameTaken } from "@/lib/usernames";
 import { rateLimitDurable } from "@/lib/rate-limit";
 import { DEFAULT_CURRENCY } from "@/lib/currencies";
+import { serializeUserInfo } from "@/lib/user-info";
 
 // New signups get a free trial with full (non-demo) access, after which they
 // must subscribe (or contact us). Kept in sync with the admin default.
@@ -120,7 +121,7 @@ export async function POST(req: NextRequest) {
       });
 
       const permissions = await tx.userPermission.findMany({
-        where: { userId: user.id, granted: true },
+        where: { userId: user.id },
       });
 
       return { tenant, user, permissions };
@@ -169,17 +170,8 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json({
-      id: result.user.id,
-      username: result.user.username,
-      display_name: result.user.displayName,
-      email: result.user.email,
-      email_verified: result.user.emailVerified,
+      ...serializeUserInfo(result.user, result.permissions),
       verification_email_sent: verificationEmailSent,
-      role: result.user.role,
-      is_active: result.user.isActive,
-      permissions: result.permissions.map((p) => p.permissionKey),
-      created_at: result.user.createdAt.toISOString(),
-      updated_at: result.user.updatedAt.toISOString(),
     });
   } catch (error: unknown) {
     console.error("Signup error:", error);

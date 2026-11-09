@@ -72,6 +72,10 @@ export const PUT = withAuth(async (req, { tenantId, session }) => {
     create: { tenantId, currency: DEFAULT_CURRENCY, ...updateData },
   });
 
-  markOnboardingStep(tenantId, "company_setup");
+  // Rearranging the dashboard also saves settings; that is not setting up the
+  // company, and must not tick the step on the getting-started checklist.
+  if (Object.keys(updateData).some((key) => key !== "dashboardLayout")) {
+    markOnboardingStep(tenantId, "company_setup");
+  }
   return NextResponse.json(toSnakeCase(settings));
 });

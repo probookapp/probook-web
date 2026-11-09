@@ -1445,6 +1445,9 @@ export interface UserInfo {
   permissions: string[];
   // Full per-module CRUD flags. Present on responses from the API.
   permission_details?: PermissionDetail[];
+  // Guided tours seen for good (src/lib/tours.ts). Absent when the user does not
+  // come from a real account (impersonation), which keeps tours from starting.
+  tours_completed?: string[];
   created_at: string;
   updated_at: string;
 }

@@ -22,6 +22,7 @@ import { AlertsPanel } from "./components";
 import { useDashboardStore, type DashboardStatId } from "@/stores/useDashboardStore";
 import { useLocale, localizePath } from "@/lib/navigation";
 import { useDashboardLayoutSync } from "./hooks/useDashboardLayoutSync";
+import { GettingStarted } from "./components/GettingStarted";
 
 /**
  * A figure on the dashboard is a question ("how much is still owed?"), and the
@@ -209,7 +210,7 @@ export function DashboardPage() {
       {demoted.includes("emailVerify") && <EmailVerifyNotice variant="card" />}
 
       {visibleStats.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-4" data-tour="dashboard-stats">
           {/* Whatever the owner put first leads the page. */}
           <StatCard
             featured
@@ -241,6 +242,8 @@ export function DashboardPage() {
 
       {/* One panel: the events and the actions on them (see AlertsPanel). */}
       <AlertsPanel />
+
+      <GettingStarted />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>

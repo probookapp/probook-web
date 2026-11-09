@@ -755,6 +755,8 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
   logout: { method: "POST", path: "/api/auth/logout" },
   get_current_user: { method: "GET", path: "/api/auth/me" },
   get_table_preferences: { method: "GET", path: "/api/auth/table-preferences" },
+  complete_tour: { method: "POST", path: "/api/auth/tours", body: (a) => ({ tour: a.tour }) },
+  get_onboarding_progress: { method: "GET", path: "/api/onboarding" },
   update_table_preference: {
     method: "PUT",
     path: "/api/auth/table-preferences",

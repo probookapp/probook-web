@@ -540,5 +540,59 @@
     "SASU": "SASU",
     "SA": "SA",
     "OTHER": "Autre"
+  },
+  "tour": {
+    "counter": "{{current}} / {{total}}",
+    "skip": "Passer la visite",
+    "finish": "Terminer",
+    "welcome": {
+      "title": "Bienvenue sur Probook, {{name}}",
+      "body": "En une minute, voyez où se trouve chaque chose. Vous pourrez revoir la visite à tout moment.",
+      "sell": {
+        "title": "Vendre",
+        "body": "devis, factures"
+      },
+      "manage": {
+        "title": "Gérer",
+        "body": "clients, stock"
+      },
+      "follow": {
+        "title": "Suivre",
+        "body": "rapports"
+      },
+      "start": "Faire la visite · 1 min",
+      "later": "Plus tard",
+      "replayHint": "Le bouton ? en bas du menu la relance."
+    },
+    "office": {
+      "base": {
+        "title": "Vos clients et vos produits",
+        "body": "Commencez ici. Une fois saisis, ils remplissent tout seuls vos devis et vos factures."
+      },
+      "documents": {
+        "title": "Devis, factures, bons de livraison",
+        "body": "Un devis accepté devient une facture en un clic, puis un bon de livraison. Les trois restent liés."
+      },
+      "dashboard": {
+        "title": "Votre activité en un coup d'œil",
+        "body": "Ces chiffres se mettent à jour tout seuls. Cliquez sur l'un d'eux pour ouvrir la liste qui va avec."
+      },
+      "pos": {
+        "title": "Le mode caisse",
+        "body": "Pour la vente au comptoir : un écran dédié, un encaissement rapide, et il continue de marcher sans connexion."
+      },
+      "reports": {
+        "title": "Vos chiffres",
+        "body": "Chiffre d'affaires, impayés, marges et stock, au même endroit."
+      },
+      "settings": {
+        "title": "Vos informations société",
+        "body": "Logo, identifiants fiscaux, coordonnées : elles apparaissent sur chaque document. À compléter en premier."
+      },
+      "help": {
+        "title": "Besoin de revoir ?",
+        "body": "Ce bouton relance la visite à tout moment."
+      }
+    }
   }
 }

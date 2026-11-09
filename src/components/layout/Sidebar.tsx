@@ -21,7 +21,9 @@ import {
   Shield,
   Store,
   Lock,
+  CircleHelp,
 } from "lucide-react";
+import { useTourStore } from "@/stores/useTourStore";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { authApi } from "@/lib/api";
@@ -46,6 +48,7 @@ export function Sidebar({ onClose }: SidebarProps) {
   const { currentUser, hasPermission, clearUser } = useAuthStore();
   const { data: entitlements } = useEntitlements();
   const queryClient = useQueryClient();
+  const startTour = useTourStore((s) => s.start);
 
   // Clearing the local data takes a moment on a phone, and the button stayed
   // live meanwhile: a second tap reached the server with the session already
@@ -168,6 +171,8 @@ export function Sidebar({ onClose }: SidebarProps) {
               key={item.href}
               href={localizedHref}
               onClick={onClose}
+              // What the guided tour lights up (components/tour/OfficeTour.tsx).
+              data-tour={`nav-${item.href.slice(1)}`}
               className={cn(
                 "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                 isActive
@@ -206,6 +211,7 @@ export function Sidebar({ onClose }: SidebarProps) {
         {hasPermission("pos") && (entitlements?.[FEATURE_KEYS.POS]?.included ?? true) && (
           <button
             onClick={() => runGuarded(() => router.push("/pos"))}
+            data-tour="nav-pos"
             // Outlined, not a green slab. Green is the "it worked" colour
             // everywhere else in the application; spending it on a navigation
             // button makes the rail argue with itself.
@@ -233,6 +239,18 @@ export function Sidebar({ onClose }: SidebarProps) {
                 </p>
               </div>
             </div>
+            <button
+              onClick={() => {
+                onClose?.();
+                startTour("office");
+              }}
+              data-tour="tour-help"
+              className="p-3 lg:p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 transition-colors"
+              aria-label={t("guidedTour")}
+              title={t("guidedTour")}
+            >
+              <CircleHelp className="h-4 w-4" />
+            </button>
             <button
               onClick={() => runGuarded(() => void handleLogout())}
               disabled={loggingOut}

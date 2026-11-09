@@ -53,5 +53,18 @@
     "newQuote": "عرض سعر جديد",
     "newClient": "عميل جديد"
   },
-  "noData": "لا توجد بيانات"
+  "noData": "لا توجد بيانات",
+  "gettingStarted": {
+    "title": "الخطوات الأولى",
+    "progress": "{{done}} من {{total}} مكتملة",
+    "companySetup": "أكمل معلومات الشركة",
+    "firstClient": "أضف عميلًا",
+    "firstProduct": "أضف منتجًا",
+    "firstQuote": "أنشئ عرض سعر",
+    "firstInvoice": "أنشئ فاتورة",
+    "go": "انتقل",
+    "done": "تم",
+    "autoTick": "يُؤشَّر تلقائيًا عند الإنجاز",
+    "hide": "إخفاء"
+  }
 }

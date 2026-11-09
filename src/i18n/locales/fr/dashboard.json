@@ -53,5 +53,18 @@
     "newQuote": "Nouveau devis",
     "newClient": "Nouveau client"
   },
-  "noData": "Aucune donnée disponible"
+  "noData": "Aucune donnée disponible",
+  "gettingStarted": {
+    "title": "Premiers pas",
+    "progress": "{{done}} sur {{total}} terminés",
+    "companySetup": "Compléter les infos société",
+    "firstClient": "Ajouter un client",
+    "firstProduct": "Ajouter un produit",
+    "firstQuote": "Créer un devis",
+    "firstInvoice": "Créer une facture",
+    "go": "Y aller",
+    "done": "fait",
+    "autoTick": "Coché automatiquement quand c'est fait",
+    "hide": "Masquer"
+  }
 }
