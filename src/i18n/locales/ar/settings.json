@@ -119,7 +119,7 @@
     "activity": "طبيعة النشاط",
     "activityPlaceholder": "مثال: تجارة التجزئة لمعدات الإعلام الآلي",
     "vatFranchise": "الإعفاء الأساسي من الرسم على القيمة المضافة (مؤسسة مصغرة)",
-    "vatFranchiseHint": "ستحمل فواتيرك العبارة « TVA non applicable, art. 293 B du CGI ».",
+    "vatFranchiseHint": "ستحمل فواتيرك العبارة « TVA non applicable, article 293 B du CGI ».",
     "latePenaltyRate": "نسبة غرامات التأخير",
     "latePenaltyRatePlaceholder": "افتراضيًا: سعر البنك المركزي الأوروبي + 10 نقاط",
     "earlyPaymentDiscount": "خصم الدفع المسبق",

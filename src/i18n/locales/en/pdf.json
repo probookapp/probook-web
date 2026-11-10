@@ -142,7 +142,7 @@
     },
     "stampAndSignature": "Stamp and signature",
     "fr": {
-      "vatFranchise": "VAT not applicable, art. 293 B of the CGI",
+      "vatFranchise": "VAT not applicable, article 293 B of the CGI",
       "latePenalty": "Late payment penalties: {{rate}}, due from the day after the due date.",
       "latePenaltyDefault": "Late payment penalties: ECB refinancing rate plus 10 points, due from the day after the due date.",
       "recoveryIndemnity": "Fixed compensation for recovery costs in case of late payment: €40.",

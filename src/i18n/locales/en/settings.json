@@ -119,7 +119,7 @@
     "activity": "Nature of the activity",
     "activityPlaceholder": "E.g. retail of computer equipment",
     "vatFranchise": "VAT franchise (micro-enterprise)",
-    "vatFranchiseHint": "Your invoices will read \"TVA non applicable, art. 293 B du CGI\".",
+    "vatFranchiseHint": "Your invoices will read \"TVA non applicable, article 293 B du CGI\".",
     "latePenaltyRate": "Late payment penalty rate",
     "latePenaltyRatePlaceholder": "Default: ECB rate + 10 points",
     "earlyPaymentDiscount": "Discount for early payment",

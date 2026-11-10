@@ -119,7 +119,7 @@
     "activity": "Nature de l'activité",
     "activityPlaceholder": "Ex. commerce de détail de matériel informatique",
     "vatFranchise": "Franchise en base de TVA (micro-entreprise)",
-    "vatFranchiseHint": "Vos factures porteront « TVA non applicable, art. 293 B du CGI ».",
+    "vatFranchiseHint": "Vos factures porteront « TVA non applicable, article 293 B du CGI ».",
     "latePenaltyRate": "Taux des pénalités de retard",
     "latePenaltyRatePlaceholder": "Par défaut : taux BCE + 10 points",
     "earlyPaymentDiscount": "Escompte pour paiement anticipé",

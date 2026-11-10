@@ -142,7 +142,7 @@
     },
     "stampAndSignature": "Cachet et signature",
     "fr": {
-      "vatFranchise": "TVA non applicable, art. 293 B du CGI",
+      "vatFranchise": "TVA non applicable, article 293 B du CGI",
       "latePenalty": "Pénalités de retard : {{rate}}, exigibles dès le lendemain de la date d'échéance.",
       "latePenaltyDefault": "Pénalités de retard : taux de refinancement de la BCE majoré de 10 points, exigibles dès le lendemain de la date d'échéance.",
       "recoveryIndemnity": "Indemnité forfaitaire pour frais de recouvrement en cas de retard de paiement : 40 €.",

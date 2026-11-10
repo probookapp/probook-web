@@ -53,7 +53,7 @@ describe("Factur-X CII (EN 16931)", () => {
   it("states the franchise as category E with its reason and code", () => {
     const xml = buildFacturxXml({ ...base, vatFranchise: true, lines: [{ description: "Cours", quantity: 1, unitPrice: 80, taxRate: 0 }] });
     expect(all(xml, "CategoryCode")).toEqual(["E", "E"]);
-    expect(one(xml, "ExemptionReason")).toBe("TVA non applicable, art. 293 B du CGI");
+    expect(one(xml, "ExemptionReason")).toBe("TVA non applicable, article 293 B du CGI");
     expect(one(xml, "ExemptionReasonCode")).toBe("VATEX-FR-FRANCHISE");
   });
 

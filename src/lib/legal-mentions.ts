@@ -192,6 +192,10 @@ export function invoiceFooterMentions(
   const profile = getFiscalProfile(company.fiscal_profile);
   const out: Mention[] = [];
   if (profile.id === "FR") {
+    // Wording set by CGI art. 293 E. VAT moves from the CGI to the CIBS on
+    // 1 January 2027 (ordonnance 2025-1247, date set by ordonnance 2026-671),
+    // and CGI references stay accepted until 30 June 2028: switch the article
+    // in pdf.json and facturx.ts once the CIBS article is published.
     if (company.vat_franchise) out.push({ key: "legal.fr.vatFranchise" });
     // The legal ground of a 0 % line outside the franchise.
     if (!company.vat_franchise && hasZeroRateLine(invoice) && invoice?.vat_exemption) {

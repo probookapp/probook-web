@@ -98,7 +98,7 @@ const EXEMPTION_TEXT: Record<string, { category: VatCategory; code: string; reas
   EXPORT: { category: "G", code: "VATEX-EU-G", reason: "Exonération de TVA, article 262 I du CGI" },
   REVERSE_CHARGE: { category: "AE", code: "VATEX-EU-AE", reason: "Autoliquidation" },
 };
-const FRANCHISE = { category: "E" as VatCategory, code: "VATEX-FR-FRANCHISE", reason: "TVA non applicable, art. 293 B du CGI" };
+const FRANCHISE = { category: "E" as VatCategory, code: "VATEX-FR-FRANCHISE", reason: "TVA non applicable, article 293 B du CGI" };
 
 function xml(text: string | number | null | undefined): string {
   return String(text ?? "")
