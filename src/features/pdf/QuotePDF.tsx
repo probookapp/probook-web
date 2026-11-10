@@ -5,7 +5,7 @@ import {
   View,
 } from "@react-pdf/renderer";
 import { styles } from "./styles";
-import { numberToFrenchWords, CURRENCY_WORDS } from "@/lib/number-words";
+import { documentAmountInWords } from "./amount-in-words";
 import { renderIdentifiers, identifierSummary } from "./identifiers";
 import type { Quote, CompanySettings } from "@/types";
 import { pdfCurrency } from "./text";
@@ -315,19 +315,19 @@ export function QuotePDF({
                 </>
               );
             })()}
-            <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#e5e2dc" }}>
-              <Text style={{ fontSize: 8, color: "#837d73", fontStyle: "italic" }}>
-                {t("quote.amountInWords")}: {(() => {
-                  const curr = currency;
-                  const words = CURRENCY_WORDS[curr] || { main: curr.toLowerCase(), sub: "centime" };
-                  return numberToFrenchWords(
-                    quote.total,
-                    words.main,
-                    words.sub
-                  );
-                })()}
-              </Text>
-            </View>
+            {/* A quote owes no amount in words: French and Arabic quotes carry
+                one in their own language, English ones none, rather than the
+                French sentence they used to print whatever the language. */}
+            {(() => {
+              const words = documentAmountInWords(quote.total, currency, locale, false);
+              return words ? (
+                <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#e5e2dc" }}>
+                  <Text style={{ fontSize: 8, color: "#837d73", fontStyle: "italic" }}>
+                    {pdfString("quote.amountInWords", words.labelLocale)}: {words.text}
+                  </Text>
+                </View>
+              ) : null;
+            })()}
           </View>
         </View>
 

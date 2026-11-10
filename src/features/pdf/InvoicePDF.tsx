@@ -5,7 +5,7 @@ import {
   View,
 } from "@react-pdf/renderer";
 import { styles } from "./styles";
-import { numberToFrenchWords, CURRENCY_WORDS } from "@/lib/number-words";
+import { documentAmountInWords } from "./amount-in-words";
 import { renderIdentifiers, identifierSummary } from "./identifiers";
 import type { Invoice, CompanySettings } from "@/types";
 import { pdfCurrency } from "./text";
@@ -95,12 +95,14 @@ export function InvoicePDF({
   const paymentMethod = isInvoicePaymentMethod(invoice.payment_method)
     ? t(`legal.paymentMethods.${invoice.payment_method}`)
     : null;
-  // The total in words is a French formula ("arrêté à la somme de") and
-  // numberToFrenchWords only speaks French, so on its own it is printed on
-  // French documents only. In Algeria the decree makes it mandatory whatever
-  // the document's language: there it is printed in French, label included,
-  // so the line stays one coherent sentence.
-  const wordsLocale = locale === "fr" ? "fr" : requiresAmountInWords(company) ? "fr" : null;
+  // The total in words, stamp duty included: in French or Arabic, and on an
+  // English document only where the law requires it (see amount-in-words.ts).
+  const amountInWords = documentAmountInWords(
+    invoice.total + (invoice.stamp_duty || 0),
+    currency,
+    locale,
+    requiresAmountInWords(company)
+  );
 
   const getStatusStyle = () => {
     switch (invoice.status) {
@@ -371,20 +373,10 @@ export function InvoicePDF({
                 </>
               );
             })()}
-            {/* See wordsLocale above. */}
-            {wordsLocale && (
+            {amountInWords && (
             <View style={{ marginTop: 8, paddingTop: 8, borderTopWidth: 1, borderTopColor: "#e5e2dc" }}>
               <Text style={{ fontSize: 8, color: "#837d73", fontStyle: "italic" }}>
-                {pdfString("invoice.amountInWords", wordsLocale)}: {(() => {
-                  const curr = currency;
-                  const words = CURRENCY_WORDS[curr] || { main: curr.toLowerCase(), sub: "centime" };
-                  return numberToFrenchWords(
-                    invoice.total +
-                    (invoice.stamp_duty || 0),
-                    words.main,
-                    words.sub
-                  );
-                })()}
+                {pdfString("invoice.amountInWords", amountInWords.labelLocale)}: {amountInWords.text}
               </Text>
             </View>
             )}

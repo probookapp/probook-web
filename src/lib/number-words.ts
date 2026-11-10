@@ -130,18 +130,32 @@ export const CURRENCY_WORDS: Record<string, { main: string; sub: string }> = {
   CHF: { main: "franc", sub: "centime" },
 };
 
+/**
+ * Split an amount into whole units and minor units, rounding once on the
+ * minor unit. `minorUnits` is the currency's decimals: 2 for the dinar
+ * algérien or the euro, 3 for the dinar tunisien, whose millimes were read as
+ * centimes when the split always multiplied by 100.
+ */
+function splitAmount(amount: number, minorUnits: number) {
+  const factor = 10 ** minorUnits;
+  // Round FIRST, then split. Rounding the fraction on its own lets 1.995
+  // produce 100 cents, which printed as "un euro et cent centimes" instead of
+  // rolling over into "deux euros", on a legal amount-in-words.
+  const total = Math.round(Math.abs(amount) * factor);
+  return {
+    whole: Math.floor(total / factor),
+    fractional: total % factor,
+    negative: amount < 0 && total > 0,
+  };
+}
+
 export function numberToFrenchWords(
   amount: number,
   mainUnit: string = "euro",
-  subUnit: string = "centime"
+  subUnit: string = "centime",
+  minorUnits: number = 2
 ): string {
-  // Round to cents FIRST, then split. Rounding the fraction on its own lets
-  // 1.995 produce 100 cents, which printed as "un euro et cent centimes"
-  // instead of rolling over into "deux euros" — on a legal amount-in-words.
-  const totalCents = Math.round(Math.abs(amount) * 100);
-  const whole = Math.floor(totalCents / 100);
-  const fractional = totalCents % 100;
-  const negative = amount < 0 && totalCents > 0;
+  const { whole, fractional, negative } = splitAmount(amount, minorUnits);
 
   let result = '';
 
@@ -166,4 +180,80 @@ export function numberToFrenchWords(
 
   // Capitalize first letter
   return result.charAt(0).toUpperCase() + result.slice(1);
+}
+
+// ─── Arabic ──────────────────────────────────────────────────────────────
+//
+// The total in words on an Algerian invoice (decree 05-468 art. 3), for
+// documents printed in Arabic. Written the way accounting documents write it:
+// the number in words, then the currency name ("... دينار جزائري"), the
+// counted noun kept in its invariable invoice form rather than inflected.
+
+const AR_ONES = ["", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة"];
+const AR_TENS = ["", "", "عشرون", "ثلاثون", "أربعون", "خمسون", "ستون", "سبعون", "ثمانون", "تسعون"];
+const AR_HUNDREDS = ["", "مائة", "مائتان", "ثلاثمائة", "أربعمائة", "خمسمائة", "ستمائة", "سبعمائة", "ثمانمائة", "تسعمائة"];
+
+function arBelowHundred(n: number): string {
+  if (n < 10) return AR_ONES[n];
+  if (n === 10) return "عشرة";
+  if (n === 11) return "أحد عشر";
+  if (n === 12) return "اثنا عشر";
+  if (n < 20) return `${AR_ONES[n - 10]} عشر`;
+  const unit = n % 10;
+  const tens = AR_TENS[Math.floor(n / 10)];
+  return unit ? `${AR_ONES[unit]} و${tens}` : tens;
+}
+
+function arBelowThousand(n: number): string {
+  const parts: string[] = [];
+  const hundreds = Math.floor(n / 100);
+  const rest = n % 100;
+  if (hundreds) parts.push(AR_HUNDREDS[hundreds]);
+  if (rest) parts.push(arBelowHundred(rest));
+  return parts.join(" و");
+}
+
+/** 1 ألف, 2 ألفان, 3 to 10 آلاف, otherwise the singular after the number. */
+function arScale(n: number, one: string, two: string, plural: string): string {
+  if (n === 1) return one;
+  if (n === 2) return two;
+  const lastTwo = n % 100;
+  return `${arBelowThousand(n)} ${lastTwo >= 3 && lastTwo <= 10 ? plural : one}`;
+}
+
+function arWords(n: number): string {
+  if (n === 0) return "صفر";
+  const parts: string[] = [];
+  const billions = Math.floor(n / 1_000_000_000);
+  const millions = Math.floor((n % 1_000_000_000) / 1_000_000);
+  const thousands = Math.floor((n % 1_000_000) / 1000);
+  const rest = n % 1000;
+  if (billions) parts.push(arScale(billions, "مليار", "ملياران", "مليارات"));
+  if (millions) parts.push(arScale(millions, "مليون", "مليونان", "ملايين"));
+  if (thousands) parts.push(arScale(thousands, "ألف", "ألفان", "آلاف"));
+  if (rest) parts.push(arBelowThousand(rest));
+  return parts.join(" و");
+}
+
+export const ARABIC_CURRENCY_WORDS: Record<string, { main: string; sub: string }> = {
+  DZD: { main: "دينار جزائري", sub: "سنتيم" },
+  EUR: { main: "يورو", sub: "سنت" },
+  USD: { main: "دولار أمريكي", sub: "سنت" },
+  GBP: { main: "جنيه إسترليني", sub: "بنس" },
+  MAD: { main: "درهم مغربي", sub: "سنتيم" },
+  TND: { main: "دينار تونسي", sub: "مليم" },
+  CAD: { main: "دولار كندي", sub: "سنت" },
+  CHF: { main: "فرنك سويسري", sub: "سنتيم" },
+};
+
+export function numberToArabicWords(
+  amount: number,
+  mainUnit: string = "دينار جزائري",
+  subUnit: string = "سنتيم",
+  minorUnits: number = 2
+): string {
+  const { whole, fractional, negative } = splitAmount(amount, minorUnits);
+  let result = `${arWords(whole)} ${mainUnit}`;
+  if (fractional > 0) result += ` و${arWords(fractional)} ${subUnit}`;
+  return negative ? `ناقص ${result}` : result;
 }
