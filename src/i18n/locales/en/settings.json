@@ -276,5 +276,13 @@
     "attestationUnavailable": "The attestation is not available yet: the publisher has not filled in its identity.",
     "attestationFailed": "The attestation could not be generated.",
     "openFile": "Open file"
+  },
+  "reminders": {
+    "title": "Payment reminders",
+    "steps": "Remind after (days overdue)",
+    "stepsHint": "One reminder per step, counted from the due date: \"1, 15, 30\" reminds the day after, then at 15 and 30 days overdue, and stops there.",
+    "stepsInvalid": "Numbers of days separated by commas, e.g. 1, 15, 30",
+    "autoSend": "Send reminders automatically by email",
+    "autoSendHint": "Every morning, due reminders go out by themselves to clients who have an email address, with your email as the reply-to address. Otherwise they wait to be sent from the dashboard."
   }
 }

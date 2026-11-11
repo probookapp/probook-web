@@ -615,6 +615,9 @@ export const settingsSchema = z.object({
   late_penalty_rate: optionalString,
   early_payment_discount: optionalString,
   vat_on_debits: z.boolean().optional(),
+  // Payment reminders: "1,15,30" (days after the due date) and automatic sending.
+  reminder_steps: z.string().regex(/^\s*\d{1,3}(\s*[,;]\s*\d{1,3})*\s*$/).optional(),
+  auto_send_reminders: z.boolean().optional(),
   // Owner's dashboard card order/visibility (persisted cross-device).
   dashboard_layout: z.record(z.string(), z.unknown()).nullable().optional(),
 }).partial();

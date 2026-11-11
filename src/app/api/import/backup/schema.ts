@@ -829,6 +829,8 @@ const SETTINGS_FIELDS: Record<string, FieldSpec> = {
   late_penalty_rate: "string",
   early_payment_discount: "string",
   vat_on_debits: "boolean",
+  reminder_steps: "string",
+  auto_send_reminders: "boolean",
 };
 
 function collectBackupIssues(data: unknown): Issue[] {

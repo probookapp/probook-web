@@ -104,6 +104,8 @@ const createSettingsSchema = (t: (key: string) => string) => z.object({
   late_penalty_rate: z.string().nullable().optional(),
   early_payment_discount: z.string().nullable().optional(),
   vat_on_debits: z.boolean(),
+  reminder_steps: z.string().regex(/^\s*\d{1,3}(\s*[,;]\s*\d{1,3})*\s*$/, t("reminders.stepsInvalid")),
+  auto_send_reminders: z.boolean(),
 });
 
 type SettingsFormData = z.output<ReturnType<typeof createSettingsSchema>>;
@@ -226,6 +228,8 @@ export function SettingsPage() {
       late_penalty_rate: "",
       early_payment_discount: "",
       vat_on_debits: false,
+      reminder_steps: "1,15,30",
+      auto_send_reminders: false,
     },
   });
 
@@ -301,6 +305,8 @@ export function SettingsPage() {
         late_penalty_rate: settings.late_penalty_rate ?? "",
         early_payment_discount: settings.early_payment_discount ?? "",
         vat_on_debits: settings.vat_on_debits ?? false,
+        reminder_steps: settings.reminder_steps ?? "1,15,30",
+        auto_send_reminders: settings.auto_send_reminders ?? false,
       });
     }
     // Only when the form holds nothing of the user's: every refetch of the
@@ -771,6 +777,30 @@ export function SettingsPage() {
                   error={errors.next_delivery_note_number?.message}
                 />
               </div>
+            </div>
+
+            <div className="pt-2 border-t border-gray-200 dark:border-gray-700">
+              <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t("reminders.title")}
+              </h3>
+              <div className="mt-2 grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Input
+                  label={t("reminders.steps")}
+                  placeholder="1, 15, 30"
+                  {...register("reminder_steps")}
+                  error={errors.reminder_steps?.message}
+                />
+              </div>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("reminders.stepsHint")}</p>
+              <label className="mt-2 flex items-center gap-3 py-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 shrink-0 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
+                  {...register("auto_send_reminders")}
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">{t("reminders.autoSend")}</span>
+              </label>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{t("reminders.autoSendHint")}</p>
             </div>
 
             {bundles.included && (

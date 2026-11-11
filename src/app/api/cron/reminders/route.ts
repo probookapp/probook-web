@@ -3,6 +3,7 @@ import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
 import { sweepTenantReminders, markExpiredQuotes } from "@/lib/reminder-sweep";
 import { isCronAuthorized } from "@/lib/cron-auth";
+import { sendDueReminders } from "@/lib/reminder-send";
 
 // Daily reminders job (vercel.json schedules this at 08:00). Sweeps EVERY
 // tenant with the same logic as the dashboard-triggered
@@ -14,10 +15,11 @@ import { isCronAuthorized } from "@/lib/cron-auth";
 // Idempotent: a document with a pending (unsent) reminder of the same type is
 // skipped, and the quote-expiry flip only matches SENT quotes.
 //
-// Deliberately does NOT send emails: sending stays user-triggered via
-// /api/reminders/[id]/send, which enforces per-document permissions and falls
-// back to a mailto: draft when Resend is not configured — neither of which is
-// possible from a session-less cron.
+// Emails go out only for tenants that turned on automatic sending
+// (company_settings.auto_send_reminders) and only through the mail provider:
+// everyone else keeps sending by hand from /api/reminders/[id]/send, which
+// checks the user's permissions and can fall back to a mailto: draft. A
+// suspended account sends nothing.
 
 export const GET = async (req: NextRequest) => {
   if (!isCronAuthorized(req, "reminders")) {
@@ -25,7 +27,16 @@ export const GET = async (req: NextRequest) => {
   }
 
   try {
-    const tenants = await prisma.tenant.findMany({ select: { id: true } });
+    const tenants = await prisma.tenant.findMany({ select: { id: true, status: true } });
+    const autoSend = new Set(
+      (
+        await prisma.companySettings.findMany({
+          where: { autoSendReminders: true },
+          select: { tenantId: true },
+        })
+      ).map((s) => s.tenantId)
+    );
+    let remindersSent = 0;
 
     // One tenant's failure must not cost every later tenant its reminders.
     //
@@ -40,6 +51,9 @@ export const GET = async (req: NextRequest) => {
       try {
         const created = await sweepTenantReminders(tenant.id);
         remindersCreated += created.length;
+        if (autoSend.has(tenant.id) && tenant.status !== "suspended") {
+          remindersSent += (await sendDueReminders(tenant.id)).sent;
+        }
       } catch (error) {
         failed.push(tenant.id);
         Sentry.captureException(error, {
@@ -55,6 +69,7 @@ export const GET = async (req: NextRequest) => {
       tenants_swept: tenants.length,
       tenants_failed: failed.length,
       reminders_created: remindersCreated,
+      reminders_sent: remindersSent,
       quotes_expired: quotesExpired,
     });
   } catch (error) {

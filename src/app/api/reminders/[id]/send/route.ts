@@ -1,17 +1,10 @@
 import { NextResponse } from "next/server";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
-import {
-  sendEmail,
-  isResendConfigured,
-  paymentOverdueEmail,
-  quoteExpiringEmail,
-  paymentOverdueEmailPlainText,
-  quoteExpiringEmailPlainText,
-} from "@/lib/email";
+import { isResendConfigured } from "@/lib/email";
 import { requirePermission } from "@/lib/permissions-server";
 import { reminderDocumentModule } from "../../reminders-shared";
-import { DEFAULT_CURRENCY } from "@/lib/currencies";
+import { buildReminderMail, deliverReminder } from "@/lib/reminder-send";
 
 export const POST = withAuth(async (req, { tenantId, params, session }) => {
   const reminder = await prisma.reminder.findFirst({
@@ -35,97 +28,21 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
     return NextResponse.json({ error: "Reminder already sent" }, { status: 400 });
   }
 
-  const settings = await prisma.companySettings.findFirst({
-    where: { tenantId },
-  });
-  const companyName = settings?.companyName || "My Company";
-  const currency = settings?.currency || DEFAULT_CURRENCY;
-
-  let clientEmail: string | null = null;
-  let emailContent: { subject: string; html: string };
-  let plainTextContent: { subject: string; body: string };
-
-  if (reminder.documentType === "invoice") {
-    const invoice = await prisma.invoice.findFirst({
-      where: { tenantId, id: reminder.documentId },
-      include: { client: true },
-    });
-
-    if (!invoice?.client?.email) {
-      return NextResponse.json(
-        { error: "Client has no email address" },
-        { status: 400 },
-      );
-    }
-
-    clientEmail = invoice.client.email;
-    const templateParams = {
-      companyName,
-      clientName: invoice.client.name,
-      invoiceNumber: invoice.invoiceNumber,
-      total: Number(invoice.total),
-      currency,
-      dueDate: invoice.dueDate
-        ? invoice.dueDate.toISOString().split("T")[0]
-        : "N/A",
-    };
-    emailContent = paymentOverdueEmail(templateParams);
-    plainTextContent = paymentOverdueEmailPlainText(templateParams);
-  } else if (reminder.documentType === "quote") {
-    const quote = await prisma.quote.findFirst({
-      where: { tenantId, id: reminder.documentId },
-      include: { client: true },
-    });
-
-    if (!quote?.client?.email) {
-      return NextResponse.json(
-        { error: "Client has no email address" },
-        { status: 400 },
-      );
-    }
-
-    clientEmail = quote.client.email;
-    const templateParams = {
-      companyName,
-      clientName: quote.client.name,
-      quoteNumber: quote.quoteNumber,
-      total: Number(quote.total),
-      currency,
-      validityDate: quote.validityDate
-        ? quote.validityDate.toISOString().split("T")[0]
-        : "N/A",
-    };
-    emailContent = quoteExpiringEmail(templateParams);
-    plainTextContent = quoteExpiringEmailPlainText(templateParams);
-  } else {
-    return NextResponse.json(
-      { error: `Unsupported document type: ${reminder.documentType}` },
-      { status: 400 },
-    );
+  const mail = await buildReminderMail(reminder);
+  if (!mail.ok) {
+    return NextResponse.json({ error: mail.error }, { status: mail.status });
   }
 
-  // If Resend is configured, send via API. Otherwise return mailto: data.
+  // If the mail provider is configured, send through it. Otherwise return
+  // mailto: data for the browser to open the user's own email client.
   if (isResendConfigured()) {
-    await sendEmail({
-      to: clientEmail,
-      subject: emailContent.subject,
-      html: emailContent.html,
-      replyTo: settings?.email || undefined,
-    });
-
-    const updated = await prisma.reminder.update({
-      where: { id: reminder.id },
-      data: { sentAt: new Date() },
-    });
-
+    const updated = await deliverReminder(reminder, mail);
     return NextResponse.json(toSnakeCase(updated));
-  } else {
-    // Return mailto data for the frontend to open the user's email client
-    return NextResponse.json({
-      mode: "mailto",
-      to: clientEmail,
-      subject: plainTextContent.subject,
-      body: plainTextContent.body,
-    });
   }
+  return NextResponse.json({
+    mode: "mailto",
+    to: mail.to,
+    subject: mail.text.subject,
+    body: mail.text.body,
+  });
 });

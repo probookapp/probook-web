@@ -1459,6 +1459,8 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
           latePenaltyRate: str(s, "late_penalty_rate"),
           earlyPaymentDiscount: str(s, "early_payment_discount"),
           vatOnDebits: bool(s, "vat_on_debits"),
+          reminderSteps: str(s, "reminder_steps") ?? "1,15,30",
+          autoSendReminders: bool(s, "auto_send_reminders"),
         };
         await tx.companySettings.upsert({
           where: { tenantId },

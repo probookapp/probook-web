@@ -7,41 +7,75 @@ import { prisma } from "./db";
  *
  * Idempotent: a document only gets a new reminder when it has no pending
  * (sentAt: null) reminder of the same type, so running the sweep twice never
- * duplicates. Sending is deliberately NOT done here — reminder emails go out
- * through the user-triggered /api/reminders/[id]/send flow, which needs the
- * user's permissions and supports the mailto fallback when Resend is not
- * configured.
+ * duplicates. Sending is not done here: reminders go out through the user's
+ * /api/reminders/[id]/send button, or, for tenants that turned on automatic
+ * sending, through the nightly job (src/lib/reminder-send.ts).
  */
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+export const DEFAULT_REMINDER_STEPS = [1, 15, 30];
+
+/** "1, 15, 30" into [1, 15, 30]: positive whole days, ascending, no repeats. */
+export function parseReminderSteps(value: string | null | undefined): number[] {
+  const steps = [...new Set(
+    (value ?? "")
+      .split(/[,;\s]+/)
+      .map((s) => Number(s))
+      .filter((n) => Number.isInteger(n) && n > 0 && n <= 365)
+  )].sort((a, b) => a - b);
+  return steps.length ? steps : DEFAULT_REMINDER_STEPS;
+}
+
+/**
+ * Whether an overdue invoice is due its next reminder: the n-th reminder
+ * waits until the invoice is steps[n] days late, and after the last step
+ * there are no more. Without this, a reminder sent today was followed by a
+ * new pending one tomorrow, and every day after.
+ */
+export function isNextReminderDue(daysOverdue: number, alreadySent: number, steps: number[]): boolean {
+  return alreadySent < steps.length && daysOverdue >= steps[alreadySent];
+}
 
 /** Create due reminders for one tenant. Returns the newly created reminders. */
 export async function sweepTenantReminders(tenantId: string) {
   const now = new Date();
   const created: Awaited<ReturnType<typeof prisma.reminder.create>>[] = [];
-
-  // Check for overdue invoices without pending reminders
-  const overdueInvoices = await prisma.invoice.findMany({
-    where: {
-      tenantId,
-      status: "ISSUED",
-      dueDate: { lt: now },
-    },
+  const settings = await prisma.companySettings.findFirst({
+    where: { tenantId },
+    select: { reminderSteps: true },
   });
+  const steps = parseReminderSteps(settings?.reminderSteps);
+
+  // Overdue invoices, with their reminders read in two grouped queries rather
+  // than two per invoice: the nightly job runs this for every account.
+  const overdueInvoices = await prisma.invoice.findMany({
+    where: { tenantId, status: "ISSUED", dueDate: { lt: now } },
+    select: { id: true, invoiceNumber: true, dueDate: true },
+  });
+  const invoiceIds = overdueInvoices.map((i) => i.id);
+  const [pendingInvoiceRows, sentInvoiceRows] = invoiceIds.length
+    ? await Promise.all([
+        prisma.reminder.findMany({
+          where: { tenantId, documentType: "invoice", reminderType: "payment_overdue", sentAt: null, documentId: { in: invoiceIds } },
+          select: { documentId: true },
+        }),
+        prisma.reminder.groupBy({
+          by: ["documentId"],
+          where: { tenantId, documentType: "invoice", reminderType: "payment_overdue", sentAt: { not: null }, documentId: { in: invoiceIds } },
+          _count: { _all: true },
+        }),
+      ])
+    : [[], []];
+  const pendingInvoices = new Set(pendingInvoiceRows.map((r) => r.documentId));
+  const sentCount = new Map(sentInvoiceRows.map((r) => [r.documentId, r._count._all]));
 
   for (const invoice of overdueInvoices) {
-    const existing = await prisma.reminder.findFirst({
-      where: {
-        tenantId,
-        documentType: "invoice",
-        documentId: invoice.id,
-        reminderType: "payment_overdue",
-        sentAt: null,
-      },
-    });
-
-    if (!existing) {
-      const reminder = await prisma.reminder.create({
+    if (pendingInvoices.has(invoice.id)) continue;
+    const daysOverdue = Math.floor((now.getTime() - invoice.dueDate.getTime()) / MS_PER_DAY);
+    if (!isNextReminderDue(daysOverdue, sentCount.get(invoice.id) ?? 0, steps)) continue;
+    created.push(
+      await prisma.reminder.create({
         data: {
           tenantId,
           reminderType: "payment_overdue",
@@ -50,34 +84,34 @@ export async function sweepTenantReminders(tenantId: string) {
           scheduledDate: now,
           message: `Payment overdue for invoice ${invoice.invoiceNumber}`,
         },
-      });
-      created.push(reminder);
-    }
+      })
+    );
   }
 
-  // Check for quotes nearing expiry (within 7 days)
+  // Quotes nearing expiry (within 7 days): one reminder per quote. Any
+  // earlier one, sent or not, counts; otherwise a sent reminder was followed
+  // by a new one every day until the quote expired.
   const sevenDaysFromNow = new Date(now.getTime() + 7 * MS_PER_DAY);
   const expiringQuotes = await prisma.quote.findMany({
-    where: {
-      tenantId,
-      status: "SENT",
-      validityDate: { lte: sevenDaysFromNow, gte: now },
-    },
+    where: { tenantId, status: "SENT", validityDate: { lte: sevenDaysFromNow, gte: now } },
+    select: { id: true, quoteNumber: true, validityDate: true },
   });
+  const quoteIds = expiringQuotes.map((q) => q.id);
+  const remindedQuotes = new Set(
+    quoteIds.length
+      ? (
+          await prisma.reminder.findMany({
+            where: { tenantId, documentType: "quote", reminderType: "quote_expiring", documentId: { in: quoteIds } },
+            select: { documentId: true },
+          })
+        ).map((r) => r.documentId)
+      : []
+  );
 
   for (const quote of expiringQuotes) {
-    const existing = await prisma.reminder.findFirst({
-      where: {
-        tenantId,
-        documentType: "quote",
-        documentId: quote.id,
-        reminderType: "quote_expiring",
-        sentAt: null,
-      },
-    });
-
-    if (!existing) {
-      const reminder = await prisma.reminder.create({
+    if (remindedQuotes.has(quote.id)) continue;
+    created.push(
+      await prisma.reminder.create({
         data: {
           tenantId,
           reminderType: "quote_expiring",
@@ -86,9 +120,8 @@ export async function sweepTenantReminders(tenantId: string) {
           scheduledDate: now,
           message: `Quote ${quote.quoteNumber} expires on ${quote.validityDate.toISOString().split("T")[0]}`,
         },
-      });
-      created.push(reminder);
-    }
+      })
+    );
   }
 
   return created;

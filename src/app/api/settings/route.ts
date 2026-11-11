@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/permissions-server";
 import { validateBody, isValidationError } from "@/lib/validate";
 import { settingsSchema } from "@/lib/validations";
 import { DEFAULT_CURRENCY } from "@/lib/currencies";
+import { parseReminderSteps } from "@/lib/reminder-sweep";
 
 export const GET = withAuth(async (req, { tenantId }) => {
   let settings = await prisma.companySettings.findFirst({ where: { tenantId } });
@@ -64,6 +65,9 @@ export const PUT = withAuth(async (req, { tenantId, session }) => {
   if (body.late_penalty_rate !== undefined) updateData.latePenaltyRate = body.late_penalty_rate || null;
   if (body.early_payment_discount !== undefined) updateData.earlyPaymentDiscount = body.early_payment_discount || null;
   if (body.vat_on_debits !== undefined) updateData.vatOnDebits = body.vat_on_debits;
+  // Stored normalised, so what the screen shows back is what the sweep uses.
+  if (body.reminder_steps !== undefined) updateData.reminderSteps = parseReminderSteps(body.reminder_steps).join(",");
+  if (body.auto_send_reminders !== undefined) updateData.autoSendReminders = body.auto_send_reminders;
   if (body.dashboard_layout !== undefined) updateData.dashboardLayout = body.dashboard_layout;
 
   const settings = await prisma.companySettings.upsert({

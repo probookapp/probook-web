@@ -276,5 +276,13 @@
     "attestationUnavailable": "L'attestation n'est pas encore disponible : l'éditeur n'a pas renseigné son identité.",
     "attestationFailed": "L'attestation n'a pas pu être générée.",
     "openFile": "Ouvrir le fichier"
+  },
+  "reminders": {
+    "title": "Relances de paiement",
+    "steps": "Relancer après (jours de retard)",
+    "stepsHint": "Une relance par palier, comptée depuis la date d'échéance : « 1, 15, 30 » relance au lendemain, puis à 15 et 30 jours de retard, et s'arrête là.",
+    "stepsInvalid": "Des nombres de jours séparés par des virgules, ex. 1, 15, 30",
+    "autoSend": "Envoyer les relances automatiquement par email",
+    "autoSendHint": "Chaque matin, les relances dues partent d'elles-mêmes aux clients qui ont une adresse email, avec votre email en adresse de réponse. Sinon, elles restent à envoyer depuis le tableau de bord."
   }
 }

@@ -858,6 +858,9 @@ export interface CompanySettings {
   late_penalty_rate: string | null;
   early_payment_discount: string | null;
   vat_on_debits: boolean;
+  // Payment reminders: days after the due date, and automatic sending.
+  reminder_steps: string;
+  auto_send_reminders: boolean;
   dashboard_layout: { order?: string[]; hidden?: string[] } | null;
   updated_at: string;
 }
@@ -905,6 +908,8 @@ export interface UpdateCompanySettingsInput {
   late_penalty_rate?: string | null;
   early_payment_discount?: string | null;
   vat_on_debits?: boolean;
+  reminder_steps?: string;
+  auto_send_reminders?: boolean;
 }
 
 export interface UpdateAppSettingsInput {

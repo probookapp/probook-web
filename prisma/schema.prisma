@@ -802,6 +802,11 @@ model CompanySettings {
   earlyPaymentDiscount   String?  @map("early_payment_discount")
   // France: option for paying VAT on debits (services), a mandatory mention.
   vatOnDebits            Boolean  @default(false) @map("vat_on_debits")
+  // Payment reminders (src/lib/reminder-sweep.ts): the days after the due
+  // date at which an unpaid invoice is chased, and whether the nightly job
+  // emails the client itself rather than leaving the reminder to send by hand.
+  reminderSteps          String   @default("1,15,30") @map("reminder_steps")
+  autoSendReminders      Boolean  @default(false) @map("auto_send_reminders")
   updatedAt              DateTime @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
