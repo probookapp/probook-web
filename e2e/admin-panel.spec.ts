@@ -416,6 +416,11 @@ test.describe("Admin: analytics & system", () => {
     expect(health.body.db_connected).toBe(true);
     expect(typeof health.body.uptime).toBe("number");
     expect(typeof health.body.total_tenants).toBe("number");
+    // The test server has no Upstash: the page must say the limiter is local only.
+    expect(health.body.rate_limit_store).toBe("memory");
+
+    await page.goto("/admin/system");
+    await expect(page.getByText("Local memory only").or(page.getByText("Mémoire locale seulement"))).toBeVisible();
   });
 
   test("audit logs", async ({ page }) => {

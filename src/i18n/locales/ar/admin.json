@@ -654,7 +654,11 @@
     "products": "إجمالي المنتجات",
     "recent_errors": "الأخطاء الأخيرة",
     "recent_errors_desc": "الأخطاء خلال الـ 24 ساعة الماضية",
-    "flagged_rate_limits": "حدود المعدل المُبلّغ عنها (24 س)"
+    "flagged_rate_limits": "حدود المعدل المُبلّغ عنها (24 س)",
+    "rate_limit_store": "تحديد المعدل",
+    "rate_limit_store_redis": "Upstash Redis (مشترك)",
+    "rate_limit_store_redis_error": "تعذّر الوصول إلى Upstash",
+    "rate_limit_store_memory": "ذاكرة محلية فقط"
   },
   "impersonation": {
     "viewing_as": "العرض باسم: {{tenant}}",

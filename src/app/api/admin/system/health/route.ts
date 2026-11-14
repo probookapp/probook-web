@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { withPlatformAdmin } from "@/lib/admin-api-utils";
+import { rateLimitBackendStatus } from "@/lib/rate-limit";
 
 export const GET = withPlatformAdmin(async () => {
   let dbConnected = false;
@@ -15,7 +16,7 @@ export const GET = withPlatformAdmin(async () => {
 
   const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-  const [totalTenants, totalUsers, totalInvoices, totalProducts, recentErrors, flaggedRateLimits] =
+  const [totalTenants, totalUsers, totalInvoices, totalProducts, recentErrors, flaggedRateLimits, rateLimitStore] =
     await Promise.all([
       prisma.tenant.count().catch(() => 0),
       prisma.user.count().catch(() => 0),
@@ -34,6 +35,7 @@ export const GET = withPlatformAdmin(async () => {
           where: { flagged: true, createdAt: { gte: twentyFourHoursAgo } },
         })
         .catch(() => 0),
+      rateLimitBackendStatus(),
     ]);
 
   return NextResponse.json({
@@ -44,6 +46,7 @@ export const GET = withPlatformAdmin(async () => {
     total_products: totalProducts,
     recent_errors: recentErrors,
     flagged_rate_limits: flaggedRateLimits,
+    rate_limit_store: rateLimitStore,
     uptime: process.uptime(),
   });
 });

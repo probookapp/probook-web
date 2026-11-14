@@ -41,6 +41,23 @@ function getRedis(): Redis | null {
   return redis;
 }
 
+/**
+ * Which store the limiter really uses, for the admin health page:
+ * "redis" (Upstash configured and answering a PING), "redis_error"
+ * (configured but unreachable — the limiter then fails open) or "memory"
+ * (not configured: per-instance counters, which limit nothing in serverless).
+ */
+export async function rateLimitBackendStatus(): Promise<"redis" | "redis_error" | "memory"> {
+  const client = getRedis();
+  if (!client) return "memory";
+  try {
+    await client.ping();
+    return "redis";
+  } catch {
+    return "redis_error";
+  }
+}
+
 // In-memory fallback: fixed-window counters keyed like the Redis keys.
 const memoryCounts = new Map<string, { count: number; expiresAt: number }>();
 const CLEANUP_INTERVAL_MS = 5 * 60_000; // 5 minutes

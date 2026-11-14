@@ -654,7 +654,11 @@
     "products": "Total Products",
     "recent_errors": "Recent Errors",
     "recent_errors_desc": "Errors in the last 24 hours",
-    "flagged_rate_limits": "Flagged rate limits (24h)"
+    "flagged_rate_limits": "Flagged rate limits (24h)",
+    "rate_limit_store": "Rate limiting",
+    "rate_limit_store_redis": "Upstash Redis (shared)",
+    "rate_limit_store_redis_error": "Upstash unreachable",
+    "rate_limit_store_memory": "Local memory only"
   },
   "impersonation": {
     "viewing_as": "Viewing as: {{tenant}}",

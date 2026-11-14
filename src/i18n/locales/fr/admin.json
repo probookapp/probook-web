@@ -654,7 +654,11 @@
     "products": "Total des produits",
     "recent_errors": "Erreurs récentes",
     "recent_errors_desc": "Erreurs des dernières 24 heures",
-    "flagged_rate_limits": "Limites de débit signalées (24 h)"
+    "flagged_rate_limits": "Limites de débit signalées (24 h)",
+    "rate_limit_store": "Limitation de débit",
+    "rate_limit_store_redis": "Upstash Redis (partagé)",
+    "rate_limit_store_redis_error": "Upstash injoignable",
+    "rate_limit_store_memory": "Mémoire locale seulement"
   },
   "impersonation": {
     "viewing_as": "Consultation en tant que : {{tenant}}",

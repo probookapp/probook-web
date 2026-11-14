@@ -98,6 +98,7 @@ export function SystemHealthPage() {
   const dbConnected = Boolean(health.db_connected);
   const uptime = Number(health.uptime || 0);
   const recentErrors = Number(health.recent_errors || 0);
+  const rateLimitStore = String(health.rate_limit_store || "memory");
 
   return (
     <div className="space-y-6">
@@ -111,7 +112,7 @@ export function SystemHealthPage() {
       </div>
 
       {/* Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <StatusCard
           title={t("system.db_connection")}
           value={
@@ -121,6 +122,12 @@ export function SystemHealthPage() {
           }
           icon={Database}
           status={dbConnected ? "success" : "danger"}
+        />
+        <StatusCard
+          title={t("system.rate_limit_store")}
+          value={t(`system.rate_limit_store_${rateLimitStore}`)}
+          icon={Gauge}
+          status={rateLimitStore === "redis" ? "success" : "danger"}
         />
         <StatusCard
           title={t("system.uptime")}
