@@ -18,7 +18,24 @@ interface PublishedPlan {
   monthly_price: number;
   currency: string;
   base_currency?: string;
-  features?: unknown[];
+  features?: { feature?: { key?: string; name: string } }[];
+}
+
+const featureIds = (plan: PublishedPlan) =>
+  (plan.features ?? []).flatMap((f) => (f.feature ? [f.feature.key ?? f.feature.name] : []));
+
+/**
+ * Whether a card builds on the offer drawn before it — "Tout <offer>, plus :"
+ * and only what it adds — which it does only when it contains every module of
+ * that offer. The same rule OfferContents applies, read off the same payload,
+ * in the order the page draws it.
+ */
+function buildsOnPrevious(plans: PublishedPlan[]): boolean[] {
+  return plans.map((plan, i) => {
+    if (i === 0) return false;
+    const own = new Set(featureIds(plan));
+    return featureIds(plans[i - 1]).every((id) => own.has(id));
+  });
 }
 
 /** What the shop window is actually serving, read the way the page reads it. */
@@ -41,10 +58,15 @@ test.describe("the pricing page", () => {
     const plans = await publishedPlans(page);
     test.skip(plans.length === 0, "no offer is published");
 
-    // Counted against the number of offers rather than looked for once: the bug
-    // was one card missing its list, which a single match would have hidden.
-    await expect(page.getByText("Factures, acomptes et règlements")).toHaveCount(plans.length);
-    await expect(page.getByText("Catalogue produits et clients")).toHaveCount(plans.length);
+    // Counted against the offers rather than looked for once: the bug was one
+    // card missing its list, which a single match would have hidden. A card
+    // that builds on the offer below it names that offer instead of repeating
+    // the core, so every card does one or the other.
+    const builds = buildsOnPrevious(plans);
+    const standalone = builds.filter((b) => !b).length;
+    await expect(page.getByText("Factures, acomptes et règlements")).toHaveCount(standalone);
+    await expect(page.getByText("Catalogue produits et clients")).toHaveCount(standalone);
+    await expect(page.getByText(/^Tout .+, plus :$/)).toHaveCount(plans.length - standalone);
 
     const seats = page.getByText(/Utilisateurs\s*:\s*\d+|Utilisateurs illimités/);
     await expect(seats).toHaveCount(plans.length);
@@ -59,7 +81,10 @@ test.describe("the pricing page", () => {
     // total: the shared test database gains offers from other suites, and an
     // assertion phrased as "rarer than the whole catalogue" was really an
     // assertion about what those suites happened to create.
-    const withModules = plans.filter((p) => (p.features?.length ?? 0) > 0).length;
+    // A card that builds on the offer below it lists its additions under
+    // "Tout <offer>, plus :" instead, so only standalone cards say "Et en plus".
+    const builds = buildsOnPrevious(plans);
+    const withModules = plans.filter((p, i) => !builds[i] && featureIds(p).length > 0).length;
     await expect(page.getByText("Et en plus")).toHaveCount(withModules);
   });
 
