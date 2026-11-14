@@ -19,6 +19,18 @@ type Fbq = ((...args: unknown[]) => void) & {
 // <MetaPixel /> instances mount (e.g. a public layout plus a page inside it).
 let bootstrapped = false;
 
+// Only the live site may report to Meta. Without this, every dev server, CI run
+// and e2e signup (all on localhost, often under webdriver) fed the pixel: Events
+// Manager listed localhost as a source and counted thousands of fake
+// CompleteRegistration events, which poisons ad optimisation and audiences.
+const LIVE_HOSTS = new Set(["www.probookapp.net", "probookapp.net"]);
+
+function pixelAllowed(): boolean {
+  if (typeof window === "undefined") return false;
+  if (navigator.webdriver) return false;
+  return LIVE_HOSTS.has(window.location.hostname);
+}
+
 /**
  * Fire a Meta Pixel standard event. Safe to call anywhere: before the pixel
  * library finishes loading, calls queue on the fbq stub; on pages without
@@ -37,7 +49,7 @@ export function MetaPixel() {
   // mounts late/conditionally (parents gate on i18n readiness), which defeats
   // next/script's afterInteractive registration. A useEffect always runs on mount.
   useEffect(() => {
-    if (bootstrapped) return;
+    if (bootstrapped || !pixelAllowed()) return;
     bootstrapped = true;
 
     const w = window as unknown as { fbq?: Fbq; _fbq?: Fbq };
