@@ -19,27 +19,27 @@ export const seo = {
   // Public pages
   home: {
     en: { title: "Probook — Invoicing & Business Management", description: "Simplify your invoicing, quotes, delivery notes, and expense tracking. Built for modern businesses." },
-    fr: { title: "Probook — Facturation & Gestion d'Entreprise", description: "Simplifiez votre facturation, devis, bons de livraison et suivi des depenses. Concu pour les entreprises modernes." },
+    fr: { title: "Probook — Facturation & Gestion d'Entreprise", description: "Simplifiez votre facturation, devis, bons de livraison et suivi des dépenses. Conçu pour les entreprises modernes." },
     ar: { title: "Probook — الفوترة وإدارة الأعمال", description: "بسّط فواتيرك وعروض الأسعار وسندات التسليم وتتبع المصاريف. مصمم للشركات الحديثة." },
   },
   pricing: {
     en: { title: "Pricing", description: "Affordable plans for shops and enterprises. Start managing your business with Probook today." },
-    fr: { title: "Tarifs", description: "Des forfaits abordables pour les commerces et les entreprises. Commencez a gerer votre activite avec Probook." },
+    fr: { title: "Tarifs", description: "Des forfaits abordables pour les commerces et les entreprises. Commencez à gérer votre activité avec Probook." },
     ar: { title: "الأسعار", description: "خطط ميسورة التكلفة للمتاجر والشركات. ابدأ إدارة أعمالك مع Probook اليوم." },
   },
   about: {
     en: { title: "About", description: "Learn about Probook's mission to empower businesses with simple, reliable management tools." },
-    fr: { title: "A propos", description: "Decouvrez la mission de Probook : offrir aux entreprises des outils de gestion simples et fiables." },
+    fr: { title: "À propos", description: "Découvrez la mission de Probook : offrir aux entreprises des outils de gestion simples et fiables." },
     ar: { title: "من نحن", description: "تعرف على مهمة Probook في تمكين الشركات بأدوات إدارة بسيطة وموثوقة." },
   },
   contact: {
     en: { title: "Contact", description: "Get in touch with the Probook team. We're here to help with questions, support, and partnerships." },
-    fr: { title: "Contact", description: "Contactez l'equipe Probook. Nous sommes la pour repondre a vos questions et vous accompagner." },
+    fr: { title: "Contact", description: "Contactez l'équipe Probook. Nous sommes là pour répondre à vos questions et vous accompagner." },
     ar: { title: "اتصل بنا", description: "تواصل مع فريق Probook. نحن هنا للمساعدة في الأسئلة والدعم والشراكات." },
   },
   faq: {
     en: { title: "FAQ", description: "Frequently asked questions about Probook. Find answers about features, pricing, and getting started." },
-    fr: { title: "FAQ", description: "Questions frequemment posees sur Probook. Trouvez des reponses sur les fonctionnalites, les tarifs et la prise en main." },
+    fr: { title: "FAQ", description: "Questions fréquemment posées sur Probook. Trouvez des réponses sur les fonctionnalités, les tarifs et la prise en main." },
     ar: { title: "الأسئلة الشائعة", description: "الأسئلة المتكررة حول Probook. اعثر على إجابات حول الميزات والأسعار وكيفية البدء." },
   },
   guide: {
@@ -49,39 +49,39 @@ export const seo = {
   },
   privacy: {
     en: { title: "Privacy Policy", description: "How Probook collects, uses, and protects your data. Read our full privacy policy." },
-    fr: { title: "Politique de confidentialite", description: "Comment Probook collecte, utilise et protege vos donnees. Lisez notre politique de confidentialite." },
+    fr: { title: "Politique de confidentialité", description: "Comment Probook collecte, utilise et protège vos données. Lisez notre politique de confidentialite." },
     ar: { title: "سياسة الخصوصية", description: "كيف يجمع Probook بياناتك ويستخدمها ويحميها. اقرأ سياسة الخصوصية الكاملة." },
   },
   terms: {
     en: { title: "Terms of Service", description: "Terms and conditions for using Probook. Please read before creating an account." },
-    fr: { title: "Conditions d'utilisation", description: "Conditions generales d'utilisation de Probook. Veuillez lire avant de creer un compte." },
+    fr: { title: "Conditions d'utilisation", description: "Conditions générales d'utilisation de Probook. Veuillez les lire avant de créer un compte." },
     ar: { title: "شروط الخدمة", description: "شروط وأحكام استخدام Probook. يرجى القراءة قبل إنشاء حساب." },
   },
 
   // Auth pages
   login: {
     en: { title: "Sign In", description: "Sign in to your Probook account." },
-    fr: { title: "Connexion", description: "Connectez-vous a votre compte Probook." },
+    fr: { title: "Connexion", description: "Connectez-vous à votre compte Probook." },
     ar: { title: "تسجيل الدخول", description: "سجّل الدخول إلى حسابك على Probook." },
   },
   signup: {
     en: { title: "Create Account", description: "Create your Probook account and start managing your business." },
-    fr: { title: "Creer un compte", description: "Creez votre compte Probook et commencez a gerer votre activite." },
+    fr: { title: "Créer un compte", description: "Créez votre compte Probook et commencez à gérer votre activité." },
     ar: { title: "إنشاء حساب", description: "أنشئ حسابك على Probook وابدأ إدارة أعمالك." },
   },
   forgotPassword: {
     en: { title: "Forgot Password", description: "Reset your Probook password." },
-    fr: { title: "Mot de passe oublie", description: "Reinitialiser votre mot de passe Probook." },
+    fr: { title: "Mot de passe oublié", description: "Réinitialisez votre mot de passe Probook." },
     ar: { title: "نسيت كلمة المرور", description: "إعادة تعيين كلمة مرور Probook." },
   },
   resetPassword: {
     en: { title: "Reset Password", description: "Set a new password for your Probook account." },
-    fr: { title: "Reinitialiser le mot de passe", description: "Definissez un nouveau mot de passe pour votre compte Probook." },
+    fr: { title: "Réinitialiser le mot de passe", description: "Définissez un nouveau mot de passe pour votre compte Probook." },
     ar: { title: "إعادة تعيين كلمة المرور", description: "عيّن كلمة مرور جديدة لحسابك على Probook." },
   },
   verifyEmail: {
     en: { title: "Verify Email", description: "Verify your email address for your Probook account." },
-    fr: { title: "Verifier l'email", description: "Verifiez votre adresse email pour votre compte Probook." },
+    fr: { title: "Vérifier l'email", description: "Vérifiez votre adresse email pour votre compte Probook." },
     ar: { title: "تأكيد البريد الإلكتروني", description: "تأكيد عنوان بريدك الإلكتروني لحساب Probook." },
   },
 } as const;
@@ -109,9 +109,13 @@ export function generatePageMetadata(
   const description = opts?.description ?? page[loc].description;
 
   const pageUrl = opts?.path ? `${SITE_URL}/${loc}${opts.path}` : `${SITE_URL}/${loc}`;
+  // A title that already names the brand (the home page) must not get the
+  // root layout's "%s | Probook" template on top, or it reads "Probook — … | Probook".
+  const branded = title.startsWith(SITE_NAME);
+  const fullTitle = branded ? title : `${title} | ${SITE_NAME}`;
 
   const metadata: Metadata = {
-    title,
+    title: branded ? { absolute: title } : title,
     description,
     alternates: {
       canonical: pageUrl,
@@ -122,7 +126,7 @@ export function generatePageMetadata(
       },
     },
     openGraph: {
-      title: `${title} | ${SITE_NAME}`,
+      title: fullTitle,
       description,
       url: pageUrl,
       siteName: SITE_NAME,
@@ -139,7 +143,7 @@ export function generatePageMetadata(
     },
     twitter: {
       card: "summary_large_image",
-      title: `${title} | ${SITE_NAME}`,
+      title: fullTitle,
       description,
       images: [`${SITE_URL}/og-image.png`],
     },
