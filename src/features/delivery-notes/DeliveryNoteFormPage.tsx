@@ -440,7 +440,7 @@ export function DeliveryNoteFormPage() {
                     <Input
                       label={`${t("delivery:lines.quantity")} *`}
                       type="number"
-                      step="0.01"
+                      step="any"
                       {...register(`lines.${index}.quantity`)}
                       error={errors.lines?.[index]?.quantity?.message || getStockError(index) || undefined}
                     />

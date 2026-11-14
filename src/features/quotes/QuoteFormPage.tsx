@@ -661,7 +661,7 @@ export function QuoteFormPage() {
                           aria-label={t("quotes:lines.quantity")}
                           placeholder={denseLines ? t("quotes:lines.quantity") : undefined}
                           type="number"
-                          step="0.01"
+                          step="any"
                           {...register(`lines.${index}.quantity`)}
                           error={errors.lines?.[index]?.quantity?.message || getStockError(index) || undefined}
                         />

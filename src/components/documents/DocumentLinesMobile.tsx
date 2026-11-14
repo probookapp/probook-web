@@ -239,7 +239,7 @@ export function DocumentLinesMobile({
               <Input
                 label={`${t(`${ns}:lines.quantity`)} *`}
                 type="number"
-                step="0.01"
+                step="any"
                 // The phone's own numeric keyboard: it already knows about paste,
                 // decimal commas and screen readers.
                 inputMode="decimal"
