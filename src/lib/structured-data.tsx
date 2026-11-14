@@ -1,4 +1,5 @@
 import { REFERENCE_CURRENCY } from "./currencies";
+import { SOCIAL_LINKS } from "./social";
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://probookapp.net";
 
 // ─── JSON-LD structured data for SEO ─────────────────────────────────────────
@@ -21,7 +22,7 @@ export function OrganizationJsonLd() {
         "@type": "Organization",
         name: "Probook",
         url: SITE_URL,
-        logo: `${SITE_URL}/logo.png`,
+        logo: `${SITE_URL}/probook-icon.png`,
         description:
           "Professional invoicing and business management software for modern businesses.",
         email: "support@probookapp.net",
@@ -30,9 +31,7 @@ export function OrganizationJsonLd() {
           addressLocality: "Algiers",
           addressCountry: "DZ",
         },
-        sameAs: [
-          "https://www.facebook.com/people/ProBook-Smart-Business-Manager/61587629459428/",
-        ],
+        sameAs: SOCIAL_LINKS.map((link) => link.url),
       }}
     />
   );

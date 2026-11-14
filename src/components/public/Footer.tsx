@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
 import { Logo } from "@/components/shared/Logo";
+import { SOCIAL_LINKS } from "@/lib/social";
 
 export function Footer() {
   const { t } = useTranslation("common");
@@ -25,6 +26,24 @@ export function Footer() {
             <p dir={textDir} className="text-sm leading-relaxed">
               {t("landing.hero.subtitle").split(".")[0]}.
             </p>
+            <ul className="flex gap-1 mt-4 -ms-2.5">
+              {SOCIAL_LINKS.map((link) => (
+                <li key={link.name}>
+                  <a
+                    href={link.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={link.name}
+                    title={link.name}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg hover:text-white hover:bg-gray-800 transition-colors"
+                  >
+                    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
+                      <path d={link.icon} />
+                    </svg>
+                  </a>
+                </li>
+              ))}
+            </ul>
           </div>
           <div>
             <h4 className="text-sm font-semibold mb-4 text-white">
