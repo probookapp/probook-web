@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { forwardToDiscord } from "./src/lib/sentry-discord";
 
 // This is a financial/POS app: request bodies carry client names, invoice
 // amounts and cash counts. Strip bodies, cookies and credential headers
@@ -26,8 +27,11 @@ Sentry.init({
   // Performance monitoring
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
 
-  beforeSend(event) {
-    return scrubEvent(event);
+  // Scrub first, then ping Discord with the already-redacted event.
+  async beforeSend(event) {
+    const scrubbed = scrubEvent(event);
+    await forwardToDiscord(scrubbed);
+    return scrubbed;
   },
 
   // Don't send events in development

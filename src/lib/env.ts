@@ -36,6 +36,7 @@ const envSchema = z.object({
   SENTRY_ORG: optional(),
   SENTRY_PROJECT: optional(),
   SENTRY_AUTH_TOKEN: optional(),
+  DISCORD_ALERT_WEBHOOK_URL: optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;

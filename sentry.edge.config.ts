@@ -1,4 +1,5 @@
 import * as Sentry from "@sentry/nextjs";
+import { forwardToDiscord } from "./src/lib/sentry-discord";
 
 // Same privacy scrubbing as the node runtime: strip request bodies, cookies
 // and credential headers before any event leaves the app.
@@ -24,8 +25,11 @@ Sentry.init({
 
   tracesSampleRate: process.env.NODE_ENV === "production" ? 0.1 : 1.0,
 
-  beforeSend(event) {
-    return scrubEvent(event);
+  // Scrub first, then ping Discord with the already-redacted event.
+  async beforeSend(event) {
+    const scrubbed = scrubEvent(event);
+    await forwardToDiscord(scrubbed);
+    return scrubbed;
   },
 
   enabled: process.env.NODE_ENV === "production",
