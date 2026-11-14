@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
             <p>A password reset was requested for your Probook platform admin account.</p>
             <p>Click the button below to reset your password. This link expires in 1 hour.</p>
             <div style="margin: 24px 0;">
-              <a href="${resetLink}" style="background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 500;">
+              <a href="${resetLink}" style="background-color: #1c5f68; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block; font-weight: 500;">
                 Reset Password
               </a>
             </div>

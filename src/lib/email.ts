@@ -15,9 +15,18 @@ function getResend(): Resend | null {
  * instead of sending it. The test environment uses it — sending from there
  * either failed on an invalid key, printing a stack trace per signup, or with a
  * valid one would have mailed every fake address the e2e suites invent.
+ *
+ * CI runs the suite against a production build, so the production guard alone
+ * shut the log driver off there: the reminders job then sent through Resend
+ * with the dummy key, failed, and counted the account as a casualty.
+ * E2E_TEST_MODE (set by the CI workflow only, never on a real deployment) lets
+ * it through, the same way it opens the /api/test routes.
  */
 function logsInsteadOfSending(): boolean {
-  return process.env.EMAIL_DRIVER === "log" && process.env.NODE_ENV !== "production";
+  return (
+    process.env.EMAIL_DRIVER === "log" &&
+    (process.env.NODE_ENV !== "production" || process.env.E2E_TEST_MODE === "1")
+  );
 }
 
 export function isResendConfigured(): boolean {
@@ -38,7 +47,7 @@ export function verificationEmailHtml(verifyUrl: string): string {
       <h2 style="color: #1a1a1a;">Verify Your Email</h2>
       <p>Click the link below to verify your email address:</p>
       <p style="margin: 24px 0;">
-        <a href="${verifyUrl}" style="background-color: #2563eb; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">
+        <a href="${verifyUrl}" style="background-color: #1c5f68; color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; display: inline-block;">
           Verify Email
         </a>
       </p>
