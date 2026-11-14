@@ -22,5 +22,16 @@
   "footer": {
     "poweredBy": "Probook Web"
   },
-  "guidedTour": "Guided tour"
+  "guidedTour": "Guided tour",
+  "customize": {
+    "open": "Customize menu",
+    "openWithHidden_one": "Customize menu ({{count}} hidden)",
+    "openWithHidden_other": "Customize menu ({{count}} hidden)",
+    "hint": "Tap a module to hide or show it. A hidden module is still available, it only leaves the menu.",
+    "hide": "Hide {{name}}",
+    "show": "Show {{name}}",
+    "alwaysShown": "Always shown",
+    "done": "Done",
+    "showAll": "Show all"
+  }
 }

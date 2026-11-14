@@ -42,7 +42,8 @@ export interface TableColumnsState {
   hiddenCount: number;
 }
 
-function usePreferences() {
+/** The account's saved list preferences, shared by the column picker and the sidebar. */
+export function usePreferences() {
   const scope = useContext(TablePreferencesScope);
   const queryClient = useQueryClient();
   const queryKey = ["table-preferences", scope];
@@ -58,7 +59,10 @@ function usePreferences() {
       scope === "admin" ? adminAuthApi.updateTablePreference(input) : authApi.updateTablePreference(input),
     // Applied before the round trip: a column that takes a second to disappear
     // reads as a click that did not register.
-    onMutate: (input) => {
+    // The read still in flight on a first page load would land after this and
+    // put the old value back, so the click looked ignored: cancel it first.
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey });
       queryClient.setQueryData<TablePreferences>(queryKey, (prev) => applyTablePreference(prev ?? {}, input));
     },
     onError: () => queryClient.invalidateQueries({ queryKey }),

@@ -22,7 +22,11 @@ import {
   Store,
   Lock,
   CircleHelp,
+  Eye,
+  EyeOff,
+  SlidersHorizontal,
 } from "lucide-react";
+import { usePreferences } from "@/hooks/useTableColumns";
 import { useTourStore } from "@/stores/useTourStore";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
@@ -35,6 +39,9 @@ import { useEntitlements } from "@/hooks/useEntitlements";
 import { runGuarded } from "@/hooks/useUnsavedChangesGuard";
 import { FEATURE_KEYS, type FeatureKey } from "@/lib/feature-keys";
 import { translatedName } from "@/lib/translated-name";
+
+/** The key of the rail in the account's saved preferences — keep it stable. */
+const SIDEBAR_PREFS_KEY = "sidebar";
 
 interface SidebarProps {
   onClose?: () => void;
@@ -49,6 +56,8 @@ export function Sidebar({ onClose }: SidebarProps) {
   const { data: entitlements } = useEntitlements();
   const queryClient = useQueryClient();
   const startTour = useTourStore((s) => s.start);
+  const { prefs, save } = usePreferences();
+  const [customizing, setCustomizing] = useState(false);
 
   // Clearing the local data takes a moment on a phone, and the button stayed
   // live meanwhile: a second tap reached the server with the session already
@@ -78,8 +87,10 @@ export function Sidebar({ onClose }: SidebarProps) {
     icon: React.ElementType;
     permission?: PermissionKey;
     feature?: FeatureKey;
+    /** False for what the rail cannot do without: home, and the way back to settings. */
+    hideable?: boolean;
   }[] = [
-    { name: t("dashboard"), href: "/dashboard", icon: LayoutDashboard, permission: "dashboard" },
+    { name: t("dashboard"), href: "/dashboard", icon: LayoutDashboard, permission: "dashboard", hideable: false },
     { name: t("clients"), href: "/clients", icon: Users, permission: "clients" },
     { name: t("products"), href: "/products", icon: Package, permission: "products" },
     { name: t("suppliers"), href: "/suppliers", icon: Factory, permission: "suppliers", feature: FEATURE_KEYS.PURCHASING },
@@ -91,7 +102,7 @@ export function Sidebar({ onClose }: SidebarProps) {
     { name: t("reports"), href: "/reports", icon: BarChart3, permission: "reports" },
     { name: t("expenses"), href: "/expenses", icon: Wallet, permission: "expenses", feature: FEATURE_KEYS.EXPENSES },
     { name: t("purchases"), href: "/purchases", icon: ShoppingCart, permission: "purchases", feature: FEATURE_KEYS.PURCHASING },
-    { name: t("settings"), href: "/settings", icon: Settings, permission: "settings" },
+    { name: t("settings"), href: "/settings", icon: Settings, permission: "settings", hideable: false },
   ];
 
   const allowed = navigation.filter(
@@ -103,7 +114,31 @@ export function Sidebar({ onClose }: SidebarProps) {
   const standing = (item: { feature?: FeatureKey }) =>
     item.feature ? entitlements?.[item.feature] ?? { included: true } : { included: true };
 
-  const filteredNavigation = allowed.filter((item) => standing(item).included);
+  const includedNavigation = allowed.filter((item) => standing(item).included);
+
+  /**
+   * The modules this person chose not to see. Hiding is tidying, not locking:
+   * the routes stay reachable by URL, by links inside documents, by the tour.
+   * Saved to the account (the same store as the column picker, under the
+   * "sidebar" key), so the choice follows them from the office to the phone.
+   * Stored as the path without its slash — the key format the store accepts.
+   */
+  const hiddenKeys = new Set(prefs[SIDEBAR_PREFS_KEY]?.hidden ?? []);
+  const navKey = (item: { href: string }) => item.href.slice(1);
+  const isHidden = (item: { href: string; hideable?: boolean }) =>
+    item.hideable !== false && hiddenKeys.has(navKey(item));
+  const isActiveItem = (item: { href: string }) => pathname.startsWith(`/${locale}${item.href}`);
+  // The page on screen keeps its entry while you are on it: a rail with no
+  // lit row reads as "where am I", not as "I hid this".
+  const filteredNavigation = includedNavigation.filter((item) => !isHidden(item) || isActiveItem(item));
+  const hiddenCount = includedNavigation.filter(isHidden).length;
+
+  const toggleHidden = (item: { href: string }) => {
+    const next = new Set(hiddenKeys);
+    if (next.has(navKey(item))) next.delete(navKey(item));
+    else next.add(navKey(item));
+    save({ table: SIDEBAR_PREFS_KEY, hidden: [...next] });
+  };
 
   /**
    * What the offer does not include, gathered at the foot of the rail under the
@@ -160,7 +195,70 @@ export function Sidebar({ onClose }: SidebarProps) {
         )}
       </div>
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
-        {filteredNavigation.map((item) => {
+        {customizing && (
+          <div className="px-1 pb-2">
+            <p className="text-xs text-gray-400">{t("customize.hint")}</p>
+          </div>
+        )}
+        {customizing &&
+          includedNavigation.map((item) => {
+            const locked = item.hideable === false;
+            const hidden = isHidden(item);
+            return (
+              <button
+                key={item.href}
+                type="button"
+                disabled={locked}
+                onClick={() => toggleHidden(item)}
+                aria-pressed={locked ? undefined : !hidden}
+                aria-label={
+                  locked
+                    ? `${item.name} — ${t("customize.alwaysShown")}`
+                    : t(hidden ? "customize.show" : "customize.hide", { name: item.name })
+                }
+                title={locked ? t("customize.alwaysShown") : undefined}
+                className={cn(
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors text-start",
+                  locked
+                    ? "text-gray-500 cursor-default"
+                    : hidden
+                      ? "text-gray-500 hover:bg-gray-800/60 hover:text-gray-300"
+                      : "text-gray-200 hover:bg-gray-800 hover:text-white"
+                )}
+              >
+                <item.icon className="h-5 w-5 shrink-0" />
+                <span className={cn("flex-1 truncate", hidden && "line-through")}>{item.name}</span>
+                {locked ? (
+                  <Lock className="h-3.5 w-3.5 shrink-0 opacity-70" />
+                ) : hidden ? (
+                  <EyeOff className="h-4 w-4 shrink-0" />
+                ) : (
+                  <Eye className="h-4 w-4 shrink-0" />
+                )}
+              </button>
+            );
+          })}
+        {customizing && (
+          <div className="flex items-center gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setCustomizing(false)}
+              className="flex-1 px-4 py-2.5 rounded-lg text-sm font-medium bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+            >
+              {t("customize.done")}
+            </button>
+            {hiddenCount > 0 && (
+              <button
+                type="button"
+                onClick={() => save({ table: SIDEBAR_PREFS_KEY, hidden: [] })}
+                className="px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-800 hover:text-white transition-colors"
+              >
+                {t("customize.showAll")}
+              </button>
+            )}
+          </div>
+        )}
+        {!customizing && filteredNavigation.map((item) => {
           const localizedHref = `/${locale}${item.href}`;
           const isActive =
             item.href === "/"
@@ -186,7 +284,21 @@ export function Sidebar({ onClose }: SidebarProps) {
           );
         })}
 
-        {upsell.map((offer) => (
+        {!customizing && (
+          <button
+            type="button"
+            onClick={() => setCustomizing(true)}
+            data-testid="sidebar-customize"
+            className="w-full flex items-center gap-3 px-4 py-2 rounded-lg text-xs font-medium text-gray-500 hover:bg-gray-800/60 hover:text-gray-300 transition-colors"
+          >
+            <SlidersHorizontal className="h-4 w-4 shrink-0" />
+            <span className="flex-1 truncate text-start">
+              {hiddenCount > 0 ? t("customize.openWithHidden", { count: hiddenCount }) : t("customize.open")}
+            </span>
+          </button>
+        )}
+
+        {!customizing && upsell.map((offer) => (
           <div key={offer.name} className="pt-4 mt-3 border-t border-gray-800">
             <p className="px-4 pb-2 text-xs font-semibold uppercase tracking-wider text-gray-500">
               {t("availableWith", { offer: offer.name })}

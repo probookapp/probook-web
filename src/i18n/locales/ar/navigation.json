@@ -22,5 +22,20 @@
   "footer": {
     "poweredBy": "Probook Web"
   },
-  "guidedTour": "جولة إرشادية"
+  "guidedTour": "جولة إرشادية",
+  "customize": {
+    "open": "تخصيص القائمة",
+    "openWithHidden_zero": "تخصيص القائمة",
+    "openWithHidden_one": "تخصيص القائمة (وحدة مخفية)",
+    "openWithHidden_two": "تخصيص القائمة (وحدتان مخفيتان)",
+    "openWithHidden_few": "تخصيص القائمة ({{count}} وحدات مخفية)",
+    "openWithHidden_many": "تخصيص القائمة ({{count}} وحدة مخفية)",
+    "openWithHidden_other": "تخصيص القائمة ({{count}} وحدة مخفية)",
+    "hint": "اضغط على وحدة لإخفائها أو إظهارها. تبقى الوحدة المخفية متاحة، وتختفي من القائمة فقط.",
+    "hide": "إخفاء {{name}}",
+    "show": "إظهار {{name}}",
+    "alwaysShown": "تظهر دائمًا",
+    "done": "تم",
+    "showAll": "إظهار الكل"
+  }
 }
