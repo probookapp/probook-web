@@ -3,6 +3,7 @@
     "seats": "Users: {{count}}",
     "seatsUnlimited": "Unlimited users",
     "andAlso": "And on top",
+    "everythingIn": "Everything in {{offer}}, plus:",
     "core": {
       "invoicing": "Invoices, down payments and settlements",
       "quotes": "Quotes, converted into invoices",

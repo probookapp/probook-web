@@ -139,7 +139,7 @@ export function PlanCards({
                 {tc("landing.pricing.trialDays", { days: plan.trial_days })}
               </p>
             )}
-            <OfferContents plan={plan} />
+            <OfferContents plan={plan} previous={idx > 0 ? plans[idx - 1] : null} />
             <Link
               href={`/${locale}/signup`}
               className={`mt-8 block w-full text-center py-3 rounded-xl font-semibold text-sm transition-colors ${

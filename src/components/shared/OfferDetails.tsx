@@ -39,9 +39,25 @@ const CORE_INCLUSIONS = [
 export interface OfferContentsSource {
   quotas?: { quota_key: string; limit_value: number }[];
   features?: {
-    feature?: { name: string; name_translations?: Translations };
+    feature?: { key?: string; name: string; name_translations?: Translations };
   }[];
 }
+
+/** The offer just below, which a card can build on instead of repeating it. */
+export interface PreviousOffer extends OfferContentsSource {
+  name: string;
+  name_translations?: Translations | null;
+}
+
+type OfferFeature = NonNullable<NonNullable<OfferContentsSource["features"]>[number]["feature"]>;
+
+function featuresOf(plan: OfferContentsSource): OfferFeature[] {
+  return (plan.features ?? [])
+    .map((f) => f.feature)
+    .filter((f): f is OfferFeature => Boolean(f));
+}
+
+const featureId = (f: OfferFeature) => f.key ?? f.name;
 
 /** The seats an offer covers, or null when it sets no ceiling. */
 function seatsOf(plan: OfferContentsSource): number | null {
@@ -114,17 +130,34 @@ export function OfferPrice({
   );
 }
 
-/** The seats an offer covers, what every offer contains, and what this one adds. */
-export function OfferContents({ plan }: { plan: OfferContentsSource }) {
+/**
+ * The seats an offer covers, what every offer contains, and what this one adds.
+ *
+ * Given the offer below it, a card says "everything in <that offer>, plus" and
+ * lists only what it adds: repeating the lower offer line for line buried what
+ * the higher one is actually sold on under a dozen shared lines. That holds
+ * only when this offer really contains every feature of the one below — if it
+ * does not, "everything in" would be a lie, and the card lists in full.
+ */
+export function OfferContents({
+  plan,
+  previous,
+}: {
+  plan: OfferContentsSource;
+  previous?: PreviousOffer | null;
+}) {
   const { t } = useTranslation("pages");
   const locale = useLocale();
   const textDir = locale === "ar" ? "rtl" : undefined;
   const seats = seatsOf(plan);
-  const featureNames = (plan.features ?? [])
-    .map((f) =>
-      f.feature ? translatedName(f.feature.name, f.feature.name_translations ?? null, locale) : null
-    )
-    .filter((name): name is string => Boolean(name));
+  const own = featuresOf(plan);
+  const ownIds = new Set(own.map(featureId));
+  const below = previous ? featuresOf(previous) : [];
+  const buildsOn = previous != null && below.every((f) => ownIds.has(featureId(f)));
+  const belowIds = new Set(below.map(featureId));
+  const featureNames = (buildsOn ? own.filter((f) => !belowIds.has(featureId(f))) : own).map((f) =>
+    translatedName(f.name, f.name_translations ?? null, locale)
+  );
 
   return (
     <>
@@ -134,24 +167,30 @@ export function OfferContents({ plan }: { plan: OfferContentsSource }) {
         {seats === null ? t("pricing.seatsUnlimited") : t("pricing.seats", { count: seats })}
       </p>
 
-      <ul className="mt-6 space-y-3">
-        {CORE_INCLUSIONS.map((key) => (
-          <li key={key} className="flex items-start gap-3">
-            <Check className="h-5 w-5 shrink-0 mt-0.5 text-primary-600 dark:text-primary-400" />
-            <span dir={textDir} className="text-sm text-gray-600 dark:text-gray-300">
-              {t(key)}
-            </span>
-          </li>
-        ))}
-      </ul>
+      {!buildsOn && (
+        <ul className="mt-6 space-y-3">
+          {CORE_INCLUSIONS.map((key) => (
+            <li key={key} className="flex items-start gap-3">
+              <Check className="h-5 w-5 shrink-0 mt-0.5 text-primary-600 dark:text-primary-400" />
+              <span dir={textDir} className="text-sm text-gray-600 dark:text-gray-300">
+                {t(key)}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
 
-      {featureNames.length > 0 && (
+      {(buildsOn || featureNames.length > 0) && (
         <>
           <p
             dir={textDir}
             className="mt-6 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400"
           >
-            {t("pricing.andAlso")}
+            {buildsOn
+              ? t("pricing.everythingIn", {
+                  offer: translatedName(previous!.name, previous!.name_translations ?? null, locale),
+                })
+              : t("pricing.andAlso")}
           </p>
           <ul className="mt-3 space-y-3">
             {featureNames.map((name, i) => (

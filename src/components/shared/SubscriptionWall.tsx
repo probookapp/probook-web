@@ -475,7 +475,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                 ? "grid-cols-1 md:grid-cols-2 max-w-2xl mx-auto"
                 : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
             }`}>
-              {plans?.map((plan) => {
+              {plans?.map((plan, idx) => {
                 const isSelected = selectedPlanId === plan.id;
                 const amount = billingCycle === "yearly" ? plan.yearly_price : plan.monthly_price;
                 const discountedPrice = calculateDiscountedPrice(plan.id, amount);
@@ -524,7 +524,7 @@ export function SubscriptionWall({ subscriptionStatus, onRequestSuccess }: { sub
                         </p>
                       )}
 
-                      <OfferContents plan={plan} />
+                      <OfferContents plan={plan} previous={idx > 0 ? plans[idx - 1] : null} />
                     </CardContent>
                   </Card>
                 );

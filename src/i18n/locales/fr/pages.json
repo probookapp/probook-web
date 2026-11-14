@@ -3,6 +3,7 @@
     "seats": "Utilisateurs : {{count}}",
     "seatsUnlimited": "Utilisateurs illimités",
     "andAlso": "Et en plus",
+    "everythingIn": "Tout {{offer}}, plus :",
     "core": {
       "invoicing": "Factures, acomptes et règlements",
       "quotes": "Devis et conversion en facture",
