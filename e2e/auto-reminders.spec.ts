@@ -7,7 +7,8 @@ import { apiGet, apiPost, apiPut } from "./api-helpers";
  * the nightly job emails due reminders by itself for an account that turned
  * automatic sending on, and the next one waits for the next step.
  */
-const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
+const asScheduler = { headers: { Authorization: `Bearer ${process.env.CRON_SECRET ?? ""}` } };
+const daysAgo =(n: number) => new Date(Date.now() - n * 86400000).toISOString().slice(0, 10);
 
 test.describe("Automatic payment reminders", () => {
   test("the nightly job sends due reminders and waits for the next step", async ({ page }) => {
@@ -25,8 +26,9 @@ test.describe("Automatic payment reminders", () => {
     });
     await apiPost(page, `/api/invoices/${invoice.body.id}/issue`);
 
-    // Outside production the job needs no bearer; the test env logs emails.
-    const run = await page.request.get("/api/cron/reminders");
+    // The scheduler's bearer: CI runs a production build, where the job
+    // refuses a call without it. The test env logs emails instead of sending.
+    const run = await page.request.get("/api/cron/reminders", asScheduler);
     expect(run.status()).toBe(200);
     expect((await run.json()).reminders_sent).toBeGreaterThanOrEqual(1);
 
@@ -36,7 +38,7 @@ test.describe("Automatic payment reminders", () => {
     expect(list[0].sent_at).not.toBeNull();
 
     // Three days late, one sent: the second waits for day 15.
-    await page.request.get("/api/cron/reminders");
+    await page.request.get("/api/cron/reminders", asScheduler);
     const after = await apiGet(page, `/api/reminders/by-document/invoice/${invoice.body.id}`);
     const again = (Array.isArray(after.body) ? after.body : after.body.data ?? []) as unknown[];
     expect(again).toHaveLength(1);
