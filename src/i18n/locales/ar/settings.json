@@ -195,7 +195,12 @@
       "backupCodesDescription": "احفظ هذه الرموز في مكان آمن. كل رمز يمكن استخدامه مرة واحدة فقط.",
       "backupCodesCopied": "تم نسخ رموز الاحتياط",
       "disableConfirm": "أدخل كلمة المرور لتعطيل المصادقة الثنائية",
-      "disablePassword": "كلمة المرور"
+      "disablePassword": "كلمة المرور",
+      "setupFailed": "تعذر إعداد المصادقة الثنائية",
+      "invalidCode": "رمز غير صالح. حاول مرة أخرى.",
+      "disabledToast": "تم تعطيل المصادقة الثنائية",
+      "invalidPassword": "كلمة مرور غير صحيحة",
+      "keyCopied": "تم نسخ المفتاح"
     },
     "sessions": {
       "title": "الجلسات النشطة",
@@ -207,7 +212,10 @@
       "noOtherSessions": "لا توجد جلسات نشطة أخرى.",
       "lastActive": "آخر نشاط",
       "device": "الجهاز",
-      "ipAddress": "عنوان IP"
+      "ipAddress": "عنوان IP",
+      "revokeFailed": "تعذر تسجيل الخروج من هذه الجلسة",
+      "revokeAllFailed": "تعذر تسجيل الخروج من الجلسات",
+      "unknownDevice": "جهاز غير معروف"
     }
   },
   "validation": {

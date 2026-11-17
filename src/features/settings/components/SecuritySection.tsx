@@ -14,6 +14,7 @@ import {
 import { Button, Card, CardContent, CardHeader, CardTitle, Input } from "@/components/ui";
 import { toast } from "@/stores/useToastStore";
 import { authApi } from "@/lib/api";
+import { formatDateTime } from "@/lib/utils";
 
 interface SessionInfo {
   id: string;
@@ -89,7 +90,7 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
       setSetupUri(uri);
       setSetupMode(true);
     } catch {
-      toast.error("Failed to set up 2FA");
+      toast.error(t("security.twoFactor.setupFailed"));
     } finally {
       setIsSettingUp(false);
     }
@@ -106,7 +107,7 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
       setTotpEnabled(true);
       setVerifyCode("");
     } catch {
-      toast.error("Invalid code. Please try again.");
+      toast.error(t("security.twoFactor.invalidCode"));
     } finally {
       setIsVerifying(false);
     }
@@ -125,9 +126,9 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
       setTotpEnabled(false);
       setDisableMode(false);
       setDisablePassword("");
-      toast.success("2FA disabled");
+      toast.success(t("security.twoFactor.disabledToast"));
     } catch {
-      toast.error("Invalid password");
+      toast.error(t("security.twoFactor.invalidPassword"));
     } finally {
       setIsDisabling(false);
     }
@@ -138,7 +139,7 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
       await authApi.revokeSession(id);
       setSessions((prev) => prev.filter((s) => s.id !== id));
     } catch {
-      toast.error("Failed to revoke session");
+      toast.error(t("security.sessions.revokeFailed"));
     }
   };
 
@@ -149,24 +150,20 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
       await authApi.revokeAllSessions();
       setSessions((prev) => prev.filter((s) => s.is_current));
     } catch {
-      toast.error("Failed to revoke sessions");
+      toast.error(t("security.sessions.revokeAllFailed"));
     } finally {
       setIsRevokingAll(false);
     }
   };
 
   const parseUserAgent = (ua: string | null): string => {
-    if (!ua) return "Unknown device";
+    if (!ua) return t("security.sessions.unknownDevice");
     // Simple UA parsing
     if (ua.includes("Chrome") && !ua.includes("Edg")) return "Chrome";
     if (ua.includes("Firefox")) return "Firefox";
     if (ua.includes("Safari") && !ua.includes("Chrome")) return "Safari";
     if (ua.includes("Edg")) return "Edge";
     return ua.slice(0, 50);
-  };
-
-  const formatDate = (iso: string) => {
-    return new Date(iso).toLocaleString();
   };
 
   const otherSessions = sessions.filter((s) => !s.is_current);
@@ -254,7 +251,7 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
                     type="button"
                     onClick={() => {
                       navigator.clipboard.writeText(setupSecret);
-                      toast.success("Key copied");
+                      toast.success(t("security.twoFactor.keyCopied"));
                     }}
                     className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
                   >
@@ -395,7 +392,7 @@ export function SecuritySection({ totpEnabled: initialTotpEnabled }: { totpEnabl
                         </span>
                       )}
                       <span>
-                        {t("security.sessions.lastActive")}: {formatDate(session.last_active_at)}
+                        {t("security.sessions.lastActive")}: {formatDateTime(session.last_active_at)}
                       </span>
                     </div>
                   </div>
