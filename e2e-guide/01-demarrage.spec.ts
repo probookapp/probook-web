@@ -41,10 +41,16 @@ test("Chapitre 1 — Créer son compte et découvrir Probook", async ({ page }) 
   await tour.say("…une adresse email, qui servira à sécuriser le compte et à recevoir les documents.");
   await tour.type(page.locator('input[autocomplete="email"]'), email);
 
-  await tour.say("…puis un identifiant de connexion et un mot de passe.");
+  // The username follows the email until it is edited; the guide still types
+  // its own, since later chapters sign in with it.
+  await tour.say("…l'identifiant de connexion se remplit tout seul depuis l'email, et reste modifiable…");
   await tour.type(page.locator('input[autocomplete="username"]'), username);
-  await tour.type(page.locator('input[autocomplete="new-password"]').first(), BIZ.password);
-  await tour.type(page.locator('input[autocomplete="new-password"]').last(), BIZ.password);
+
+  await tour.say("…puis un mot de passe : la jauge en dessous indique sa solidité.");
+  await tour.type(page.locator('input[autocomplete="new-password"]'), BIZ.password);
+
+  await tour.say("Le pays de l'entreprise fixe la devise, les taux de TVA et les identifiants légaux.");
+  await tour.choose(page.locator("form select"), "DZ");
 
   await tour.say("Il ne reste plus qu'à valider.");
   await tour.click(page.locator('button[type="submit"]'), { settleMs: 1500 });

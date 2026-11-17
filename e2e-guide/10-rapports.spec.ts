@@ -13,6 +13,13 @@ test("Chapitre 10 — Piloter l'activité avec les rapports", async ({ page }) =
   );
   await tour.pause(2000);
 
+  await tour.point(page.getByText(t("dashboard:trend.title")).first());
+  await tour.say(
+    "Les douze derniers mois de chiffre d'affaires, et à côté ce qui reste à encaisser, rangé selon le retard."
+  );
+  await tour.point(page.getByText(t("dashboard:aging.title")).first());
+  await tour.pause(1800);
+
   await tour.say(
     "Chaque chiffre du tableau de bord est cliquable : « paiements en attente » ouvre directement la liste des factures émises non réglées."
   );
