@@ -13,6 +13,7 @@ function errorEvent(value: string, extra: Partial<ErrorEvent> = {}): ErrorEvent 
   return {
     type: undefined,
     level: "error",
+    environment: "production",
     event_id: "abc123",
     exception: {
       values: [
@@ -29,6 +30,22 @@ function errorEvent(value: string, extra: Partial<ErrorEvent> = {}): ErrorEvent 
 
 describe("shouldForward", () => {
   beforeEach(() => resetDiscordForwarder());
+  afterEach(() => vi.unstubAllEnvs());
+
+  it("forwards production events only", () => {
+    expect(shouldForward(errorEvent("prod"))).toBe(true);
+    expect(shouldForward(errorEvent("dev", { environment: "development" }))).toBe(false);
+    expect(shouldForward(errorEvent("preview", { environment: "preview" }))).toBe(false);
+  });
+
+  it("falls back to VERCEL_ENV when the event has no environment", () => {
+    vi.stubEnv("VERCEL_ENV", "production");
+    expect(shouldForward(errorEvent("a", { environment: undefined }))).toBe(true);
+    vi.stubEnv("VERCEL_ENV", "preview");
+    expect(shouldForward(errorEvent("b", { environment: undefined }))).toBe(false);
+    vi.stubEnv("VERCEL_ENV", "");
+    expect(shouldForward(errorEvent("c", { environment: undefined }))).toBe(false);
+  });
 
   it("skips levels below error", () => {
     expect(shouldForward(errorEvent("x", { level: "warning" }))).toBe(false);
@@ -87,6 +104,12 @@ describe("forwardToDiscord", () => {
   it("does nothing without a webhook", async () => {
     vi.stubEnv("DISCORD_ALERT_WEBHOOK_URL", "");
     await forwardToDiscord(errorEvent("x"));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("does not post a development event even with a webhook", async () => {
+    vi.stubEnv("DISCORD_ALERT_WEBHOOK_URL", "https://discord.test/hook");
+    await forwardToDiscord(errorEvent("x", { environment: "development" }));
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

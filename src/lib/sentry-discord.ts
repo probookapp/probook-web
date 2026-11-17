@@ -6,6 +6,9 @@ import type { ErrorEvent } from "@sentry/nextjs";
 // the event unchanged whatever happens here: a failed post never throws.
 //
 // Guards, so a crash loop or a crawler cannot flood the channel:
+// - only production events: a developer running the app locally with the
+//   webhook in their .env paged the alerts channel with every local error
+//   (labelled "development"), and previews would do the same;
 // - only events at level "error" or "fatal";
 // - none whose request came from a known crawler;
 // - each fingerprint once per window, and at most MAX_PER_WINDOW distinct
@@ -44,8 +47,15 @@ function eventKey(event: ErrorEvent): string {
   return [ex?.type, ex?.value ?? event.message, top?.filename, top?.function].join("|");
 }
 
+/** The environment the alert shows: Sentry's, else Vercel's. */
+function eventEnvironment(event: ErrorEvent): string | undefined {
+  return event.environment ?? process.env.VERCEL_ENV;
+}
+
 /** Whether this event should be posted now; records it when it should. */
 export function shouldForward(event: ErrorEvent, now = Date.now()): boolean {
+  // Local runs and previews must never page the alerts channel.
+  if (eventEnvironment(event) !== "production") return false;
   if (event.level && event.level !== "error" && event.level !== "fatal") return false;
   const ua = headerValue(event, "user-agent");
   if (ua && CRAWLER_UA.test(ua)) return false;
@@ -74,7 +84,7 @@ export function buildDiscordPayload(event: ErrorEvent) {
     .join("\n");
 
   const fields: { name: string; value: string; inline?: boolean }[] = [];
-  const env = event.environment ?? process.env.VERCEL_ENV;
+  const env = eventEnvironment(event);
   if (env) fields.push({ name: "Env", value: env, inline: true });
   if (event.release) fields.push({ name: "Release", value: truncate(event.release, 40), inline: true });
   if (event.request?.method || event.request?.url) {
