@@ -8,7 +8,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-function getLocale(): string {
+export function getLocale(): string {
   const lang = i18n.language || "fr";
   // Map language codes to locale codes
   // Use -u-nu-latn for Arabic to keep Western/Latin numerals

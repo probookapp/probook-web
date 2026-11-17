@@ -23,6 +23,7 @@ import {
   useAdminSubscriptionAnalytics,
 } from "./hooks/useAdminAnalytics";
 import { OnboardingFunnel } from "./OnboardingFunnel";
+import { getLocale } from "@/lib/utils";
 
 type OverviewData = Record<string, unknown>;
 type SignupEntry = { month: string; count: number };
@@ -31,7 +32,9 @@ type RevenueEntry = { month: string; revenue: Record<string, number> };
 type MoneyByCurrency = { currency: string; amount: number }[];
 
 function formatCentimes(amount: number): string {
-  return (amount / 100).toLocaleString(undefined, {
+  // The app's language, not the browser's: a French panel read in an English
+  // browser showed "408,620.95".
+  return (amount / 100).toLocaleString(getLocale(), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
@@ -40,7 +43,7 @@ function formatCentimes(amount: number): string {
 // "16,000.00 DZD + 290.00 EUR" — money figures are per-currency and must not
 // be collapsed into a single number.
 function formatMoneyByCurrency(entries: MoneyByCurrency): string {
-  if (!entries || entries.length === 0) return "0.00";
+  if (!entries || entries.length === 0) return formatCentimes(0);
   return entries
     .map((e) => `${formatCentimes(e.amount)} ${e.currency}`)
     .join(" + ");
@@ -118,19 +121,25 @@ function BarChart({
           const displayVal = formatValue ? formatValue(val) : String(val);
           const monthLabel = entry.month.slice(5); // "01", "02", etc.
 
+          // The bar's percentage height needs a parent with a height of its own:
+          // set on a plain flex column it resolved to 0 px and every chart
+          // drew only its labels. The column fills the row, and the bar sits
+          // in the space its two labels leave.
           return (
             <div
               key={entry.month}
-              className="flex-1 flex flex-col items-center gap-1"
+              className="flex-1 h-full min-w-0 flex flex-col items-center gap-1"
             >
               <span className="text-[10px] text-gray-500 dark:text-gray-400 truncate max-w-full">
                 {displayVal}
               </span>
-              <div
-                className="w-full bg-primary-500 dark:bg-primary-400 rounded-t transition-all"
-                style={{ height: `${heightPct}%` }}
-                title={`${entry.month}: ${displayVal}`}
-              />
+              <div className="flex-1 min-h-0 w-full flex items-end">
+                <div
+                  className="w-full bg-primary-500 dark:bg-primary-400 rounded-t transition-all"
+                  style={{ height: `${heightPct}%` }}
+                  title={`${entry.month}: ${displayVal}`}
+                />
+              </div>
               <span className="text-[10px] text-gray-500 dark:text-gray-400">
                 {monthLabel}
               </span>
