@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { Logo } from "@/components/shared/Logo";
 import { Button, Modal } from "@/components/ui";
@@ -7,17 +7,6 @@ import { useAuthStore } from "@/stores/useAuthStore";
 import { useTourStore } from "@/stores/useTourStore";
 import { DOCK_BELOW, Tour, type TourStep } from "./Tour";
 import { useTourCompletion } from "./useTourCompletion";
-
-/** "Later" holds for this browser session only: the welcome comes back at the next login. */
-const LATER_KEY = "probook-tour-later";
-
-function readLater() {
-  try {
-    return sessionStorage.getItem(LATER_KEY) === "1";
-  } catch {
-    return false;
-  }
-}
 
 interface OfficeTourProps {
   /** Opens or closes the navigation drawer (a no-op from lg up, where the rail is pinned). */
@@ -36,21 +25,13 @@ export function OfficeTour({ setSidebarOpen }: OfficeTourProps) {
   const displayName = useAuthStore((s) => s.currentUser?.display_name);
   const { active, start, stop } = useTourStore();
   const { shouldAutoStart, markDone } = useTourCompletion("office");
-  const [later, setLater] = useState(readLater);
+  const later = useTourStore((s) => s.officePostponed);
+  const postpone = useTourStore((s) => s.postponeOffice);
 
   // First login: the dashboard is where everyone lands, and where the tour's
   // dashboard step can find its target.
   const onDashboard = /\/dashboard\/?$/.test(pathname);
   const showWelcome = shouldAutoStart && onDashboard && !later && active === null;
-
-  const postpone = () => {
-    try {
-      sessionStorage.setItem(LATER_KEY, "1");
-    } catch {
-      // Private mode: "later" then lasts as long as this page.
-    }
-    setLater(true);
-  };
 
   const end = useCallback(() => {
     stop();

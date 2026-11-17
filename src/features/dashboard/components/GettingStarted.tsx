@@ -42,13 +42,15 @@ export function GettingStarted() {
   const locale = useLocale();
   const hasPermission = useAuthStore((s) => s.hasPermission);
   const tourActive = useTourStore((s) => s.active !== null);
+  const officePostponed = useTourStore((s) => s.officePostponed);
   const { isDone: officeSeen } = useTourCompletion("office");
   const { isDone: hidden, markDone: hide } = useTourCompletion("checklist");
   const [collapsed, setCollapsed] = useState(readCollapsed);
 
-  // After the office tour (seen or skipped), until hidden. Not a tour itself, so
-  // it does not wait for a person the way tours do in an automated browser.
-  const wanted = officeSeen && !hidden;
+  // After the office tour (seen, skipped or put off with "Later"), until
+  // hidden. Not a tour itself, so it does not wait for a person the way tours
+  // do in an automated browser.
+  const wanted = (officeSeen || officePostponed) && !hidden;
   const { data: progress } = useQuery({
     queryKey: ["onboarding-progress"],
     queryFn: () => authApi.getOnboardingProgress(),
