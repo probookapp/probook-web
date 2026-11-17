@@ -1,4 +1,4 @@
-import { forwardRef, type InputHTMLAttributes } from "react";
+import { forwardRef, useId, type InputHTMLAttributes } from "react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { fieldBase, fieldError, fieldLabel, FIELD_HEIGHT } from "./field";
@@ -17,8 +17,11 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     const { i18n } = useTranslation();
     // For date inputs, use the app's language for locale-aware formatting
     const inputLang = type === "date" ? (lang || i18n.language) : lang;
-    // Use id if provided, otherwise fall back to name for label association
-    const inputId = id || name;
+    // Use id if provided, then name, then a generated id: a label that points
+    // at nothing is not announced by screen readers and does not focus the
+    // field when clicked (the sign-up and login forms pass neither).
+    const generatedId = useId();
+    const inputId = id || name || generatedId;
     const isNumeric = NUMERIC_TYPES.has(type ?? "") || inputMode === "decimal" || inputMode === "numeric";
 
     return (
