@@ -10,6 +10,9 @@ import {
   Clock,
   Wallet,
   PiggyBank,
+  ArrowUpRight,
+  ArrowDownRight,
+  Plus,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, FitAmount } from "@/components/ui";
 import { formatCurrency } from "@/lib/utils";
@@ -23,6 +26,11 @@ import { useDashboardStore, type DashboardStatId } from "@/stores/useDashboardSt
 import { useLocale, localizePath } from "@/lib/navigation";
 import { useDashboardLayoutSync } from "./hooks/useDashboardLayoutSync";
 import { GettingStarted } from "./components/GettingStarted";
+import { QuickActions } from "./components/QuickActions";
+import { RevenueTrendCard } from "./components/RevenueTrendCard";
+import { ReceivablesCard } from "./components/ReceivablesCard";
+import { useAuthStore } from "@/stores/useAuthStore";
+import { cn } from "@/lib/utils";
 
 /**
  * A figure on the dashboard is a question ("how much is still owed?"), and the
@@ -46,6 +54,7 @@ function StatCard({
   description,
   href,
   featured,
+  comparison,
 }: {
   title: string;
   value: string | number;
@@ -53,6 +62,8 @@ function StatCard({
   description?: string;
   href?: string;
   featured?: boolean;
+  /** Under a featured figure: how it moved against the same stretch of last month. */
+  comparison?: React.ReactNode;
 }) {
   const body = featured ? (
     <CardContent className="py-6">
@@ -63,9 +74,9 @@ function StatCard({
       <p className="mt-2 font-mono text-3xl sm:text-4xl font-semibold tabular-nums text-(--color-text-primary)">
         <FitAmount>{value}</FitAmount>
       </p>
-      {description && (
+      {comparison ?? (description && (
         <p className="mt-1 text-sm text-(--color-text-tertiary)">{description}</p>
-      )}
+      ))}
     </CardContent>
   ) : (
     <CardContent className="py-4">
@@ -112,6 +123,7 @@ export function DashboardPage() {
   const order = useDashboardStore((s) => s.order);
   const hidden = useDashboardStore((s) => s.hidden);
   useDashboardLayoutSync(); // hydrate saved layout from server (cross-device)
+  const hasPermission = useAuthStore((s) => s.hasPermission);
   const { data: stats, isLoading } = useQuery({
     queryKey: ["dashboard-stats", { demo: isDemoMode }],
     queryFn: isDemoMode ? () => DEMO_DASHBOARD_STATS : dashboardApi.getStats,
@@ -198,18 +210,70 @@ export function DashboardPage() {
 
   const visibleStats = order.filter((id) => !hidden.includes(id));
 
+  // A new account has nothing to count yet. Seven cards reading zero tell it
+  // nothing; what to do first does.
+  const isEmpty =
+    !isDemoMode &&
+    (stats?.total_invoices ?? 0) === 0 &&
+    (stats?.total_quotes ?? 0) === 0 &&
+    (stats?.total_clients ?? 0) === 0;
+
+  const thisMonth = stats?.revenue_this_month ?? 0;
+  const lastMonth = stats?.revenue_last_month_to_date ?? 0;
+  const monthlyComparison =
+    stats && (thisMonth > 0 || lastMonth > 0) ? (
+      lastMonth > 0 ? (
+        (() => {
+          const change = Math.round(((thisMonth - lastMonth) / lastMonth) * 100);
+          const up = change >= 0;
+          const Arrow = up ? ArrowUpRight : ArrowDownRight;
+          return (
+            <p className="mt-1 flex flex-wrap items-center gap-x-1.5 text-sm">
+              <span
+                className={cn(
+                  "inline-flex shrink-0 items-center gap-0.5 whitespace-nowrap font-medium",
+                  up ? "text-green-700 dark:text-green-400" : "text-red-600 dark:text-red-400"
+                )}
+              >
+                <Arrow className="h-4 w-4" />
+                {`${up ? "+" : ""}${change} %`}
+              </span>
+              <span className="text-(--color-text-tertiary)">
+                {t("comparison.vsLastMonth", { amount: formatCurrency(lastMonth) })}
+              </span>
+            </p>
+          );
+        })()
+      ) : (
+        <p className="mt-1 text-sm text-(--color-text-tertiary)">{t("comparison.noLastMonth")}</p>
+      )
+    ) : undefined;
+
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
-        <p className="text-gray-500 dark:text-gray-400">{t("welcome")}</p>
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-gray-100">{t("title")}</h1>
+          <p className="text-gray-500 dark:text-gray-400">{t("welcome")}</p>
+        </div>
+        {!isEmpty && <QuickActions />}
       </div>
 
       {/* Notices the top strip could not carry land here rather than stacking a
           second warning band across every page in the application. */}
       {demoted.includes("emailVerify") && <EmailVerifyNotice variant="card" />}
 
-      {visibleStats.length > 0 && (
+      {isEmpty && (
+        <Card data-tour="dashboard-stats">
+          <CardContent className="py-8 sm:py-10">
+            <p className="text-lg font-semibold text-(--color-text-primary)">{t("start.title")}</p>
+            <p className="mt-2 max-w-2xl text-(--color-text-secondary)">{t("start.body")}</p>
+            <QuickActions className="mt-6" />
+          </CardContent>
+        </Card>
+      )}
+
+      {!isEmpty && visibleStats.length > 0 && (
         <div className="space-y-4" data-tour="dashboard-stats">
           {/* Whatever the owner put first leads the page. */}
           <StatCard
@@ -219,20 +283,24 @@ export function DashboardPage() {
             icon={statCards[visibleStats[0]].icon}
             description={statCards[visibleStats[0]].description}
             href={statCards[visibleStats[0]].href}
+            comparison={visibleStats[0] === "monthlyRevenue" ? monthlyComparison : undefined}
           />
           {visibleStats.length > 1 && (
-            <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
+            // Wrapping rows that stretch, not a fixed grid: seven cards in four
+            // columns left an empty slot at the end of the second row.
+            <div className="flex flex-wrap gap-4">
               {visibleStats.slice(1).map((id) => {
                 const card = statCards[id];
                 return (
+                  <div key={id} className="min-w-0 grow basis-[calc(50%-0.5rem)] md:basis-[calc(33%-1rem)] xl:basis-[calc(25%-1rem)]">
                   <StatCard
-                    key={id}
                     title={card.title}
                     value={card.value}
                     icon={card.icon}
                     description={card.description}
                     href={card.href}
                   />
+                  </div>
                 );
               })}
             </div>
@@ -241,7 +309,19 @@ export function DashboardPage() {
       )}
 
       {/* One panel: the events and the actions on them (see AlertsPanel). */}
-      <AlertsPanel />
+      {!isEmpty && stats && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          {hasPermission("reports") && stats.revenue_by_month && (
+            <RevenueTrendCard data={stats.revenue_by_month} />
+          )}
+          {hasPermission("invoices") && stats.receivables_aging && (
+            <ReceivablesCard aging={stats.receivables_aging} overdueCount={stats.overdue_count ?? 0} />
+          )}
+        </div>
+      )}
+
+      {/* Nothing can be late on an account with no documents yet. */}
+      {!isEmpty && <AlertsPanel />}
 
       <GettingStarted />
 
@@ -254,23 +334,37 @@ export function DashboardPage() {
             {stats?.recent_invoices && stats.recent_invoices.length > 0 ? (
               <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                 {stats.recent_invoices.map((invoice) => (
-                  <li key={invoice.id} className="py-3 flex justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{invoice.invoice_number}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                        {invoice.client?.name}
+                  <li key={invoice.id}>
+                    <Link
+                      href={to(`/invoices/${invoice.id}`)}
+                      className="-mx-2 flex justify-between gap-4 rounded-md px-2 py-3 hover:bg-(--color-bg-secondary) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{invoice.invoice_number}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          {invoice.client?.name}
+                        </p>
+                      </div>
+                      <p className="shrink-0 font-medium tabular-nums whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        {formatCurrency(invoice.total)}
                       </p>
-                    </div>
-                    <p className="shrink-0 font-medium tabular-nums whitespace-nowrap text-gray-900 dark:text-gray-100">
-                      {formatCurrency(invoice.total)}
-                    </p>
+                    </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                {t("noRecentInvoices")}
-              </p>
+              <div className="py-4 text-center">
+                <p className="text-gray-500 dark:text-gray-400">{t("noRecentInvoices")}</p>
+                {hasPermission("invoices", "create") && !isDemoMode && (
+                  <Link
+                    href={to("/invoices/new")}
+                    className="mt-3 inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t("quickActions.newInvoice")}
+                  </Link>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>
@@ -283,23 +377,37 @@ export function DashboardPage() {
             {stats?.recent_quotes && stats.recent_quotes.length > 0 ? (
               <ul className="divide-y divide-gray-200 dark:divide-gray-700">
                 {stats.recent_quotes.map((quote) => (
-                  <li key={quote.id} className="py-3 flex justify-between gap-4">
-                    <div className="min-w-0">
-                      <p className="font-medium text-gray-900 dark:text-gray-100">{quote.quote_number}</p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                        {quote.client?.name}
+                  <li key={quote.id}>
+                    <Link
+                      href={to(`/quotes/${quote.id}`)}
+                      className="-mx-2 flex justify-between gap-4 rounded-md px-2 py-3 hover:bg-(--color-bg-secondary) focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium text-gray-900 dark:text-gray-100">{quote.quote_number}</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                          {quote.client?.name}
+                        </p>
+                      </div>
+                      <p className="shrink-0 font-medium tabular-nums whitespace-nowrap text-gray-900 dark:text-gray-100">
+                        {formatCurrency(quote.total)}
                       </p>
-                    </div>
-                    <p className="shrink-0 font-medium tabular-nums whitespace-nowrap text-gray-900 dark:text-gray-100">
-                      {formatCurrency(quote.total)}
-                    </p>
+                    </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-gray-500 dark:text-gray-400 text-center py-4">
-                {t("noRecentQuotes")}
-              </p>
+              <div className="py-4 text-center">
+                <p className="text-gray-500 dark:text-gray-400">{t("noRecentQuotes")}</p>
+                {hasPermission("quotes", "create") && !isDemoMode && (
+                  <Link
+                    href={to("/quotes/new")}
+                    className="mt-3 inline-flex min-h-10 items-center gap-1.5 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                  >
+                    <Plus className="h-4 w-4" />
+                    {t("quickActions.newQuote")}
+                  </Link>
+                )}
+              </div>
             )}
           </CardContent>
         </Card>

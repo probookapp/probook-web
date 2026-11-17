@@ -1026,6 +1026,13 @@ export interface DashboardStats {
   total_quotes: number;
   revenue_this_month: number;
   revenue_this_year: number;
+  /** Revenue from the 1st of last month to the same day of the month. */
+  revenue_last_month_to_date: number;
+  /** Twelve months, oldest first, "YYYY-MM". */
+  revenue_by_month: { month: string; revenue: number }[];
+  /** Amount still owed on issued invoices, by days past the due date. */
+  receivables_aging: { not_due: number; days_0_30: number; days_31_60: number; days_over_60: number };
+  overdue_count: number;
   pending_payments: number;
   total_expenses: number;
   profit: number;

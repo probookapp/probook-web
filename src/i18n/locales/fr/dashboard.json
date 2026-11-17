@@ -51,7 +51,8 @@
     "title": "Actions rapides",
     "newInvoice": "Nouvelle facture",
     "newQuote": "Nouveau devis",
-    "newClient": "Nouveau client"
+    "newClient": "Nouveau client",
+    "openTill": "Ouvrir la caisse"
   },
   "noData": "Aucune donnée disponible",
   "gettingStarted": {
@@ -66,5 +67,30 @@
     "done": "fait",
     "autoTick": "Coché automatiquement quand c'est fait",
     "hide": "Masquer"
+  },
+  "start": {
+    "title": "Votre tableau de bord se remplira avec votre activité",
+    "body": "Ajoutez un client puis créez votre premier devis ou votre première facture : le chiffre d'affaires, les impayés et les tendances apparaîtront ici."
+  },
+  "comparison": {
+    "vsLastMonth": "vs {{amount}} à la même date le mois dernier",
+    "noLastMonth": "Aucune facture le mois dernier à la même date"
+  },
+  "trend": {
+    "title": "Chiffre d'affaires sur 12 mois",
+    "details": "Voir les rapports",
+    "empty": "Aucune facture sur les 12 derniers mois"
+  },
+  "aging": {
+    "title": "Reste à encaisser",
+    "viewAll": "Voir les factures",
+    "none": "Rien à encaisser : toutes les factures émises sont réglées",
+    "notDue": "Pas encore échu",
+    "days0to30": "En retard de 1 à 30 jours",
+    "days31to60": "En retard de 31 à 60 jours",
+    "daysOver60": "En retard de plus de 60 jours",
+    "overdueCount_one": "{{count}} facture en retard",
+    "overdueCount_other": "{{count}} factures en retard",
+    "nothingOverdue": "Aucune facture en retard"
   }
 }

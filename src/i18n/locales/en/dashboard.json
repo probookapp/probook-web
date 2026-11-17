@@ -49,9 +49,10 @@
   },
   "quickActions": {
     "title": "Quick Actions",
-    "newInvoice": "New Invoice",
-    "newQuote": "New Quote",
-    "newClient": "New Client"
+    "newInvoice": "New invoice",
+    "newQuote": "New quote",
+    "newClient": "New client",
+    "openTill": "Open the till"
   },
   "noData": "No data available",
   "gettingStarted": {
@@ -66,5 +67,30 @@
     "done": "done",
     "autoTick": "Ticks itself once it's done",
     "hide": "Hide"
+  },
+  "start": {
+    "title": "Your dashboard fills up as you work",
+    "body": "Add a client, then create your first quote or invoice: revenue, unpaid amounts and trends will show up here."
+  },
+  "comparison": {
+    "vsLastMonth": "vs {{amount}} at the same date last month",
+    "noLastMonth": "No invoices at the same date last month"
+  },
+  "trend": {
+    "title": "Revenue over 12 months",
+    "details": "View reports",
+    "empty": "No invoices in the last 12 months"
+  },
+  "aging": {
+    "title": "Still to collect",
+    "viewAll": "View invoices",
+    "none": "Nothing to collect: every issued invoice is paid",
+    "notDue": "Not yet due",
+    "days0to30": "1 to 30 days late",
+    "days31to60": "31 to 60 days late",
+    "daysOver60": "More than 60 days late",
+    "overdueCount_one": "{{count}} overdue invoice",
+    "overdueCount_other": "{{count}} overdue invoices",
+    "nothingOverdue": "No overdue invoices"
   }
 }
