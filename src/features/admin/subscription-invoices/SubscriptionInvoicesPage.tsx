@@ -44,6 +44,7 @@ import {
 } from "@/features/admin/components/BulkSelection";
 import { toast } from "@/stores/useToastStore";
 import { CURRENCY_CODES, REFERENCE_CURRENCY } from "@/lib/currencies";
+import { useFilterFromUrl } from "@/hooks/useFilterFromUrl";
 
 type Invoice = Record<string, unknown>;
 
@@ -75,6 +76,7 @@ export function SubscriptionInvoicesPage() {
   const { t } = useTranslation("admin");
   const superOnly = useSuperAdminOnly();
   const [statusFilter, setStatusFilter] = useState<string>("");
+  useFilterFromUrl("status", ["unpaid", "paid", "refunded"], setStatusFilter);
   const [markPaidModal, setMarkPaidModal] = useState<Invoice | null>(null);
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [createForm, setCreateForm] = useState(emptyCreate);

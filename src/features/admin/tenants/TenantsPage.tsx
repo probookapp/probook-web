@@ -5,6 +5,7 @@ import { useRouter, useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
 import { Search, Eye, Pause, Play, Trash2, Pencil, LogIn, Download } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-export";
+import { useFilterFromUrl } from "@/hooks/useFilterFromUrl";
 import { formatDate } from "@/lib/utils";
 import {
   Button,
@@ -72,6 +73,8 @@ export function TenantsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [trialFilter, setTrialFilter] = useState("");
+  useFilterFromUrl("status", ["active", "pending", "suspended", "expired"], setStatusFilter);
+  useFilterFromUrl("trial", ["active", "expired", "none"], setTrialFilter);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [editTenant, setEditTenant] = useState<Tenant | null>(null);
   const [editForm, setEditForm] = useState({ name: "", slug: "" });

@@ -40,6 +40,7 @@ import { useAdminPlans } from "@/features/admin/plans/hooks/usePlans";
 import { useAdminTenants } from "@/features/admin/tenants/hooks/useTenants";
 import { useSuperAdminOnly } from "@/features/admin/hooks/useSuperAdmin";
 import { MobileCard, MobileCardList } from "@/features/admin/components/MobileCard";
+import { useFilterFromUrl } from "@/hooks/useFilterFromUrl";
 
 type Subscription = Record<string, unknown>;
 type PlanPrice = { currency: string; monthly_price: number; yearly_price: number };
@@ -101,6 +102,7 @@ export function SubscriptionsPage() {
   const { t } = useTranslation("admin");
   const superOnly = useSuperAdminOnly();
   const [statusFilter, setStatusFilter] = useState("");
+  useFilterFromUrl("status", ["active", "pending", "expired", "suspended", "cancelled"], setStatusFilter);
   const [searchQuery, setSearchQuery] = useState("");
   const [renewConfirmId, setRenewConfirmId] = useState<string | null>(null);
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);

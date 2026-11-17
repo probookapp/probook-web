@@ -135,9 +135,19 @@
     "trials_ending_soon": "Essais finissant sous 7 jours",
     "trials_running": "Essais en cours",
     "trials_running_desc": "{{count}} se terminent sous 7 jours",
-    "trials_converted": "Essais convertis",
-    "trials_converted_desc": "Locataires ayant commencé un essai et désormais abonnés",
-    "subscriptions_by_plan": "Abonnements par forfait"
+    "subscriptions_by_plan": "Abonnements par forfait",
+    "vs_last_month": "vs {{count}} le mois dernier à la même date",
+    "trial_conversion": "Conversion des essais",
+    "trial_conversion_desc_one": "{{count}} essai devenu abonnement",
+    "trial_conversion_desc_other": "{{count}} essais devenus abonnements",
+    "churn": "Attrition sur 30 jours",
+    "churn_desc_one": "{{count}} abonnement perdu sur 30 jours",
+    "churn_desc_other": "{{count}} abonnements perdus sur 30 jours",
+    "show_all_plans": "Afficher les {{count}} forfaits",
+    "show_fewer_plans": "Afficher moins",
+    "range": "Période des graphiques",
+    "range_months_one": "{{count}} mois",
+    "range_months_other": "{{count}} mois"
   },
   "tenants": {
     "title": "Locataires",

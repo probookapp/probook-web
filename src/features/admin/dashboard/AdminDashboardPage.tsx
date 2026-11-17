@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "@/lib/navigation";
+import Link from "next/link";
+import { localizePath, useLocale, useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
 import {
   Building2,
@@ -14,6 +15,8 @@ import {
   Receipt,
   CalendarClock,
   Gift,
+  TrendingDown,
+  Percent,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, Badge, Input, Button, FitAmount } from "@/components/ui";
 import {
@@ -49,42 +52,84 @@ function formatMoneyByCurrency(entries: MoneyByCurrency): string {
     .join(" + ");
 }
 
+/**
+ * A platform figure that opens the rows behind it. The pastel disc behind each
+ * icon is gone, as on the tenant dashboard: it carried nothing, and repeated
+ * nine times it made the panel read as a template. The first figure, the
+ * recurring revenue, is set large.
+ */
 function StatCard({
   title,
   value,
   icon: Icon,
   description,
+  href,
+  featured,
 }: {
   title: string;
   value: string | number;
   icon: React.ElementType;
-  description?: string;
+  description?: React.ReactNode;
+  href?: string;
+  featured?: boolean;
 }) {
+  const locale = useLocale();
+  const body = (
+    <CardContent className={featured ? "py-6" : "py-4"}>
+      <p className="flex items-center gap-1.5 text-sm font-medium text-(--color-text-secondary)">
+        <Icon className="h-4 w-4 shrink-0 text-(--color-text-tertiary)" />
+        <span className="truncate">{title}</span>
+      </p>
+      <p
+        className={
+          featured
+            ? "mt-2 font-mono text-3xl font-semibold tabular-nums text-(--color-text-primary) sm:text-4xl"
+            : "mt-1.5 font-mono text-xl font-semibold tabular-nums text-(--color-text-primary)"
+        }
+      >
+        <FitAmount>{value}</FitAmount>
+      </p>
+      {description && <div className="mt-1 text-xs text-(--color-text-tertiary)">{description}</div>}
+    </CardContent>
+  );
+  if (!href) return <Card className="h-full">{body}</Card>;
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
-              {title}
-            </p>
-            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              <FitAmount>{value}</FitAmount>
-            </p>
-            {description && (
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {description}
-              </p>
-            )}
-          </div>
-          <div className="shrink-0 p-3 bg-primary-100 dark:bg-primary-900/30 rounded-full">
-            <Icon className="h-6 w-6 text-primary-600 dark:text-primary-400" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <Link
+      href={localizePath(href, locale)}
+      className="block h-full rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+    >
+      <Card className="h-full transition-colors hover:border-(--color-border-secondary)">{body}</Card>
+    </Link>
   );
 }
+
+/** "+12 %" against last month to date, coloured by direction. */
+function Change({ current, previous, label }: { current: number; previous: number; label: string }) {
+  if (previous <= 0) return null;
+  const change = Math.round(((current - previous) / previous) * 100);
+  const up = change >= 0;
+  return (
+    <span className="flex flex-wrap items-center gap-x-1">
+      <span className={up ? "font-medium text-green-700 dark:text-green-400" : "font-medium text-red-600 dark:text-red-400"}>
+        {`${up ? "+" : ""}${change} %`}
+      </span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+/** Ratio (0 to 1) as "34 %", or a dash when there is nothing to divide. */
+function formatRate(rate: unknown): string {
+  return typeof rate === "number"
+    ? new Intl.NumberFormat(getLocale(), { style: "percent", maximumFractionDigits: 1 }).format(rate)
+    : "-";
+}
+
+/** How many plans the "by plan" card lists before "show all". */
+const PLAN_ROWS_SHOWN = 8;
+
+/** Chart range presets, in months, ending with the current month. */
+const RANGE_PRESETS = [3, 6, 12, 24] as const;
 
 function BarChart({
   data,
@@ -119,7 +164,11 @@ function BarChart({
           const val = Number(entry[valueKey] || 0);
           const heightPct = Math.max((val / maxVal) * 100, 2);
           const displayVal = formatValue ? formatValue(val) : String(val);
-          const monthLabel = entry.month.slice(5); // "01", "02", etc.
+          // "janv.", "févr." in the app's language rather than "01", "02".
+          const [y, m] = entry.month.split("-").map(Number);
+          const monthLabel = new Intl.DateTimeFormat(getLocale(), { month: "short" })
+            .format(new Date(y, m - 1, 1))
+            .replace(".", "");
 
           // The bar's percentage height needs a parent with a height of its own:
           // set on a plain flex column it resolved to 0 px and every chart
@@ -210,15 +259,24 @@ export function AdminDashboardPage() {
   const router = useRouter();
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
+  const [allPlans, setAllPlans] = useState(false);
+  const [preset, setPreset] = useState<number | null>(12);
+  const applyPreset = (months: number) => {
+    const now = new Date();
+    const from = new Date(now.getFullYear(), now.getMonth() - months + 1, 1);
+    const iso = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    setPreset(months);
+    // Twelve months is the API's own default: no dates sent.
+    setStartDate(months === 12 ? "" : iso(from));
+    setEndDate(months === 12 ? "" : iso(now));
+  };
   const { data: overview, isLoading: overviewLoading } = useAdminOverview();
   const { data: signups } = useAdminSignups(startDate || undefined, endDate || undefined);
   const { data: revenue } = useAdminRevenue(startDate || undefined, endDate || undefined);
   const { data: subscriptionMix } = useAdminSubscriptionAnalytics();
 
-  const handleResetRange = () => {
-    setStartDate("");
-    setEndDate("");
-  };
+  const handleResetRange = () => applyPreset(12);
 
   if (overviewLoading) {
     return (
@@ -300,55 +358,79 @@ export function AdminDashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Stat Cards: the recurring revenue leads, the rest open their lists. */}
+      <div className="space-y-4">
         <StatCard
-          title={t("dashboard.total_tenants")}
-          value={Number(stats.total_tenants ?? 0)}
-          icon={Building2}
-        />
-        <StatCard
-          title={t("dashboard.active_tenants")}
-          value={Number(stats.active_tenants ?? 0)}
-          icon={Activity}
-        />
-        <StatCard
-          title={t("dashboard.total_users")}
-          value={Number(stats.total_users ?? 0)}
-          icon={Users}
-        />
-        <StatCard
+          featured
           title={t("dashboard.mrr")}
           value={formatMoneyByCurrency((stats.mrr as MoneyByCurrency) || [])}
           icon={TrendingUp}
           description={t("dashboard.mrr_desc")}
+          href="/admin/subscriptions?status=active"
         />
-        <StatCard
-          title={t("dashboard.total_revenue")}
-          value={formatMoneyByCurrency((stats.total_revenue as MoneyByCurrency) || [])}
-          icon={DollarSign}
-          description={t("dashboard.total_revenue_desc")}
-        />
-        <StatCard
-          title={t("dashboard.new_signups")}
-          value={Number(stats.new_signups_this_month ?? 0)}
-          icon={UserPlus}
-          description={t("dashboard.new_signups_desc")}
-        />
-        <StatCard
-          title={t("dashboard.trials_running")}
-          value={Number(stats.trials_running ?? 0)}
-          icon={Gift}
-          description={t("dashboard.trials_running_desc", {
-            count: Number(stats.trials_ending_soon ?? 0),
-          })}
-        />
-        <StatCard
-          title={t("dashboard.trials_converted")}
-          value={Number(stats.trials_converted ?? 0)}
-          icon={TrendingUp}
-          description={t("dashboard.trials_converted_desc")}
-        />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <StatCard
+            title={t("dashboard.total_tenants")}
+            value={Number(stats.total_tenants ?? 0)}
+            icon={Building2}
+            href="/admin/tenants"
+          />
+          <StatCard
+            title={t("dashboard.active_tenants")}
+            value={Number(stats.active_tenants ?? 0)}
+            icon={Activity}
+            href="/admin/tenants?status=active"
+          />
+          <StatCard
+            title={t("dashboard.total_users")}
+            value={Number(stats.total_users ?? 0)}
+            icon={Users}
+            href="/admin/users"
+          />
+          <StatCard
+            title={t("dashboard.total_revenue")}
+            value={formatMoneyByCurrency((stats.total_revenue as MoneyByCurrency) || [])}
+            icon={DollarSign}
+            description={t("dashboard.total_revenue_desc")}
+            href="/admin/subscription-invoices?status=paid"
+          />
+          <StatCard
+            title={t("dashboard.new_signups")}
+            value={Number(stats.new_signups_this_month ?? 0)}
+            icon={UserPlus}
+            description={
+              Number(stats.new_signups_last_month_to_date ?? 0) === 0 ? t("dashboard.new_signups_desc") : <Change
+                current={Number(stats.new_signups_this_month ?? 0)}
+                previous={Number(stats.new_signups_last_month_to_date ?? 0)}
+                label={t("dashboard.vs_last_month", { count: Number(stats.new_signups_last_month_to_date ?? 0) })}
+              />
+            }
+            href="/admin/tenants"
+          />
+          <StatCard
+            title={t("dashboard.trials_running")}
+            value={Number(stats.trials_running ?? 0)}
+            icon={Gift}
+            description={t("dashboard.trials_running_desc", {
+              count: Number(stats.trials_ending_soon ?? 0),
+            })}
+            href="/admin/tenants?trial=active"
+          />
+          <StatCard
+            title={t("dashboard.trial_conversion")}
+            value={formatRate(stats.trial_conversion_rate)}
+            icon={Percent}
+            description={t("dashboard.trial_conversion_desc", { count: Number(stats.trials_converted ?? 0) })}
+            href="/admin/tenants?trial=expired"
+          />
+          <StatCard
+            title={t("dashboard.churn")}
+            value={formatRate(stats.churn_rate_30d)}
+            icon={TrendingDown}
+            description={t("dashboard.churn_desc", { count: Number(stats.churned_last_30_days ?? 0) })}
+            href="/admin/subscriptions?status=cancelled"
+          />
+        </div>
       </div>
 
       {/* Subscription Breakdown */}
@@ -359,14 +441,19 @@ export function AdminDashboardPage() {
         <CardContent>
           <div className="flex flex-wrap gap-3">
             {Object.entries(breakdown).map(([status, count]) => (
-              <div key={status} className="flex items-center gap-2">
+              <button
+                key={status}
+                type="button"
+                onClick={() => router.push(`/admin/subscriptions?status=${status}`)}
+                className="flex min-h-10 items-center gap-2 rounded-md px-1.5 hover:bg-(--color-bg-secondary)"
+              >
                 <Badge variant={STATUS_COLORS[status] || "default"}>
                   {t(`dashboard.status_${status}`, status)}
                 </Badge>
                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {count}
                 </span>
-              </div>
+              </button>
             ))}
             {Object.keys(breakdown).length === 0 && (
               <p className="text-gray-500 dark:text-gray-400">
@@ -385,7 +472,7 @@ export function AdminDashboardPage() {
         <CardContent>
           {planRows.length > 0 ? (
             <div className="space-y-3">
-              {planRows.map((row) => (
+              {(allPlans ? planRows : planRows.slice(0, PLAN_ROWS_SHOWN)).map((row) => (
                 <div key={row.plan} className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium text-gray-900 dark:text-gray-100">{row.plan}</span>
                   <div className="flex flex-wrap items-center gap-2">
@@ -404,6 +491,17 @@ export function AdminDashboardPage() {
                   </div>
                 </div>
               ))}
+              {planRows.length > PLAN_ROWS_SHOWN && (
+                <button
+                  type="button"
+                  onClick={() => setAllPlans(!allPlans)}
+                  className="min-h-10 text-sm font-medium text-primary-600 hover:text-primary-700 dark:text-primary-400"
+                >
+                  {allPlans
+                    ? t("dashboard.show_fewer_plans")
+                    : t("dashboard.show_all_plans", { count: planRows.length })}
+                </button>
+              )}
             </div>
           ) : (
             <p className="text-gray-500 dark:text-gray-400">{t("dashboard.no_subscriptions")}</p>
@@ -411,26 +509,51 @@ export function AdminDashboardPage() {
         </CardContent>
       </Card>
 
-      {/* Date range for charts */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
+      {/* Date range for charts: presets first, exact dates when needed. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("dashboard.range")}>
+          {RANGE_PRESETS.map((months) => (
+            <Button
+              key={months}
+              size="sm"
+              variant={preset === months ? "primary" : "secondary"}
+              aria-pressed={preset === months}
+              onClick={() => applyPreset(months)}
+            >
+              {t("dashboard.range_months", { count: months })}
+            </Button>
+          ))}
+        </div>
+        {/* The field sits in its own box: Input fills its parent, so two
+            bare fields each took a whole row. */}
+        <div className="w-full sm:w-44">
         <Input
           name="analytics-start-date"
           type="date"
           label={t("dashboard.from")}
           value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="w-full sm:w-44"
+          onChange={(e) => {
+            setStartDate(e.target.value);
+            setPreset(null);
+          }}
         />
+        </div>
+        {/* The field sits in its own box: Input fills its parent, so two
+            bare fields each took a whole row. */}
+        <div className="w-full sm:w-44">
         <Input
           name="analytics-end-date"
           type="date"
           label={t("dashboard.to")}
           value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="w-full sm:w-44"
+          onChange={(e) => {
+            setEndDate(e.target.value);
+            setPreset(null);
+          }}
         />
-        {(startDate || endDate) && (
-          <Button variant="secondary" size="sm" onClick={handleResetRange}>
+        </div>
+        {preset === null && (
+          <Button variant="ghost" size="sm" onClick={handleResetRange}>
             {t("dashboard.reset")}
           </Button>
         )}

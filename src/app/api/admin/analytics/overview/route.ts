@@ -9,6 +9,16 @@ export const GET = withPlatformAdmin(async () => {
   // Run all counts in parallel
   // "Soon" for the attention list: a week out.
   const inSevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  // Last month up to today's day, so signups on the 10th are not compared
+  // with a whole month.
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const sameDayLastMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() - 1,
+    Math.min(now.getDate(), new Date(now.getFullYear(), now.getMonth(), 0).getDate()),
+    23, 59, 59, 999
+  );
 
   const [
     totalTenants,
@@ -25,6 +35,9 @@ export const GET = withPlatformAdmin(async () => {
     pendingRequests,
     unpaidInvoices,
     subscriptionsExpiringSoon,
+    signupsLastMonthToDate,
+    trialsConcluded,
+    churnedLast30Days,
   ] = await Promise.all([
     prisma.tenant.count(),
     prisma.tenant.count({ where: { status: "active" } }),
@@ -62,6 +75,25 @@ export const GET = withPlatformAdmin(async () => {
     prisma.subscriptionInvoice.count({ where: { status: "unpaid" } }),
     prisma.subscription.count({
       where: { status: "active", currentPeriodEnd: { gt: now, lte: inSevenDays } },
+    }),
+    prisma.tenant.count({
+      where: { createdAt: { gte: startOfLastMonth, lte: sameDayLastMonth } },
+    }),
+    // Trials with an outcome: ended, or turned into a subscription early.
+    prisma.tenant.count({
+      where: {
+        trialStartedAt: { not: null },
+        OR: [{ trialEndsAt: { lte: now } }, { subscriptions: { some: {} } }],
+      },
+    }),
+    // Subscriptions lost in the last 30 days: cancelled, or expired unrenewed.
+    prisma.subscription.count({
+      where: {
+        OR: [
+          { status: "cancelled", cancelledAt: { gte: thirtyDaysAgo } },
+          { status: "expired", currentPeriodEnd: { gte: thirtyDaysAgo, lte: now } },
+        ],
+      },
     }),
   ]);
 
@@ -113,6 +145,15 @@ export const GET = withPlatformAdmin(async () => {
     trials_running: trialsRunning,
     trials_ending_soon: trialsEndingSoon,
     trials_converted: trialsConverted,
+    // Share of trials with an outcome that became a subscription (0 to 1).
+    trial_conversion_rate: trialsConcluded > 0 ? trialsConverted / trialsConcluded : null,
+    new_signups_last_month_to_date: signupsLastMonthToDate,
+    // Lost in 30 days over active now plus lost (0 to 1).
+    churn_rate_30d:
+      activeSubscriptions.length + churnedLast30Days > 0
+        ? churnedLast30Days / (activeSubscriptions.length + churnedLast30Days)
+        : null,
+    churned_last_30_days: churnedLast30Days,
     needs_attention: {
       pending_requests: pendingRequests,
       unpaid_invoices: unpaidInvoices,

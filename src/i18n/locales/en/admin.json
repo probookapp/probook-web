@@ -135,9 +135,19 @@
     "trials_ending_soon": "Trials ending in 7 days",
     "trials_running": "Trials running",
     "trials_running_desc": "{{count}} ending within 7 days",
-    "trials_converted": "Trials converted",
-    "trials_converted_desc": "Tenants that started a trial and now have a subscription",
-    "subscriptions_by_plan": "Subscriptions by plan"
+    "subscriptions_by_plan": "Subscriptions by plan",
+    "vs_last_month": "vs {{count}} last month at the same date",
+    "trial_conversion": "Trial conversion",
+    "trial_conversion_desc_one": "{{count}} trial became a subscription",
+    "trial_conversion_desc_other": "{{count}} trials became subscriptions",
+    "churn": "30-day churn",
+    "churn_desc_one": "{{count}} subscription lost in 30 days",
+    "churn_desc_other": "{{count}} subscriptions lost in 30 days",
+    "show_all_plans": "Show all {{count}} plans",
+    "show_fewer_plans": "Show fewer",
+    "range": "Chart period",
+    "range_months_one": "{{count}} month",
+    "range_months_other": "{{count}} months"
   },
   "tenants": {
     "title": "Tenants",
