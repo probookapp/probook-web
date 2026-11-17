@@ -39,6 +39,7 @@ import { useEntitlements } from "@/hooks/useEntitlements";
 import { runGuarded } from "@/hooks/useUnsavedChangesGuard";
 import { FEATURE_KEYS, type FeatureKey } from "@/lib/feature-keys";
 import { translatedName } from "@/lib/translated-name";
+import { useSectionTitle } from "@/hooks/useSectionTitle";
 
 /** The key of the rail in the account's saved preferences — keep it stable. */
 const SIDEBAR_PREFS_KEY = "sidebar";
@@ -128,6 +129,7 @@ export function Sidebar({ onClose }: SidebarProps) {
   const isHidden = (item: { href: string; hideable?: boolean }) =>
     item.hideable !== false && hiddenKeys.has(navKey(item));
   const isActiveItem = (item: { href: string }) => pathname.startsWith(`/${locale}${item.href}`);
+  useSectionTitle(navigation.find(isActiveItem)?.name);
   // The page on screen keeps its entry while you are on it: a rail with no
   // lit row reads as "where am I", not as "I hid this".
   const filteredNavigation = includedNavigation.filter((item) => !isHidden(item) || isActiveItem(item));

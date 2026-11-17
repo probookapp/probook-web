@@ -35,9 +35,12 @@ const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://probookapp.net";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
+  // The language-specific default and the "| Probook" template live in the
+  // [locale] layout. A template here as well would wrap its default a second
+  // time ("... | Probook | Probook").
   title: {
-    default: "Probook — Invoicing & Business Management",
-    template: "%s | Probook",
+    default: "Probook",
+    template: "%s",
   },
   description: "Professional invoicing and business management software for modern businesses.",
   applicationName: "Probook",
