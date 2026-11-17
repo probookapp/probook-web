@@ -35,7 +35,6 @@ export function AuthShell({ children, subtitle }: AuthShellProps) {
     if (next === locale) return;
     // A full load, as on the public pages: the metadata is rendered per
     // language on the server.
-    // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.href = pathname.replace(`/${locale}`, `/${next}`) + window.location.search;
   };
 
