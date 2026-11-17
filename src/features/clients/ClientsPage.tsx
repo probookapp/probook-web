@@ -146,6 +146,18 @@ export function ClientsPage() {
     setIsModalOpen(true);
   };
 
+  // "?new=1" (the dashboard's "New client" shortcut) opens the form at once.
+  // Read once and dropped from the address, so a reload does not reopen it.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("new") !== "1") return;
+    params.delete("new");
+    const query = params.toString();
+    window.history.replaceState(window.history.state, "", window.location.pathname + (query ? `?${query}` : ""));
+    if (canCreate) handleOpenModal();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleCloseModal = () => {
     setSelectedClient(undefined);
     setIsModalOpen(false);
