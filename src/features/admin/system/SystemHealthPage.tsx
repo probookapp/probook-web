@@ -1,6 +1,7 @@
 "use client";
 
 import { useTranslation } from "react-i18next";
+import { formatDateTime } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import {
   Database,
@@ -214,7 +215,7 @@ export function SystemHealthPage() {
                     </p>
                   </div>
                   <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap shrink-0">
-                    {log.created_at ? new Date(String(log.created_at)).toLocaleString() : "-"}
+                    {log.created_at ? formatDateTime(String(log.created_at)) : "-"}
                   </span>
                 </li>
               ))}

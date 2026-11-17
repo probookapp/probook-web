@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { formatDate, getLocale } from "@/lib/utils";
 import { Search, RefreshCw, XCircle, Pencil, Download, Plus } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-export";
 import {
@@ -371,7 +372,7 @@ export function SubscriptionsPage() {
                     value: (
                       <span className="font-semibold tabular-nums">
                         {priceOf(sub) != null
-                          ? (Number(priceOf(sub)) / 100).toLocaleString() + " " + String(sub.currency || "")
+                          ? (Number(priceOf(sub)) / 100).toLocaleString(getLocale()) +" " + String(sub.currency || "")
                           : "-"}
                       </span>
                     ),
@@ -381,7 +382,7 @@ export function SubscriptionsPage() {
                     label: t("subscriptions.period"),
                     value:
                       periodStartOf(sub) && periodEndOf(sub)
-                        ? `${new Date(String(periodStartOf(sub))).toLocaleDateString()} - ${new Date(String(periodEndOf(sub))).toLocaleDateString()}`
+                        ? `${formatDate(String(periodStartOf(sub)))} - ${formatDate(String(periodEndOf(sub)))}`
                         : "-",
                   },
                 ]}
@@ -439,14 +440,14 @@ export function SubscriptionsPage() {
                       {columns.show("period") && (
                         <TableCell className="text-gray-600 dark:text-gray-400">
                           {periodStartOf(sub) && periodEndOf(sub)
-                            ? `${new Date(String(periodStartOf(sub))).toLocaleDateString()} - ${new Date(String(periodEndOf(sub))).toLocaleDateString()}`
+                            ? `${formatDate(String(periodStartOf(sub)))} - ${formatDate(String(periodEndOf(sub)))}`
                             : "-"}
                         </TableCell>
                       )}
                       {columns.show("price") && (
                         <TableCell className="text-gray-600 dark:text-gray-400">
                           {priceOf(sub) != null
-                            ? (Number(priceOf(sub)) / 100).toLocaleString() + " " + String(sub.currency || "")
+                            ? (Number(priceOf(sub)) / 100).toLocaleString(getLocale()) +" " + String(sub.currency || "")
                             : "-"}
                         </TableCell>
                       )}
@@ -532,7 +533,7 @@ export function SubscriptionsPage() {
             label={t("subscriptions.priceOverride")}
             placeholder={
               createListPrice != null
-                ? `${createListPrice.toLocaleString()} ${createForm.currency || ""}`.trim()
+                ? `${createListPrice.toLocaleString(getLocale())} ${createForm.currency || ""}`.trim()
                 : undefined
             }
             value={createForm.price}

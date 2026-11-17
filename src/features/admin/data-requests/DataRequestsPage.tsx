@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatDate } from "@/lib/utils";
 import { Plus, Download, Check, X, Trash2 } from "lucide-react";
 import {
   Button,
@@ -263,13 +264,13 @@ export function DataRequestsPage() {
                     {
                       label: t("data_requests.created"),
                       value: dr.created_at
-                        ? new Date(String(dr.created_at)).toLocaleDateString()
+                        ? formatDate(String(dr.created_at))
                         : "-",
                     },
                     {
                       label: t("data_requests.completed"),
                       value: dr.completed_at
-                        ? new Date(String(dr.completed_at)).toLocaleDateString()
+                        ? formatDate(String(dr.completed_at))
                         : "-",
                     },
                   ]}
@@ -321,14 +322,14 @@ export function DataRequestsPage() {
                       {columns.show("created") && (
                         <TableCell className="text-gray-600 dark:text-gray-400">
                           {dr.created_at
-                            ? new Date(String(dr.created_at)).toLocaleDateString()
+                            ? formatDate(String(dr.created_at))
                             : "-"}
                         </TableCell>
                       )}
                       {columns.show("completed") && (
                         <TableCell className="text-gray-600 dark:text-gray-400">
                           {dr.completed_at
-                            ? new Date(String(dr.completed_at)).toLocaleDateString()
+                            ? formatDate(String(dr.completed_at))
                             : "-"}
                         </TableCell>
                       )}

@@ -21,7 +21,7 @@ import {
   ListCard,
   type RowAction,
 } from "@/components/ui";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { useTableColumns } from "@/hooks/useTableColumns";
 import { isApiError } from "@/lib/api-adapter";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
@@ -319,7 +319,7 @@ export function LocationsPage() {
                           <>
                             {transfer.transfer_number}
                             {" · "}
-                            {transfer.created_at ? new Date(transfer.created_at).toLocaleDateString() : "-"}
+                            {formatDate(transfer.created_at)}
                           </>
                         }
                         amount={
@@ -362,9 +362,7 @@ export function LocationsPage() {
                             {transfer.to_location?.name ?? "-"}
                           </TableCell>
                           <TableCell className="text-gray-600 dark:text-gray-400">
-                            {transfer.created_at
-                              ? new Date(transfer.created_at).toLocaleDateString()
-                              : "-"}
+                            {formatDate(transfer.created_at)}
                           </TableCell>
                           <TableCell className="text-gray-600 dark:text-gray-400">
                             {transfer.lines?.length ?? 0}

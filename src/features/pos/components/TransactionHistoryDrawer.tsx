@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X, Ban, ChevronDown, ChevronUp, Printer, Undo2 } from "lucide-react";
 import { RefundModal } from "./RefundModal";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatReceiptDateTime, formatTime } from "@/lib/utils";
 import {
   useSessionTransactions,
   useCancelTransaction,
@@ -34,10 +34,7 @@ function TransactionRow({ tx, companyName, currency, sessionId }: { tx: PosTrans
   const canVoid = useAuthStore((s) => s.hasPermission("pos", "delete"));
 
   const isCancelled = tx.status === "CANCELLED";
-  const time = new Date(tx.transaction_date).toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  const time = formatTime(tx.transaction_date);
 
   const handleCancel = async () => {
     if (isDemoMode) { showSubscribePrompt(); return; }
@@ -57,7 +54,7 @@ function TransactionRow({ tx, companyName, currency, sessionId }: { tx: PosTrans
     const receiptData: ReceiptData = {
       companyName,
       ticketNumber: tx.ticket_number,
-      date: new Date(tx.transaction_date).toLocaleString(),
+      date: formatReceiptDateTime(tx.transaction_date),
       // A pack prints as one item with its components listed under it.
       items: tx.lines
         .filter((line) => !(line.bundle_key && !line.is_bundle_header))

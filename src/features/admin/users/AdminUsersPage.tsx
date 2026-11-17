@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { formatDate } from "@/lib/utils";
 import { Search, Power, KeyRound, Download } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-export";
 import {
@@ -251,7 +252,7 @@ export function AdminUsersPage() {
                       {columns.show("created") && (
                         <TableCell className="text-gray-600 dark:text-gray-400">
                           {user.created_at
-                            ? new Date(String(user.created_at)).toLocaleDateString()
+                            ? formatDate(String(user.created_at))
                             : "-"}
                         </TableCell>
                       )}

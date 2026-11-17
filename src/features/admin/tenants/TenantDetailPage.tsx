@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
+import { formatDate, formatDateTime, getLocale } from "@/lib/utils";
 import { ArrowLeft, Pause, Play, Trash2, Gift, CalendarX, Power, KeyRound } from "lucide-react";
 import {
   Button,
@@ -252,11 +253,11 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
               <InfoField label={t("tenants.detail.status")} value={String(tenant.status || "-")} />
               <InfoField
                 label={t("tenants.detail.created")}
-                value={tenant.created_at ? new Date(String(tenant.created_at)).toLocaleString() : "-"}
+                value={tenant.created_at ? formatDateTime(String(tenant.created_at)) : "-"}
               />
               <InfoField
                 label={t("tenants.detail.lastActive")}
-                value={tenant.last_active_at ? new Date(String(tenant.last_active_at)).toLocaleString() : "-"}
+                value={tenant.last_active_at ? formatDateTime(String(tenant.last_active_at)) : "-"}
               />
               <InfoField label={t("tenants.detail.userCount")} value={String(tenant.user_count ?? tenant.users_count ?? "-")} />
               <div>
@@ -264,7 +265,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                 {trialEndsAt ? (
                   <p className="font-medium text-gray-900 dark:text-gray-100">
                     <Badge variant={trialActive ? "success" : "default"}>
-                      {trialActive ? t("tenants.trial.activeUntil", { date: trialEndsAt.toLocaleDateString() }) : t("tenants.trial.ended", { date: trialEndsAt.toLocaleDateString() })}
+                      {trialActive ? t("tenants.trial.activeUntil", { date: formatDate(trialEndsAt.toISOString()) }) : t("tenants.trial.ended", { date: formatDate(trialEndsAt.toISOString()) })}
                     </Badge>
                   </p>
                 ) : (
@@ -303,7 +304,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                   label={t("tenants.detail.price")}
                   value={
                     subscription.price_at_purchase != null
-                      ? (Number(subscription.price_at_purchase) / 100).toLocaleString() +
+                      ? (Number(subscription.price_at_purchase) / 100).toLocaleString(getLocale()) +
                         " " +
                         String(subscription.currency || "")
                       : "-"
@@ -313,7 +314,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                   label={t("tenants.detail.periodStart")}
                   value={
                     subscription.current_period_start
-                      ? new Date(String(subscription.current_period_start)).toLocaleDateString()
+                      ? formatDate(String(subscription.current_period_start))
                       : "-"
                   }
                 />
@@ -321,13 +322,13 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                   label={t("tenants.detail.periodEnd")}
                   value={
                     subscription.current_period_end
-                      ? new Date(String(subscription.current_period_end)).toLocaleDateString()
+                      ? formatDate(String(subscription.current_period_end))
                       : "-"
                   }
                 />
                 <InfoField
                   label={t("tenants.detail.created")}
-                  value={subscription.created_at ? new Date(String(subscription.created_at)).toLocaleString() : "-"}
+                  value={subscription.created_at ? formatDateTime(String(subscription.created_at)) : "-"}
                 />
               </div>
             ) : (
@@ -352,7 +353,7 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                       </span>
                       <span className="text-gray-500 dark:text-gray-400">
                         {sub.current_period_start && sub.current_period_end
-                          ? `${new Date(String(sub.current_period_start)).toLocaleDateString()} – ${new Date(String(sub.current_period_end)).toLocaleDateString()}`
+                          ? `${formatDate(String(sub.current_period_start))} – ${formatDate(String(sub.current_period_end))}`
                           : "-"}
                       </span>
                       <Badge variant={getStatusVariant(String(sub.status || ""))}>
@@ -387,11 +388,11 @@ export function TenantDetailPage({ tenantId }: { tenantId: string }) {
                     </span>
                     <span className="text-gray-500 dark:text-gray-400">
                       {invoice.period_start && invoice.period_end
-                        ? `${new Date(String(invoice.period_start)).toLocaleDateString()} – ${new Date(String(invoice.period_end)).toLocaleDateString()}`
+                        ? `${formatDate(String(invoice.period_start))} – ${formatDate(String(invoice.period_end))}`
                         : "-"}
                     </span>
                     <span className="text-gray-900 dark:text-gray-100">
-                      {(Number(invoice.amount || 0) / 100).toLocaleString()}{" "}
+                      {(Number(invoice.amount || 0) / 100).toLocaleString(getLocale())}{" "}
                       {String(invoice.currency || "")}
                     </span>
                     <Badge

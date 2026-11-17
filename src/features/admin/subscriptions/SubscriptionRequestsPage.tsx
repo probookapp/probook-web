@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
+import { formatDate } from "@/lib/utils";
 import { Check, X, Search, Download } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-export";
 import {
@@ -310,7 +311,7 @@ export function SubscriptionRequestsPage() {
                 fields={[
                   {
                     label: t("subscriptionRequests.created"),
-                    value: req.created_at ? new Date(String(req.created_at)).toLocaleDateString() : "-",
+                    value: req.created_at ? formatDate(String(req.created_at)) : "-",
                   },
                 ]}
                 onActivate={req.tenant_id ? () => router.push(`/admin/tenants/${req.tenant_id}`) : undefined}
@@ -410,7 +411,7 @@ export function SubscriptionRequestsPage() {
                       {columns.show("created") && (
                         <TableCell className="text-gray-600 dark:text-gray-400">
                           {req.created_at
-                            ? new Date(String(req.created_at)).toLocaleDateString()
+                            ? formatDate(String(req.created_at))
                             : "-"}
                         </TableCell>
                       )}

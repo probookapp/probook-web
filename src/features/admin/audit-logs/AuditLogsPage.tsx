@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatDateTime } from "@/lib/utils";
 import { ChevronLeft, ChevronRight, Download } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-export";
 import {
@@ -187,7 +188,7 @@ export function AuditLogsPage() {
                 badges={
                   <span className="text-xs text-gray-500 dark:text-gray-400">
                     {log.created_at || log.timestamp
-                      ? new Date(String(log.created_at || log.timestamp)).toLocaleString()
+                      ? formatDateTime(String(log.created_at || log.timestamp))
                       : "-"}
                   </span>
                 }
@@ -226,7 +227,7 @@ export function AuditLogsPage() {
                     <TableRow key={String(log.id || idx)}>
                       <TableCell className="text-gray-600 dark:text-gray-400 whitespace-nowrap">
                         {log.created_at || log.timestamp
-                          ? new Date(String(log.created_at || log.timestamp)).toLocaleString()
+                          ? formatDateTime(String(log.created_at || log.timestamp))
                           : "-"}
                       </TableCell>
                       {columns.show("actor") && (

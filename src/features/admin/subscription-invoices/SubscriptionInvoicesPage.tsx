@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { useTranslation } from "react-i18next";
+import { formatDate, getLocale } from "@/lib/utils";
 import { CheckCircle, Plus, Pencil, RotateCcw, Download } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-export";
 import {
@@ -61,18 +62,13 @@ const emptyCreate = {
 
 function formatAmount(amount: number, currency: string): string {
   return (
-    (amount / 100).toLocaleString(undefined, {
+    (amount / 100).toLocaleString(getLocale(), {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }) +
     " " +
     currency
   );
-}
-
-function formatDate(dateStr: string | null | undefined): string {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString();
 }
 
 export function SubscriptionInvoicesPage() {

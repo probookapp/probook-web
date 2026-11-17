@@ -42,6 +42,55 @@ export function formatDate(date: string | null | undefined): string {
   return formatted.replace(/[\u200E\u200F\u202A-\u202E]/g, "");
 }
 
+/** A date with its time (day/month/year hour:minute) in the app's language. */
+/** Intl adds direction marks around Arabic dates; they break copy and print. */
+const DIRECTION_MARKS = /[‎‏‪-‮]/g;
+
+/**
+ * Date and time in the app's language. Always a 24-hour clock: a business
+ * ledger reads "14:05" in every language, and the Arabic "م"/"ص" markers do not
+ * survive a thermal printer.
+ */
+export function formatDateTime(date: string | number | Date | null | undefined): string {
+  if (date === null || date === undefined || date === "") return "-";
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  const formatted = new Intl.DateTimeFormat(getLocale(), {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(parsed);
+  return formatted.replace(DIRECTION_MARKS, "");
+}
+
+/** Hour and minute in the app's language, 24-hour clock. */
+export function formatTime(date: string | number | Date | null | undefined): string {
+  if (date === null || date === undefined || date === "") return "-";
+  const parsed = new Date(date);
+  if (Number.isNaN(parsed.getTime())) return "-";
+  return new Intl.DateTimeFormat(getLocale(), {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  })
+    .format(parsed)
+    .replace(DIRECTION_MARKS, "");
+}
+
+/**
+ * "17/11/2026 14:05" in plain ASCII, whatever the language: receipts go to
+ * ESC/POS printers as raw bytes, and a localized date (an Arabic comma, a
+ * narrow no-break space) prints as garbage there.
+ */
+export function formatReceiptDateTime(date: string | number | Date): string {
+  const d = new Date(date);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function formatDateISO(date: Date): string {
   return date.toISOString().split("T")[0];
 }

@@ -37,7 +37,7 @@ import { lookupBarcodeOffline } from "@/lib/offline-barcode";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { locationsApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatReceiptDateTime } from "@/lib/utils";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { DEFAULT_CURRENCY } from "@/lib/currencies";
 import { expandEditorLines, tillLineAmounts } from "@/lib/bundles";
@@ -253,7 +253,7 @@ export function POSPage() {
     return {
       companyName: companySettings?.company_name || "Probook",
       ticketNumber: currentSession?.id.slice(0, 8) || "",
-      date: new Date().toLocaleString(),
+      date: formatReceiptDateTime(new Date()),
       items: items.map((item) => {
         // A pack is valued through its components, each at its own rate.
         const { ht, vat } = tillLineAmounts(item, currency);

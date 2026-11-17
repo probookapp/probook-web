@@ -7,7 +7,7 @@ import {
   useActiveSession,
 } from "@/features/pos/hooks/usePosSession";
 import type { PurchaseOrder, ConfirmPurchaseOrderInput } from "@/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatDateTime } from "@/lib/utils";
 
 interface PurchaseConfirmModalProps {
   open: boolean;
@@ -224,7 +224,7 @@ export function PurchaseConfirmModal({
                   {t("confirmModal.activeSession")}
                 </p>
                 <p className="text-green-600 dark:text-green-400 text-xs mt-1">
-                  {t("confirmModal.openedAt")}: {new Date(activeSession.opened_at).toLocaleString()}
+                  {t("confirmModal.openedAt")}: {formatDateTime(activeSession.opened_at)}
                 </p>
               </div>
             )}

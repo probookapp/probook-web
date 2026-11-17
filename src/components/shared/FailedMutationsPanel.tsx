@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import { formatDateTime } from "@/lib/utils";
 import { AlertTriangle, RefreshCw, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import {
   getPendingMutations,
@@ -109,7 +110,7 @@ export function FailedMutationsPanel() {
                   {mutation.label || mutation.command.replace(/_/g, " ")}
                 </p>
                 <p className="text-gray-500 dark:text-gray-400">
-                  {new Date(mutation.queuedAt).toLocaleString()} &middot;{" "}
+                  {formatDateTime(mutation.queuedAt)} &middot;{" "}
                   {t("offline.retries", { count: mutation.retryCount })}
                 </p>
                 {mutation.error && (

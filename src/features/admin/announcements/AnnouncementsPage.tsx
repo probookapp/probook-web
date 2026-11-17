@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, Download } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-export";
+import { formatDate } from "@/lib/utils";
 import {
   Button,
   Card,
@@ -244,12 +245,12 @@ export function AnnouncementsPage() {
                   {
                     label: t("announcements.published"),
                     value: a.published_at
-                      ? new Date(String(a.published_at)).toLocaleDateString()
+                      ? formatDate(String(a.published_at))
                       : "-",
                   },
                   {
                     label: t("announcements.expires"),
-                    value: a.expires_at ? new Date(String(a.expires_at)).toLocaleDateString() : "-",
+                    value: a.expires_at ? formatDate(String(a.expires_at)) : "-",
                   },
                   {
                     label: t("announcements.dismissals"),
@@ -294,14 +295,14 @@ export function AnnouncementsPage() {
                     {columns.show("published") && (
                       <TableCell className="text-gray-600 dark:text-gray-400">
                         {a.published_at
-                          ? new Date(String(a.published_at)).toLocaleDateString()
+                          ? formatDate(String(a.published_at))
                           : "-"}
                       </TableCell>
                     )}
                     {columns.show("expires") && (
                       <TableCell className="text-gray-600 dark:text-gray-400">
                         {a.expires_at
-                          ? new Date(String(a.expires_at)).toLocaleDateString()
+                          ? formatDate(String(a.expires_at))
                           : "-"}
                       </TableCell>
                     )}

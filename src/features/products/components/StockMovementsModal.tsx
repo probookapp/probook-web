@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { ArrowDown, ArrowUp } from "lucide-react";
 import { Modal, Badge } from "@/components/ui";
+import { formatDateTime } from "@/lib/utils";
 import { useProductMovements } from "../hooks/useStock";
 import type { Product, StockMovementType } from "@/types";
 
@@ -59,7 +60,7 @@ export function StockMovementsModal({ isOpen, onClose, product }: StockMovements
                     )}
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                    {new Date(m.created_at).toLocaleString()}
+                    {formatDateTime(m.created_at)}
                     {m.reason ? ` · ${m.reason}` : ""}
                   </p>
                 </div>

@@ -5,6 +5,7 @@ import { useRouter, useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
 import { Search, Eye, Pause, Play, Trash2, Pencil, LogIn, Download } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-export";
+import { formatDate } from "@/lib/utils";
 import {
   Button,
   Card,
@@ -306,7 +307,7 @@ export function TenantsPage() {
                   {
                     label: t("tenants.lastActive"),
                     value: tenant.last_active_at
-                      ? new Date(String(tenant.last_active_at)).toLocaleDateString()
+                      ? formatDate(String(tenant.last_active_at))
                       : "-",
                   },
                   {
@@ -314,7 +315,7 @@ export function TenantsPage() {
                     value:
                       trialStateOf(tenant) === "none" ? null : (
                         <Badge variant={trialStateOf(tenant) === "active" ? "success" : "default"}>
-                          {new Date(String(tenant.trial_ends_at)).toLocaleDateString()}
+                          {formatDate(String(tenant.trial_ends_at))}
                         </Badge>
                       ),
                   },
@@ -373,7 +374,7 @@ export function TenantsPage() {
                             <span className="text-gray-400 dark:text-gray-500">-</span>
                           ) : (
                             <Badge variant={trialStateOf(tenant) === "active" ? "success" : "default"}>
-                              {new Date(String(tenant.trial_ends_at)).toLocaleDateString()}
+                              {formatDate(String(tenant.trial_ends_at))}
                             </Badge>
                           )}
                         </TableCell>
@@ -386,14 +387,14 @@ export function TenantsPage() {
                       {columns.show("lastActive") && (
                         <TableCell className="text-gray-600 dark:text-gray-400">
                           {tenant.last_active_at
-                            ? new Date(String(tenant.last_active_at)).toLocaleDateString()
+                            ? formatDate(String(tenant.last_active_at))
                             : "-"}
                         </TableCell>
                       )}
                       {columns.show("created") && (
                         <TableCell className="text-gray-600 dark:text-gray-400">
                           {tenant.created_at
-                            ? new Date(String(tenant.created_at)).toLocaleDateString()
+                            ? formatDate(String(tenant.created_at))
                             : "-"}
                         </TableCell>
                       )}

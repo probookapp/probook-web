@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { getLocale } from "@/lib/utils";
 import { Plus, Pencil, Archive, ArchiveRestore, Trash2, Download } from "lucide-react";
 import {
   Button,
@@ -72,7 +73,7 @@ const emptyForm: PlanFormState = {
 };
 
 function formatPrice(amount: number, currency: string): string {
-  return (amount / 100).toLocaleString(undefined, {
+  return (amount / 100).toLocaleString(getLocale(), {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }) + " " + currency;
@@ -432,7 +433,7 @@ export function PlansPage() {
                       <div key={q.quota_key} className="flex justify-between text-sm">
                         <span className="text-gray-500 dark:text-gray-400">{getQuotaLabel(q.quota_key)}</span>
                         <span className="font-medium text-gray-900 dark:text-gray-100">
-                          {q.limit_value.toLocaleString()}
+                          {q.limit_value.toLocaleString(getLocale())}
                         </span>
                       </div>
                     );

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatDate, getLocale } from "@/lib/utils";
 import { Plus, Pencil, Trash2, Download } from "lucide-react";
 import { exportToCsv } from "@/lib/csv-export";
 import {
@@ -70,7 +71,7 @@ function formatDiscountValue(
     return `${value}%`;
   }
   return (
-    (value / 100).toLocaleString(undefined, {
+    (value / 100).toLocaleString(getLocale(), {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     }) +
@@ -306,7 +307,7 @@ export function CouponsPage() {
                     {
                       label: t("coupons.expires"),
                       value: coupon.expires_at
-                        ? new Date(String(coupon.expires_at)).toLocaleDateString()
+                        ? formatDate(String(coupon.expires_at))
                         : t("coupons.never"),
                     },
                     {
@@ -377,9 +378,7 @@ export function CouponsPage() {
                       {columns.show("expires") && (
                         <TableCell>
                           {coupon.expires_at
-                            ? new Date(
-                                String(coupon.expires_at)
-                              ).toLocaleDateString()
+                            ? formatDate(String(coupon.expires_at))
                             : t("coupons.never")}
                         </TableCell>
                       )}

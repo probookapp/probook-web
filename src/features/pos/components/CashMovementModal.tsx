@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 import { Modal, ModalFooter, useModalDirty } from "@/components/ui";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatTime } from "@/lib/utils";
 import { useSettingsStore } from "@/stores/useSettingsStore";
 import {
   useCreateCashMovement,
@@ -197,10 +197,7 @@ function CashMovementForm({
           <div className="space-y-1 max-h-40 overflow-auto">
             {movements.map((m) => {
               const isIn = m.movement_type === "IN";
-              const time = new Date(m.created_at).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              });
+              const time = formatTime(m.created_at);
               return (
                 <div
                   key={m.id}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatDate } from "@/lib/utils";
 import { Plus, Pencil, Trash2, Download } from "lucide-react";
 import {
   Button,
@@ -253,7 +254,7 @@ export function PlatformAdminsPage() {
                   {
                     label: t("platformAdmins.created"),
                     value: admin.created_at
-                      ? new Date(String(admin.created_at)).toLocaleDateString()
+                      ? formatDate(String(admin.created_at))
                       : "-",
                   },
                 ]}
@@ -310,7 +311,7 @@ export function PlatformAdminsPage() {
                     {columns.show("created") && (
                       <TableCell className="text-gray-600 dark:text-gray-400">
                         {admin.created_at
-                          ? new Date(String(admin.created_at)).toLocaleDateString()
+                          ? formatDate(String(admin.created_at))
                           : "-"}
                       </TableCell>
                     )}
