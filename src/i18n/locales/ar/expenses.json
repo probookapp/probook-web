@@ -18,7 +18,10 @@
     "notes": "ملاحظات",
     "category": "بند المصروف",
     "categoryPlaceholder": "مثال: الوقود",
-    "categoryHint": "اختر بندًا موجودًا أو اكتب بندًا جديدًا: سيتم إنشاؤه عند الحفظ."
+    "categoryHint": "اختر بندًا موجودًا أو اكتب بندًا جديدًا: سيتم إنشاؤه عند الحفظ.",
+    "paymentMethod": "طريقة الدفع",
+    "paymentMethodUnknown": "غير محددة",
+    "author": "سجّلها"
   },
   "validation": {
     "nameRequired": "الاسم مطلوب",
@@ -70,5 +73,9 @@
     "subcontracting": "المناولة",
     "training": "التكوين",
     "software": "البرمجيات"
+  },
+  "filters": {
+    "author": "التصفية حسب من سجّل",
+    "allAuthors": "الجميع"
   }
 }

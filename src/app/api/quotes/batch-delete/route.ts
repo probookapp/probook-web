@@ -10,6 +10,10 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
   if (denied) return denied;
   const ids = await validateBody(req, batchDeleteSchema);
   if (isValidationError(ids)) return ids;
-  const result = await prisma.quote.deleteMany({ where: { tenantId, id: { in: ids } } });
+  // A quote holding a deposit is kept: the money must not end up belonging to
+  // nothing. The count returned says how many actually went.
+  const result = await prisma.quote.deleteMany({
+    where: { tenantId, id: { in: ids }, deposits: { none: { invoiceId: null } } },
+  });
   return NextResponse.json(result.count);
 });

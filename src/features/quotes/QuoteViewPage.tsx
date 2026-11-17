@@ -16,6 +16,7 @@ import {
 import { EmailDialog } from "@/components/email";
 import { PDFViewer } from "@/features/pdf/PDFViewerLazy";
 import { useQuote, useConvertQuoteToInvoice, useConvertQuoteToDeliveryNote } from "./hooks/useQuotes";
+import { QuoteDepositsCard } from "./components/QuoteDepositsCard";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCompanySettings } from "@/features/settings";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -272,6 +273,8 @@ export function QuoteViewPage() {
               )}
             </CardContent>
           </Card>
+
+          <QuoteDepositsCard quote={quote} />
 
           <Card>
             <CardHeader className="pb-2">

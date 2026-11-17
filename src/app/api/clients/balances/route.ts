@@ -24,14 +24,29 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       _sum: { total: true },
     }),
     prisma.invoice.findMany({ where: { tenantId }, select: { id: true, clientId: true } }),
+    // By invoice, and by quote for the deposits not invoiced yet.
     prisma.payment.groupBy({
-      by: ["invoiceId"],
+      by: ["invoiceId", "quoteId"],
       where: { tenantId },
       _sum: { amount: true },
     }),
   ]);
 
   const invoiceToClient = new Map(invoices.map((i) => [i.id, i.clientId]));
+  // A deposit on a quote not yet invoiced is a credit the client already holds.
+  const depositQuoteIds = [
+    ...new Set(paymentSums.filter((r) => !r.invoiceId && r.quoteId).map((r) => r.quoteId as string)),
+  ];
+  const quoteToClient = new Map(
+    depositQuoteIds.length
+      ? (
+          await prisma.quote.findMany({
+            where: { tenantId, id: { in: depositQuoteIds } },
+            select: { id: true, clientId: true },
+          })
+        ).map((q) => [q.id, q.clientId])
+      : []
+  );
   const balances = new Map<string, number>();
 
   for (const r of invoiceSums) {
@@ -42,7 +57,11 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     balances.set(r.clientId, (balances.get(r.clientId) ?? 0) - num(r._sum.total));
   }
   for (const r of paymentSums) {
-    const clientId = invoiceToClient.get(r.invoiceId);
+    const clientId = r.invoiceId
+      ? invoiceToClient.get(r.invoiceId)
+      : r.quoteId
+        ? quoteToClient.get(r.quoteId)
+        : undefined;
     if (clientId) {
       balances.set(clientId, (balances.get(clientId) ?? 0) - num(r._sum.amount));
     }

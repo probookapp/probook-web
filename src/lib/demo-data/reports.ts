@@ -73,7 +73,23 @@ export const DEMO_EXPENSES_BY_CATEGORY: ExpensesByCategoryReport = (() => {
   const categories = Array.from(buckets.values())
     .sort((a, b) => b.total_amount - a.total_amount)
     .map((b) => ({ ...b, share: total > 0 ? (b.total_amount / total) * 100 : 0 }));
-  return { total, categories };
+  const byAuthor = new Map<string, { user_id: string | null; user_name: string | null; total_amount: number; expense_count: number }>();
+  for (const expense of DEMO_EXPENSES) {
+    const key = expense.created_by?.id ?? "";
+    const bucket = byAuthor.get(key) ?? {
+      user_id: expense.created_by?.id ?? null,
+      user_name: expense.created_by?.display_name ?? null,
+      total_amount: 0,
+      expense_count: 0,
+    };
+    bucket.total_amount += expense.amount;
+    bucket.expense_count += 1;
+    byAuthor.set(key, bucket);
+  }
+  const authors = Array.from(byAuthor.values())
+    .sort((a, b) => b.total_amount - a.total_amount)
+    .map((b) => ({ ...b, share: total > 0 ? (b.total_amount / total) * 100 : 0 }));
+  return { total, categories, authors };
 })();
 
 /** Same source, grouped by month: the expenses report tab was empty in demo. */

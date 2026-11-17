@@ -19,6 +19,15 @@ const category = (id: string) => {
   return found ? { id: found.id, name: found.name } : null;
 };
 
+/**
+ * Two people record expenses in the demo, so the per-employee view of the
+ * expenses (list filter, report) has something to tell apart.
+ */
+const DEMO_EXPENSE_AUTHORS = {
+  owner: { id: "demo-user-owner", display_name: "Yacine Haddad" },
+  employee: { id: "demo-user-employee", display_name: "Karim Belkacem" },
+};
+
 export const DEMO_EXPENSES: Expense[] = [
   {
     id: "demo-expense-001",
@@ -28,6 +37,9 @@ export const DEMO_EXPENSES: Expense[] = [
     notes: "Loyer mensuel de l'atelier",
     category_id: "demo-expense-cat-001",
     category: category("demo-expense-cat-001"),
+    payment_method: "virement",
+    created_by_id: DEMO_EXPENSE_AUTHORS.owner.id,
+    created_by: DEMO_EXPENSE_AUTHORS.owner,
     created_at: now,
     updated_at: now,
   },
@@ -39,6 +51,9 @@ export const DEMO_EXPENSES: Expense[] = [
     notes: null,
     category_id: "demo-expense-cat-002",
     category: category("demo-expense-cat-002"),
+    payment_method: "prelevement",
+    created_by_id: DEMO_EXPENSE_AUTHORS.owner.id,
+    created_by: DEMO_EXPENSE_AUTHORS.owner,
     created_at: now,
     updated_at: now,
   },
@@ -50,6 +65,9 @@ export const DEMO_EXPENSES: Expense[] = [
     notes: "Papier, cartouches d'encre, classeurs",
     category_id: "demo-expense-cat-003",
     category: category("demo-expense-cat-003"),
+    payment_method: "especes",
+    created_by_id: DEMO_EXPENSE_AUTHORS.employee.id,
+    created_by: DEMO_EXPENSE_AUTHORS.employee,
     created_at: now,
     updated_at: now,
   },
@@ -61,6 +79,9 @@ export const DEMO_EXPENSES: Expense[] = [
     notes: null,
     category_id: "demo-expense-cat-004",
     category: category("demo-expense-cat-004"),
+    payment_method: "especes",
+    created_by_id: DEMO_EXPENSE_AUTHORS.employee.id,
+    created_by: DEMO_EXPENSE_AUTHORS.employee,
     created_at: now,
     updated_at: now,
   },
@@ -72,6 +93,9 @@ export const DEMO_EXPENSES: Expense[] = [
     notes: "Plein du fourgon",
     category_id: "demo-expense-cat-004",
     category: category("demo-expense-cat-004"),
+    payment_method: "especes",
+    created_by_id: DEMO_EXPENSE_AUTHORS.owner.id,
+    created_by: DEMO_EXPENSE_AUTHORS.owner,
     created_at: now,
     updated_at: now,
   },
@@ -83,6 +107,9 @@ export const DEMO_EXPENSES: Expense[] = [
     notes: "Licence annuelle des outils de dessin",
     category_id: "demo-expense-cat-005",
     category: category("demo-expense-cat-005"),
+    payment_method: "carte",
+    created_by_id: DEMO_EXPENSE_AUTHORS.owner.id,
+    created_by: DEMO_EXPENSE_AUTHORS.owner,
     created_at: now,
     updated_at: now,
   },
@@ -95,6 +122,9 @@ export const DEMO_EXPENSES: Expense[] = [
     // Deliberately left unfiled: the report has to show the "no heading" bucket.
     category_id: null,
     category: null,
+    payment_method: "especes",
+    created_by_id: DEMO_EXPENSE_AUTHORS.employee.id,
+    created_by: DEMO_EXPENSE_AUTHORS.employee,
     created_at: now,
     updated_at: now,
   },

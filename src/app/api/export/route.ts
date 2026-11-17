@@ -55,7 +55,7 @@ function rows<T>(list: T[]): Row[] {
  *
  * These columns are plain strings and, depending on how the row was created,
  * carry either the bytes inline (a `data:` URL or a bare base64 blob — the
- * legacy shape) or a reference to a file stored elsewhere (a Supabase public
+ * legacy shape) or a reference to a file stored elsewhere (an R2 or legacy Supabase public
  * URL, an absolute path). Only the former is worth hashing into `assets`;
  * a URL is already a short, stable reference and stays inline verbatim.
  */
@@ -101,6 +101,7 @@ export const GET = withAdmin(async (req, { tenantId }) => {
     posTransactions,
     posCashMovements,
     expenses,
+    expenseCategories,
     suppliers,
     productSuppliers,
     clientContacts,
@@ -164,6 +165,7 @@ export const GET = withAdmin(async (req, { tenantId }) => {
     }),
     prisma.posCashMovement.findMany({ where: { tenantId } }),
     prisma.expense.findMany({ where: { tenantId } }),
+    prisma.expenseCategory.findMany({ where: { tenantId } }),
     prisma.supplier.findMany({ where: { tenantId } }),
     prisma.productSupplier.findMany({ where: { tenantId } }),
     prisma.clientContact.findMany({ where: { tenantId } }),
@@ -303,6 +305,7 @@ export const GET = withAdmin(async (req, { tenantId }) => {
     pos_transactions: rows(posTransactions),
     pos_cash_movements: rows(posCashMovements),
     expenses: rows(expenses),
+    expense_categories: rows(expenseCategories),
     suppliers: rows(suppliers),
     product_suppliers: rows(productSuppliers),
     client_contacts: rows(clientContacts),

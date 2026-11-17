@@ -63,6 +63,8 @@ test("Chapitre 9 — Bons de livraison et dépenses", async ({ page }) => {
     "Chaque dépense se range sous un poste. On en choisit un dans la liste ou on en saisit un nouveau : il est créé à l'enregistrement."
   );
   await tour.type(expense.locator('input[name="category_name"]'), t("expenses:suggestions.rent"));
+  await tour.say("Le mode de paiement dit d'où sort l'argent : le loyer part par virement.");
+  await tour.choose(expense.locator('select[name="payment_method"]'), "virement");
   await tour.type(expense.locator('textarea[name="notes"]'), LABELS.rentMonthly);
   await tour.click(expense.getByRole("button", { name: t("common:buttons.create"), exact: true }), {
     settleMs: 1600,

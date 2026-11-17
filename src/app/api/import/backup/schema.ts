@@ -455,11 +455,16 @@ const TABLES: Record<string, TableSpec> = {
   payments: {
     fields: {
       id,
-      invoice_id: "string!",
+      // Null on a deposit still waiting on its quote (quote_id then set).
+      invoice_id: "string",
+      quote_id: "string",
       amount: "number",
       payment_date: "date",
       payment_method: "string!",
       reference: "string",
+      cheque_date: "date",
+      cheque_number: "string",
+      cheque_bank: "string",
       notes: "string",
       created_at: "date",
     },
@@ -744,6 +749,13 @@ const TABLES: Record<string, TableSpec> = {
       },
     },
   },
+  expense_categories: {
+    fields: {
+      id,
+      name: "string!",
+      created_at: "date",
+    },
+  },
   expenses: {
     fields: {
       id,
@@ -751,6 +763,9 @@ const TABLES: Record<string, TableSpec> = {
       amount: "number",
       date: "date",
       notes: "string",
+      category_id: "string",
+      payment_method: "string",
+      created_by_id: "string",
       created_at: "date",
     },
   },
@@ -831,6 +846,10 @@ const SETTINGS_FIELDS: Record<string, FieldSpec> = {
   vat_on_debits: "boolean",
   reminder_steps: "string",
   auto_send_reminders: "boolean",
+  cash_journal_start: "date",
+  opening_cash: "number",
+  opening_cheques: "number",
+  opening_bank: "number",
 };
 
 function collectBackupIssues(data: unknown): Issue[] {

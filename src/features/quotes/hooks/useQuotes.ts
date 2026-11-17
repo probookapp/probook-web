@@ -6,7 +6,38 @@ import { DEMO_QUOTES } from "@/lib/demo-data";
 import { LIST_PAGE_SIZE } from "@/lib/pagination";
 import { filterByStatus } from "@/lib/document-status";
 import { filterByTag } from "@/lib/document-tags";
-import type { CreateQuoteInput, UpdateQuoteInput, CursorPage, QuoteListItem } from "@/types";
+import { paymentApi } from "@/lib/api";
+import type {
+  CreateQuoteInput,
+  UpdateQuoteInput,
+  CursorPage,
+  QuoteListItem,
+  CreateQuoteDepositInput,
+} from "@/types";
+
+/** Records a deposit on a quote; the quote page re-reads its deposits. */
+export function useCreateQuoteDeposit(quoteId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CreateQuoteDepositInput) => quoteApi.addDeposit(quoteId, input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quotes", quoteId] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}
+
+/** Takes back a deposit not yet carried onto an invoice. */
+export function useDeleteQuoteDeposit(quoteId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (paymentId: string) => paymentApi.delete(paymentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quotes", quoteId] });
+      queryClient.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}
 
 export function useQuotes() {
   const { isDemoMode } = useDemoMode();

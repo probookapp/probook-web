@@ -346,14 +346,30 @@ export async function journalInvoicePayment(
     tenantId: string;
     userId: string;
     kind: "PAYMENT" | "PAYMENT_REVERSAL";
-    payment: { id: string; invoiceId: string; amount: unknown; paymentMethod: string; paymentDate: Date };
+    payment: {
+      id: string;
+      invoiceId: string | null;
+      quoteId?: string | null;
+      amount: unknown;
+      paymentMethod: string;
+      paymentDate: Date;
+    };
   }
 ) {
-  const [invoice, operator] = await Promise.all([
-    tx.invoice.findFirst({
-      where: { tenantId: input.tenantId, id: input.payment.invoiceId },
-      select: { invoiceNumber: true },
-    }),
+  const [invoice, quote, operator] = await Promise.all([
+    input.payment.invoiceId
+      ? tx.invoice.findFirst({
+          where: { tenantId: input.tenantId, id: input.payment.invoiceId },
+          select: { invoiceNumber: true },
+        })
+      : null,
+    // A deposit taken on a quote is a payment collected all the same.
+    input.payment.quoteId
+      ? tx.quote.findFirst({
+          where: { tenantId: input.tenantId, id: input.payment.quoteId },
+          select: { quoteNumber: true },
+        })
+      : null,
     tx.user.findFirst({ where: { tenantId: input.tenantId, id: input.userId }, select: { displayName: true } }),
   ]);
   const sign = input.kind === "PAYMENT" ? 1 : -1;
@@ -365,6 +381,7 @@ export async function journalInvoicePayment(
     amount,
     payload: {
       invoiceNumber: invoice?.invoiceNumber ?? null,
+      ...(quote ? { quoteNumber: quote.quoteNumber } : {}),
       paymentDate: input.payment.paymentDate.toISOString().slice(0, 10),
       operator: { id: input.userId, name: operator?.displayName ?? null },
       totals: { ttc: journalAmount(amount) },

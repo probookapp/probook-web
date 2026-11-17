@@ -85,6 +85,9 @@ import type {
   PipelineReport,
   ProfitMarginRow,
   InvoiceMarginReport,
+  CreateQuoteDepositInput,
+  CashJournal,
+  CashJournalOpeningInput,
   SupplierSpendRow,
   TaxSummary,
   AccountingExport,
@@ -248,6 +251,8 @@ export const quoteApi = {
   getAll: () => apiCall<Quote[]>("get_quotes"),
   getPage: (p: CursorPageParams) => apiCall<CursorPage<QuoteListItem>>("get_quotes", pageArgs(p)),
   getById: (id: string) => apiCall<Quote>("get_quote", { id }),
+  addDeposit: (id: string, input: CreateQuoteDepositInput) =>
+    apiCall<Payment>("create_quote_deposit", { id, input }),
   create: (input: CreateQuoteInput) => apiCall<Quote>("create_quote", { input }),
   update: (input: UpdateQuoteInput) => apiCall<Quote>("update_quote", { input }),
   delete: (id: string) => apiCall<void>("delete_quote", { id }),
@@ -519,6 +524,10 @@ export const reportApi = {
     apiCall<PipelineReport>("get_pipeline_report", { startDate, endDate }),
   getProfitMargin: (startDate?: string, endDate?: string) =>
     apiCall<ProfitMarginRow[]>("get_profit_margin", { startDate, endDate }),
+  getCashJournal: (startDate?: string, endDate?: string) =>
+    apiCall<CashJournal>("get_cash_journal", { startDate, endDate }),
+  updateCashJournalOpening: (input: CashJournalOpeningInput) =>
+    apiCall<unknown>("update_cash_journal_opening", { input }),
   getInvoiceMargin: (startDate?: string, endDate?: string) =>
     apiCall<InvoiceMarginReport>("get_invoice_margin", { startDate, endDate }),
   getSupplierSpend: (startDate?: string, endDate?: string) =>

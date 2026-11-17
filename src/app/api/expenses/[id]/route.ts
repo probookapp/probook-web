@@ -6,7 +6,10 @@ import { expenseSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 import { resolveExpenseCategoryId } from "@/lib/expense-category-server";
 
-const withCategory = { category: { select: { id: true, name: true } } };
+const withCategory = {
+  category: { select: { id: true, name: true } },
+  createdBy: { select: { id: true, displayName: true } },
+};
 
 export const GET = withAuth(async (req, { tenantId, session, params }) => {
   const denied = await requirePermission(session, "expenses", "view");
@@ -32,6 +35,9 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
       amount: body.amount || 0,
       date: new Date(body.date),
       notes: body.notes || null,
+      // Left out by an older client: keep what was recorded. The author never
+      // changes on an edit — who recorded it is a fact, not a field.
+      ...(body.payment_method === undefined ? {} : { paymentMethod: body.payment_method }),
       // undefined means the caller said nothing about the heading, so keep it.
       ...(categoryId === undefined ? {} : { categoryId }),
     },

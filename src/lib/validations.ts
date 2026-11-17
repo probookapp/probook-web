@@ -3,6 +3,7 @@ import { FISCAL_PROFILE_IDS } from "./fiscal-profiles";
 import { REFERENCE_CURRENCY } from "./currencies";
 import { EXPENSE_CATEGORY_MAX_LENGTH } from "./expense-categories";
 import { POS_PAYMENT_METHODS } from "./pos-payment-methods";
+import { EXPENSE_PAYMENT_METHODS } from "./payment-methods";
 import { INVOICE_PAYMENT_METHODS, OPERATION_NATURES, VAT_EXEMPTIONS } from "./legal-mentions";
 import { CASH_MOVEMENT_TYPES } from "./pos-cash-movements";
 import { TAG_COLORS, TAG_MAX_LENGTH, normalizeTagName } from "./tag-colors";
@@ -329,6 +330,9 @@ export const expenseSchema = z.object({
   // decide whether that heading already exists.
   category_id: optionalString,
   category_name: z.string().max(EXPENSE_CATEGORY_MAX_LENGTH, "Category name is too long").nullable().optional(),
+  // Optional for older clients (an offline queue replaying an expense made
+  // before the field existed); the form always sends it.
+  payment_method: z.enum(EXPENSE_PAYMENT_METHODS).nullable().optional(),
 });
 
 export const expenseCategorySchema = z.object({
@@ -480,6 +484,9 @@ export const paymentSchema = z.object({
   // existing row instead of double-crediting the invoice.
   idempotency_key: optionalString,
 });
+
+/** A deposit on a quote: a payment without an invoice yet (the quote is in the URL). */
+export const quoteDepositSchema = paymentSchema.omit({ invoice_id: true });
 
 // ─── Delivery Notes ─────────────────────────────────────────────────────────
 

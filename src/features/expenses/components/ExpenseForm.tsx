@@ -3,7 +3,8 @@ import { useForm, type Resolver } from "react-hook-form";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Button, Input, Textarea, ModalFooter, useModalDirty } from "@/components/ui";
+import { Button, Input, Select, Textarea, ModalFooter, useModalDirty } from "@/components/ui";
+import { EXPENSE_PAYMENT_METHODS, paymentMethodLabelKey } from "@/lib/payment-methods";
 import { createExpenseSchema, type ExpenseFormData } from "../schemas/expenseSchema";
 import { formatDateISO } from "@/lib/utils";
 import { expenseCategoryApi } from "@/lib/api";
@@ -36,8 +37,16 @@ export function ExpenseForm({ expense, onSubmit, onCancel, isLoading }: ExpenseF
       date: expense?.date ?? formatDateISO(new Date()),
       notes: expense?.notes ?? "",
       category_name: expense?.category?.name ?? "",
+      // A new expense is paid in cash unless said otherwise — the common case
+      // for a shop. An older one keeps "not specified" until someone says.
+      payment_method: expense ? expense.payment_method ?? "" : "especes",
     },
   });
+
+  const methodOptions = [
+    ...(expense && !expense.payment_method ? [{ value: "", label: t("fields.paymentMethodUnknown") }] : []),
+    ...EXPENSE_PAYMENT_METHODS.map((m) => ({ value: m, label: tCommon(paymentMethodLabelKey(m)) })),
+  ];
 
   const { data: categories } = useQuery({
     queryKey: ["expense-categories", { demo: isDemoMode }],
@@ -104,6 +113,15 @@ export function ExpenseForm({ expense, onSubmit, onCancel, isLoading }: ExpenseF
           </datalist>
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{t("fields.categoryHint")}</p>
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <Select
+          label={t("fields.paymentMethod")}
+          options={methodOptions}
+          {...register("payment_method")}
+          error={errors.payment_method?.message}
+        />
       </div>
 
       <Textarea

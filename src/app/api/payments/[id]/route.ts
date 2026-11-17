@@ -25,8 +25,10 @@ class PaymentError extends Error {
 async function syncInvoiceStatus(
   tx: Prisma.TransactionClient,
   tenantId: string,
-  invoiceId: string
+  invoiceId: string | null
 ) {
+  // A deposit still on its quote has no invoice status to keep in step.
+  if (!invoiceId) return;
   const invoice = await tx.invoice.findFirst({
     where: { tenantId, id: invoiceId },
     include: { payments: true },
@@ -37,7 +39,8 @@ async function syncInvoiceStatus(
   const totalPaid = invoice.payments.reduce((sum, p) => sum + num(p.amount), 0);
 
   if (totalPaid >= amountOwed - EPSILON) {
-    if (invoice.status !== "PAID") {
+    // A draft stays a draft: it is issuing that makes it PAID (see the issue route).
+    if (invoice.status === "ISSUED") {
       await tx.invoice.update({ where: { tenantId, id: invoiceId }, data: { status: "PAID" } });
     }
   } else if (invoice.status === "PAID") {
@@ -56,26 +59,51 @@ export const GET = withAuth(async (req, { tenantId, session, params }) => {
   return NextResponse.json(toSnakeCase(payment));
 });
 
+/**
+ * A payment answers to its invoice's permissions; a deposit still waiting on
+ * its quote answers to the quote's.
+ */
+function paymentModule(payment: { invoiceId: string | null }): "invoices" | "quotes" {
+  return payment.invoiceId ? "invoices" : "quotes";
+}
+
 export const PUT = withAuth(async (req, { tenantId, session, params }) => {
-  const denied = await requirePermission(session, "invoices", "edit");
+  const existing = await prisma.payment.findFirst({
+    where: { tenantId, id: params?.id },
+    select: { id: true, invoiceId: true, quoteId: true },
+  });
+  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const denied = await requirePermission(session, paymentModule(existing), "edit");
   if (denied) return denied;
   const body = await validateBody(req, updatePaymentSchema);
   if (isValidationError(body)) return body;
 
-  const existing = await prisma.payment.findFirst({
-    where: { tenantId, id: params?.id },
-    select: { id: true, invoiceId: true },
-  });
-  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
   try {
     const payment = await prisma.$transaction(async (tx) => {
+      // A deposit cannot outgrow the quote it was taken on.
+      if (!existing.invoiceId && existing.quoteId) {
+        const quote = await tx.quote.findFirst({
+          where: { tenantId, id: existing.quoteId },
+          include: { deposits: true },
+        });
+        if (quote) {
+          const others = quote.deposits
+            .filter((p) => p.id !== existing.id)
+            .reduce((sum, p) => sum + num(p.amount), 0);
+          if (others + body.amount > num(quote.total) + EPSILON) {
+            throw new PaymentError("Deposits exceed the quote total", 400);
+          }
+        }
+      }
+
       // Overpay guard: the edited amount plus the other payments must not
       // exceed what the invoice owes (audit SALE-7).
-      const invoice = await tx.invoice.findFirst({
-        where: { tenantId, id: existing.invoiceId },
-        include: { payments: true },
-      });
+      const invoice = existing.invoiceId
+        ? await tx.invoice.findFirst({
+            where: { tenantId, id: existing.invoiceId },
+            include: { payments: true },
+          })
+        : null;
       if (invoice) {
         const amountOwed = num(invoice.total) + num(invoice.stampDuty);
         const paidByOthers = invoice.payments
@@ -119,14 +147,18 @@ export const PUT = withAuth(async (req, { tenantId, session, params }) => {
 });
 
 export const DELETE = withAuth(async (req, { tenantId, session, params }) => {
-  const denied = await requirePermission(session, "invoices", "delete");
-  if (denied) return denied;
-
   const existing = await prisma.payment.findFirst({
     where: { tenantId, id: params?.id },
     select: { id: true, invoiceId: true },
   });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  // Taking back a deposit is editing the quote, which owns no delete of its own here.
+  const denied = await requirePermission(
+    session,
+    paymentModule(existing),
+    existing.invoiceId ? "delete" : "edit"
+  );
+  if (denied) return denied;
 
   await prisma.$transaction(async (tx) => {
     const deleted = await tx.payment.delete({ where: { tenantId, id: params?.id } });

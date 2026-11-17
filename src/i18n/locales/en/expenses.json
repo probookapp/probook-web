@@ -18,7 +18,10 @@
     "notes": "Notes",
     "category": "Expense heading",
     "categoryPlaceholder": "e.g. Fuel",
-    "categoryHint": "Pick an existing heading or type a new one — it is created on save."
+    "categoryHint": "Pick an existing heading or type a new one — it is created on save.",
+    "paymentMethod": "Payment method",
+    "paymentMethodUnknown": "Not specified",
+    "author": "Recorded by"
   },
   "validation": {
     "nameRequired": "Name is required",
@@ -66,5 +69,9 @@
     "subcontracting": "Subcontracting",
     "training": "Training",
     "software": "Software"
+  },
+  "filters": {
+    "author": "Filter by author",
+    "allAuthors": "Everyone"
   }
 }

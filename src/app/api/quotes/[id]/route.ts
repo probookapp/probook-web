@@ -18,7 +18,13 @@ export const GET = withAuth(async (req, { tenantId, session, params }) => {
   if (denied) return denied;
   const quote = await prisma.quote.findFirst({
     where: { tenantId, id: params?.id },
-    include: { lines: { orderBy: { position: "asc" } }, client: true, ...TAGS_INCLUDE, ...CONVERTED_INVOICE_INCLUDE },
+    include: {
+      lines: { orderBy: { position: "asc" } },
+      client: true,
+      ...TAGS_INCLUDE,
+      ...CONVERTED_INVOICE_INCLUDE,
+      deposits: { orderBy: { paymentDate: "asc" } },
+    },
   });
   if (!quote) return NextResponse.json({ error: "Not found" }, { status: 404 });
   return NextResponse.json(toSnakeCase(flattenTags(quote)));
@@ -100,6 +106,14 @@ export const PUT = withAuth(async (req, { tenantId, params, session }) => {
 export const DELETE = withAuth(async (req, { tenantId, params, session }) => {
   const denied = await requirePermission(session, "quotes", "delete");
   if (denied) return denied;
+  // Money the client paid on it would be left belonging to nothing.
+  const deposits = await prisma.payment.count({ where: { tenantId, quoteId: params?.id, invoiceId: null } });
+  if (deposits > 0) {
+    return NextResponse.json(
+      { error: "This quote has deposits: remove them first", code: "QUOTE_HAS_DEPOSITS" },
+      { status: 409 }
+    );
+  }
   await prisma.quote.delete({ where: { tenantId, id: params?.id } });
   return new NextResponse(null, { status: 204 });
 });

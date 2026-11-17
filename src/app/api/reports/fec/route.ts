@@ -53,7 +53,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     }),
     prisma.payment.findMany({
       where: { tenantId, paymentDate: range },
-      include: { invoice: { include: { client: true } } },
+      include: { invoice: { include: { client: true } }, quote: { include: { client: true } } },
     }),
     prisma.purchaseOrder.findMany({
       where: { tenantId, orderDate: range, status: { in: [...PAYABLE_PURCHASE_STATUSES] } },
@@ -178,16 +178,24 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
 
   // Invoice payments.
   for (const p of payments) {
-    const aux = clientAux(p.invoice.client);
-    const label = `Règlement ${p.invoice.invoiceNumber} ${p.invoice.client.name}`;
+    // A deposit on a quote not yet invoiced is an advance (4191), not the
+    // settlement of a receivable; once invoiced it settles the invoice.
+    const doc = p.invoice
+      ? { number: p.invoice.invoiceNumber, client: p.invoice.client, account: ACCOUNTS.clients, verb: "Règlement" }
+      : p.quote
+        ? { number: p.quote.quoteNumber, client: p.quote.client, account: ACCOUNTS.clientAdvances, verb: "Acompte" }
+        : null;
+    if (!doc) continue;
+    const aux = clientAux(doc.client);
+    const label = `${doc.verb} ${doc.number} ${doc.client.name}`;
     entries.push({
       journal: settlementJournal(p.paymentMethod),
       date: p.paymentDate,
-      pieceRef: p.reference || p.invoice.invoiceNumber,
+      pieceRef: p.reference || doc.number,
       pieceDate: p.paymentDate,
       lines: [
         { account: settlementAccount(p.paymentMethod), label, debit: num(p.amount), credit: 0 },
-        { account: ACCOUNTS.clients, aux, label, debit: 0, credit: num(p.amount) },
+        { account: doc.account, aux, label, debit: 0, credit: num(p.amount) },
       ],
     });
   }
@@ -223,16 +231,17 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
     });
   }
 
-  // Expenses: amounts without VAT detail, paid from the bank.
+  // Expenses: amounts without VAT detail, paid the way they were recorded
+  // (the bank when the method is unknown, as before the method existed).
   for (const e of expenses) {
     entries.push({
-      journal: "BQ",
+      journal: settlementJournal(e.paymentMethod),
       date: e.date,
       pieceRef: `DEP-${e.id.slice(0, 8)}`,
       pieceDate: e.date,
       lines: [
         { account: ACCOUNTS.expenses, label: e.name, debit: num(e.amount), credit: 0 },
-        { account: ACCOUNTS.bank, label: e.name, debit: 0, credit: num(e.amount) },
+        { account: settlementAccount(e.paymentMethod), label: e.name, debit: 0, credit: num(e.amount) },
       ],
     });
   }

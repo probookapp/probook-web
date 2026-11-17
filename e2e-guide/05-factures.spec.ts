@@ -32,13 +32,13 @@ test("Chapitre 5 — Facturer, encaisser, corriger", async ({ page }) => {
   await tour.pause(1800);
 
   // ─── paiement partiel ───
-  await tour.say("Le client verse un acompte. On enregistre un premier règlement.");
+  await tour.say("L'acompte versé sur le devis est déjà compté. Le client verse un deuxième règlement.");
   await tour.click(page.getByRole("button", { name: t("common:buttons.add"), exact: true }), {
     settleMs: 900,
   });
 
   const payment = tour.dialog();
-  await tour.say("Le montant proposé est le solde restant : on le remplace par l'acompte reçu.");
+  await tour.say("Le montant proposé est le solde restant : on le remplace par le montant reçu.");
   await tour.set(payment.locator('input[name="amount"]'), "50000");
   await tour.choose(payment.locator('select[name="payment_method"]'), "virement");
   await tour.type(payment.locator('input[name="reference"]'), "VIR-2026-0412");

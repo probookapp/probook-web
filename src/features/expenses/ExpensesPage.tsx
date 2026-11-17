@@ -37,6 +37,7 @@ import { LIST_PAGE_SIZE } from "@/lib/pagination";
 import { useToastStore } from "@/stores/useToastStore";
 import { useAuthStore } from "@/stores/useAuthStore";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { paymentMethodLabelKey } from "@/lib/payment-methods";
 import type { Expense, CreateExpenseInput, UpdateExpenseInput, CursorPage } from "@/types";
 import type { ExpenseFormData } from "./schemas/expenseSchema";
 
@@ -52,6 +53,8 @@ export function ExpensesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState<Expense | undefined>();
   const [searchQuery, setSearchQuery] = useState("");
+  // "" = everyone; otherwise the id of the account that recorded the expense.
+  const [authorFilter, setAuthorFilter] = useState("");
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [categoriesOpen, setCategoriesOpen] = useState(false);
@@ -132,18 +135,29 @@ export function ExpensesPage() {
   // server-side search filter). The heading is searchable too: "carburant"
   // should find the fuel expenses whatever each one is called.
   const filteredExpenses = expenses?.filter((expense) => {
+    if (authorFilter && expense.created_by?.id !== authorFilter) return false;
     const needle = searchQuery.toLowerCase();
     return (
       expense.name.toLowerCase().includes(needle) ||
-      (expense.category?.name.toLowerCase().includes(needle) ?? false)
+      (expense.category?.name.toLowerCase().includes(needle) ?? false) ||
+      (expense.created_by?.display_name.toLowerCase().includes(needle) ?? false)
     );
   });
+
+  // The people who recorded the expenses on screen: whom the filter can pick.
+  const authors = useMemo(() => {
+    const byId = new Map<string, string>();
+    for (const e of expenses ?? []) if (e.created_by) byId.set(e.created_by.id, e.created_by.display_name);
+    return [...byId].map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [expenses]);
+
+  const methodLabel = (method: string | null) => (method ? tCommon(paymentMethodLabelKey(method)) : "-");
 
   const selection = useSelection(filteredExpenses);
 
   useEffect(() => {
     selection.clear();
-  }, [searchQuery]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [searchQuery, authorFilter]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const columns = useTableColumns(
     "expenses",
@@ -153,6 +167,8 @@ export function ExpensesPage() {
       { key: "category", label: t("fields.category"), isEmpty: (e) => !e.category },
       { key: "amount", label: t("fields.amount") },
       { key: "date", label: t("fields.date") },
+      { key: "paymentMethod", label: t("fields.paymentMethod"), isEmpty: (e) => !e.payment_method },
+      { key: "author", label: t("fields.author"), isEmpty: (e) => !e.created_by },
       { key: "notes", label: t("fields.notes"), isEmpty: (e) => !e.notes },
       { key: "actions", label: "", hideable: false },
     ],
@@ -236,6 +252,22 @@ export function ExpensesPage() {
             <CardTitle>{t("expenseList")}</CardTitle>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <ColumnPicker columns={columns} />
+              {/* Only worth a control once more than one person records expenses. */}
+              {authors.length > 1 && (
+                <select
+                  aria-label={t("filters.author")}
+                  value={authorFilter}
+                  onChange={(e) => setAuthorFilter(e.target.value)}
+                  className="h-9 shrink-0 rounded-lg border border-(--color-border-primary) bg-(--color-bg-primary) px-2 text-sm text-(--color-text-primary)"
+                >
+                  <option value="">{t("filters.allAuthors")}</option>
+                  {authors.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              )}
               <div className="relative w-full sm:w-56 md:w-64 lg:w-72">
                 <Search className="absolute start-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <Input
@@ -277,7 +309,13 @@ export function ExpensesPage() {
                       </span>
                     )
                   }
-                  meta={formatDate(expense.date)}
+                  meta={[
+                    formatDate(expense.date),
+                    expense.payment_method ? methodLabel(expense.payment_method) : null,
+                    expense.created_by?.display_name ?? null,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
                   amount={formatCurrency(expense.amount)}
                   actions={<RowActions actions={expenseActions(expense)} />}
                 >
@@ -308,6 +346,8 @@ export function ExpensesPage() {
                 {columns.show("category") && <TableHead>{t("fields.category")}</TableHead>}
                 {columns.show("amount") && <TableHead className="text-end">{t("fields.amount")}</TableHead>}
                 {columns.show("date") && <TableHead>{t("fields.date")}</TableHead>}
+                {columns.show("paymentMethod") && <TableHead>{t("fields.paymentMethod")}</TableHead>}
+                {columns.show("author") && <TableHead>{t("fields.author")}</TableHead>}
                 {columns.show("notes") && <TableHead>{t("fields.notes")}</TableHead>}
                 <TableHead className="w-px text-end">{/* Icons only below: the word would size the column. */}<span className="sr-only">{tCommon("buttons.actions")}</span></TableHead>
               </TableRow>
@@ -340,6 +380,8 @@ export function ExpensesPage() {
                     )}
                     {columns.show("amount") && <TableNumericCell className="text-gray-600 dark:text-gray-400">{formatCurrency(expense.amount)}</TableNumericCell>}
                     {columns.show("date") && <TableCell className="text-gray-600 dark:text-gray-400">{formatDate(expense.date)}</TableCell>}
+                    {columns.show("paymentMethod") && <TableCell className="text-gray-600 dark:text-gray-400">{methodLabel(expense.payment_method)}</TableCell>}
+                    {columns.show("author") && <TableCell className="text-gray-600 dark:text-gray-400">{expense.created_by?.display_name ?? "-"}</TableCell>}
                     {columns.show("notes") && <TableCell className="text-gray-600 dark:text-gray-400">{expense.notes || "-"}</TableCell>}
                     <TableCell>
                       <RowActions actions={expenseActions(expense)} />

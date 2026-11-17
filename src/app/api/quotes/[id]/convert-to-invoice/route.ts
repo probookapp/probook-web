@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { attachQuoteDeposits } from "@/lib/quote-deposits";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
@@ -114,7 +115,9 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
             data: { status: "ACCEPTED" },
           });
 
-          return created;
+          // The deposits the client already paid now count against the invoice.
+          const payments = await attachQuoteDeposits(tx, tenantId, quote.id, created.id);
+          return { ...created, payments };
         });
 
         return NextResponse.json(toSnakeCase(flattenTags(invoice)));

@@ -86,8 +86,8 @@
   "L'émission est l'étape qui compte : elle fige la facture, la numérote définitivement et décrémente le stock.": "Issuing is the step that counts: it freezes the invoice, numbers it for good and takes the goods out of stock.",
   "Le statut passe à « Émise ».": "The status changes to \"Issued\".",
   "Probook signe alors le document. Ce contrôle d'intégrité prouve que la facture n'a pas été modifiée après émission.": "Probook then signs the document. That integrity check proves the invoice has not been altered since it was issued.",
-  "Le client verse un acompte. On enregistre un premier règlement.": "The client pays a deposit. Record a first payment.",
-  "Le montant proposé est le solde restant : on le remplace par l'acompte reçu.": "The amount offered is the remaining balance: replace it with the deposit received.",
+  "L'acompte versé sur le devis est déjà compté. Le client verse un deuxième règlement.": "The deposit paid on the quote is already counted. The client makes a second payment.",
+  "Le montant proposé est le solde restant : on le remplace par le montant reçu.": "The amount offered is the remaining balance: we replace it with the amount received.",
   "Le suivi affiche le total facturé, le total payé et le reste à payer.": "The tracker shows the total invoiced, the total paid and what is still owed.",
   "Quelques jours plus tard, le client règle le solde.": "A few days later, the client settles the balance.",
   "La facture bascule automatiquement en « Payée » : plus rien à faire.": "The invoice moves to \"Paid\" on its own: nothing left to do.",
@@ -183,7 +183,7 @@
   "Toutes les saisies des chapitres précédents alimentent le tableau de bord et les rapports.": "Everything entered in the previous chapters feeds the dashboard and the reports.",
   "Les douze derniers mois de chiffre d'affaires, et à côté ce qui reste à encaisser, rangé selon le retard.": "The last twelve months of revenue, and beside it what is still to collect, sorted by how late it is.",
   "Chaque chiffre du tableau de bord est cliquable : « paiements en attente » ouvre directement la liste des factures émises non réglées.": "Every figure on the dashboard is clickable: \"outstanding payments\" opens the list of issued, unpaid invoices directly.",
-  "Seize rapports, chacun sur une période que vous choisissez.": "Sixteen reports, each over a period you choose.",
+  "Dix-sept rapports, chacun sur une période que vous choisissez.": "Seventeen reports, each over a period you choose.",
   "Les rapports dont vous ne vous servez pas se masquent avec « Personnaliser » : la barre ne montre plus que les vôtres.": "Reports you never use hide behind “Customize”: the bar then shows only yours.",
   "Le premier répond à la question de tous les jours : où en est-on ? Combien de devis dehors, combien d'accepté pas encore facturé, combien de facturé pas encore encaissé.": "The first answers the everyday question: where do we stand? How many quotes out, how much accepted but not yet invoiced, how much invoiced but not yet collected.",
   "Chaque état est compté, y compris ceux à zéro — « aucun impayé » est une réponse, une ligne absente n'en est pas une.": "Every state is counted, including the empty ones — \"nothing unpaid\" is an answer; a missing row is not.",
@@ -295,5 +295,10 @@
   "Une étiquette ne touche à rien : ni aux relances, ni à la conversion en facture, ni aux rapports. C'est un classement, pas un état.": "A label touches nothing: not the reminders, not the conversion to an invoice, not the reports. It is a way of filing, not a state.",
   "Et on range tout de suite le devis sous son étiquette.": "And the quote is filed under its label right away.",
   "Les statuts sont une liste fixe, et « Refusé » en fait partie : un client qui dit non, c'est enregistré comme tel, Probook arrête de relancer, et le rapport de conversion le compte à part des devis restés sans réponse.": "The statuses are a fixed list, and “Refused” is one of them: a client who says no is recorded as such, Probook stops chasing, and the conversion report counts it apart from the quotes that never got an answer.",
-  "Et l'étiquette a suivi : le même mot sur le devis, sur la facture et sur le bon de livraison. Un chantier ne change pas de nom en changeant de document.": "And the label came along: the same word on the quote, on the invoice and on the delivery note. A job does not change its name when it changes document."
+  "Et l'étiquette a suivi : le même mot sur le devis, sur la facture et sur le bon de livraison. Un chantier ne change pas de nom en changeant de document.": "And the label came along: the same word on the quote, on the invoice and on the delivery note. A job does not change its name when it changes document.",
+  "Le client verse l'acompte à la commande : on l'enregistre sur le devis, avec son mode de paiement. Il suivra sur la facture.": "The client pays the deposit with the order: we record it on the quote, with its payment method. It will follow onto the invoice.",
+  "Payée à la livraison, la marchandise se règle ici : en espèces, par chèque ou par virement, sans passer par la caisse. Celle-ci sera réglée plus tard.": "Goods paid on delivery are settled here: in cash, by cheque or by transfer, without going through the till. This order will be paid later.",
+  "Le mode de paiement dit d'où sort l'argent : le loyer part par virement.": "The payment method says where the money leaves from: the rent goes by transfer.",
+  "La trésorerie rassemble l'argent qui entre et qui sort : versements, acomptes, achats payés, dépenses. Elle donne ce qu'il y a en espèces, en chèques et en banque.": "The cash book gathers the money coming in and going out: payments, deposits, paid purchases, expenses. It gives what there is in cash, in cheques and at the bank.",
+  "On indique une fois le solde de départ : ce qu'il y avait en caisse le jour où l'on commence.": "The opening balance is entered once: what was in hand on the day you start."
 }

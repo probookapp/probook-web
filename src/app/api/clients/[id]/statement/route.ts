@@ -49,12 +49,18 @@ export const GET = withAuth(async (req, { tenantId, session, params }) => {
       select: { invoiceNumber: true, issueDate: true, total: true, stampDuty: true },
     }),
     prisma.payment.findMany({
-      where: { tenantId, invoice: { clientId } },
+      // A deposit on a quote not yet invoiced is money the client has paid
+      // all the same: it stands as a credit until the invoice arrives.
+      where: {
+        tenantId,
+        OR: [{ invoice: { clientId } }, { invoiceId: null, quote: { clientId } }],
+      },
       select: {
         amount: true,
         paymentDate: true,
         reference: true,
         invoice: { select: { invoiceNumber: true } },
+        quote: { select: { quoteNumber: true } },
       },
     }),
     prisma.creditNote.findMany({
@@ -81,7 +87,7 @@ export const GET = withAuth(async (req, { tenantId, session, params }) => {
       time: new Date(pay.paymentDate).getTime(),
       date: pay.paymentDate,
       type: "payment",
-      reference: pay.reference || pay.invoice.invoiceNumber,
+      reference: pay.reference || pay.invoice?.invoiceNumber || pay.quote?.quoteNumber || "",
       debit: 0,
       credit: num(pay.amount),
     });

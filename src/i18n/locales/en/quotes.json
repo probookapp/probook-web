@@ -131,5 +131,18 @@
     "short": "Short on stock: {{available}} on hand for {{requested}} requested",
     "banner_one": "{{count}} item on this quote isn't in stock in the quantity quoted. The quote still stands: restock before delivering or invoicing.",
     "banner_other": "{{count}} items on this quote aren't in stock in the quantities quoted. The quote still stands: restock before delivering or invoicing."
+  },
+  "deposits": {
+    "title": "Deposits received",
+    "quoteTotal": "Quote total",
+    "paid": "Already paid",
+    "remaining": "Left to pay",
+    "none": "No deposit recorded.",
+    "onInvoice": "These deposits are carried onto the invoice, where they count against the balance due.",
+    "record": "Record a deposit",
+    "delete": "Delete deposit",
+    "deleteConfirm": "Delete this deposit? It will no longer count in what the client has paid.",
+    "added": "Deposit recorded",
+    "add": "Add a deposit"
   }
 }

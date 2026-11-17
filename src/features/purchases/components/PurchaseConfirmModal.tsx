@@ -9,6 +9,9 @@ import {
 import type { PurchaseOrder, ConfirmPurchaseOrderInput } from "@/types";
 import { formatCurrency, formatDateTime } from "@/lib/utils";
 
+type PayMode = "none" | "CASH" | "CHECK" | "BANK_TRANSFER" | "register";
+const OFF_TILL_MODES = ["CASH", "CHECK", "BANK_TRANSFER"] as const;
+
 interface PurchaseConfirmModalProps {
   open: boolean;
   onClose: () => void;
@@ -27,7 +30,12 @@ export function PurchaseConfirmModal({
   const { t } = useTranslation("purchases");
   const { t: tCommon } = useTranslation("common");
 
-  const [paidFromRegister, setPaidFromRegister] = useState(false);
+  // How the goods are paid on receipt. Cash, cheque and transfer are recorded
+  // on the supplier's account without the till: a shop that never opens a
+  // register session was told it had no cash, because the till option was the
+  // only one. "register" stays for the shops that do run the till.
+  const [payMode, setPayMode] = useState<PayMode>("none");
+  const paidFromRegister = payMode === "register";
   const [selectedRegisterId, setSelectedRegisterId] = useState("");
   // Cumulative received quantity per line id (defaults to the full ordered qty).
   // This component is remounted per order (keyed on order id by the parent), so
@@ -73,6 +81,7 @@ export function PurchaseConfirmModal({
       register_id: paidFromRegister && selectedRegisterId ? selectedRegisterId : null,
       session_id:
         paidFromRegister && activeSession ? activeSession.id : null,
+      payment_method: payMode === "none" || payMode === "register" ? null : payMode,
       lines: lines.map((line) => ({
         line_id: line.id,
         received_quantity: receivedQty[line.id] ?? line.quantity,
@@ -83,7 +92,7 @@ export function PurchaseConfirmModal({
   };
 
   const handleClose = () => {
-    setPaidFromRegister(false);
+    setPayMode("none");
     setSelectedRegisterId("");
     setReceivedQty({});
     onClose();
@@ -91,7 +100,7 @@ export function PurchaseConfirmModal({
 
   // Every line opens at its full ordered quantity.
   const isDirty =
-    paidFromRegister ||
+    payMode !== "none" ||
     selectedRegisterId !== "" ||
     lines.some((line) => (receivedQty[line.id] ?? line.quantity) !== line.quantity);
 
@@ -190,23 +199,33 @@ export function PurchaseConfirmModal({
           </div>
         )}
 
-        {/* Pay from register toggle */}
-        <label className="flex items-center gap-3 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={paidFromRegister}
-            onChange={(e) => {
-              setPaidFromRegister(e.target.checked);
-              if (!e.target.checked) {
-                setSelectedRegisterId("");
-              }
-            }}
-            className="h-4 w-4 text-primary-600 border-gray-300 rounded focus:ring-primary-500"
-          />
-          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {t("confirmModal.payFromRegister")}
-          </span>
-        </label>
+        {/* How it is paid on receipt */}
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            {t("confirmModal.payment")}
+          </legend>
+          {(["none", ...OFF_TILL_MODES, ...(registerOptions.length > 0 ? (["register"] as const) : [])] as PayMode[]).map(
+            (mode) => (
+              <label key={mode} className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="radio"
+                  name="purchase-pay-mode"
+                  value={mode}
+                  checked={payMode === mode}
+                  onChange={() => {
+                    setPayMode(mode);
+                    if (mode !== "register") setSelectedRegisterId("");
+                  }}
+                  className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                />
+                <span className="text-sm text-gray-700 dark:text-gray-300">{t(`confirmModal.payModes.${mode}`)}</span>
+              </label>
+            )
+          )}
+          {payMode !== "none" && payMode !== "register" && (
+            <p className="ps-7 text-xs text-gray-500 dark:text-gray-400">{t("confirmModal.offTillHint")}</p>
+          )}
+        </fieldset>
 
         {paidFromRegister && (
           <div className="space-y-3 ps-7">

@@ -24,7 +24,13 @@ import {
   FileText,
   SlidersHorizontal,
   RotateCcw,
+  Wallet,
+  Settings2,
 } from "lucide-react";
+import { CashJournalOpeningModal } from "./components/CashJournalOpeningModal";
+import { paymentMethodLabelKey } from "@/lib/payment-methods";
+import { useAuthStore } from "@/stores/useAuthStore";
+import type { MoneyBucketKey } from "@/types";
 import {
   Card,
   CardContent,
@@ -68,6 +74,7 @@ import {
   useExpensesReport,
   useProfitMargin,
   useInvoiceMargin,
+  useCashJournal,
   useSupplierSpend,
   useInventoryValuation,
   usePosDailyReport,
@@ -84,6 +91,7 @@ type ReportType =
   | "products"
   | "profitMargin"
   | "invoiceMargin"
+  | "cashJournal"
   | "supplierSpend"
   | "outstanding"
   | "conversion"
@@ -242,6 +250,7 @@ export function ReportsPage() {
     { id: "products" as const, label: t("reports:productSales.title"), icon: Package },
     { id: "profitMargin" as const, label: t("reports:profitMargin.title"), icon: DollarSign },
     { id: "invoiceMargin" as const, label: t("reports:invoiceMargin.title"), icon: FileText },
+    { id: "cashJournal" as const, label: t("reports:cashJournal.title"), icon: Wallet },
     { id: "supplierSpend" as const, label: t("reports:supplierSpend.title"), icon: Truck },
     { id: "outstanding" as const, label: t("reports:outstanding.title"), icon: AlertCircle },
     { id: "conversion" as const, label: t("reports:quoteConversion.title"), icon: TrendingUp },
@@ -306,6 +315,15 @@ export function ReportsPage() {
     endDate,
     activeReport === "profitMargin"
   );
+  const { data: cashJournalData, isPending: isLoadingCashJournal } = useCashJournal(
+    startDate,
+    endDate,
+    activeReport === "cashJournal"
+  );
+  // "" = every bucket; otherwise only the cash, the cheques or the bank.
+  const [journalBucket, setJournalBucket] = useState<"" | MoneyBucketKey>("");
+  const [openingOpen, setOpeningOpen] = useState(false);
+  const canEditSettings = useAuthStore((s) => s.hasPermission("settings", "edit"));
   const { data: invoiceMarginData, isPending: isLoadingInvoiceMargin } = useInvoiceMargin(
     startDate,
     endDate,
@@ -1024,6 +1042,206 @@ export function ReportsPage() {
                   </p>
                 </div>
               </div>
+            )}
+          </div>
+        );
+      }
+
+      case "cashJournal": {
+        if (isLoadingCashJournal) return <LoadingSpinner />;
+        const journal = cashJournalData;
+        const bucketKeys: MoneyBucketKey[] = ["cash", "cheque", "bank"];
+        const rows = (journal?.rows ?? []).filter((r) => !journalBucket || r.bucket === journalBucket);
+        const kindLabel = (kind: string) => t(`reports:cashJournal.kinds.${kind}`);
+        const methodLabel = (method: string | null) =>
+          method ? t(`common:${paymentMethodLabelKey(method)}`) : t("reports:cashJournal.noMethod");
+        const exportRows = rows.map((r) => ({
+          date: r.date,
+          operation: kindLabel(r.kind),
+          reference: r.reference,
+          party: r.party ?? "",
+          method: methodLabel(r.method),
+          in: r.amount > 0 ? r.amount : 0,
+          out: r.amount < 0 ? -r.amount : 0,
+        }));
+        return (
+          <div className="space-y-4">
+            <p className="text-sm text-(--color-text-secondary)">{t("reports:cashJournal.hint")}</p>
+
+            {/* No starting point declared yet: the balances begin at zero. */}
+            {journal && !journal.start && (
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between rounded-lg border border-warning-200 bg-warning-50 p-3 text-sm text-warning-800 dark:border-warning-800 dark:bg-warning-950 dark:text-warning-200">
+                <span>{t("reports:cashJournal.noOpening")}</span>
+                {canEditSettings && (
+                  <Button size="sm" onClick={() => setOpeningOpen(true)} className="shrink-0">
+                    {t("reports:cashJournal.setOpening")}
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* One card per place the money sits: what it opened on, what came
+                in and went out, what it holds now. */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {bucketKeys.map((b) => {
+                const s = journal?.buckets[b];
+                return (
+                  <button
+                    key={b}
+                    type="button"
+                    onClick={() => setJournalBucket(journalBucket === b ? "" : b)}
+                    aria-pressed={journalBucket === b}
+                    className={`text-start p-4 rounded-lg border transition-colors ${
+                      journalBucket === b
+                        ? "border-primary-500 bg-primary-50 dark:bg-primary-950"
+                        : "border-(--color-border-primary) bg-(--color-bg-secondary) hover:border-primary-300"
+                    }`}
+                  >
+                    <p className="text-sm font-medium text-(--color-text-secondary)">
+                      {t(`reports:cashJournal.buckets.${b}`)}
+                    </p>
+                    <p
+                      className={`text-lg sm:text-2xl font-bold ${
+                        (s?.closing ?? 0) < 0 ? "text-danger-600 dark:text-danger-400" : ""
+                      }`}
+                    >
+                      <FitAmount>{formatCurrency(s?.closing ?? 0)}</FitAmount>
+                    </p>
+                    <dl className="mt-2 space-y-0.5 text-xs text-(--color-text-secondary)">
+                      <div className="flex justify-between gap-2">
+                        <dt>{t("reports:cashJournal.opening")}</dt>
+                        <dd className="font-mono tabular-nums">{formatCurrency(s?.opening ?? 0)}</dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt>{t("reports:cashJournal.in")}</dt>
+                        <dd className="font-mono tabular-nums text-success-600 dark:text-success-400">
+                          + {formatCurrency(s?.in ?? 0)}
+                        </dd>
+                      </div>
+                      <div className="flex justify-between gap-2">
+                        <dt>{t("reports:cashJournal.out")}</dt>
+                        <dd className="font-mono tabular-nums text-danger-600 dark:text-danger-400">
+                          − {formatCurrency(s?.out ?? 0)}
+                        </dd>
+                      </div>
+                    </dl>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs text-(--color-text-secondary)">
+                {journal?.start
+                  ? t("reports:cashJournal.since", { date: formatDate(journal.start) })
+                  : null}
+                {journalBucket && (
+                  <button
+                    type="button"
+                    onClick={() => setJournalBucket("")}
+                    className="ms-2 underline hover:text-(--color-text-primary)"
+                  >
+                    {t("reports:cashJournal.showAll")}
+                  </button>
+                )}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {canEditSettings && journal?.start && (
+                  <Button variant="secondary" size="sm" onClick={() => setOpeningOpen(true)}>
+                    <Settings2 className="h-4 w-4 me-2" />
+                    {t("reports:cashJournal.editOpening")}
+                  </Button>
+                )}
+                <ExportBar
+                  onCsv={() => exportToCSV(exportRows, "journal_tresorerie")}
+                  onPdf={() =>
+                    exportToPDF(
+                      t("reports:cashJournal.title"),
+                      [
+                        { header: t("reports:cashJournal.date") },
+                        { header: t("reports:cashJournal.operation"), flex: 2 },
+                        { header: t("reports:cashJournal.party"), flex: 2 },
+                        { header: t("reports:cashJournal.method") },
+                        { header: t("reports:cashJournal.in"), align: "right" },
+                        { header: t("reports:cashJournal.out"), align: "right" },
+                      ],
+                      rows.map((r) => [
+                        formatDate(r.date),
+                        `${kindLabel(r.kind)} ${r.reference}`.trim(),
+                        r.party ?? "",
+                        methodLabel(r.method),
+                        r.amount > 0 ? formatCurrency(r.amount) : "",
+                        r.amount < 0 ? formatCurrency(-r.amount) : "",
+                      ]),
+                      "journal_tresorerie",
+                      bucketKeys.map((b) => ({
+                        label: t(`reports:cashJournal.buckets.${b}`),
+                        value: formatCurrency(journal?.buckets[b].closing ?? 0),
+                      }))
+                    )
+                  }
+                />
+              </div>
+            </div>
+
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("reports:cashJournal.date")}</TableHead>
+                  <TableHead>{t("reports:cashJournal.operation")}</TableHead>
+                  <TableHead>{t("reports:cashJournal.party")}</TableHead>
+                  <TableHead>{t("reports:cashJournal.method")}</TableHead>
+                  <TableHead className="text-end">{t("reports:cashJournal.in")}</TableHead>
+                  <TableHead className="text-end">{t("reports:cashJournal.out")}</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.length > 0 ? (
+                  rows.map((r) => (
+                    <TableRow
+                      key={`${r.kind}-${r.id}`}
+                      onActivate={r.link ? () => router.push(r.link!) : undefined}
+                    >
+                      <TableCell className="whitespace-nowrap">{formatDate(r.date)}</TableCell>
+                      <TableCell>
+                        <span className="block">{kindLabel(r.kind)}</span>
+                        <span className="block text-xs text-(--color-text-secondary) font-mono">{r.reference}</span>
+                      </TableCell>
+                      <TableCell>{r.party ?? "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant={r.bucket ? "default" : "warning"}>{methodLabel(r.method)}</Badge>
+                      </TableCell>
+                      <TableNumericCell className="text-success-600 dark:text-success-400">
+                        {r.amount > 0 ? formatCurrency(r.amount) : ""}
+                      </TableNumericCell>
+                      <TableNumericCell className="text-danger-600 dark:text-danger-400">
+                        {r.amount < 0 ? formatCurrency(-r.amount) : ""}
+                      </TableNumericCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-(--color-text-secondary) py-8">
+                      {t("reports:noData")}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+
+            {/* Money whose method places it nowhere is listed but not counted:
+                guessing "cash" would make the drawer lie. */}
+            {(journal?.unclassified.count ?? 0) > 0 && !journalBucket && (
+              <p className="text-xs text-(--color-text-secondary)">
+                {t("reports:cashJournal.unclassified", {
+                  count: journal!.unclassified.count,
+                  amount: formatCurrency(Math.abs(journal!.unclassified.total)),
+                })}
+              </p>
+            )}
+
+            {openingOpen && (
+              <CashJournalOpeningModal open={openingOpen} onClose={() => setOpeningOpen(false)} journal={journal} />
             )}
           </div>
         );
@@ -1861,6 +2079,37 @@ export function ReportsPage() {
                 )}
               </TableBody>
             </Table>
+            {/* The same money split by who recorded it: one employee's spending
+                told apart from another's. */}
+            {(report?.authors?.length ?? 0) > 0 && (
+              <>
+                <h3 className="pt-2 text-sm font-semibold text-(--color-text-primary)">
+                  {t("reports:expensesByCategory.byAuthor")}
+                </h3>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t("reports:expensesByCategory.author")}</TableHead>
+                      <TableHead className="text-end">{t("reports:expensesByCategory.expenseCount")}</TableHead>
+                      <TableHead className="text-end">{t("reports:expensesByCategory.totalAmount")}</TableHead>
+                      <TableHead className="text-end">{t("reports:expensesByCategory.share")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {report!.authors!.map((r) => (
+                      <TableRow key={r.user_id ?? "unknown"}>
+                        <TableCell className="font-medium">
+                          {r.user_name ?? t("reports:expensesByCategory.unknownAuthor")}
+                        </TableCell>
+                        <TableCell className="text-end">{r.expense_count}</TableCell>
+                        <TableNumericCell>{formatCurrency(r.total_amount)}</TableNumericCell>
+                        <TableCell className="text-end">{r.share.toFixed(1)}%</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </>
+            )}
             {rows.length > 0 && (
               <div className="pt-4 border-t border-(--color-border-primary)">
                 <div className="p-4 bg-(--color-bg-secondary) rounded-lg">

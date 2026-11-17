@@ -58,7 +58,6 @@
   "confirmModal": {
     "title": "Confirm Purchase Order",
     "description": "Confirm that goods have been received and choose how to handle payment.",
-    "payFromRegister": "Pay from cash register",
     "selectRegister": "Select register",
     "selectRegisterPlaceholder": "Choose a register...",
     "activeSession": "Active session",
@@ -69,7 +68,16 @@
     "receiveAll": "Receive all",
     "ordered": "Ordered",
     "alreadyReceived": "Already received",
-    "receivedQty": "Received"
+    "receivedQty": "Received",
+    "payment": "Payment on receipt",
+    "payModes": {
+      "none": "Not paid yet",
+      "CASH": "Paid in cash",
+      "CHECK": "Paid by cheque",
+      "BANK_TRANSFER": "Paid by transfer",
+      "register": "Paid from the till (POS mode)"
+    },
+    "offTillHint": "Recorded on the supplier's account, without going through POS mode."
   },
   "cancelModal": {
     "title": "Cancel Purchase Order",

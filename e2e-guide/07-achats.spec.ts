@@ -172,6 +172,11 @@ test("Chapitre 7 — Fournisseurs et réapprovisionnement", async ({ page }) => 
   );
   await tour.set(receive.locator('input[type="number"]').first(), "8");
   await tour.pause(1200);
+  await tour.say(
+    "Payée à la livraison, la marchandise se règle ici : en espèces, par chèque ou par virement, sans passer par la caisse. Celle-ci sera réglée plus tard."
+  );
+  await tour.point(receive.getByText(t("purchases:confirmModal.payModes.CASH")));
+  await tour.pause(1400);
 
   await tour.click(receive.getByRole("button", { name: t("purchases:confirmModal.confirm") }), {
     settleMs: 2200,

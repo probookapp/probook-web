@@ -3,6 +3,7 @@ import type {
   DailyPosReport,
   InventoryValuationRow,
   InvoiceMarginReport,
+  CashJournal,
   ProfitMarginRow,
   QuoteConversionStats,
   SupplierSpendRow,
@@ -15,6 +16,7 @@ import { DEMO_EXPENSES } from "./expenses";
 import { DEMO_PURCHASES } from "./purchases";
 import { DEMO_SUPPLIERS } from "./suppliers";
 import { invoiceMarginReport } from "@/lib/invoice-margin";
+import { buildCashJournal } from "@/lib/cash-journal";
 
 /**
  * The report tabs that used to come back empty in demo mode.
@@ -109,6 +111,39 @@ export const DEMO_INVOICE_MARGIN: InvoiceMarginReport = (() => {
     expense_count: report.expenseCount,
   };
 })();
+
+/**
+ * The demo's cash book: its invoice payments in, its expenses out, starting
+ * from declared opening figures so the balances read like a real shop's.
+ */
+export const DEMO_CASH_JOURNAL: CashJournal = buildCashJournal(
+  { start: "2026-01-01", cash: 60000, cheque: 0, bank: 150000 },
+  { from: "2026-01-01", to: "2026-12-31" },
+  [
+    ...DEMO_INVOICES.flatMap((invoice) =>
+      (invoice.payments ?? []).map((p) => ({
+        id: p.id,
+        date: p.payment_date,
+        kind: "invoice_payment" as const,
+        amount: p.amount,
+        method: p.payment_method,
+        reference: invoice.invoice_number,
+        party: invoice.client?.name ?? null,
+        link: `/invoices/${invoice.id}`,
+      }))
+    ),
+    ...DEMO_EXPENSES.map((e) => ({
+      id: e.id,
+      date: e.date,
+      kind: "expense" as const,
+      amount: -e.amount,
+      method: e.payment_method,
+      reference: e.name,
+      party: e.created_by?.display_name ?? null,
+      link: "/expenses",
+    })),
+  ]
+);
 
 export const DEMO_SUPPLIER_SPEND: SupplierSpendRow[] = (() => {
   const bySupplier = new Map<string, SupplierSpendRow>();

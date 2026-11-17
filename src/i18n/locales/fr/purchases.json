@@ -58,7 +58,6 @@
   "confirmModal": {
     "title": "Confirmer le bon de commande",
     "description": "Confirmez la réception des marchandises et choisissez le mode de paiement.",
-    "payFromRegister": "Payer depuis la caisse",
     "selectRegister": "Sélectionner la caisse",
     "selectRegisterPlaceholder": "Choisir une caisse...",
     "activeSession": "Session active",
@@ -69,7 +68,16 @@
     "receiveAll": "Tout recevoir",
     "ordered": "Commandé",
     "alreadyReceived": "Déjà reçu",
-    "receivedQty": "Reçu"
+    "receivedQty": "Reçu",
+    "payment": "Paiement à la réception",
+    "payModes": {
+      "none": "Pas encore payé",
+      "CASH": "Payé en espèces",
+      "CHECK": "Payé par chèque",
+      "BANK_TRANSFER": "Payé par virement",
+      "register": "Payé depuis la caisse (mode Caisse)"
+    },
+    "offTillHint": "Enregistré sur le compte du fournisseur, sans passer par le mode Caisse."
   },
   "cancelModal": {
     "title": "Annuler le bon de commande",

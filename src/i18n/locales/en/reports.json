@@ -146,7 +146,10 @@
     "totalAmount": "Amount",
     "share": "Share",
     "total": "Total expenses",
-    "uncategorized": "Unfiled"
+    "uncategorized": "Unfiled",
+    "byAuthor": "By person",
+    "author": "Recorded by",
+    "unknownAuthor": "Not recorded (older expenses)"
   },
   "lowStock": {
     "title": "Low Stock",
@@ -222,5 +225,39 @@
     "customize": "Customize",
     "title": "Reports shown",
     "showAll": "Show all reports"
+  },
+  "cashJournal": {
+    "title": "Cash book",
+    "hint": "All the money that came in and went out over the period, by where it sits: cash, cheques or bank. Client payments, quote deposits and till sales come in; supplier payments and expenses go out.",
+    "noOpening": "No opening balance is set: balances start from zero. Enter what you held in cash, in cheques and at the bank on the day you start.",
+    "setOpening": "Set the opening balance",
+    "editOpening": "Opening balance",
+    "openingTitle": "Opening balance",
+    "openingHint": "The day you start following your money here, and what you held that day. Nothing dated before it is counted again.",
+    "openingDate": "Starting on",
+    "openingSaved": "Opening balance saved",
+    "opening": "Start of period",
+    "in": "In",
+    "out": "Out",
+    "since": "Followed since {{date}}",
+    "showAll": "Show all",
+    "date": "Date",
+    "operation": "Operation",
+    "party": "Party",
+    "method": "Method",
+    "noMethod": "Not specified",
+    "unclassified": "Operations with no payment method, listed but not counted in the balances: {{count}} ({{amount}}).",
+    "buckets": {
+      "cash": "Cash",
+      "cheque": "Cheques",
+      "bank": "Bank"
+    },
+    "kinds": {
+      "invoice_payment": "Invoice payment",
+      "quote_deposit": "Quote deposit",
+      "pos_sale": "Till sale",
+      "supplier_payment": "Supplier payment",
+      "expense": "Expense"
+    }
   }
 }

@@ -13,6 +13,12 @@ export const createExpenseSchema = (t: (key: string) => string) => z.object({
     .max(EXPENSE_CATEGORY_MAX_LENGTH, t("expenses:validation.categoryTooLong"))
     .nullable()
     .optional(),
+  // "" is the "not specified" choice an older expense opens with: sent as null.
+  payment_method: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((v) => v || null),
 });
 
 export type ExpenseFormData = z.output<ReturnType<typeof createExpenseSchema>>;

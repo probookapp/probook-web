@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { attachQuoteDeposits } from "@/lib/quote-deposits";
 import { withAuth, toSnakeCase } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@/generated/prisma/client";
@@ -88,7 +89,9 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
             throw new ConvertError("This delivery note is already invoiced", 409);
           }
 
-          return created;
+          // A note made from a quote brings that quote's deposits along.
+          const payments = await attachQuoteDeposits(tx, tenantId, note.quoteId, created.id);
+          return { ...created, payments };
         });
 
         return NextResponse.json(toSnakeCase(invoice));

@@ -231,6 +231,11 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
     method: "POST",
     path: (a) => `/api/quotes/${a.id}/convert-to-invoice`,
   },
+  create_quote_deposit: {
+    method: "POST",
+    path: (a) => `/api/quotes/${a.id}/deposits`,
+    body: (a) => a.input,
+  },
   convert_quote_to_delivery_note: {
     method: "POST",
     path: (a) => `/api/quotes/${a.id}/convert-to-delivery-note`,
@@ -711,6 +716,21 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
       if (a.endDate) q.endDate = String(a.endDate);
       return q;
     },
+  },
+  get_cash_journal: {
+    method: "GET",
+    path: "/api/reports/cash-journal",
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.startDate) q.startDate = String(a.startDate);
+      if (a.endDate) q.endDate = String(a.endDate);
+      return q;
+    },
+  },
+  update_cash_journal_opening: {
+    method: "PUT",
+    path: "/api/settings/cash-journal",
+    body: (a) => a.input,
   },
   get_invoice_margin: {
     method: "GET",

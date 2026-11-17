@@ -18,7 +18,10 @@
     "notes": "Notes",
     "category": "Poste de dépense",
     "categoryPlaceholder": "Ex. Carburant",
-    "categoryHint": "Choisissez un poste existant ou saisissez-en un nouveau : il sera créé à l'enregistrement."
+    "categoryHint": "Choisissez un poste existant ou saisissez-en un nouveau : il sera créé à l'enregistrement.",
+    "paymentMethod": "Mode de paiement",
+    "paymentMethodUnknown": "Non précisé",
+    "author": "Saisie par"
   },
   "validation": {
     "nameRequired": "Le nom est requis",
@@ -66,5 +69,9 @@
     "subcontracting": "Sous-traitance",
     "training": "Formation",
     "software": "Logiciels"
+  },
+  "filters": {
+    "author": "Filtrer par auteur",
+    "allAuthors": "Tout le monde"
   }
 }

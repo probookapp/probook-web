@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { CashJournalOpeningInput } from "@/types";
 import { reportApi, posApi } from "@/lib/api";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import {
@@ -11,6 +12,7 @@ import {
   DEMO_PIPELINE,
   DEMO_PROFIT_MARGIN,
   DEMO_INVOICE_MARGIN,
+  DEMO_CASH_JOURNAL,
   DEMO_SUPPLIER_SPEND,
   DEMO_INVENTORY_VALUATION,
   DEMO_QUOTE_CONVERSION,
@@ -119,6 +121,30 @@ export function useProfitMargin(startDate?: string, endDate?: string, enabled = 
       : () => reportApi.getProfitMargin(startDate, endDate),
     staleTime: isDemoMode ? Infinity : undefined,
     enabled,
+  });
+}
+
+export function useCashJournal(startDate?: string, endDate?: string, enabled = true) {
+  const { isDemoMode } = useDemoMode();
+  return useQuery({
+    queryKey: ["reports", "cash-journal", startDate, endDate, { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? () => DEMO_CASH_JOURNAL
+      : () => reportApi.getCashJournal(startDate, endDate),
+    staleTime: isDemoMode ? Infinity : undefined,
+    enabled,
+  });
+}
+
+/** Declares where the cash journal starts and what was held then. */
+export function useUpdateCashJournalOpening() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (input: CashJournalOpeningInput) => reportApi.updateCashJournalOpening(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["reports", "cash-journal"] });
+      queryClient.invalidateQueries({ queryKey: ["company-settings"] });
+    },
   });
 }
 

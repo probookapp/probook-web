@@ -14,6 +14,7 @@ import { PaymentForm, type PaymentFormData } from "./PaymentForm";
 import { useDemoMode } from "@/components/providers/DemoModeProvider";
 import { useCreatePayment, useDeletePayment } from "../hooks/useInvoices";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { paymentMethodLabelKey } from "@/lib/payment-methods";
 import { toast } from "@/stores/useToastStore";
 import { isOfflineQueuedError } from "@/lib/offline-errors";
 import { getApiErrorMessage } from "@/lib/api-adapter";
@@ -38,17 +39,9 @@ export function PaymentsList({ invoice }: PaymentsListProps) {
   const totalPaid = invoice.payments?.reduce((sum, p) => sum + p.amount, 0) || 0;
   const remaining = amountOwed - totalPaid;
 
-  const getPaymentMethodLabel = (method: string) => {
-    const methodMap: Record<string, string> = {
-      virement: t("payments.methods.transfer"),
-      cheque: t("payments.methods.check"),
-      carte: t("payments.methods.card"),
-      especes: t("payments.methods.cash"),
-      prelevement: t("payments.methods.directDebit"),
-      autre: t("payments.methods.other"),
-    };
-    return methodMap[method] || method;
-  };
+  // One reading of every vocabulary: "mark as paid" records "other", older
+  // rows say "transfer", and they used to print the raw value.
+  const getPaymentMethodLabel = (method: string) => t(paymentMethodLabelKey(method));
 
   const handleAddPayment = async (data: PaymentFormData) => {
     if (isDemoMode) { showSubscribePrompt(); return; }

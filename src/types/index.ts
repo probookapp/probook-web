@@ -271,6 +271,8 @@ export interface ConfirmPurchaseOrderInput {
   paid_from_register: boolean;
   register_id?: string | null;
   session_id?: string | null;
+  /** Paid on receipt without the till: CASH, CHECK, BANK_TRANSFER or OTHER. */
+  payment_method?: "CASH" | "CHECK" | "BANK_TRANSFER" | "OTHER" | null;
   /** Partial receipt: cumulative received quantity per line. Omit to receive all. */
   lines?: { line_id: string; received_quantity: number }[];
 }
@@ -572,6 +574,8 @@ export interface Quote {
   tags?: Tag[];
   /** The invoice this quote was converted to — empty until it is converted. */
   invoices?: { id: string; invoice_number: string }[];
+  /** Deposits received on the quote (they move to the invoice on conversion). */
+  deposits?: Payment[];
   lines: QuoteLine[];
   created_at: string;
   updated_at: string;
@@ -776,7 +780,10 @@ export interface UpdateInvoiceInput {
 // Payment types
 export interface Payment {
   id: string;
-  invoice_id: string;
+  /** Null on a deposit still waiting on its quote. */
+  invoice_id: string | null;
+  /** Set on a deposit taken on a quote; kept once the deposit is invoiced. */
+  quote_id?: string | null;
   amount: number;
   payment_date: string;
   payment_method: string;
@@ -803,6 +810,11 @@ export interface CreatePaymentInput {
   cheque_bank?: string | null;
   notes?: string | null;
 }
+
+/** A deposit on a quote: a payment whose quote is given by the URL. */
+export type CreateQuoteDepositInput = Omit<CreatePaymentInput, "invoice_id"> & {
+  idempotency_key?: string;
+};
 
 // Company Settings types
 export interface CompanySettings {
@@ -861,6 +873,11 @@ export interface CompanySettings {
   // Payment reminders: days after the due date, and automatic sending.
   reminder_steps: string;
   auto_send_reminders: boolean;
+  /** Cash journal: the day following starts, and what was held then. */
+  cash_journal_start?: string | null;
+  opening_cash?: number;
+  opening_cheques?: number;
+  opening_bank?: number;
   dashboard_layout: { order?: string[]; hidden?: string[] } | null;
   updated_at: string;
 }
@@ -935,6 +952,11 @@ export interface Expense {
   notes: string | null;
   category_id: string | null;
   category: { id: string; name: string } | null;
+  /** How it was paid (especes, cheque, virement...); null on older expenses. */
+  payment_method: string | null;
+  /** Who recorded it; null on older expenses and once that account is gone. */
+  created_by_id: string | null;
+  created_by: { id: string; display_name: string } | null;
   created_at: string;
   updated_at: string;
 }
@@ -944,6 +966,7 @@ export interface CreateExpenseInput {
   amount: number;
   date: string;
   notes?: string | null;
+  payment_method?: string | null;
   /** A heading by name: the server creates it if the tenant has no such one. */
   category_name?: string | null;
   category_id?: string | null;
@@ -1238,6 +1261,46 @@ export interface InvoiceMarginRow {
   remaining: number;
 }
 
+export type MoneyBucketKey = "cash" | "cheque" | "bank";
+
+/** One sum of money in or out in the cash journal (src/lib/cash-journal.ts). */
+export interface CashJournalRow {
+  id: string;
+  date: string;
+  kind: "invoice_payment" | "quote_deposit" | "pos_sale" | "supplier_payment" | "expense";
+  /** Signed: positive came in, negative went out. */
+  amount: number;
+  method: string | null;
+  reference: string;
+  party: string | null;
+  link: string | null;
+  bucket: MoneyBucketKey | null;
+}
+
+export interface CashJournalBucket {
+  opening: number;
+  in: number;
+  out: number;
+  closing: number;
+}
+
+export interface CashJournal {
+  start: string | null;
+  declared?: Record<MoneyBucketKey, number>;
+  from: string;
+  to: string;
+  rows: CashJournalRow[];
+  buckets: Record<MoneyBucketKey, CashJournalBucket>;
+  unclassified: { count: number; total: number };
+}
+
+export interface CashJournalOpeningInput {
+  start: string;
+  cash: number;
+  cheque: number;
+  bank: number;
+}
+
 export interface InvoiceMarginReport {
   rows: InvoiceMarginRow[];
   expenses_total: number;
@@ -1334,9 +1397,20 @@ export interface ExpensesByCategoryRow {
   share: number;
 }
 
+export interface ExpensesByAuthorRow {
+  /** Null for the expenses recorded before authors were kept. */
+  user_id: string | null;
+  user_name: string | null;
+  total_amount: number;
+  expense_count: number;
+  share: number;
+}
+
 export interface ExpensesByCategoryReport {
   total: number;
   categories: ExpensesByCategoryRow[];
+  /** The same expenses split by who recorded them. */
+  authors?: ExpensesByAuthorRow[];
 }
 
 export interface PipelineBucket {

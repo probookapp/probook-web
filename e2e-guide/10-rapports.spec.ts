@@ -26,7 +26,7 @@ test("Chapitre 10 — Piloter l'activité avec les rapports", async ({ page }) =
   await tour.pause(1800);
 
   await tour.nav("/reports");
-  await tour.say("Seize rapports, chacun sur une période que vous choisissez.");
+  await tour.say("Dix-sept rapports, chacun sur une période que vous choisissez.");
   await tour.pause(1600);
   await tour.say("Les rapports dont vous ne vous servez pas se masquent avec « Personnaliser » : la barre ne montre plus que les vôtres.");
   // Anchored: the sidebar has its own "Personnaliser le menu".
@@ -70,6 +70,16 @@ test("Chapitre 10 — Piloter l'activité avec les rapports", async ({ page }) =
   await tour.say("En bas, les dépenses de la période sont déduites de la marge : le bénéfice net se lit en un seul endroit.");
   await tour.point(page.getByText(t("reports:invoiceMargin.netProfit")).first());
   await tour.pause(1800);
+
+  // ─── trésorerie ───
+  await tour.say(
+    "La trésorerie rassemble l'argent qui entre et qui sort : versements, acomptes, achats payés, dépenses. Elle donne ce qu'il y a en espèces, en chèques et en banque."
+  );
+  await tour.click(tour.button(t("reports:cashJournal.title")), { settleMs: 2400 });
+  await tour.pause(2000);
+  await tour.say("On indique une fois le solde de départ : ce qu'il y avait en caisse le jour où l'on commence.");
+  await tour.point(tour.button(t("reports:cashJournal.setOpening")));
+  await tour.pause(1600);
 
   // ─── impayés ───
   await tour.say("Les impayés, classés par ancienneté, pour savoir qui relancer.");

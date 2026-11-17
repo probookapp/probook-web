@@ -12,6 +12,8 @@
  * (src/app/api/reports/fec) gathers the documents and hands them here.
  */
 
+import { moneyBucket } from "./payment-methods";
+
 export const FEC_COLUMNS = [
   "JournalCode",
   "JournalLib",
@@ -36,6 +38,8 @@ export const FEC_COLUMNS = [
 /** The plan comptable général accounts used, with their labels. */
 export const ACCOUNTS = {
   clients: ["411000", "Clients"],
+  // A deposit taken on a quote before any invoice exists.
+  clientAdvances: ["419100", "Clients - avances et acomptes reçus"],
   suppliers: ["401000", "Fournisseurs"],
   salesGoods: ["707000", "Ventes de marchandises"],
   salesServices: ["706000", "Prestations de services"],
@@ -91,13 +95,17 @@ export function balance(entry: FecEntry): FecEntry {
   return { ...entry, lines };
 }
 
-/** The bank or cash account a payment method lands in. */
+/**
+ * The bank or cash account a payment method lands in. Read through
+ * moneyBucket: invoice payments say "especes", not "CASH", and used to land in
+ * the bank.
+ */
 export function settlementAccount(method: string | null | undefined): Account {
-  return (method ?? "").toUpperCase() === "CASH" ? ACCOUNTS.cash : ACCOUNTS.bank;
+  return moneyBucket(method) === "cash" ? ACCOUNTS.cash : ACCOUNTS.bank;
 }
 
 export function settlementJournal(method: string | null | undefined): JournalCode {
-  return (method ?? "").toUpperCase() === "CASH" ? "CA" : "BQ";
+  return moneyBucket(method) === "cash" ? "CA" : "BQ";
 }
 
 /** An auxiliary account number for a client or supplier: stable and short. */

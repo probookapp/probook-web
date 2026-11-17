@@ -146,7 +146,10 @@
     "totalAmount": "Montant",
     "share": "Part",
     "total": "Total des dépenses",
-    "uncategorized": "Sans poste"
+    "uncategorized": "Sans poste",
+    "byAuthor": "Par personne",
+    "author": "Saisie par",
+    "unknownAuthor": "Non renseigné (anciennes dépenses)"
   },
   "lowStock": {
     "title": "Stock faible",
@@ -222,5 +225,39 @@
     "customize": "Personnaliser",
     "title": "Rapports affichés",
     "showAll": "Afficher tous les rapports"
+  },
+  "cashJournal": {
+    "title": "Trésorerie",
+    "hint": "Tout l’argent entré et sorti sur la période, rangé selon où il se trouve : espèces, chèques ou banque. Versements des clients, avances sur devis et ventes en caisse en entrée ; paiements fournisseurs et dépenses en sortie.",
+    "noOpening": "Aucun solde de départ n’est défini : les soldes partent de zéro. Indiquez ce que vous aviez en caisse, en chèques et en banque le jour où vous commencez.",
+    "setOpening": "Définir le solde de départ",
+    "editOpening": "Solde de départ",
+    "openingTitle": "Solde de départ",
+    "openingHint": "Le jour où vous commencez à suivre votre argent ici, et ce que vous aviez ce jour-là. Rien de daté d’avant ne sera recompté.",
+    "openingDate": "À partir du",
+    "openingSaved": "Solde de départ enregistré",
+    "opening": "Début de période",
+    "in": "Entrées",
+    "out": "Sorties",
+    "since": "Suivi depuis le {{date}}",
+    "showAll": "Tout afficher",
+    "date": "Date",
+    "operation": "Opération",
+    "party": "Tiers",
+    "method": "Mode",
+    "noMethod": "Non précisé",
+    "unclassified": "Opérations sans mode de paiement, listées mais non comptées dans les soldes : {{count}} ({{amount}}).",
+    "buckets": {
+      "cash": "Espèces",
+      "cheque": "Chèques",
+      "bank": "Banque"
+    },
+    "kinds": {
+      "invoice_payment": "Versement facture",
+      "quote_deposit": "Avance sur devis",
+      "pos_sale": "Vente en caisse",
+      "supplier_payment": "Paiement fournisseur",
+      "expense": "Dépense"
+    }
   }
 }

@@ -158,6 +158,14 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
       });
     }
 
+    // Deposits taken on the quote may already cover it: an invoice paid in
+    // full before it was even issued is PAID, not waiting on money that came.
+    const paid = inv.payments.reduce((sum, p) => sum + num(p.amount), 0);
+    if (inv.payments.length > 0 && paid >= num(inv.total) + num(stampDuty) - 0.01) {
+      await tx.invoice.update({ where: { tenantId, id: inv.id }, data: { status: "PAID" } });
+      return { ...inv, status: "PAID" };
+    }
+
     return inv;
     });
   } catch (e) {

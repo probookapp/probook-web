@@ -6,8 +6,11 @@ import { expenseSchema } from "@/lib/validations";
 import { requirePermission } from "@/lib/permissions-server";
 import { resolveExpenseCategoryId } from "@/lib/expense-category-server";
 
-/** Rows carry their heading's name so lists don't need a second request. */
-const withCategory = { category: { select: { id: true, name: true } } };
+/** Rows carry their heading's name and their author's, so lists don't need a second request. */
+const withCategory = {
+  category: { select: { id: true, name: true } },
+  createdBy: { select: { id: true, displayName: true } },
+};
 
 export const GET = withAuth(async (req, { tenantId, session }) => {
   const denied = await requirePermission(session, "expenses", "view");
@@ -56,6 +59,9 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
       date: new Date(body.date),
       notes: body.notes || null,
       categoryId: categoryId ?? null,
+      paymentMethod: body.payment_method ?? null,
+      // Whoever is signed in recorded it: never taken from the request.
+      createdById: session.userId,
     },
     include: withCategory,
   });

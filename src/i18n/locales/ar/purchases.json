@@ -58,7 +58,6 @@
   "confirmModal": {
     "title": "تأكيد طلب الشراء",
     "description": "تأكيد استلام البضائع واختيار طريقة الدفع.",
-    "payFromRegister": "الدفع من الصندوق",
     "selectRegister": "اختر الصندوق",
     "selectRegisterPlaceholder": "اختر صندوقاً...",
     "activeSession": "الجلسة النشطة",
@@ -69,7 +68,16 @@
     "receiveAll": "استلام الكل",
     "ordered": "المطلوب",
     "alreadyReceived": "المستلم سابقًا",
-    "receivedQty": "المستلم"
+    "receivedQty": "المستلم",
+    "payment": "الدفع عند الاستلام",
+    "payModes": {
+      "none": "لم يُدفع بعد",
+      "CASH": "دُفع نقدًا",
+      "CHECK": "دُفع بشيك",
+      "BANK_TRANSFER": "دُفع بتحويل",
+      "register": "دُفع من الصندوق (وضع الصندوق)"
+    },
+    "offTillHint": "يُسجّل في حساب المورد، دون المرور بوضع الصندوق."
   },
   "cancelModal": {
     "title": "إلغاء طلب الشراء",

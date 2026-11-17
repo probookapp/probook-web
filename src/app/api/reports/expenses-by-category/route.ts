@@ -32,7 +32,10 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
 
   const expenses = await prisma.expense.findMany({
     where: { tenantId, date: range },
-    include: { category: { select: { id: true, name: true } } },
+    include: {
+      category: { select: { id: true, name: true } },
+      createdBy: { select: { id: true, displayName: true } },
+    },
   });
 
   type Bucket = { categoryId: string | null; categoryName: string | null; totalAmount: number; expenseCount: number };
@@ -62,5 +65,25 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
       share: grandTotal > 0 ? (b.totalAmount / grandTotal) * 100 : 0,
     }));
 
-  return NextResponse.json(toSnakeCase({ total: grandTotal, categories: rows }));
+  // The same money split by who recorded it, so the owner can tell each
+  // employee's spending apart. Older expenses have no author: one row for them.
+  type AuthorBucket = { userId: string | null; userName: string | null; totalAmount: number; expenseCount: number };
+  const byAuthor = new Map<string, AuthorBucket>();
+  for (const exp of expenses) {
+    const key = exp.createdBy?.id ?? "";
+    const bucket = byAuthor.get(key) ?? {
+      userId: exp.createdBy?.id ?? null,
+      userName: exp.createdBy?.displayName ?? null,
+      totalAmount: 0,
+      expenseCount: 0,
+    };
+    bucket.totalAmount += num(exp.amount);
+    bucket.expenseCount += 1;
+    byAuthor.set(key, bucket);
+  }
+  const authors = Array.from(byAuthor.values())
+    .sort((a, b) => b.totalAmount - a.totalAmount)
+    .map((b) => ({ ...b, share: grandTotal > 0 ? (b.totalAmount / grandTotal) * 100 : 0 }));
+
+  return NextResponse.json(toSnakeCase({ total: grandTotal, categories: rows, authors }));
 });

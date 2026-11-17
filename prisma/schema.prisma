@@ -108,6 +108,7 @@ model User {
   sessions            UserSession[]
   totpSecret          TotpSecret?
   backupCodes         BackupCode[]
+  expensesRecorded    Expense[]                @relation("ExpenseAuthor")
 
   @@unique([tenantId, username])
   @@index([tenantId])
@@ -444,6 +445,8 @@ model Quote {
   lines         QuoteLine[]
   invoices      Invoice[]      @relation("QuoteInvoices")
   deliveryNotes DeliveryNote[] @relation("QuoteDeliveryNotes")
+  /// Deposits received before the quote became an invoice (see Payment.quoteId).
+  deposits      Payment[]
   tags          QuoteTag[]
 
   @@unique([tenantId, quoteNumber])
@@ -659,10 +662,16 @@ model InvoiceLine {
 
 // ========== Payments ==========
 
+/// Money received from a client. Usually against an invoice; a deposit taken
+/// on a quote carries quoteId alone until the quote becomes an invoice, when
+/// the same row is attached to it (src/lib/quote-deposits.ts) — never copied,
+/// so the secured journal entry it got on receipt stays the only one.
+/// A CHECK constraint keeps at least one of the two set.
 model Payment {
   id             String    @id @default(uuid())
   tenantId       String    @map("tenant_id")
-  invoiceId      String    @map("invoice_id")
+  invoiceId      String?   @map("invoice_id")
+  quoteId        String?   @map("quote_id")
   amount         Decimal   @db.Decimal(16, 3)
   paymentDate    DateTime  @map("payment_date") @db.Date
   paymentMethod  String    @map("payment_method")
@@ -678,11 +687,13 @@ model Payment {
   idempotencyKey String?   @map("idempotency_key")
   createdAt      DateTime  @default(now()) @map("created_at")
 
-  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice Invoice? @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  quote   Quote?   @relation(fields: [quoteId], references: [id], onDelete: SetNull)
 
   @@unique([tenantId, idempotencyKey])
   @@index([invoiceId])
+  @@index([quoteId])
   @@index([tenantId, paymentDate])
   @@map("payments")
 }
@@ -743,71 +754,78 @@ model DeliveryNoteLine {
 // ========== Company Settings (per tenant) ==========
 
 model CompanySettings {
-  id                     String   @id @default(uuid())
-  tenantId               String   @unique @map("tenant_id")
-  companyName            String   @default("My Company") @map("company_name")
+  id                     String    @id @default(uuid())
+  tenantId               String    @unique @map("tenant_id")
+  companyName            String    @default("My Company") @map("company_name")
   address                String?
   city                   String?
-  postalCode             String?  @map("postal_code")
-  country                String?  @default("")
+  postalCode             String?   @map("postal_code")
+  country                String?   @default("")
   phone                  String?
   email                  String?
   website                String?
   // See Client.siret — same dual vocabulary, driven by fiscalProfile below.
   siret                  String?
-  vatNumber              String?  @map("vat_number")
+  vatNumber              String?   @map("vat_number")
   nis                    String?
   art                    String?
   // Country fiscal regime: drives the VAT scale offered, the identifier labels
   // and whether the droit de timbre section applies. "DZ" | "FR".
-  fiscalProfile          String   @default("DZ") @map("fiscal_profile")
-  logoPath               String?  @map("logo_path")
-  defaultTaxRate         Float    @default(19.0) @map("default_tax_rate")
-  defaultPaymentTerms    Int      @default(30) @map("default_payment_terms")
-  invoicePrefix          String   @default("INV-") @map("invoice_prefix")
-  quotePrefix            String   @default("QT-") @map("quote_prefix")
-  nextInvoiceNumber      Int      @default(1) @map("next_invoice_number")
-  nextQuoteNumber        Int      @default(1) @map("next_quote_number")
-  legalMentions          String?  @map("legal_mentions")
-  legalMentionsHtml      String?  @map("legal_mentions_html")
-  bankDetails            String?  @map("bank_details")
-  deliveryNotePrefix     String?  @default("DN-") @map("delivery_note_prefix")
-  nextDeliveryNoteNumber Int?     @default(1) @map("next_delivery_note_number")
-  appLanguage            String?  @default("fr") @map("app_language")
-  appTheme               String?  @default("light") @map("app_theme")
+  fiscalProfile          String    @default("DZ") @map("fiscal_profile")
+  logoPath               String?   @map("logo_path")
+  defaultTaxRate         Float     @default(19.0) @map("default_tax_rate")
+  defaultPaymentTerms    Int       @default(30) @map("default_payment_terms")
+  invoicePrefix          String    @default("INV-") @map("invoice_prefix")
+  quotePrefix            String    @default("QT-") @map("quote_prefix")
+  nextInvoiceNumber      Int       @default(1) @map("next_invoice_number")
+  nextQuoteNumber        Int       @default(1) @map("next_quote_number")
+  legalMentions          String?   @map("legal_mentions")
+  legalMentionsHtml      String?   @map("legal_mentions_html")
+  bankDetails            String?   @map("bank_details")
+  deliveryNotePrefix     String?   @default("DN-") @map("delivery_note_prefix")
+  nextDeliveryNoteNumber Int?      @default(1) @map("next_delivery_note_number")
+  appLanguage            String?   @default("fr") @map("app_language")
+  appTheme               String?   @default("light") @map("app_theme")
   currency               String?
-  posTicketPrefix        String?  @default("TK-") @map("pos_ticket_prefix")
-  posAutoPrintReceipt    Boolean? @default(true) @map("pos_auto_print_receipt")
-  posShowStockWarning    Boolean? @default(true) @map("pos_show_stock_warning")
-  posLowStockThreshold   Int?     @default(5) @map("pos_low_stock_threshold")
-  creditNotePrefix       String?  @default("CN-") @map("credit_note_prefix")
-  nextCreditNoteNumber   Int?     @default(1) @map("next_credit_note_number")
-  dashboardLayout        Json?    @map("dashboard_layout") // owner's dashboard card order/visibility
-  stampDutyEnabled       Boolean? @default(false) @map("stamp_duty_enabled") // droit de timbre on cash payments
-  stampDutyRate          Float?   @default(1.0) @map("stamp_duty_rate") // percentage
-  stampDutyThreshold     Decimal? @default(0) @map("stamp_duty_threshold") @db.Decimal(16, 3) // min TTC for timbre to apply
-  printBundleDetail      Boolean  @default(true) @map("print_bundle_detail") // packs list their components on quote/invoice PDFs
+  posTicketPrefix        String?   @default("TK-") @map("pos_ticket_prefix")
+  posAutoPrintReceipt    Boolean?  @default(true) @map("pos_auto_print_receipt")
+  posShowStockWarning    Boolean?  @default(true) @map("pos_show_stock_warning")
+  posLowStockThreshold   Int?      @default(5) @map("pos_low_stock_threshold")
+  creditNotePrefix       String?   @default("CN-") @map("credit_note_prefix")
+  nextCreditNoteNumber   Int?      @default(1) @map("next_credit_note_number")
+  dashboardLayout        Json?     @map("dashboard_layout") // owner's dashboard card order/visibility
+  stampDutyEnabled       Boolean?  @default(false) @map("stamp_duty_enabled") // droit de timbre on cash payments
+  stampDutyRate          Float?    @default(1.0) @map("stamp_duty_rate") // percentage
+  stampDutyThreshold     Decimal?  @default(0) @map("stamp_duty_threshold") @db.Decimal(16, 3) // min TTC for timbre to apply
+  printBundleDetail      Boolean   @default(true) @map("print_bundle_detail") // packs list their components on quote/invoice PDFs
   // Legal identity printed under the company name (see src/lib/legal-mentions.ts):
   // the Algerian decree 05-468 art. 3 asks for the legal form, the nature of
   // the activity and the share capital; French invoices for the legal form and
   // capital of a company, or the "EI" mention of an individual entrepreneur.
-  legalForm              String?  @map("legal_form") // a LEGAL_FORMS code for the fiscal profile
-  shareCapital           Decimal? @map("share_capital") @db.Decimal(16, 3)
+  legalForm              String?   @map("legal_form") // a LEGAL_FORMS code for the fiscal profile
+  shareCapital           Decimal?  @map("share_capital") @db.Decimal(16, 3)
   activity               String? // nature de l'activité
   // France: franchise en base de TVA, invoices then carry the exemption mention.
-  vatFranchise           Boolean  @default(false) @map("vat_franchise")
+  vatFranchise           Boolean   @default(false) @map("vat_franchise")
   // France, business clients: the late-penalty rate and early-payment discount
   // printed on every invoice. Null prints the legal default / "néant".
-  latePenaltyRate        String?  @map("late_penalty_rate")
-  earlyPaymentDiscount   String?  @map("early_payment_discount")
+  latePenaltyRate        String?   @map("late_penalty_rate")
+  earlyPaymentDiscount   String?   @map("early_payment_discount")
   // France: option for paying VAT on debits (services), a mandatory mention.
-  vatOnDebits            Boolean  @default(false) @map("vat_on_debits")
+  vatOnDebits            Boolean   @default(false) @map("vat_on_debits")
   // Payment reminders (src/lib/reminder-sweep.ts): the days after the due
   // date at which an unpaid invoice is chased, and whether the nightly job
   // emails the client itself rather than leaving the reminder to send by hand.
-  reminderSteps          String   @default("1,15,30") @map("reminder_steps")
-  autoSendReminders      Boolean  @default(false) @map("auto_send_reminders")
-  updatedAt              DateTime @updatedAt @map("updated_at")
+  reminderSteps          String    @default("1,15,30") @map("reminder_steps")
+  autoSendReminders      Boolean   @default(false) @map("auto_send_reminders")
+  // Cash journal (src/lib/cash-journal.ts): what the business held in cash, in
+  // cheques not yet banked and at the bank on the day it starts following its
+  // money here. Nothing dated before that day counts towards a balance.
+  cashJournalStart       DateTime? @map("cash_journal_start") @db.Date
+  openingCash            Decimal   @default(0) @map("opening_cash") @db.Decimal(16, 3)
+  openingCheques         Decimal   @default(0) @map("opening_cheques") @db.Decimal(16, 3)
+  openingBank            Decimal   @default(0) @map("opening_bank") @db.Decimal(16, 3)
+  updatedAt              DateTime  @updatedAt @map("updated_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -817,22 +835,30 @@ model CompanySettings {
 // ========== Expenses ==========
 
 model Expense {
-  id         String   @id @default(uuid())
-  tenantId   String   @map("tenant_id")
+  id            String   @id @default(uuid())
+  tenantId      String   @map("tenant_id")
   // Optional: an expense can always be a one-off with no category.
-  categoryId String?  @map("category_id")
-  name       String
-  amount     Decimal  @default(0) @db.Decimal(16, 3)
-  date       DateTime @db.Date
-  notes      String?
-  createdAt  DateTime @default(now()) @map("created_at")
-  updatedAt  DateTime @updatedAt @map("updated_at")
+  categoryId    String?  @map("category_id")
+  name          String
+  amount        Decimal  @default(0) @db.Decimal(16, 3)
+  date          DateTime @db.Date
+  notes         String?
+  /// How it was paid, in the invoice payments' vocabulary (especes, cheque,
+  /// virement...; src/lib/payment-methods.ts). Null on expenses recorded
+  /// before the field existed: unknown, so the cash journal leaves them out.
+  paymentMethod String?  @map("payment_method")
+  /// Who recorded it. Null for older rows, and once that account is deleted.
+  createdById   String?  @map("created_by_id")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
-  tenant   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  category ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  tenant    Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  category  ExpenseCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  createdBy User?            @relation("ExpenseAuthor", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([tenantId])
   @@index([categoryId])
+  @@index([createdById])
   @@map("expenses")
 }
 
@@ -1303,22 +1329,22 @@ model PosPrinterConfig {
 // See src/lib/pos-journal.ts and src/lib/pos-closures.ts.
 
 model PosJournalEntry {
-  id          String   @id @default(uuid())
-  tenantId    String   @map("tenant_id")
+  id           String   @id @default(uuid())
+  tenantId     String   @map("tenant_id")
   /// 1, 2, 3… per tenant, no gaps.
-  sequence    Int
+  sequence     Int
   /// SALE | CANCELLATION | REFUND | PAYMENT | PAYMENT_REVERSAL | CLOSURE | ARCHIVE
-  kind        String
+  kind         String
   /// The record the event is about (POS transaction, credit note, payment…).
-  referenceId String?  @map("reference_id")
+  referenceId  String?  @map("reference_id")
   /// Signed amount including taxes: corrections are "moins" entries, never edits.
-  amount      Decimal  @default(0) @db.Decimal(16, 3)
-  occurredAt  DateTime @map("occurred_at")
+  amount       Decimal  @default(0) @db.Decimal(16, 3)
+  occurredAt   DateTime @map("occurred_at")
   /// The event's data as recorded: lines, totals, payments, operator, register.
-  payload     Json
-  previousHash String  @map("previous_hash")
-  hash        String
-  createdAt   DateTime @default(now()) @map("created_at")
+  payload      Json
+  previousHash String   @map("previous_hash")
+  hash         String
+  createdAt    DateTime @default(now()) @map("created_at")
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 

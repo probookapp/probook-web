@@ -131,5 +131,18 @@
     "short": "Stock insuffisant : {{available}} en stock pour {{requested}} demandé(s)",
     "banner_one": "{{count}} article de ce devis n'est pas disponible en quantité suffisante. Le devis reste valable : pensez à réapprovisionner avant de livrer ou de facturer.",
     "banner_other": "{{count}} articles de ce devis ne sont pas disponibles en quantité suffisante. Le devis reste valable : pensez à réapprovisionner avant de livrer ou de facturer."
+  },
+  "deposits": {
+    "title": "Avances reçues",
+    "quoteTotal": "Total du devis",
+    "paid": "Déjà versé",
+    "remaining": "Reste à payer",
+    "none": "Aucune avance enregistrée.",
+    "onInvoice": "Ces avances sont reportées sur la facture, où elles comptent dans le reste dû.",
+    "record": "Enregistrer une avance",
+    "delete": "Supprimer l’avance",
+    "deleteConfirm": "Supprimer cette avance ? Elle ne comptera plus dans ce que le client a versé.",
+    "added": "Avance enregistrée",
+    "add": "Ajouter une avance"
   }
 }

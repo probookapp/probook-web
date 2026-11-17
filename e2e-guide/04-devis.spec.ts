@@ -193,6 +193,21 @@ test("Chapitre 4 — Du devis à la facture", async ({ page }) => {
   // ─── conversion ───
   await tour.say("Le bouton de conversion apparaît alors sur le devis accepté.");
   await tour.clickRowAction(CLIENT.name, t("common:buttons.view"), { settleMs: 1500 });
+
+  // ─── avance ───
+  await tour.say(
+    "Le client verse l'acompte à la commande : on l'enregistre sur le devis, avec son mode de paiement. Il suivra sur la facture."
+  );
+  await tour.click(tour.button(t("quotes:deposits.add")), { settleMs: 900 });
+  const deposit = tour.dialog();
+  await tour.set(deposit.locator('input[name="amount"]'), "50000");
+  await tour.choose(deposit.locator('select[name="payment_method"]'), "especes");
+  await tour.click(deposit.getByRole("button", { name: t("common:payments.savePayment") }), {
+    settleMs: 1800,
+  });
+  await expect(page.getByText(t("quotes:deposits.paid")).first()).toBeVisible();
+  await tour.pause(1400);
+
   await tour.click(tour.button(t("quotes:actions.convertToInvoice")), { settleMs: 900 });
 
   await tour.say("Une confirmation, et le devis devient une facture — sans ressaisie.");

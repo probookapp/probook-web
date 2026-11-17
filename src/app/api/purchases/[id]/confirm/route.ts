@@ -15,6 +15,10 @@ const confirmReceiptSchema = z.object({
   paid_from_register: z.boolean(),
   register_id: z.string().nullable().optional(),
   session_id: z.string().nullable().optional(),
+  // Paid on receipt WITHOUT the till: how (the supplier payments' vocabulary).
+  // A shop that never opens a register session still pays in cash or by
+  // cheque — the till option told it there was no cash, as it had no session.
+  payment_method: z.enum(["CASH", "CHECK", "BANK_TRANSFER", "OTHER"]).nullable().optional(),
   lines: z
     .array(
       z.object({
@@ -209,6 +213,31 @@ export const POST = withAuth(async (req, { tenantId, params, session }) => {
         }
 
         paidFromRegister = true;
+        const settled = (await getOrderSettled(tx, tenantId, [order.id])).get(order.id) ?? 0;
+        paymentStatus = paymentStatusFor(num(order.total), settled);
+      }
+
+      // Paid outside the till: settle what has been received so far, less
+      // whatever was already paid on the order (an advance, an earlier receipt).
+      if (!body.paid_from_register && body.payment_method) {
+        const round2 = (n: number) => Math.round(n * 100) / 100;
+        const dueSoFar =
+          orderedValue > 0 ? round2((num(order.total) * newReceivedValue) / orderedValue) : num(order.total);
+        const settledBefore = (await getOrderSettled(tx, tenantId, [order.id])).get(order.id) ?? 0;
+        const amount = round2(dueSoFar - settledBefore);
+        if (amount > 0) {
+          await tx.supplierPayment.create({
+            data: {
+              tenantId,
+              supplierId: order.supplierId,
+              purchaseOrderId: order.id,
+              amount,
+              paymentDate: new Date(),
+              paymentMethod: body.payment_method,
+              fromRegister: false,
+            },
+          });
+        }
         const settled = (await getOrderSettled(tx, tenantId, [order.id])).get(order.id) ?? 0;
         paymentStatus = paymentStatusFor(num(order.total), settled);
       }

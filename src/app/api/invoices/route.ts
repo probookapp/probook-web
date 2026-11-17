@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { attachQuoteDeposits } from "@/lib/quote-deposits";
 import { withAuth, toSnakeCase, markOnboardingStep, parseListPagination, nextCursorOf } from "@/lib/api-utils";
 import { prisma } from "@/lib/db";
 import { calculateDocumentTotals } from "@/lib/document-totals";
@@ -162,7 +163,7 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
         const nextNum = await allocateDocumentNumber(tx, tenantId, "nextInvoiceNumber");
         const invoiceNumber = `${prefix}${String(nextNum).padStart(5, "0")}`;
 
-        return tx.invoice.create({
+        const created = await tx.invoice.create({
           data: {
             tenantId,
             invoiceNumber,
@@ -200,6 +201,10 @@ export const POST = withAuth(async (req, { session, tenantId }) => {
           },
           include: { lines: { orderBy: { position: "asc" } }, client: true, payments: true, ...TAGS_INCLUDE },
         });
+        // Made from a quote: the deposits the client paid on it come along.
+        if (!body.quote_id) return created;
+        const payments = await attachQuoteDeposits(tx, tenantId, body.quote_id, created.id);
+        return { ...created, payments };
       });
 
       markOnboardingStep(tenantId, "first_invoice");

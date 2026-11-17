@@ -198,12 +198,18 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
       const stockMovements = list(src, "stock_movements");
       const stockTransfers = list(src, "stock_transfers");
       const expenses = list(src, "expenses");
+      const expenseCategories = list(src, "expense_categories");
       const reminders = list(src, "reminders");
       const userPermissions = list(src, "user_permissions");
 
       // ─── 1. Wipe tenant data (exact reverse of the create order below) ───
       await tx.reminder.deleteMany({ where: { tenantId } });
       await tx.expense.deleteMany({ where: { tenantId } });
+      // Older backups carry no headings: keep the tenant's own then, or every
+      // restored expense would come back unfiled.
+      if (expenseCategories.length) {
+        await tx.expenseCategory.deleteMany({ where: { tenantId } });
+      }
       await tx.stockTransferLine.deleteMany({
         where: { transfer: { tenantId } },
       });
@@ -863,11 +869,17 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
           data: payments.map((p) => ({
             id: idOf(p),
             tenantId,
-            invoiceId: reqStr(p, "invoice_id"),
+            invoiceId: str(p, "invoice_id"),
+            quoteId: str(p, "quote_id"),
             amount: num(p, "amount", 0),
             paymentDate: reqDate(p, "payment_date"),
             paymentMethod: reqStr(p, "payment_method"),
             reference: str(p, "reference"),
+            // Article 258 mentions: dropping them on restore lost the cheque's
+            // proof of exemption from the droit de timbre.
+            chequeDate: dateOrNull(p, "cheque_date"),
+            chequeNumber: str(p, "cheque_number"),
+            chequeBank: str(p, "cheque_bank"),
             notes: str(p, "notes"),
             createdAt: reqDate(p, "created_at"),
           })),
@@ -1370,8 +1382,26 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
       }
       if (stockTransfers.length) imported.stock_transfers = stockTransfers.length;
 
-      // ─── 21. Expenses ───
+      // ─── 21. Expenses (and their headings, which backups used to leave out) ───
+      if (expenseCategories.length) {
+        await tx.expenseCategory.createMany({
+          data: expenseCategories.map((c) => ({
+            id: idOf(c),
+            tenantId,
+            name: reqStr(c, "name"),
+            createdAt: reqDate(c, "created_at"),
+          })),
+        });
+        imported.expense_categories = expenseCategories.length;
+      }
       if (expenses.length) {
+        // A heading or an author the backup does not bring along is dropped,
+        // not allowed to abort the restore on its foreign key.
+        const [categoryIds, userIds] = await Promise.all([
+          tx.expenseCategory.findMany({ where: { tenantId }, select: { id: true } }),
+          tx.user.findMany({ where: { tenantId }, select: { id: true } }),
+        ]).then(([c, u]) => [new Set(c.map((r) => r.id)), new Set(u.map((r) => r.id))]);
+        const known = (set: Set<string>, id: string | null) => (id && set.has(id) ? id : null);
         await tx.expense.createMany({
           data: expenses.map((e) => ({
             id: idOf(e),
@@ -1380,6 +1410,9 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
             amount: num(e, "amount", 0),
             date: reqDate(e, "date"),
             notes: str(e, "notes"),
+            categoryId: known(categoryIds, str(e, "category_id")),
+            paymentMethod: str(e, "payment_method"),
+            createdById: known(userIds, str(e, "created_by_id")),
             createdAt: reqDate(e, "created_at"),
           })),
         });
@@ -1461,6 +1494,10 @@ export const POST = withAdmin(async (req: NextRequest, ctx) => {
           vatOnDebits: bool(s, "vat_on_debits"),
           reminderSteps: str(s, "reminder_steps") ?? "1,15,30",
           autoSendReminders: bool(s, "auto_send_reminders"),
+          cashJournalStart: dateOrNull(s, "cash_journal_start"),
+          openingCash: num(s, "opening_cash", 0),
+          openingCheques: num(s, "opening_cheques", 0),
+          openingBank: num(s, "opening_bank", 0),
         };
         await tx.companySettings.upsert({
           where: { tenantId },
