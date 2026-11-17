@@ -1,3 +1,4 @@
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname, useLocale } from "@/lib/navigation";
 import { useTranslation } from "react-i18next";
@@ -25,8 +26,10 @@ import {
   Shield,
   Sun,
   Moon,
+  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSectionTitle } from "@/hooks/useSectionTitle";
 import { useAdminAuthStore } from "@/stores/useAdminAuthStore";
 import { useTheme } from "@/components/providers/ThemeContext";
 
@@ -35,7 +38,9 @@ interface AdminSidebarProps {
 }
 
 type NavItem = { key: string; href: string; icon: React.ElementType; indent?: boolean };
-type NavSection = { section?: string; items: NavItem[] };
+type NavSection = { section?: string; items: NavItem[]; collapsedByDefault?: boolean };
+
+const COLLAPSED_KEY = "probook-admin-nav-collapsed";
 
 const navigationSections: NavSection[] = [
   {
@@ -62,6 +67,9 @@ const navigationSections: NavSection[] = [
   },
   {
     section: "sidebar.sectionPlatform",
+    // Eight entries visited rarely: folded until opened, so the rail fits a
+    // laptop screen without scrolling.
+    collapsedByDefault: true,
     items: [
       { key: "platformAdmins", href: "/admin/platform-admins", icon: ShieldCheck },
       { key: "features", href: "/admin/features", icon: ToggleLeft },
@@ -83,6 +91,43 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
   const locale = useLocale();
   const queryClient = useQueryClient();
   const { resolvedTheme, setTheme } = useTheme();
+
+  // The entry for this page: the longest matching address, so the requests
+  // page lights "Requests" and not also "Subscriptions" above it.
+  const allItems = navigationSections.flatMap((section) => section.items);
+  const activeItem = allItems
+    .filter((item) =>
+      item.href === "/admin"
+        ? pathname === `/${locale}/admin`
+        : pathname === `/${locale}${item.href}` || pathname.startsWith(`/${locale}${item.href}/`)
+    )
+    .sort((a, b) => b.href.length - a.href.length)[0];
+  useSectionTitle(activeItem ? t(`sidebar.${activeItem.key}`) : undefined);
+
+  // Folded sections, as the admin last left them.
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    try {
+      const stored = localStorage.getItem(COLLAPSED_KEY);
+      if (stored) return JSON.parse(stored) as Record<string, boolean>;
+    } catch {
+      // Storage blocked or unreadable: the defaults below apply.
+    }
+    return {};
+  });
+  const isCollapsed = (section: NavSection) =>
+    !!section.section &&
+    !section.items.includes(activeItem as NavItem) &&
+    (collapsed[section.section] ?? section.collapsedByDefault ?? false);
+  const toggleSection = (section: NavSection) => {
+    if (!section.section) return;
+    const next = { ...collapsed, [section.section]: !isCollapsed(section) };
+    setCollapsed(next);
+    try {
+      localStorage.setItem(COLLAPSED_KEY, JSON.stringify(next));
+    } catch {
+      // Private mode: the choice lasts as long as this page.
+    }
+  };
 
   const toggleTheme = () => {
     setTheme(resolvedTheme === "dark" ? "light" : "dark");
@@ -129,16 +174,20 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
         {navigationSections.map((section, sIdx) => (
           <div key={sIdx} className={sIdx > 0 ? "pt-4" : ""}>
             {section.section && (
-              <p className="px-4 pb-2 text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+              <button
+                type="button"
+                onClick={() => toggleSection(section)}
+                aria-expanded={!isCollapsed(section)}
+                className="flex w-full items-center justify-between rounded-md px-4 pb-2 pt-1 text-[11px] font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-300"
+              >
                 {t(section.section)}
-              </p>
+                <ChevronDown
+                  className={cn("h-3.5 w-3.5 transition-transform", isCollapsed(section) && "-rotate-90")}
+                />
+              </button>
             )}
-            {section.items.map((item) => {
-              const localizedHref = `/${locale}${item.href}`;
-              const isActive =
-                item.href === "/admin"
-                  ? pathname === localizedHref
-                  : pathname.startsWith(localizedHref);
+            {!isCollapsed(section) && section.items.map((item) => {
+              const isActive = item === activeItem;
               return (
                 <Link
                   key={item.href}
@@ -184,11 +233,10 @@ export function AdminSidebar({ onClose }: AdminSidebarProps) {
             aria-label={t("sidebar.toggleTheme")}
             title={t("sidebar.toggleTheme")}
           >
-            {resolvedTheme === "dark" ? (
-              <Sun className="h-4 w-4" />
-            ) : (
-              <Moon className="h-4 w-4" />
-            )}
+            {/* Both drawn, the theme picks: choosing in markup does not match
+                the server render and makes React rebuild the page. */}
+            <Sun className="hidden h-4 w-4 dark:block" />
+            <Moon className="h-4 w-4 dark:hidden" />
           </button>
         </div>
         {currentAdmin && (
