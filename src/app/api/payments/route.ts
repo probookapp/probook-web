@@ -147,7 +147,10 @@ export const POST = withAuth(async (req, { tenantId, session }) => {
 
       await journalInvoicePayment(tx, { tenantId, userId: session.userId, kind: "PAYMENT", payment: created });
 
-      if (paidSoFar + body.amount >= amountOwed - EPSILON && invoice.status !== "PAID") {
+      // Only an issued invoice becomes PAID. A draft paid in full stays a
+      // draft: jumping it to PAID skipped the issue (no integrity hash, no
+      // stock out) and left it impossible to issue. Issuing settles it then.
+      if (paidSoFar + body.amount >= amountOwed - EPSILON && invoice.status === "ISSUED") {
         await tx.invoice.update({
           where: { tenantId, id: invoice.id },
           data: { status: "PAID" },

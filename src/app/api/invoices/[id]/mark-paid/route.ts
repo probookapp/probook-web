@@ -34,6 +34,9 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
       include: { payments: true },
     });
     if (!invoice) return null;
+    // Same rule as the button, which only issued invoices show: a draft has to
+    // be issued first, or it would be PAID with no hash and no stock out.
+    if (invoice.status === "DRAFT") return "DRAFT" as const;
 
     // The amount owed includes the stamp duty snapshot (droit de timbre).
     const amountOwed = num(invoice.total) + num(invoice.stampDuty);
@@ -71,5 +74,8 @@ export const POST = withAuth(async (req, { session, tenantId, params }) => {
   });
 
   if (!result) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  if (result === "DRAFT") {
+    return NextResponse.json({ error: "Issue the invoice before marking it paid" }, { status: 400 });
+  }
   return NextResponse.json(toSnakeCase(result));
 });
