@@ -46,6 +46,12 @@ export const signupSchema = z.object({
   display_name: requiredString("Display name"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   email: requiredEmail,
+  // The username was filled in from the email and never touched: a free
+  // variant may replace it when it is taken.
+  username_auto: z.boolean().optional(),
+  // The country the business is in, which sets its VAT scale, identifiers and
+  // currency from the first screen. Older clients send nothing (Algeria).
+  fiscal_profile: z.enum(FISCAL_PROFILE_IDS).optional(),
 });
 
 // Self-service: a logged-in user sets/updates their own email (triggers a fresh

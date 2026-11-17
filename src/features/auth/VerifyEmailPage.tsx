@@ -9,7 +9,7 @@ import { isApiError } from "@/lib/api-adapter";
 import { useLocale } from "@/lib/navigation";
 import { Button } from "@/components/ui";
 import Link from "next/link";
-import { Logo } from "@/components/shared/Logo";
+import { AuthCard, AuthShell } from "./AuthShell";
 
 /**
  * Machine-readable reason from the API, so the UI never guesses. Handles both
@@ -119,19 +119,12 @@ export function VerifyEmailPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">
-            <Logo className="h-9 w-9" title="Probook" />
-            Probook
-          </h1>
-        </div>
+    <AuthShell>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6 text-center">
+        <AuthCard>
+          <h1 className="text-xl font-semibold text-(--color-text-primary) mb-6 text-center">
             {t("verifyEmail.title")}
-          </h2>
+          </h1>
 
           <div className="flex flex-col items-center space-y-4">
             {status === "verifying" && (
@@ -216,8 +209,7 @@ export function VerifyEmailPage() {
               {t("verifyEmail.goToLogin")}
             </Link>
           </p>
-        </div>
-      </div>
-    </div>
+        </AuthCard>
+      </AuthShell>
   );
 }

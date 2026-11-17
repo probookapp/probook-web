@@ -11,7 +11,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { clearAllUserData } from '@/lib/session-cleanup';
 import Link from 'next/link';
 import type { UserInfo } from '@/types';
-import { Logo } from "@/components/shared/Logo";
+import { AuthCard, AuthShell } from "./AuthShell";
 
 export function LoginPage() {
   const { t } = useTranslation('auth');
@@ -28,6 +28,8 @@ export function LoginPage() {
   const [requires2FA, setRequires2FA] = useState(false);
   const [twoFAChallengeToken, setTwoFAChallengeToken] = useState('');
   const [twoFACode, setTwoFACode] = useState('');
+  // Backup codes are 10 hex characters, not 6 digits: they get a plain keyboard.
+  const [useBackupCode, setUseBackupCode] = useState(false);
   const [is2FALoading, setIs2FALoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -72,26 +74,19 @@ export function LoginPage() {
     setRequires2FA(false);
     setTwoFAChallengeToken('');
     setTwoFACode('');
+    setUseBackupCode(false);
     setError('');
   };
 
   if (requires2FA) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">
-              <Logo className="h-9 w-9" title="Probook" />
-              Probook
-            </h1>
-          </div>
-
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
+      <AuthShell>
+          <AuthCard>
             <div className="flex items-center gap-2 mb-2">
               <ShieldCheck className="h-5 w-5 text-primary-600" />
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+              <h1 className="text-xl font-semibold text-(--color-text-primary)">
                 {t('twoFactorLogin.title')}
-              </h2>
+              </h1>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
               {t('twoFactorLogin.description')}
@@ -101,8 +96,15 @@ export function LoginPage() {
               <Input
                 label={t('twoFactorLogin.codeLabel')}
                 value={twoFACode}
-                onChange={(e) => setTwoFACode(e.target.value)}
-                placeholder={t('twoFactorLogin.codePlaceholder')}
+                onChange={(e) =>
+                  setTwoFACode(useBackupCode ? e.target.value.trim() : e.target.value.replace(/\D/g, ''))
+                }
+                placeholder={useBackupCode ? undefined : t('twoFactorLogin.codePlaceholder')}
+                inputMode={useBackupCode ? 'text' : 'numeric'}
+                pattern={useBackupCode ? undefined : '[0-9]{6}'}
+                maxLength={useBackupCode ? 10 : 6}
+                autoCapitalize="none"
+                spellCheck={false}
                 autoFocus
                 autoComplete="one-time-code"
                 required
@@ -120,33 +122,34 @@ export function LoginPage() {
 
             <button
               type="button"
+              onClick={() => {
+                setUseBackupCode(!useBackupCode);
+                setTwoFACode('');
+              }}
+              className="mt-4 block text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400"
+            >
+              {useBackupCode ? t('twoFactorLogin.useAppCode') : t('twoFactorLogin.useBackupCode')}
+            </button>
+
+            <button
+              type="button"
               onClick={handleBackToLogin}
               className="mt-4 flex items-center gap-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300"
             >
               <ArrowLeft className="h-4 w-4" />
               {t('twoFactorLogin.backToLogin')}
             </button>
-          </div>
-        </div>
-      </div>
+          </AuthCard>
+        </AuthShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">
-            <Logo className="h-9 w-9" title="Probook" />
-            Probook
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2">{t('login.subtitle')}</p>
-        </div>
-
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-6">
+    <AuthShell subtitle={t('login.subtitle')}>
+        <AuthCard>
+          <h1 className="text-xl font-semibold text-(--color-text-primary) mb-6">
             {t('login.title')}
-          </h2>
+          </h1>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
@@ -202,8 +205,7 @@ export function LoginPage() {
               {t('login.signUp')}
             </Link>
           </p>
-        </div>
-      </div>
-    </div>
+        </AuthCard>
+      </AuthShell>
   );
 }

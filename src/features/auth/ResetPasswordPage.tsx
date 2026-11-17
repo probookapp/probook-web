@@ -8,7 +8,7 @@ import { useLocale } from '@/lib/navigation';
 import { Button, Input, PasswordToggle } from '@/components/ui';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Logo } from "@/components/shared/Logo";
+import { AuthCard, AuthShell } from "./AuthShell";
 
 export function ResetPasswordPage() {
   const { t } = useTranslation('auth');
@@ -57,9 +57,8 @@ export function ResetPasswordPage() {
 
   if (!token) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 text-center">
+      <AuthShell>
+          <AuthCard className="text-center">
             <p className="text-red-600 dark:text-red-400 mb-4">
               {t('resetPassword.tokenRequired')}
             </p>
@@ -69,17 +68,15 @@ export function ResetPasswordPage() {
             >
               {t('forgotPassword.title')}
             </Link>
-          </div>
-        </div>
-      </div>
+          </AuthCard>
+        </AuthShell>
     );
   }
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8 text-center">
+      <AuthShell>
+          <AuthCard className="text-center">
             <p className="text-green-600 dark:text-green-400 mb-4">
               {t('resetPassword.success')}
             </p>
@@ -90,26 +87,18 @@ export function ResetPasswordPage() {
               <ArrowLeft className="h-4 w-4" />
               {t('forgotPassword.backToLogin')}
             </Link>
-          </div>
-        </div>
-      </div>
+          </AuthCard>
+        </AuthShell>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">
-            <Logo className="h-9 w-9" title="Probook" />
-            Probook
-          </h1>
-        </div>
+    <AuthShell>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+        <AuthCard>
+          <h1 className="text-xl font-semibold text-(--color-text-primary) mb-2">
             {t('resetPassword.title')}
-          </h2>
+          </h1>
           <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">
             {t('resetPassword.description')}
           </p>
@@ -162,8 +151,7 @@ export function ResetPasswordPage() {
               {t('forgotPassword.backToLogin')}
             </Link>
           </p>
-        </div>
-      </div>
-    </div>
+        </AuthCard>
+      </AuthShell>
   );
 }

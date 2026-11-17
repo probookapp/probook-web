@@ -6,9 +6,9 @@ import { issueEmailVerificationToken, isEmailTakenByVerifiedUser } from "@/lib/v
 import { validateBody, isValidationError } from "@/lib/validate";
 import { signupSchema } from "@/lib/validations";
 import { getClientIp } from "@/lib/client-ip";
-import { isUsernameTaken } from "@/lib/usernames";
+import { isUsernameTaken, freeSignupUsername } from "@/lib/usernames";
+import { DEFAULT_FISCAL_PROFILE, getFiscalProfile } from "@/lib/fiscal-profiles";
 import { rateLimitDurable } from "@/lib/rate-limit";
-import { DEFAULT_CURRENCY } from "@/lib/currencies";
 import { serializeUserInfo } from "@/lib/user-info";
 
 // New signups get a free trial with full (non-demo) access, after which they
@@ -27,7 +27,8 @@ export async function POST(req: NextRequest) {
 
     const body = await validateBody(req, signupSchema);
     if (isValidationError(body)) return body;
-    const { company_name, username, display_name, password, email } = body;
+    const { company_name, display_name, password, email, username_auto } = body;
+    const profile = getFiscalProfile(body.fiscal_profile ?? DEFAULT_FISCAL_PROFILE);
 
     // Generate slug from company name
     const baseSlug = company_name
@@ -43,8 +44,12 @@ export async function POST(req: NextRequest) {
       slug = `${baseSlug}-${suffix}`;
     }
 
-    // Check if username is already taken (across all tenants)
-    if (await isUsernameTaken(username)) {
+    // Check if username is already taken (across all tenants). One filled in
+    // from the email and left alone is swapped for a free variant instead.
+    const username = username_auto
+      ? await freeSignupUsername(body.username, slug)
+      : body.username;
+    if (!username || (!username_auto && (await isUsernameTaken(username)))) {
       // Deliberately vague: a "username already taken" message would let
       // anyone probe which usernames exist across all tenants.
       return NextResponse.json(
@@ -83,7 +88,9 @@ export async function POST(req: NextRequest) {
         data: {
           tenantId: tenant.id,
           companyName: company_name,
-          currency: DEFAULT_CURRENCY,
+          fiscalProfile: profile.id,
+          currency: profile.defaultCurrency,
+          defaultTaxRate: profile.defaultTaxRate,
         },
       });
 
@@ -141,7 +148,7 @@ export async function POST(req: NextRequest) {
         });
         verificationEmailSent = true;
       } catch (emailError) {
-        // Don't block signup on email sending failure — but report it so the
+        // Don't block signup on email sending failure, but report it so the
         // client can tell the user to resend rather than wait for a lost email.
         console.error("Failed to send verification email:", emailError);
       }

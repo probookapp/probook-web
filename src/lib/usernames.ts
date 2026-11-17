@@ -48,6 +48,27 @@ export async function suggestUsername(username: string, tenantId: string): Promi
   return null;
 }
 
+/**
+ * At sign-up the username is filled in from the email, and the person may
+ * never look at it. When that guess is taken, a free variant is used instead
+ * of refusing the account over a field they did not choose: the company's
+ * name appended first, then a number.
+ */
+export async function freeSignupUsername(base: string, companySlug: string): Promise<string | null> {
+  const name = base.trim();
+  if (!(await isUsernameTaken(name))) return name;
+  const company = slugPart(companySlug);
+  const candidates = [
+    ...(company ? [`${name}-${company}`] : []),
+    ...Array.from({ length: 8 }, (_, i) => `${name}${i + 2}`),
+    `${name}${Math.floor(1000 + Math.random() * 9000)}`,
+  ];
+  for (const candidate of candidates) {
+    if (!(await isUsernameTaken(candidate))) return candidate;
+  }
+  return null;
+}
+
 /** 409 for an admin creating or renaming a user onto a name already in use. */
 export async function usernameTakenResponse(username: string, tenantId: string) {
   return NextResponse.json(

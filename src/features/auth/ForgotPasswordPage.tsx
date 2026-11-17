@@ -7,7 +7,7 @@ import { authApi } from '@/lib/api';
 import { useLocale } from '@/lib/navigation';
 import { Button, Input } from '@/components/ui';
 import Link from 'next/link';
-import { Logo } from "@/components/shared/Logo";
+import { AuthCard, AuthShell } from "./AuthShell";
 
 export function ForgotPasswordPage() {
   const { t } = useTranslation('auth');
@@ -31,22 +31,15 @@ export function ForgotPasswordPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100 flex items-center justify-center gap-2">
-            <Logo className="h-9 w-9" title="Probook" />
-            Probook
-          </h1>
-        </div>
+    <AuthShell>
 
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg p-6 sm:p-8">
+        <AuthCard>
           {submitted ? (
             <div className="text-center">
               <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              <h1 className="text-xl font-semibold text-(--color-text-primary) mb-2">
                 {t('forgotPassword.successTitle')}
-              </h2>
+              </h1>
               <p className="text-gray-500 dark:text-gray-400 mb-6">
                 {t('forgotPassword.successDescription')}
               </p>
@@ -60,9 +53,9 @@ export function ForgotPasswordPage() {
             </div>
           ) : (
             <>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              <h1 className="text-xl font-semibold text-(--color-text-primary) mb-2">
                 {t('forgotPassword.title')}
-              </h2>
+              </h1>
               <p className="text-gray-500 dark:text-gray-400 mb-6 text-sm">
                 {t('forgotPassword.description')}
               </p>
@@ -96,8 +89,7 @@ export function ForgotPasswordPage() {
               </p>
             </>
           )}
-        </div>
-      </div>
-    </div>
+        </AuthCard>
+      </AuthShell>
   );
 }
