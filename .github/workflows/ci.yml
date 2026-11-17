@@ -72,7 +72,7 @@ jobs:
           cache: npm
       - run: npm ci
       # playwright.config.ts loads .env.test (gitignored) — reconstruct it for CI.
-      # Supabase/Resend values are dummies: the e2e suite never reaches those
+      # R2/Resend values are dummies: the e2e suite never reaches those
       # services, but the production boot-time env check requires them to exist.
       - name: Create .env.test
         run: |
@@ -83,8 +83,11 @@ jobs:
           NEXT_PUBLIC_APP_URL="http://localhost:${E2E_PORT}"
           NEXT_PUBLIC_SITE_URL="http://localhost:${E2E_PORT}"
           NEXT_PUBLIC_APP_NAME="Probook"
-          NEXT_PUBLIC_SUPABASE_URL="https://ci-dummy.supabase.co"
-          SUPABASE_SERVICE_ROLE_KEY="ci-dummy-service-role-key"
+          R2_ACCOUNT_ID="ci-dummy-account"
+          R2_ACCESS_KEY_ID="ci-dummy-access-key"
+          R2_SECRET_ACCESS_KEY="ci-dummy-secret-key"
+          R2_BUCKET="ci-dummy-bucket"
+          R2_PUBLIC_URL="https://files.example.invalid"
           RESEND_API_KEY="re_ci_dummy_key"
           EMAIL_FROM="Probook CI <ci@example.invalid>"
           E2E_TEST_MODE="1"

@@ -71,6 +71,16 @@ function generateNonce(): string {
 // Development keeps a permissive policy: React Refresh and `next dev` need
 // 'unsafe-eval'/'unsafe-inline' (the nonce is deliberately omitted there,
 // since any nonce in the policy would make browsers ignore 'unsafe-inline').
+// Uploaded logos and photos are fetched by the browser (PDF rendering reads
+// them as data), so the bucket's public origin must be reachable.
+function filesOrigin(): string {
+  try {
+    return new URL(process.env.R2_PUBLIC_URL ?? "").origin;
+  } catch {
+    return "";
+  }
+}
+
 function buildCsp(nonce: string): string {
   const scriptSrc =
     process.env.NODE_ENV === "production"
@@ -82,7 +92,7 @@ function buildCsp(nonce: string): string {
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
-    "connect-src 'self' data: https://*.supabase.co https://*.sentry.io https://*.ingest.de.sentry.io https://connect.facebook.net https://www.facebook.com",
+    `connect-src 'self' data: ${filesOrigin()} https://*.sentry.io https://*.ingest.de.sentry.io https://connect.facebook.net https://www.facebook.com`,
     "worker-src 'self' blob:",
     // blob: is how a generated PDF is handed to the reader — the tab opened for
     // it holds the document in a frame. Without it the tab stays blank, and the
