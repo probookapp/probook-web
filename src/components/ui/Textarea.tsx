@@ -1,4 +1,4 @@
-import { forwardRef, type TextareaHTMLAttributes } from "react";
+import { forwardRef, useId, type TextareaHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 import { fieldBase, fieldError, fieldLabel } from "./field";
 
@@ -10,7 +10,8 @@ export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElemen
 const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, label, error, id, name, ...props }, ref) => {
     // Use id if provided, otherwise fall back to name for label association
-    const textareaId = id || name;
+    const generatedId = useId();
+    const textareaId = id || name || generatedId;
 
     return (
       <div className="w-full">

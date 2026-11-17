@@ -1,4 +1,4 @@
-import { forwardRef, type SelectHTMLAttributes } from "react";
+import { forwardRef, useId, type SelectHTMLAttributes } from "react";
 import { cn } from "@/lib/utils";
 import { fieldBase, fieldError, fieldLabel, FIELD_HEIGHT } from "./field";
 
@@ -11,7 +11,8 @@ export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, label, error, id, name, options, ...props }, ref) => {
     // Use id if provided, otherwise fall back to name for label association
-    const selectId = id || name;
+    const generatedId = useId();
+    const selectId = id || name || generatedId;
 
     return (
       <div className="w-full">

@@ -1,4 +1,4 @@
-import { forwardRef, useState, useRef, type InputHTMLAttributes } from "react";
+import { forwardRef, useId, useState, useRef, type InputHTMLAttributes } from "react";
 import { useTranslation } from "react-i18next";
 import { Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -65,7 +65,8 @@ const DateInput = forwardRef<HTMLInputElement, DateInputProps>(
     const locale = i18n.language;
     const hiddenDateRef = useRef<HTMLInputElement>(null);
     // Use id if provided, otherwise fall back to name for label association
-    const inputId = id || name;
+    const generatedId = useId();
+    const inputId = id || name || generatedId;
 
     // Local state for the text display
     const [displayValue, setDisplayValue] = useState(() => formatDateDisplay(value || "", locale));
