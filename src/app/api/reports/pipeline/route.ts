@@ -92,6 +92,7 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
           issueDate: true,
           dueDate: true,
           total: true,
+          stampDuty: true,
           client: { select: { name: true } },
         },
         orderBy: { dueDate: "asc" },
@@ -118,7 +119,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   const now = Date.now();
   const awaitingPayment = unpaidInvoices
     .map((inv) => {
-      const total = num(inv.total);
+      // What the client owes: the TTC total plus the stamp duty, as on the invoice page.
+      const total = num(inv.total) + num(inv.stampDuty);
       const paid = paidByInvoice.get(inv.id) ?? 0;
       const due = inv.dueDate;
       return {

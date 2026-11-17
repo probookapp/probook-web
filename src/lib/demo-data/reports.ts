@@ -124,9 +124,9 @@ export const DEMO_PIPELINE: PipelineReport = (() => {
       client: i.client?.name ?? "",
       date: i.issue_date,
       due_date: i.due_date,
-      amount: i.total,
+      amount: i.total + (i.stamp_duty ?? 0),
       paid,
-      remaining: Math.max(0, i.total - paid),
+      remaining: Math.max(0, i.total + (i.stamp_duty ?? 0) - paid),
       // Fixed rather than computed from today's date: the demo must read the
       // same way in six months.
       overdue: false,

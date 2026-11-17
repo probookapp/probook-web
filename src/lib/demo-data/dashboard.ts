@@ -18,7 +18,7 @@ const paidRevenue = DEMO_INVOICES.filter((i) => i.status === "PAID").reduce(
 
 /** Issued but not settled: what the "pending payments" card links to. */
 const pendingPayments = DEMO_INVOICES.filter((i) => i.status === "ISSUED").reduce(
-  (sum, i) => sum + i.total - (i.payments ?? []).reduce((paid, p) => paid + p.amount, 0),
+  (sum, i) => sum + i.total + (i.stamp_duty ?? 0) - (i.payments ?? []).reduce((paid, p) => paid + p.amount, 0),
   0
 );
 
@@ -42,7 +42,7 @@ const DAY = 24 * 60 * 60 * 1000;
 const receivablesAging = { not_due: 0, days_0_30: 0, days_31_60: 0, days_over_60: 0 };
 let overdueCount = 0;
 for (const inv of DEMO_INVOICES.filter((i) => i.status === "ISSUED")) {
-  const owed = inv.total - (inv.payments ?? []).reduce((paid, p) => paid + p.amount, 0);
+  const owed = inv.total + (inv.stamp_duty ?? 0) - (inv.payments ?? []).reduce((paid, p) => paid + p.amount, 0);
   if (owed <= 0) continue;
   const late = inv.due_date ? Math.floor((now.getTime() - new Date(inv.due_date).getTime()) / DAY) : 0;
   if (late <= 0) receivablesAging.not_due += owed;

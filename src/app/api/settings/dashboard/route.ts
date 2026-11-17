@@ -102,11 +102,13 @@ export const GET = withAuth(async (req, { tenantId }) => {
   const totalExpenses = num(expenses._sum?.amount);
   const totalExpensesYear = num(yearlyExpenses._sum?.amount);
 
+  // What the client still owes on one invoice: the TTC total plus the stamp
+  // duty snapshot, as on the invoice page, less the payments received.
+  const owedOn = (inv: (typeof issuedInvoices)[number]) =>
+    num(inv.total) + num(inv.stampDuty) - inv.payments.reduce((s, p) => s + num(p.amount), 0);
+
   // Pending payments: total owed on ISSUED invoices minus payments received
-  const pendingPayments = issuedInvoices.reduce((sum, inv) => {
-    const paid = inv.payments.reduce((s, p) => s + num(p.amount), 0);
-    return sum + (num(inv.total) - paid);
-  }, 0);
+  const pendingPayments = issuedInvoices.reduce((sum, inv) => sum + owedOn(inv), 0);
 
   // What is still owed, by how late it is: the list an owner chases payments
   // from. Days are counted from the due date.
@@ -114,7 +116,7 @@ export const GET = withAuth(async (req, { tenantId }) => {
   const receivablesAging = { not_due: 0, days_0_30: 0, days_31_60: 0, days_over_60: 0 };
   let overdueCount = 0;
   for (const inv of issuedInvoices) {
-    const owed = num(inv.total) - inv.payments.reduce((s, p) => s + num(p.amount), 0);
+    const owed = owedOn(inv);
     if (owed <= 0) continue;
     const late = Math.floor((now.getTime() - inv.dueDate.getTime()) / DAY);
     if (late <= 0) {

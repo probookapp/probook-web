@@ -18,7 +18,8 @@ export const GET = withAuth(async (req, { tenantId, session }) => {
   const result = invoices
     .map((inv) => {
       const totalPaid = inv.payments.reduce((sum, p) => sum + num(p.amount), 0);
-      const remaining = num(inv.total) - totalPaid;
+      // The client owes the stamp duty on top of the TTC total, as on the invoice page.
+      const remaining = num(inv.total) + num(inv.stampDuty) - totalPaid;
       const dueDate = new Date(inv.dueDate);
       const daysOverdue = Math.max(
         0,
