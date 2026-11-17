@@ -712,6 +712,16 @@ const COMMAND_MAP: Record<string, EndpointDef> = {
       return q;
     },
   },
+  get_invoice_margin: {
+    method: "GET",
+    path: "/api/reports/invoice-margin",
+    query: (a) => {
+      const q: Record<string, string> = {};
+      if (a.startDate) q.startDate = String(a.startDate);
+      if (a.endDate) q.endDate = String(a.endDate);
+      return q;
+    },
+  },
   get_supplier_spend: {
     method: "GET",
     path: "/api/reports/supplier-spend",

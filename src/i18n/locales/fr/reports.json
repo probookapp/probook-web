@@ -63,13 +63,32 @@
     "revenueTtc": "CA TTC"
   },
   "profitMargin": {
-    "title": "Profit / Marge",
+    "title": "Marge par article",
     "product": "Produit",
     "quantity": "Quantité",
     "revenue": "CA HT",
     "cost": "Coût",
     "margin": "Marge",
     "marginPercent": "Marge %"
+  },
+  "invoiceMargin": {
+    "title": "Marge par facture",
+    "hint": "Chaque facture émise sur la période : ce qu’elle a rapporté, ce qui a été versé et ce qui reste dû. Les dépenses de la même période sont déduites en bas.",
+    "invoice": "Facture",
+    "client": "Client",
+    "date": "Date",
+    "revenue": "CA HT",
+    "cost": "Coût d’achat",
+    "margin": "Marge",
+    "marginPercent": "Marge %",
+    "amountDue": "Total TTC",
+    "paid": "Versé",
+    "remaining": "Reste dû",
+    "settled": "Soldée",
+    "totalMargin": "Marge totale",
+    "expenses": "Dépenses de la période",
+    "netProfit": "Bénéfice net",
+    "totalRemaining": "Reste à encaisser"
   },
   "supplierSpend": {
     "title": "Dépenses fournisseurs",
@@ -198,5 +217,10 @@
     "location": "Emplacement",
     "allLocations": "Tous les emplacements"
   },
-  "noData": "Aucune donnée pour cette période"
+  "noData": "Aucune donnée pour cette période",
+  "tabs": {
+    "customize": "Personnaliser",
+    "title": "Rapports affichés",
+    "showAll": "Afficher tous les rapports"
+  }
 }

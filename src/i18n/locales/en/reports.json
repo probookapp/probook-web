@@ -63,13 +63,32 @@
     "revenueTtc": "Revenue (incl. VAT)"
   },
   "profitMargin": {
-    "title": "Profit / Margin",
+    "title": "Margin by product",
     "product": "Product",
     "quantity": "Quantity",
     "revenue": "Revenue (excl. VAT)",
     "cost": "Cost",
     "margin": "Margin",
     "marginPercent": "Margin %"
+  },
+  "invoiceMargin": {
+    "title": "Margin by invoice",
+    "hint": "Every invoice issued in the period: what it earned, what has been paid and what is still owed. The same period’s expenses are taken off at the bottom.",
+    "invoice": "Invoice",
+    "client": "Client",
+    "date": "Date",
+    "revenue": "Revenue (excl. VAT)",
+    "cost": "Purchase cost",
+    "margin": "Margin",
+    "marginPercent": "Margin %",
+    "amountDue": "Total incl. VAT",
+    "paid": "Paid",
+    "remaining": "Balance due",
+    "settled": "Settled",
+    "totalMargin": "Total margin",
+    "expenses": "Expenses for the period",
+    "netProfit": "Net profit",
+    "totalRemaining": "Still to collect"
   },
   "supplierSpend": {
     "title": "Supplier Spend",
@@ -198,5 +217,10 @@
     "location": "Location",
     "allLocations": "All locations"
   },
-  "noData": "No data for this period"
+  "noData": "No data for this period",
+  "tabs": {
+    "customize": "Customize",
+    "title": "Reports shown",
+    "showAll": "Show all reports"
+  }
 }

@@ -10,6 +10,7 @@ import {
   DEMO_EXPENSES_BY_MONTH,
   DEMO_PIPELINE,
   DEMO_PROFIT_MARGIN,
+  DEMO_INVOICE_MARGIN,
   DEMO_SUPPLIER_SPEND,
   DEMO_INVENTORY_VALUATION,
   DEMO_QUOTE_CONVERSION,
@@ -116,6 +117,18 @@ export function useProfitMargin(startDate?: string, endDate?: string, enabled = 
     queryFn: isDemoMode
       ? () => DEMO_PROFIT_MARGIN
       : () => reportApi.getProfitMargin(startDate, endDate),
+    staleTime: isDemoMode ? Infinity : undefined,
+    enabled,
+  });
+}
+
+export function useInvoiceMargin(startDate?: string, endDate?: string, enabled = true) {
+  const { isDemoMode } = useDemoMode();
+  return useQuery({
+    queryKey: ["reports", "invoice-margin", startDate, endDate, { demo: isDemoMode }],
+    queryFn: isDemoMode
+      ? () => DEMO_INVOICE_MARGIN
+      : () => reportApi.getInvoiceMargin(startDate, endDate),
     staleTime: isDemoMode ? Infinity : undefined,
     enabled,
   });

@@ -114,6 +114,8 @@ export const GUIDE_TOPICS: GuideTopic[] = [
   { label: "Transfert entre emplacements", chapter: "08-stock", evidence: "locations:" },
   { label: "Poste de dépense", chapter: "09-livraisons-depenses", evidence: "categories.manage" },
   { label: "Pilotage de l'activité", chapter: "10-rapports", evidence: "pipeline.title" },
+  { label: "Marge et encaissements par facture", chapter: "10-rapports", evidence: "invoiceMargin.title" },
+  { label: "Choisir les rapports affichés", chapter: "10-rapports", evidence: "tabs.customize" },
   { label: "Dépenses par poste", chapter: "10-rapports", evidence: "expensesByCategory.title" },
   { label: "Récapitulatif TVA", chapter: "10-rapports", evidence: "taxSummary.title" },
   { label: "Export comptable", chapter: "10-rapports", evidence: "accountingExport.title" },

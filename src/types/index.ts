@@ -1222,6 +1222,28 @@ export interface ProfitMarginRow {
   margin_percent: number;
 }
 
+/** One invoice in the per-invoice margin report (see src/lib/invoice-margin.ts). */
+export interface InvoiceMarginRow {
+  invoice_id: string;
+  invoice_number: string;
+  client_id: string;
+  client_name: string;
+  issue_date: string;
+  revenue: number;
+  cost: number;
+  margin: number;
+  margin_percent: number;
+  amount_due: number;
+  paid: number;
+  remaining: number;
+}
+
+export interface InvoiceMarginReport {
+  rows: InvoiceMarginRow[];
+  expenses_total: number;
+  expense_count: number;
+}
+
 export interface SupplierSpendRow {
   supplier_id: string;
   supplier_name: string;

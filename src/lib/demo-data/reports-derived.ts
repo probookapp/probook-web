@@ -2,6 +2,7 @@ import type {
   AccountingExport,
   DailyPosReport,
   InventoryValuationRow,
+  InvoiceMarginReport,
   ProfitMarginRow,
   QuoteConversionStats,
   SupplierSpendRow,
@@ -13,6 +14,7 @@ import { DEMO_QUOTES } from "./quotes";
 import { DEMO_EXPENSES } from "./expenses";
 import { DEMO_PURCHASES } from "./purchases";
 import { DEMO_SUPPLIERS } from "./suppliers";
+import { invoiceMarginReport } from "@/lib/invoice-margin";
 
 /**
  * The report tabs that used to come back empty in demo mode.
@@ -60,6 +62,52 @@ export const DEMO_PROFIT_MARGIN: ProfitMarginRow[] = (() => {
       margin_percent: row.revenue > 0 ? round2(((row.revenue - row.cost) / row.revenue) * 100) : 0,
     }))
     .sort((a, b) => b.margin - a.margin);
+})();
+
+/** Same arithmetic as the API route, fed with the demo invoices and expenses. */
+export const DEMO_INVOICE_MARGIN: InvoiceMarginReport = (() => {
+  const report = invoiceMarginReport(
+    DEMO_INVOICES.filter((i) => i.status === "PAID" || i.status === "ISSUED").map((invoice) => ({
+      id: invoice.id,
+      invoiceNumber: invoice.invoice_number,
+      clientId: invoice.client_id,
+      clientName: invoice.client?.name ?? "",
+      issueDate: invoice.issue_date,
+      status: invoice.status,
+      subtotal: invoice.subtotal,
+      total: invoice.total,
+      stampDuty: invoice.stamp_duty ?? 0,
+      lines: (invoice.lines ?? []).map((line) => ({
+        productId: line.product_id ?? null,
+        quantity: line.quantity,
+        // The demo lines carry no snapshot: the catalogue price stands in, as in DEMO_PROFIT_MARGIN.
+        costPriceSnapshot: DEMO_PRODUCTS.find((p) => p.id === line.product_id)?.purchase_price ?? 0,
+        isSubtotalLine: line.is_subtotal_line,
+        isBundleHeader: line.is_bundle_header,
+      })),
+      payments: invoice.payments ?? [],
+      creditNotes: [],
+    })),
+    DEMO_EXPENSES
+  );
+  return {
+    rows: report.rows.map((r) => ({
+      invoice_id: r.invoiceId,
+      invoice_number: r.invoiceNumber,
+      client_id: r.clientId,
+      client_name: r.clientName,
+      issue_date: r.issueDate,
+      revenue: r.revenue,
+      cost: r.cost,
+      margin: r.margin,
+      margin_percent: r.marginPercent,
+      amount_due: r.amountDue,
+      paid: r.paid,
+      remaining: r.remaining,
+    })),
+    expenses_total: report.expensesTotal,
+    expense_count: report.expenseCount,
+  };
 })();
 
 export const DEMO_SUPPLIER_SPEND: SupplierSpendRow[] = (() => {

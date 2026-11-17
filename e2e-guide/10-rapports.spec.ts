@@ -28,6 +28,10 @@ test("Chapitre 10 — Piloter l'activité avec les rapports", async ({ page }) =
   await tour.nav("/reports");
   await tour.say("Seize rapports, chacun sur une période que vous choisissez.");
   await tour.pause(1600);
+  await tour.say("Les rapports dont vous ne vous servez pas se masquent avec « Personnaliser » : la barre ne montre plus que les vôtres.");
+  // Anchored: the sidebar has its own "Personnaliser le menu".
+  await tour.point(tour.button(new RegExp(`^${t("reports:tabs.customize")}( \\d+)?$`)));
+  await tour.pause(1600);
 
   // ─── pilotage ───
   await tour.say(
@@ -56,6 +60,16 @@ test("Chapitre 10 — Piloter l'activité avec les rapports", async ({ page }) =
   );
   await tour.click(tour.button(t("reports:profitMargin.title")), { settleMs: 2200 });
   await tour.pause(2200);
+
+  // ─── marge par facture ───
+  await tour.say(
+    "La marge par facture fait le même calcul, facture par facture : ce que chacune a rapporté, ce qui a été versé et ce qui reste dû, en vert quand elle est soldée, en rouge quand il reste un crédit."
+  );
+  await tour.click(tour.button(t("reports:invoiceMargin.title")), { settleMs: 2400 });
+  await tour.pause(2400);
+  await tour.say("En bas, les dépenses de la période sont déduites de la marge : le bénéfice net se lit en un seul endroit.");
+  await tour.point(page.getByText(t("reports:invoiceMargin.netProfit")).first());
+  await tour.pause(1800);
 
   // ─── impayés ───
   await tour.say("Les impayés, classés par ancienneté, pour savoir qui relancer.");

@@ -21,6 +21,9 @@ import {
   Percent,
   PieChart,
   FileSpreadsheet,
+  FileText,
+  SlidersHorizontal,
+  RotateCcw,
 } from "lucide-react";
 import {
   Card,
@@ -40,6 +43,13 @@ import {
   PageHeader,
   ColumnPicker,
   FitAmount,
+  Menu,
+  MenuTrigger,
+  MenuContent,
+  MenuItem,
+  MenuCheckboxItem,
+  MenuSeparator,
+  MenuLabel,
 } from "@/components/ui";
 import { useTableColumns, type TableColumnsState } from "@/hooks/useTableColumns";
 import { useRouter } from "@/lib/navigation";
@@ -57,6 +67,7 @@ import {
   useQuoteConversionStats,
   useExpensesReport,
   useProfitMargin,
+  useInvoiceMargin,
   useSupplierSpend,
   useInventoryValuation,
   usePosDailyReport,
@@ -72,6 +83,7 @@ type ReportType =
   | "clients"
   | "products"
   | "profitMargin"
+  | "invoiceMargin"
   | "supplierSpend"
   | "outstanding"
   | "conversion"
@@ -168,9 +180,89 @@ function ExportBar({
   );
 }
 
+/**
+ * "Customize" — tick the reports the tab bar shows. Saved to the account like a
+ * list's columns, so a shop that never uses the till or the stock reports does
+ * not wade through them. One report always stays: an empty bar is a dead end.
+ */
+function ReportTabsPicker({ tabs }: { tabs: TableColumnsState }) {
+  const { t } = useTranslation(["reports"]);
+  const visibleCount = tabs.options.filter((o) => o.visible).length;
+  return (
+    <Menu modal={false}>
+      <MenuTrigger asChild>
+        <Button variant="ghost" size="sm" className="whitespace-nowrap">
+          <SlidersHorizontal className="h-4 w-4" />
+          {t("reports:tabs.customize")}
+          {tabs.hiddenCount > 0 && (
+            <span className="ms-0.5 rounded-full bg-(--color-bg-tertiary) px-1.5 text-xs tabular-nums text-(--color-text-secondary)">
+              {tabs.hiddenCount}
+            </span>
+          )}
+        </Button>
+      </MenuTrigger>
+      {/* Sixteen reports outgrow a laptop screen: the list scrolls inside the
+          room Radix measures below the trigger instead of running off the page. */}
+      <MenuContent align="end" className="min-w-60 max-h-(--radix-dropdown-menu-content-available-height) overflow-y-auto">
+        <MenuLabel>{t("reports:tabs.title")}</MenuLabel>
+        {tabs.options.map((option) => (
+          <MenuCheckboxItem
+            key={option.key}
+            checked={option.visible}
+            disabled={option.visible && visibleCount <= 1}
+            // Stay open: people untick several reports, not one.
+            onSelect={(e) => e.preventDefault()}
+            onCheckedChange={() => tabs.toggle(option.key)}
+          >
+            {option.label}
+          </MenuCheckboxItem>
+        ))}
+        {tabs.hiddenCount > 0 && (
+          <>
+            <MenuSeparator />
+            <MenuItem onSelect={tabs.reset}>
+              <RotateCcw className="h-4 w-4 opacity-70" />
+              {t("reports:tabs.showAll")}
+            </MenuItem>
+          </>
+        )}
+      </MenuContent>
+    </Menu>
+  );
+}
+
 export function ReportsPage() {
   const { t } = useTranslation(["reports", "common", "pos"]);
-  const [activeReport, setActiveReport] = useState<ReportType>("revenue");
+  const [selectedReport, setActiveReport] = useState<ReportType>("revenue");
+
+  const reports = [
+    { id: "pipeline" as const, label: t("reports:pipeline.title"), icon: Activity },
+    { id: "revenue" as const, label: t("reports:revenueByPeriod.title"), icon: BarChart3 },
+    { id: "clients" as const, label: t("reports:revenueByClient.title"), icon: Users },
+    { id: "products" as const, label: t("reports:productSales.title"), icon: Package },
+    { id: "profitMargin" as const, label: t("reports:profitMargin.title"), icon: DollarSign },
+    { id: "invoiceMargin" as const, label: t("reports:invoiceMargin.title"), icon: FileText },
+    { id: "supplierSpend" as const, label: t("reports:supplierSpend.title"), icon: Truck },
+    { id: "outstanding" as const, label: t("reports:outstanding.title"), icon: AlertCircle },
+    { id: "conversion" as const, label: t("reports:quoteConversion.title"), icon: TrendingUp },
+    { id: "posDaily" as const, label: t("reports:posDaily.title"), icon: Calculator },
+    { id: "expenses" as const, label: t("reports:expenses.title"), icon: Receipt },
+    { id: "expensesByCategory" as const, label: t("reports:expensesByCategory.title"), icon: PieChart },
+    { id: "lowStock" as const, label: t("reports:lowStock.title"), icon: AlertTriangle },
+    { id: "inventoryValuation" as const, label: t("reports:inventoryValuation.title"), icon: Boxes },
+    { id: "taxSummary" as const, label: t("reports:taxSummary.title"), icon: Percent },
+    { id: "accountingExport" as const, label: t("reports:accountingExport.title"), icon: FileSpreadsheet },
+  ];
+  // Which reports the bar shows: the same saved preference as a list's columns.
+  const reportTabs = useTableColumns(
+    "report-tabs",
+    reports.map((r) => ({ key: r.id, label: r.label }))
+  );
+  const visibleReports = reports.filter((r) => reportTabs.show(r.id));
+  // A report the person has just hidden is not left open behind the bar.
+  const activeReport: ReportType = visibleReports.some((r) => r.id === selectedReport)
+    ? selectedReport
+    : (visibleReports[0]?.id ?? selectedReport);
   const [startDate, setStartDate] = useState(() => {
     const date = new Date();
     date.setMonth(date.getMonth() - 12);
@@ -214,6 +306,11 @@ export function ReportsPage() {
     endDate,
     activeReport === "profitMargin"
   );
+  const { data: invoiceMarginData, isPending: isLoadingInvoiceMargin } = useInvoiceMargin(
+    startDate,
+    endDate,
+    activeReport === "invoiceMargin"
+  );
   const { data: supplierSpendData, isPending: isLoadingSupplierSpend } =
     useSupplierSpend(startDate, endDate, activeReport === "supplierSpend");
   const { data: outstandingData, isPending: isLoadingOutstanding } =
@@ -253,6 +350,20 @@ export function ReportsPage() {
     ],
     profitData
   );
+  const invoiceMarginColumns = useTableColumns(
+    "report-invoice-margin",
+    [
+      { key: "invoice", label: t("reports:invoiceMargin.invoice"), hideable: false },
+      { key: "date", label: t("reports:invoiceMargin.date") },
+      { key: "client", label: t("reports:invoiceMargin.client") },
+      { key: "amountDue", label: t("reports:invoiceMargin.amountDue") },
+      { key: "paid", label: t("reports:invoiceMargin.paid") },
+      { key: "remaining", label: t("reports:invoiceMargin.remaining") },
+      { key: "revenue", label: t("reports:invoiceMargin.revenue") },
+      { key: "margin", label: t("reports:invoiceMargin.margin") },
+    ],
+    invoiceMarginData?.rows
+  );
   const outstandingColumns = useTableColumns(
     "report-outstanding",
     [
@@ -280,24 +391,6 @@ export function ReportsPage() {
     // The rows on screen: the table stops at the first hundred.
     accountingData?.journal.slice(0, 100)
   );
-
-  const reports = [
-    { id: "pipeline" as const, label: t("reports:pipeline.title"), icon: Activity },
-    { id: "revenue" as const, label: t("reports:revenueByPeriod.title"), icon: BarChart3 },
-    { id: "clients" as const, label: t("reports:revenueByClient.title"), icon: Users },
-    { id: "products" as const, label: t("reports:productSales.title"), icon: Package },
-    { id: "profitMargin" as const, label: t("reports:profitMargin.title"), icon: DollarSign },
-    { id: "supplierSpend" as const, label: t("reports:supplierSpend.title"), icon: Truck },
-    { id: "outstanding" as const, label: t("reports:outstanding.title"), icon: AlertCircle },
-    { id: "conversion" as const, label: t("reports:quoteConversion.title"), icon: TrendingUp },
-    { id: "posDaily" as const, label: t("reports:posDaily.title"), icon: Calculator },
-    { id: "expenses" as const, label: t("reports:expenses.title"), icon: Receipt },
-    { id: "expensesByCategory" as const, label: t("reports:expensesByCategory.title"), icon: PieChart },
-    { id: "lowStock" as const, label: t("reports:lowStock.title"), icon: AlertTriangle },
-    { id: "inventoryValuation" as const, label: t("reports:inventoryValuation.title"), icon: Boxes },
-    { id: "taxSummary" as const, label: t("reports:taxSummary.title"), icon: Percent },
-    { id: "accountingExport" as const, label: t("reports:accountingExport.title"), icon: FileSpreadsheet },
-  ];
 
   const exportToCSV = async (data: unknown[], filename: string) => {
     if (!data || data.length === 0) return;
@@ -932,6 +1025,189 @@ export function ReportsPage() {
                 </div>
               </div>
             )}
+          </div>
+        );
+      }
+
+      case "invoiceMargin": {
+        if (isLoadingInvoiceMargin) return <LoadingSpinner />;
+        const rows = invoiceMarginData?.rows ?? [];
+        const sum = (pick: (r: (typeof rows)[number]) => number) => rows.reduce((s, r) => s + pick(r), 0);
+        const totals = {
+          revenue: sum((r) => r.revenue),
+          cost: sum((r) => r.cost),
+          margin: sum((r) => r.margin),
+          amountDue: sum((r) => r.amount_due),
+          paid: sum((r) => r.paid),
+          remaining: sum((r) => r.remaining),
+        };
+        const totalMarginPct = totals.revenue !== 0 ? (totals.margin / totals.revenue) * 100 : 0;
+        const expensesTotal = invoiceMarginData?.expenses_total ?? 0;
+        const netProfit = totals.margin - expensesTotal;
+        const col = invoiceMarginColumns.show;
+        const signed = (n: number) =>
+          n >= 0 ? "text-success-600 dark:text-success-400" : "text-danger-600 dark:text-danger-400";
+        return (
+          <div className="space-y-4">
+            <p className="text-sm text-(--color-text-secondary)">{t("reports:invoiceMargin.hint")}</p>
+            <ExportBar
+              columns={invoiceMarginColumns}
+              onCsv={() => exportToCSV(rows, "marge_factures")}
+              onPdf={() =>
+                exportToPDF(
+                  t("reports:invoiceMargin.title"),
+                  [
+                    { header: t("reports:invoiceMargin.invoice") },
+                    { header: t("reports:invoiceMargin.date") },
+                    { header: t("reports:invoiceMargin.client"), flex: 2 },
+                    { header: t("reports:invoiceMargin.amountDue"), align: "right" },
+                    { header: t("reports:invoiceMargin.paid"), align: "right" },
+                    { header: t("reports:invoiceMargin.remaining"), align: "right" },
+                    { header: t("reports:invoiceMargin.revenue"), align: "right" },
+                    { header: t("reports:invoiceMargin.cost"), align: "right" },
+                    { header: t("reports:invoiceMargin.margin"), align: "right" },
+                    { header: t("reports:invoiceMargin.marginPercent"), align: "right" },
+                  ],
+                  rows.map((r) => [
+                    r.invoice_number,
+                    formatDate(r.issue_date),
+                    r.client_name,
+                    formatCurrency(r.amount_due),
+                    formatCurrency(r.paid),
+                    formatCurrency(r.remaining),
+                    formatCurrency(r.revenue),
+                    formatCurrency(r.cost),
+                    formatCurrency(r.margin),
+                    `${r.margin_percent.toFixed(1)}%`,
+                  ]),
+                  "marge_factures",
+                  [
+                    { label: t("reports:invoiceMargin.revenue"), value: formatCurrency(totals.revenue) },
+                    { label: t("reports:invoiceMargin.totalMargin"), value: formatCurrency(totals.margin) },
+                    { label: t("reports:invoiceMargin.expenses"), value: formatCurrency(expensesTotal) },
+                    { label: t("reports:invoiceMargin.netProfit"), value: formatCurrency(netProfit) },
+                    { label: t("reports:invoiceMargin.totalRemaining"), value: formatCurrency(totals.remaining) },
+                  ]
+                )
+              }
+            />
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t("reports:invoiceMargin.invoice")}</TableHead>
+                  {col("date") && <TableHead>{t("reports:invoiceMargin.date")}</TableHead>}
+                  {col("client") && <TableHead>{t("reports:invoiceMargin.client")}</TableHead>}
+                  {col("amountDue") && <TableHead className="text-end">{t("reports:invoiceMargin.amountDue")}</TableHead>}
+                  {col("paid") && <TableHead className="text-end">{t("reports:invoiceMargin.paid")}</TableHead>}
+                  {col("remaining") && <TableHead className="text-end">{t("reports:invoiceMargin.remaining")}</TableHead>}
+                  {col("revenue") && <TableHead className="text-end">{t("reports:invoiceMargin.revenue")}</TableHead>}
+                  {col("margin") && <TableHead className="text-end">{t("reports:invoiceMargin.margin")}</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.length > 0 ? (
+                  <>
+                    {rows.map((r) => (
+                        <TableRow key={r.invoice_id} onActivate={() => router.push(`/invoices/${r.invoice_id}`)}>
+                          <TableCell className="whitespace-nowrap font-mono font-medium">{r.invoice_number}</TableCell>
+                          {col("date") && <TableCell className="whitespace-nowrap">{formatDate(r.issue_date)}</TableCell>}
+                          {col("client") && <TableCell className="min-w-40">{r.client_name}</TableCell>}
+                          {col("amountDue") && <TableNumericCell>{formatCurrency(r.amount_due)}</TableNumericCell>}
+                          {col("paid") && (
+                            <TableNumericCell className={r.remaining <= 0 ? "text-success-600 dark:text-success-400" : undefined}>
+                              {formatCurrency(r.paid)}
+                            </TableNumericCell>
+                          )}
+                          {/* Settled reads green, credit still owed reads red: the
+                              one glance the column exists for. */}
+                          {col("remaining") &&
+                            (r.remaining > 0 ? (
+                              <TableNumericCell className="font-medium text-danger-600 dark:text-danger-400">
+                                {formatCurrency(r.remaining)}
+                              </TableNumericCell>
+                            ) : (
+                              <TableCell className="text-end">
+                                <Badge variant="success">{t("reports:invoiceMargin.settled")}</Badge>
+                              </TableCell>
+                            ))}
+                          {col("revenue") && <TableNumericCell>{formatCurrency(r.revenue)}</TableNumericCell>}
+                          {/* The purchase cost stays in the exports: on screen the
+                              margin and its rate are what is read, and ten columns
+                              no longer fit a laptop. */}
+                          {col("margin") && (
+                            <TableNumericCell className={`font-medium ${signed(r.margin)}`}>
+                              {formatCurrency(r.margin)}
+                              <span className="block text-xs font-normal text-(--color-text-secondary)">
+                                {r.margin_percent.toFixed(1)}%
+                              </span>
+                            </TableNumericCell>
+                          )}
+                        </TableRow>
+                    ))}
+                    <TableRow className="bg-(--color-bg-secondary) font-semibold">
+                      <TableCell>{t("common:labels.total")}</TableCell>
+                      {col("date") && <TableCell />}
+                      {col("client") && <TableCell />}
+                      {col("amountDue") && <TableNumericCell>{formatCurrency(totals.amountDue)}</TableNumericCell>}
+                      {col("paid") && <TableNumericCell>{formatCurrency(totals.paid)}</TableNumericCell>}
+                      {col("remaining") && (
+                        <TableNumericCell className={totals.remaining > 0 ? "text-danger-600 dark:text-danger-400" : undefined}>
+                          {formatCurrency(totals.remaining)}
+                        </TableNumericCell>
+                      )}
+                      {col("revenue") && <TableNumericCell>{formatCurrency(totals.revenue)}</TableNumericCell>}
+                      {col("margin") && (
+                        <TableNumericCell className={signed(totals.margin)}>
+                          {formatCurrency(totals.margin)}
+                          <span className="block text-xs font-normal text-(--color-text-secondary)">
+                            {totalMarginPct.toFixed(1)}%
+                          </span>
+                        </TableNumericCell>
+                      )}
+                    </TableRow>
+                  </>
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={invoiceMarginColumns.visibleCount} className="text-center text-(--color-text-secondary) py-8">
+                      {t("reports:noData")}
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4 border-t border-(--color-border-primary)">
+              <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
+                <p className="text-sm text-(--color-text-secondary)">{t("reports:invoiceMargin.totalMargin")}</p>
+                <p className={`text-lg sm:text-2xl font-bold ${signed(totals.margin)}`}>
+                  <FitAmount>{formatCurrency(totals.margin)}</FitAmount>
+                </p>
+              </div>
+              <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
+                <p className="text-sm text-(--color-text-secondary)">
+                  {t("reports:invoiceMargin.expenses")}
+                  {invoiceMarginData && invoiceMarginData.expense_count > 0 && ` (${invoiceMarginData.expense_count})`}
+                </p>
+                <p className="text-lg sm:text-2xl font-bold">
+                  <FitAmount>{`− ${formatCurrency(expensesTotal)}`}</FitAmount>
+                </p>
+              </div>
+              <div
+                className={`p-4 rounded-lg ${netProfit >= 0 ? "bg-success-50 dark:bg-success-950" : "bg-danger-50 dark:bg-danger-950"}`}
+              >
+                <p className={`text-sm ${signed(netProfit)}`}>{t("reports:invoiceMargin.netProfit")}</p>
+                <p className={`text-lg sm:text-2xl font-bold ${signed(netProfit)}`}>
+                  <FitAmount>{formatCurrency(netProfit)}</FitAmount>
+                </p>
+              </div>
+              <div className="p-4 bg-(--color-bg-secondary) rounded-lg">
+                <p className="text-sm text-(--color-text-secondary)">{t("reports:invoiceMargin.totalRemaining")}</p>
+                <p
+                  className={`text-lg sm:text-2xl font-bold ${totals.remaining > 0 ? "text-danger-600 dark:text-danger-400" : ""}`}
+                >
+                  <FitAmount>{formatCurrency(totals.remaining)}</FitAmount>
+                </p>
+              </div>
+            </div>
           </div>
         );
       }
@@ -1889,8 +2165,10 @@ export function ReportsPage() {
     <div className="space-y-6">
       <PageHeader title={t("reports:title")} subtitle={t("reports:subtitle")} />
 
-      <div className="flex gap-2 overflow-x-auto pb-2 -mb-2 scrollbar-thin">
-        {reports.map((report) => (
+      {/* The reports wrap onto as many rows as they need: a bar that scrolls
+          sideways hides the ones past the edge, and people never find them. */}
+      <div className="flex flex-wrap items-center gap-2">
+        {visibleReports.map((report) => (
           <Button
             key={report.id}
             variant={activeReport === report.id ? "primary" : "secondary"}
@@ -1901,6 +2179,7 @@ export function ReportsPage() {
             {report.label}
           </Button>
         ))}
+        <ReportTabsPicker tabs={reportTabs} />
       </div>
 
       {activeReport === "posDaily" && (

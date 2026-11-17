@@ -29,7 +29,7 @@ test.describe("New reports tabs", () => {
     await signUpSubscribed(page);
   });
 
-  test("Profit / Margin tab renders seeded figures and endpoint agrees", async ({ page }) => {
+  test("Margin by product tab renders seeded figures and endpoint agrees", async ({ page }) => {
     const client = await setupClient(page, "Margin Client");
     const product = await setupProduct(page, "Margin Widget", 1000, {
       purchase_price: 600,
@@ -64,11 +64,69 @@ test.describe("New reports tabs", () => {
 
     // UI renders the tab with the seeded product row.
     await gotoReports(page);
-    await openTab(page, "Profit / Margin");
+    await openTab(page, "Margin by product");
     await expect(page.getByText("Margin Widget").first()).toBeVisible();
     // Export controls are present on this report tab.
     await expect(page.getByRole("button", { name: "Export PDF" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Export CSV" })).toBeVisible();
+  });
+
+  test("Margin by invoice shows margin, payments, balance and net profit", async ({ page }) => {
+    const client = await setupClient(page, "Invoice Margin Client");
+    const product = await setupProduct(page, "Invoice Margin Widget", 1000, {
+      purchase_price: 600,
+      quantity: 100,
+    });
+    const inv = await apiPost(page, "/api/invoices", {
+      client_id: client.id,
+      issue_date: today(),
+      lines: [
+        { product_id: product.id, description: "Invoice Margin Widget", quantity: 2, unit_price: 1000, tax_rate: 20 },
+      ],
+    });
+    await apiPost(page, `/api/invoices/${inv.body.id}/issue`);
+    await apiPost(page, "/api/payments", {
+      invoice_id: inv.body.id,
+      amount: 1000,
+      payment_date: today(),
+      payment_method: "cash",
+    });
+    await apiPost(page, "/api/expenses", { name: "Shop rent", amount: 300, date: today() });
+
+    const report = await apiGet(page, `/api/reports/invoice-margin?startDate=2024-01-01&endDate=${today()}`);
+    expect(report.status).toBe(200);
+    const body = report.body as unknown as {
+      rows: Array<Record<string, unknown>>;
+      expenses_total: number;
+    };
+    const row = body.rows.find((r) => r.invoice_id === inv.body.id);
+    expect(row).toMatchObject({ revenue: 2000, cost: 1200, margin: 800, amount_due: 2400, paid: 1000, remaining: 1400 });
+    expect(body.expenses_total).toBe(300);
+
+    await gotoReports(page);
+    await openTab(page, "Margin by invoice");
+    await expect(page.getByText(String(inv.body.invoice_number)).first()).toBeVisible();
+    await expect(page.getByText("Net profit")).toBeVisible();
+  });
+
+  test("Hidden report tabs leave the bar and come back", async ({ page }) => {
+    // The trigger reads "Customize 1" once a report is hidden (the count badge).
+    const customize = page.getByRole("button", { name: /^Customize( \d+)?$/ });
+    await gotoReports(page);
+    await customize.click();
+    await page.getByRole("menuitemcheckbox", { name: "Inventory Valuation" }).click();
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("button", { name: "Inventory Valuation", exact: true })).toHaveCount(0);
+
+    // Saved to the account: still hidden after a reload.
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await expect(page.getByRole("button", { name: "Margin by invoice", exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Inventory Valuation", exact: true })).toHaveCount(0);
+
+    await customize.click();
+    await page.getByRole("menuitem", { name: "Show all reports" }).click();
+    await expect(page.getByRole("button", { name: "Inventory Valuation", exact: true })).toBeVisible();
   });
 
   test("Supplier Spend tab renders seeded figures and endpoint agrees", async ({ page }) => {

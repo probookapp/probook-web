@@ -84,6 +84,7 @@ import type {
   ExpensesByCategoryReport,
   PipelineReport,
   ProfitMarginRow,
+  InvoiceMarginReport,
   SupplierSpendRow,
   TaxSummary,
   AccountingExport,
@@ -518,6 +519,8 @@ export const reportApi = {
     apiCall<PipelineReport>("get_pipeline_report", { startDate, endDate }),
   getProfitMargin: (startDate?: string, endDate?: string) =>
     apiCall<ProfitMarginRow[]>("get_profit_margin", { startDate, endDate }),
+  getInvoiceMargin: (startDate?: string, endDate?: string) =>
+    apiCall<InvoiceMarginReport>("get_invoice_margin", { startDate, endDate }),
   getSupplierSpend: (startDate?: string, endDate?: string) =>
     apiCall<SupplierSpendRow[]>("get_supplier_spend", { startDate, endDate }),
   getLowStock: (threshold?: number, locationId?: string) =>

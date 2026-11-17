@@ -40,6 +40,9 @@ describe("design tokens", () => {
         if (declared.has(name)) continue;
         // Fonts come from next/font at runtime, not from the stylesheet.
         if (name.startsWith("--font-")) continue;
+        // Radix writes its measurements (available height, trigger width) on
+        // the popper element itself while it is open.
+        if (name.startsWith("--radix-")) continue;
         const users = missing.get(name) ?? [];
         users.push(file.slice(ROOT.length + 1).replace(/\\/g, "/"));
         missing.set(name, users);
