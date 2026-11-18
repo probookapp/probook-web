@@ -3,22 +3,20 @@
 import { useTranslation } from "react-i18next";
 import { CircleHelp } from "lucide-react";
 import { useLocale, usePathname } from "@/lib/navigation";
-import { guideChapterForPath, guideVideo } from "@/lib/guide";
+import { guideChapterForPath } from "@/lib/guide";
 
 /**
- * The "?" beside a page title: opens the guide chapter that films this page.
+ * The "?" beside a page title: opens the guide chapter that explains this page.
  *
  * Which chapter is read from the routes each chapter claims (src/lib/guide.ts),
- * so a new page gets its link by being added to the inventory, not here. It
- * shows only once that chapter has a video in the reader's language — sending
- * someone stuck on a screen to a page that says "coming soon" helps nobody.
+ * so a new page gets its link by being added to the inventory, not here.
  */
 export function GuideHelpLink() {
   const { t } = useTranslation("pages");
   const locale = useLocale();
   const pathname = usePathname();
   const chapter = guideChapterForPath(pathname ?? "");
-  if (!chapter || !guideVideo(chapter, locale)) return null;
+  if (!chapter) return null;
 
   const label = t("guide.help");
   return (

@@ -97,8 +97,7 @@ function buildCsp(nonce: string): string {
     // blob: is how a generated PDF is handed to the reader — the tab opened for
     // it holds the document in a frame. Without it the tab stays blank, and the
     // only trace is a policy violation in the console.
-    // youtube-nocookie: the /guide videos, loaded only once a visitor presses play.
-    "frame-src 'self' blob: https://www.facebook.com https://www.youtube-nocookie.com",
+    "frame-src 'self' blob: https://www.facebook.com",
     "frame-ancestors 'none'",
     "base-uri 'self'",
     "form-action 'self' https://www.facebook.com",

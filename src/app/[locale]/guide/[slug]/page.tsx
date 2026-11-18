@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { generatePageMetadata, seo } from "@/lib/seo";
-import { BreadcrumbJsonLd, VideoObjectJsonLd } from "@/lib/structured-data";
+import { BreadcrumbJsonLd } from "@/lib/structured-data";
 import { isValidLocale, type Locale } from "@/lib/locales";
-import { GUIDE_CHAPTERS, guideChapter, guideVideo } from "@/lib/guide";
+import { GUIDE_CHAPTERS, guideChapter } from "@/lib/guide";
+import { guideCover, guideSteps } from "@/lib/guide-steps";
 import { GuideChapterPage } from "@/components/public/guide/GuideChapterPage";
-import transcripts from "@/content/guide/transcripts.json";
 import frPages from "@/i18n/locales/fr/pages.json";
 import enPages from "@/i18n/locales/en/pages.json";
 import arPages from "@/i18n/locales/ar/pages.json";
@@ -24,19 +24,24 @@ function resolve(localeParam: string, slug: string) {
   if (!chapter) return null;
   const locale: Locale = isValidLocale(localeParam) ? localeParam : "en";
   const text = PAGES[locale].guide.chapters[slug as keyof typeof frPages.guide.chapters];
-  const transcript = (transcripts as Record<string, Record<Locale, string[]>>)[chapter.source][locale];
-  return { chapter, locale, text, transcript, video: guideVideo(chapter, locale) };
+  return { chapter, locale, text };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { locale, slug } = await params;
   const page = resolve(locale, slug);
   if (!page) return {};
-  return generatePageMetadata("guide", locale, {
+  const metadata = generatePageMetadata("guide", locale, {
     path: `/guide/${slug}`,
     title: `${page.text.title} — ${seo.guide[page.locale].title}`,
     description: page.text.description,
   });
+  // Shared on WhatsApp or elsewhere, a chapter shows its own first screen.
+  const cover = guideCover(page.chapter, page.locale);
+  if (cover && metadata.openGraph) {
+    metadata.openGraph.images = [{ url: cover.src, width: cover.width, height: cover.height }];
+  }
+  return metadata;
 }
 
 export default async function Page({ params }: Props) {
@@ -53,16 +58,7 @@ export default async function Page({ params }: Props) {
           { name: page.text.title, url: `${base}/${slug}` },
         ]}
       />
-      {page.video && (
-        <VideoObjectJsonLd
-          name={page.text.title}
-          description={page.text.description}
-          youtubeId={page.video.id}
-          uploadDate={page.video.uploadDate}
-          transcript={page.transcript.join(" ")}
-        />
-      )}
-      <GuideChapterPage slug={slug} transcript={page.transcript} />
+      <GuideChapterPage slug={slug} steps={guideSteps(page.chapter, page.locale)} />
     </>
   );
 }

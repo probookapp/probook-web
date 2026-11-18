@@ -204,20 +204,16 @@
   },
   "guide": {
     "title": "Guide d'utilisation",
-    "subtitle": "Probook en vidéo, chapitre par chapitre : de la création du compte au premier rapport. Chaque vidéo est filmée dans la vraie application.",
-    "phoneIntro": "Quatre courtes vidéos au format téléphone : ce qu'on fait debout, chez le client ou au comptoir.",
+    "subtitle": "Probook pas à pas, chapitre par chapitre : de la création du compte au premier rapport. Chaque capture est prise dans la vraie application.",
+    "phoneIntro": "Quatre parcours sur téléphone : ce qu'on fait debout, chez le client ou au comptoir.",
     "chapter": "Chapitre {{number}}",
-    "transcript": "Ce que montre la vidéo",
-    "comingSoon": "La vidéo de ce chapitre arrive bientôt. En attendant, voici ce qu'elle montre, étape par étape.",
-    "play": "Lire la vidéo : {{title}}",
-    "watchOnYouTube": "Voir sur YouTube",
     "previous": "Précédent",
     "next": "Suivant",
     "backToGuide": "Tout le guide",
     "ctaTitle": "Prêt à essayer ?",
     "ctaSubtitle": "10 jours d'essai gratuit, toutes les fonctions incluses.",
     "ctaButton": "Créer mon compte",
-    "help": "Guide vidéo de cette page",
+    "help": "Guide de cette page",
     "groups": {
       "start": "Démarrer",
       "sell": "Vendre",
@@ -292,7 +288,8 @@
         "title": "Suivre l'activité",
         "description": "Saisir une dépense et consulter les rapports depuis le téléphone."
       }
-    }
+    },
+    "enlarge": "Voir en grand"
   },
   "notFound": {
     "title": "Cette page n'existe pas",

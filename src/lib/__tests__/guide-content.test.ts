@@ -3,8 +3,8 @@ import path from "node:path";
 import { GUIDE_FEATURES } from "../../../e2e-guide/feature-inventory";
 import { buildTranscripts, chapterFiles } from "../../../scripts/guide-narration.mjs";
 import { GUIDE_CHAPTERS, GUIDE_GROUPS, guideChapterForPath } from "../guide";
-import { GUIDE_VIDEOS } from "../../content/guide/videos";
 import transcripts from "../../content/guide/transcripts.json";
+import screens from "../../content/guide/screens.json";
 import frPages from "../../i18n/locales/fr/pages.json";
 import enPages from "../../i18n/locales/en/pages.json";
 import arPages from "../../i18n/locales/ar/pages.json";
@@ -81,13 +81,23 @@ describe("guide pages", () => {
     }
   });
 
-  it("point at real YouTube uploads", () => {
-    const sources = new Set(GUIDE_CHAPTERS.map((c) => c.source));
-    for (const [source, byLocale] of Object.entries(GUIDE_VIDEOS)) {
-      expect(sources, `unknown chapter ${source}`).toContain(source);
-      for (const video of Object.values(byLocale)) {
-        expect(video!.id).toMatch(/^[A-Za-z0-9_-]{11}$/);
-        expect(video!.uploadDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+  it("have one picture slot per sentence", () => {
+    // The pictures sit beside the sentences by position: a chapter whose
+    // narration changed after its screenshots were taken would show each
+    // picture beside the wrong step. Fix: capture again, then
+    // `npm run guide:images`.
+    const text = transcripts as Record<string, Record<string, string[]>>;
+    const shots = screens as Record<string, Record<string, ({ k: string; w: number; h: number } | null)[]>>;
+    for (const [source, byLocale] of Object.entries(shots)) {
+      expect(text[source], `unknown chapter ${source}`).toBeDefined();
+      for (const [locale, list] of Object.entries(byLocale)) {
+        expect(list.length, `${locale} ${source}`).toBe(text[source][locale].length);
+        for (const shot of list) {
+          if (!shot) continue;
+          expect(shot.k).toMatch(/^[0-9a-f]{16}\.webp$/);
+          expect(shot.w).toBeGreaterThan(0);
+          expect(shot.h).toBeGreaterThan(0);
+        }
       }
     }
   });

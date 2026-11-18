@@ -2,17 +2,16 @@
 
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import { PlayCircle, Smartphone } from "lucide-react";
+import { BookOpen, Smartphone } from "lucide-react";
 import { useLocale } from "@/lib/navigation";
-import type { Locale } from "@/lib/locales";
-import { GUIDE_CHAPTERS, GUIDE_GROUPS, guideVideo, type GuideChapter } from "@/lib/guide";
+import { GUIDE_CHAPTERS, GUIDE_GROUPS, type GuideChapter } from "@/lib/guide";
+import type { GuideImage } from "@/lib/guide-steps";
 import { PublicLayout } from "../PublicLayout";
 import { guideChapterNumber } from "./chapter-number";
 
-function ChapterCard({ chapter }: { chapter: GuideChapter }) {
+function ChapterCard({ chapter, cover }: { chapter: GuideChapter; cover: GuideImage | null }) {
   const { t } = useTranslation("pages");
-  const locale = useLocale() as Locale;
-  const video = guideVideo(chapter, locale);
+  const locale = useLocale();
   const number = guideChapterNumber(chapter);
   const portrait = chapter.format === "portrait";
 
@@ -21,18 +20,20 @@ function ChapterCard({ chapter }: { chapter: GuideChapter }) {
       href={`/${locale}/guide/${chapter.slug}`}
       className="group flex flex-col overflow-hidden rounded-xl border border-gray-200 bg-white transition-shadow hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
     >
-      <div className="relative aspect-video bg-gray-100 dark:bg-gray-800">
-        {video ? (
-          // eslint-disable-next-line @next/next/no-img-element -- remote YouTube thumbnail
+      <div className="relative aspect-video overflow-hidden bg-gray-100 dark:bg-gray-800">
+        {cover ? (
+          // Absolutely placed: an in-flow portrait screenshot would stretch the
+          // 16:9 frame instead of being cropped by it.
+          // eslint-disable-next-line @next/next/no-img-element -- a screenshot on R2, already sized
           <img
-            src={`https://i.ytimg.com/vi/${video.id}/mqdefault.jpg`}
+            src={cover.src}
             alt=""
             loading="lazy"
-            className="h-full w-full object-cover"
+            className="absolute inset-0 h-full w-full object-cover object-top"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-gray-400 dark:text-gray-500">
-            {portrait ? <Smartphone className="h-10 w-10" /> : <PlayCircle className="h-10 w-10" />}
+            {portrait ? <Smartphone className="h-10 w-10" /> : <BookOpen className="h-10 w-10" />}
           </div>
         )}
       </div>
@@ -53,7 +54,7 @@ function ChapterCard({ chapter }: { chapter: GuideChapter }) {
   );
 }
 
-export function GuidePage() {
+export function GuidePage({ covers }: { covers: Record<string, GuideImage | null> }) {
   const { t } = useTranslation("pages");
   const locale = useLocale();
 
@@ -87,7 +88,7 @@ export function GuidePage() {
               )}
               <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {chapters.map((chapter) => (
-                  <ChapterCard key={chapter.slug} chapter={chapter} />
+                  <ChapterCard key={chapter.slug} chapter={chapter} cover={covers[chapter.slug] ?? null} />
                 ))}
               </div>
             </section>

@@ -2,28 +2,26 @@
 
 import Link from "next/link";
 import { useTranslation } from "react-i18next";
-import { ArrowLeft, ArrowRight, ExternalLink, PlayCircle } from "lucide-react";
+import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useLocale } from "@/lib/navigation";
-import type { Locale } from "@/lib/locales";
-import { guideChapter, guideNeighbours, guideVideo } from "@/lib/guide";
+import { guideChapter, guideNeighbours } from "@/lib/guide";
+import type { GuideStep } from "@/lib/guide-steps";
 import { PublicLayout } from "../PublicLayout";
-import { YouTubePlayer } from "./YouTubePlayer";
 import { guideChapterNumber } from "./chapter-number";
 
 interface GuideChapterPageProps {
   slug: string;
-  /** The chapter's narration in the page language, from transcripts.json. */
-  transcript: string[];
+  /** The chapter's steps in the page language: sentence, and its screen. */
+  steps: GuideStep[];
 }
 
-export function GuideChapterPage({ slug, transcript }: GuideChapterPageProps) {
+export function GuideChapterPage({ slug, steps }: GuideChapterPageProps) {
   const { t } = useTranslation("pages");
-  const locale = useLocale() as Locale;
+  const locale = useLocale();
   const chapter = guideChapter(slug)!;
-  const video = guideVideo(chapter, locale);
   const number = guideChapterNumber(chapter);
   const { previous, next } = guideNeighbours(chapter);
-  const title = t(`guide.chapters.${slug}.title`);
+  const portrait = chapter.format === "portrait";
 
   return (
     <PublicLayout>
@@ -36,60 +34,58 @@ export function GuideChapterPage({ slug, transcript }: GuideChapterPageProps) {
           {t("guide.backToGuide")}
         </Link>
 
-        <header className="mb-6 mt-4">
+        <header className="mb-8 mt-4">
           <p className="text-sm font-semibold uppercase tracking-wide text-primary-600 dark:text-primary-400">
             {number !== null ? t("guide.chapter", { number }) : t("guide.groups.phone")}
           </p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
-            {title}
+            {t(`guide.chapters.${slug}.title`)}
           </h1>
           <p className="mt-2 text-lg text-gray-500 dark:text-gray-400">
             {t(`guide.chapters.${slug}.description`)}
           </p>
         </header>
 
-        {video ? (
-          <>
-            <YouTubePlayer
-              id={video.id}
-              title={title}
-              playLabel={t("guide.play", { title })}
-              locale={locale}
-              portrait={chapter.format === "portrait"}
-            />
-            <a
-              href={`https://www.youtube.com/watch?v=${video.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-3 inline-flex min-h-10 items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white lg:min-h-0"
-            >
-              <ExternalLink className="h-4 w-4" />
-              {t("guide.watchOnYouTube")}
-            </a>
-          </>
-        ) : (
-          <div className="flex items-start gap-3 rounded-xl border border-dashed border-gray-300 bg-gray-50 p-5 text-sm text-gray-600 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400">
-            <PlayCircle className="mt-0.5 h-5 w-5 shrink-0 text-gray-400" />
-            <p className="min-w-0 flex-1">{t("guide.comingSoon")}</p>
-          </div>
-        )}
-
-        <section className="mt-10" aria-labelledby="guide-transcript">
-          <h2 id="guide-transcript" className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
-            {t("guide.transcript")}
-          </h2>
-          {/* The narration, one sentence per step, as it is captioned on screen. */}
-          <ol className="space-y-3">
-            {transcript.map((line, i) => (
-              <li key={i} className="flex gap-3 text-gray-700 dark:text-gray-300">
+        {/* One step per sentence, each followed by the screen it leaves —
+            taken by the chapter that verifies this very flow. A step that
+            changes nothing on screen has no picture of its own. */}
+        <ol className="space-y-6">
+          {steps.map((step, i) => (
+            <li key={i}>
+              <div className="flex gap-3 text-gray-700 dark:text-gray-300">
                 <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold tabular-nums text-gray-500 dark:bg-gray-800 dark:text-gray-400">
                   {i + 1}
                 </span>
-                <span className="min-w-0 flex-1 leading-relaxed">{line}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
+                <p className="min-w-0 flex-1 leading-relaxed">{step.text}</p>
+              </div>
+              {step.image && (
+                <a
+                  href={step.image.src}
+                  target="_blank"
+                  rel="noopener"
+                  title={t("guide.enlarge")}
+                  // Never wider than on the screen it was taken from (shot at twice
+                  // the pixel density): a dialog shown across the whole column
+                  // looked twice the size of the page around it.
+                  style={{ maxWidth: step.image.width / 2 }}
+                  className={`mt-3 block overflow-hidden rounded-lg border border-gray-200 shadow-sm transition-shadow hover:shadow-md dark:border-gray-800 sm:ms-9 ${
+                    portrait ? "max-w-xs" : ""
+                  }`}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element -- a screenshot on R2, already sized and in WebP */}
+                  <img
+                    src={step.image.src}
+                    width={step.image.width}
+                    height={step.image.height}
+                    alt={step.text}
+                    loading={i < 2 ? "eager" : "lazy"}
+                    className="block h-auto w-full"
+                  />
+                </a>
+              )}
+            </li>
+          ))}
+        </ol>
 
         <nav className="mt-12 grid gap-3 border-t border-gray-200 pt-6 dark:border-gray-800 sm:grid-cols-2">
           {previous ? (

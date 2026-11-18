@@ -1,13 +1,11 @@
-import type { Locale } from "@/lib/locales";
-import { GUIDE_VIDEOS, type GuideVideo } from "@/content/guide/videos";
-
 /**
- * The public video guide: one page per filmed chapter, under /[locale]/guide.
+ * The public user guide: one page per chapter, under /[locale]/guide.
  *
  * Each entry points at a chapter of the e2e-guide suites (`source`), which is
- * both the test that walks the flow and the take that films it. The narration
- * printed under each video comes from that same file (see
- * scripts/build-guide-content.mjs), so the page says what the video says.
+ * both the test that walks the flow and the source of the page: its narration
+ * is the page's text (scripts/build-guide-content.mjs) and the screenshots it
+ * takes while it runs are the page's pictures (scripts/build-guide-images.mjs),
+ * so the guide shows what the test verified. See src/lib/guide-steps.ts.
  *
  * src/lib/__tests__/guide-content.test.ts holds this list to the chapters on
  * disk and to e2e-guide/feature-inventory.ts: a chapter added without a page,
@@ -31,7 +29,7 @@ export interface GuideChapter {
   /** Suite and chapter file: "desktop/04-devis". */
   source: string;
   group: GuideGroup;
-  /** Desktop chapters are filmed 16:9, the phone ones portrait. */
+  /** Desktop chapters are shot on a laptop screen, the phone ones portrait. */
   format: "landscape" | "portrait";
   /**
    * Application routes this chapter shows, as feature-inventory.ts names them.
@@ -179,11 +177,6 @@ export const GUIDE_CHAPTERS: GuideChapter[] = [
 
 export function guideChapter(slug: string): GuideChapter | undefined {
   return GUIDE_CHAPTERS.find((c) => c.slug === slug);
-}
-
-/** The YouTube upload for this chapter in this language, once there is one. */
-export function guideVideo(chapter: GuideChapter, locale: Locale): GuideVideo | null {
-  return GUIDE_VIDEOS[chapter.source]?.[locale] ?? null;
 }
 
 /** The chapters before and after, in the order the guide is meant to be watched. */

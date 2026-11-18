@@ -204,20 +204,16 @@
   },
   "guide": {
     "title": "User guide",
-    "subtitle": "Probook on video, chapter by chapter: from creating your account to your first report. Every video is filmed in the real application.",
-    "phoneIntro": "Four short videos in phone format: what you do on your feet, at a client's or at the counter.",
+    "subtitle": "Probook step by step, chapter by chapter: from creating your account to your first report. Every screenshot is taken in the real application.",
+    "phoneIntro": "Four walkthroughs on a phone: what you do on your feet, at a client's or at the counter.",
     "chapter": "Chapter {{number}}",
-    "transcript": "What the video shows",
-    "comingSoon": "The video for this chapter is coming soon. Meanwhile, here is what it shows, step by step.",
-    "play": "Play the video: {{title}}",
-    "watchOnYouTube": "Watch on YouTube",
     "previous": "Previous",
     "next": "Next",
     "backToGuide": "The whole guide",
     "ctaTitle": "Ready to try it?",
     "ctaSubtitle": "10-day free trial, every feature included.",
     "ctaButton": "Create my account",
-    "help": "Video guide for this page",
+    "help": "Guide for this page",
     "groups": {
       "start": "Getting started",
       "sell": "Selling",
@@ -292,7 +288,8 @@
         "title": "Keep track of the business",
         "description": "Record an expense and check the reports from your phone."
       }
-    }
+    },
+    "enlarge": "View full size"
   },
   "notFound": {
     "title": "This page does not exist",

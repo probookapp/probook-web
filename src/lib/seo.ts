@@ -43,9 +43,9 @@ export const seo = {
     ar: { title: "الأسئلة الشائعة", description: "الأسئلة المتكررة حول Probook. اعثر على إجابات حول الميزات والأسعار وكيفية البدء." },
   },
   guide: {
-    en: { title: "User guide", description: "Learn Probook on video, chapter by chapter: quotes, invoices, point of sale, stock, purchases and reports, filmed in the real application." },
-    fr: { title: "Guide d'utilisation", description: "Apprenez Probook en vidéo, chapitre par chapitre : devis, factures, caisse, stock, achats et rapports, filmés dans la vraie application." },
-    ar: { title: "دليل الاستخدام", description: "تعلّم Probook بالفيديو، فصلاً بفصل: عروض الأسعار، الفواتير، الصندوق، المخزون، المشتريات والتقارير، مُصوَّرة داخل التطبيق الحقيقي." },
+    en: { title: "User guide", description: "Learn Probook step by step: quotes, invoices, point of sale, stock, purchases and reports, with screenshots from the real application." },
+    fr: { title: "Guide d'utilisation", description: "Apprenez Probook pas à pas : devis, factures, caisse, stock, achats et rapports, avec les captures de la vraie application." },
+    ar: { title: "دليل الاستخدام", description: "تعلّم Probook خطوة بخطوة: عروض الأسعار، الفواتير، الصندوق، المخزون، المشتريات والتقارير، مع صور من التطبيق الحقيقي." },
   },
   privacy: {
     en: { title: "Privacy Policy", description: "How Probook collects, uses, and protects your data. Read our full privacy policy." },
