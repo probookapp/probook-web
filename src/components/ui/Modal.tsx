@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { useTranslation } from "react-i18next";
 import { X } from "lucide-react";
@@ -13,10 +13,14 @@ const ModalDirtyContext = createContext<((dirty: boolean) => void) | null>(null)
 /** Call from a form rendered inside a Modal with its unsaved state (react-hook-form's isDirty). */
 export function useModalDirty(isDirty: boolean) {
   const setDirty = useContext(ModalDirtyContext);
-  useEffect(() => {
+  // Layout effects, not effects: they run in the same commit as the keystroke
+  // that made the form dirty, before the browser handles the next event. With
+  // a passive effect, an Escape pressed right after typing could arrive first
+  // and close the modal without asking (seen in CI).
+  useLayoutEffect(() => {
     setDirty?.(isDirty);
   }, [setDirty, isDirty]);
-  useEffect(() => () => setDirty?.(false), [setDirty]);
+  useLayoutEffect(() => () => setDirty?.(false), [setDirty]);
 }
 
 /**
@@ -69,7 +73,12 @@ export function Modal({
   dismissible = true,
 }: ModalProps) {
   const { t } = useTranslation("common");
-  const [isDirty, setIsDirty] = useState(false);
+  // A ref, read when a close is attempted: it holds what the form reported
+  // last, even if this component has not re-rendered since.
+  const formDirty = useRef(false);
+  const setFormDirty = useCallback((dirty: boolean) => {
+    formDirty.current = dirty;
+  }, []);
   const [confirmingClose, setConfirmingClose] = useState(false);
 
   return (
@@ -79,7 +88,7 @@ export function Modal({
         if (open || !dismissible) return;
         // The owner closing it on purpose (after a save, or its own Cancel)
         // sets isOpen and never comes through here.
-        if (isDirty || ownerDirty) setConfirmingClose(true);
+        if (formDirty.current || ownerDirty) setConfirmingClose(true);
         else onClose();
       }}
     >
@@ -135,7 +144,7 @@ export function Modal({
               )}
             </div>
             <div className="px-4 py-3 sm:px-6 sm:py-4">
-              <ModalDirtyContext.Provider value={setIsDirty}>{children}</ModalDirtyContext.Provider>
+              <ModalDirtyContext.Provider value={setFormDirty}>{children}</ModalDirtyContext.Provider>
             </div>
           </Dialog.Content>
         </div>
