@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { logIn } from "./helpers";
-import { apiGet } from "./api-helpers";
+import { apiGet, setupClient } from "./api-helpers";
 import { signUpSubscribed, stubServiceWorker } from "./subscription-setup";
 
 async function gotoSettings(page: Page) {
@@ -76,6 +76,9 @@ test.describe("Dashboard customization (Settings)", () => {
     browser,
   }) => {
     const creds = await signUpSubscribed(page);
+    // An account with no client, quote or invoice gets the "start here" card
+    // instead of the stat cards, so there would be nothing to hide or reorder.
+    await setupClient(page, "Dashboard Client");
     await gotoSettings(page);
 
     // Toggle OFF the "Clients" stat card in the Dashboard Layout section. Scope
