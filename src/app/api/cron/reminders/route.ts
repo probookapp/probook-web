@@ -27,15 +27,35 @@ export const GET = async (req: NextRequest) => {
   }
 
   try {
-    const tenants = await prisma.tenant.findMany({ select: { id: true, status: true } });
-    const autoSend = new Set(
-      (
-        await prisma.companySettings.findMany({
-          where: { autoSendReminders: true },
-          select: { tenantId: true },
-        })
-      ).map((s) => s.tenantId)
-    );
+    // Only the accounts that have something to chase: an overdue invoice, a
+    // quote about to expire, or a reminder still waiting to go out. Visiting
+    // every account cost several queries each, most of them for nothing, and
+    // grew with every signup.
+    const now = new Date();
+    const inSevenDays = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const [withOverdue, withExpiring, autoSendRows] = await Promise.all([
+      prisma.invoice.findMany({
+        where: { status: "ISSUED", dueDate: { lt: now } },
+        distinct: ["tenantId"],
+        select: { tenantId: true },
+      }),
+      prisma.quote.findMany({
+        where: { status: "SENT", validityDate: { lte: inSevenDays, gte: now } },
+        distinct: ["tenantId"],
+        select: { tenantId: true },
+      }),
+      prisma.companySettings.findMany({
+        where: { autoSendReminders: true },
+        select: { tenantId: true },
+      }),
+    ]);
+    const autoSend = new Set(autoSendRows.map((s) => s.tenantId));
+    const candidates = new Set([...withOverdue, ...withExpiring].map((r) => r.tenantId));
+    for (const id of autoSend) candidates.add(id);
+    const tenants = await prisma.tenant.findMany({
+      where: { id: { in: [...candidates] } },
+      select: { id: true, status: true },
+    });
     let remindersSent = 0;
 
     // One tenant's failure must not cost every later tenant its reminders.
