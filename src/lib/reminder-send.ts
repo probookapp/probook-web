@@ -33,19 +33,26 @@ export async function buildReminderMail(reminder: ReminderRef): Promise<Reminder
   const companyName = settings?.companyName || "My Company";
   const currency = settings?.currency || DEFAULT_CURRENCY;
   const replyTo = settings?.email || undefined;
+  // The business's language: the client is the business's, not ours.
+  const lang = settings?.appLanguage;
 
   if (reminder.documentType === "invoice") {
     const invoice = await prisma.invoice.findFirst({
       where: { tenantId, id: reminder.documentId },
-      include: { client: true },
+      include: { client: true, payments: { select: { amount: true } } },
     });
     if (!invoice?.client?.email) return { ok: false, status: 400, error: "Client has no email address" };
+    // What is still owed, not the invoice total: a client who paid part of it
+    // must not be asked for the whole amount again.
+    const paid = invoice.payments.reduce((s, p) => s + Number(p.amount), 0);
+    const owed = Math.max(0, Number(invoice.total) + Number(invoice.stampDuty) - paid);
     const params = {
       companyName,
       clientName: invoice.client.name,
       invoiceNumber: invoice.invoiceNumber,
-      total: Number(invoice.total),
+      total: owed,
       currency,
+      lang,
       dueDate: invoice.dueDate ? invoice.dueDate.toISOString().split("T")[0] : "N/A",
     };
     return { ok: true, to: invoice.client.email, html: paymentOverdueEmail(params), text: paymentOverdueEmailPlainText(params), replyTo };
@@ -63,6 +70,7 @@ export async function buildReminderMail(reminder: ReminderRef): Promise<Reminder
       quoteNumber: quote.quoteNumber,
       total: Number(quote.total),
       currency,
+      lang,
       validityDate: quote.validityDate ? quote.validityDate.toISOString().split("T")[0] : "N/A",
     };
     return { ok: true, to: quote.client.email, html: quoteExpiringEmail(params), text: quoteExpiringEmailPlainText(params), replyTo };

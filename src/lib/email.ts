@@ -80,52 +80,181 @@ export async function sendEmail({ to, subject, html, replyTo }: SendEmailOptions
   }
 }
 
-// Plain text versions for mailto: fallback
-export function paymentOverdueEmailPlainText(params: {
+// ─── Reminder emails ───
+//
+// A reminder goes to the business's own client, so it speaks the business's
+// language (company_settings.app_language), not English. Amounts and dates are
+// written the way that language writes them, with the currency's own number
+// of decimals (millimes for the dinar tunisien).
+
+type ReminderLang = "fr" | "en" | "ar";
+
+interface ReminderText {
+  overdueSubject: (n: string) => string;
+  overdueTitle: string;
+  overdueIntro: string;
+  overdueOutro: string;
+  quoteSubject: (n: string) => string;
+  quoteTitle: string;
+  quoteIntro: string;
+  quoteOutro: string;
+  greeting: (name: string) => string;
+  invoice: string;
+  quote: string;
+  amountDue: string;
+  amount: string;
+  dueDate: string;
+  validUntil: string;
+  regards: string;
+}
+
+const REMINDER_TEXT: Record<ReminderLang, ReminderText> = {
+  fr: {
+    overdueSubject: (n) => `Relance : facture ${n}`,
+    overdueTitle: "Relance de paiement",
+    overdueIntro: "Sauf erreur de notre part, la facture suivante reste impayée à ce jour :",
+    overdueOutro:
+      "Merci de bien vouloir procéder à son règlement dans les meilleurs délais. Si le paiement a été effectué entre-temps, merci de ne pas tenir compte de ce message.",
+    quoteSubject: (n) => `Votre devis ${n} arrive à échéance`,
+    quoteTitle: "Devis bientôt expiré",
+    quoteIntro: "Nous vous rappelons que le devis suivant arrive bientôt à échéance :",
+    quoteOutro: "Si vous souhaitez donner suite, merci de nous le faire savoir avant cette date.",
+    greeting: (name) => `Bonjour ${name},`,
+    invoice: "Facture",
+    quote: "Devis",
+    amountDue: "Reste à payer",
+    amount: "Montant",
+    dueDate: "Échéance",
+    validUntil: "Valable jusqu'au",
+    regards: "Cordialement,",
+  },
+  en: {
+    overdueSubject: (n) => `Payment reminder: invoice ${n}`,
+    overdueTitle: "Payment reminder",
+    overdueIntro: "Unless we are mistaken, the following invoice is still unpaid:",
+    overdueOutro:
+      "Please arrange payment at your earliest convenience. If you have paid in the meantime, please disregard this message.",
+    quoteSubject: (n) => `Your quote ${n} expires soon`,
+    quoteTitle: "Quote expiring soon",
+    quoteIntro: "This is a reminder that the following quote will expire soon:",
+    quoteOutro: "If you would like to proceed, please let us know before that date.",
+    greeting: (name) => `Dear ${name},`,
+    invoice: "Invoice",
+    quote: "Quote",
+    amountDue: "Amount due",
+    amount: "Amount",
+    dueDate: "Due date",
+    validUntil: "Valid until",
+    regards: "Best regards,",
+  },
+  ar: {
+    overdueSubject: (n) => `تذكير بالدفع: الفاتورة ${n}`,
+    overdueTitle: "تذكير بالدفع",
+    overdueIntro: "ما لم نكن مخطئين، فإن الفاتورة التالية لم تُسدَّد بعد:",
+    overdueOutro: "نرجو منكم تسديدها في أقرب الآجال. وإذا تم الدفع في الأثناء، فلا تأخذوا هذه الرسالة بعين الاعتبار.",
+    quoteSubject: (n) => `عرض السعر ${n} يقترب من انتهاء صلاحيته`,
+    quoteTitle: "عرض سعر يقترب من انتهاء صلاحيته",
+    quoteIntro: "نذكّركم بأن عرض السعر التالي سينتهي قريبًا:",
+    quoteOutro: "إذا رغبتم في المتابعة، يرجى إعلامنا قبل هذا التاريخ.",
+    greeting: (name) => `السيد(ة) ${name}،`,
+    invoice: "الفاتورة",
+    quote: "عرض السعر",
+    amountDue: "المبلغ المتبقي",
+    amount: "المبلغ",
+    dueDate: "تاريخ الاستحقاق",
+    validUntil: "صالح إلى غاية",
+    regards: "مع خالص التحيات،",
+  },
+};
+
+function reminderLang(lang: string | null | undefined): ReminderLang {
+  return lang === "en" || lang === "ar" ? lang : "fr";
+}
+
+const INTL_LOCALE: Record<ReminderLang, string> = { fr: "fr-FR", en: "en-GB", ar: "ar-DZ" };
+
+function reminderMoney(amount: number, currency: string, lang: ReminderLang): string {
+  try {
+    return new Intl.NumberFormat(INTL_LOCALE[lang], { style: "currency", currency, numberingSystem: "latn" }).format(amount);
+  } catch {
+    return `${amount.toFixed(2)} ${currency}`;
+  }
+}
+
+/** "2026-07-01" as the language writes a date; anything else is left as is. */
+function reminderDate(isoDay: string, lang: ReminderLang): string {
+  const d = new Date(`${isoDay}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return isoDay;
+  return new Intl.DateTimeFormat(INTL_LOCALE[lang], {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "UTC",
+    numberingSystem: "latn",
+  }).format(d);
+}
+
+interface OverdueParams {
   companyName: string;
   clientName: string;
   invoiceNumber: string;
+  /** What remains to pay: total and stamp duty, less what was already received. */
   total: number;
   currency: string;
   dueDate: string;
-}) {
-  const subject = `Payment reminder – Invoice ${params.invoiceNumber}`;
-  const body = `Dear ${params.clientName},
-
-This is a friendly reminder that the following invoice is past due:
-
-Invoice: ${params.invoiceNumber}
-Amount: ${params.total.toFixed(2)} ${params.currency}
-Due Date: ${params.dueDate}
-
-Please arrange payment at your earliest convenience.
-
-Best regards,
-${params.companyName}`;
-  return { subject, body };
+  lang?: string | null;
 }
 
-export function quoteExpiringEmailPlainText(params: {
+interface QuoteParams {
   companyName: string;
   clientName: string;
   quoteNumber: string;
   total: number;
   currency: string;
   validityDate: string;
-}) {
-  const subject = `Quote ${params.quoteNumber} expiring soon`;
-  const body = `Dear ${params.clientName},
+  lang?: string | null;
+}
 
-This is a reminder that the following quote will expire soon:
+// Plain text versions for the mailto: fallback.
+export function paymentOverdueEmailPlainText(params: OverdueParams) {
+  const lang = reminderLang(params.lang);
+  const t = REMINDER_TEXT[lang];
+  const subject = t.overdueSubject(params.invoiceNumber);
+  const body = [
+    t.greeting(params.clientName),
+    "",
+    t.overdueIntro,
+    "",
+    `${t.invoice} : ${params.invoiceNumber}`,
+    `${t.amountDue} : ${reminderMoney(params.total, params.currency, lang)}`,
+    `${t.dueDate} : ${reminderDate(params.dueDate, lang)}`,
+    "",
+    t.overdueOutro,
+    "",
+    t.regards,
+    params.companyName,
+  ].join("\n");
+  return { subject, body };
+}
 
-Quote: ${params.quoteNumber}
-Amount: ${params.total.toFixed(2)} ${params.currency}
-Valid Until: ${params.validityDate}
-
-If you would like to proceed, please let us know before the expiry date.
-
-Best regards,
-${params.companyName}`;
+export function quoteExpiringEmailPlainText(params: QuoteParams) {
+  const lang = reminderLang(params.lang);
+  const t = REMINDER_TEXT[lang];
+  const subject = t.quoteSubject(params.quoteNumber);
+  const body = [
+    t.greeting(params.clientName),
+    "",
+    t.quoteIntro,
+    "",
+    `${t.quote} : ${params.quoteNumber}`,
+    `${t.amount} : ${reminderMoney(params.total, params.currency, lang)}`,
+    `${t.validUntil} : ${reminderDate(params.validityDate, lang)}`,
+    "",
+    t.quoteOutro,
+    "",
+    t.regards,
+    params.companyName,
+  ].join("\n");
   return { subject, body };
 }
 
@@ -136,7 +265,7 @@ ${params.companyName}`;
  *
  * Client and company names are typed by users and land in a message sent to a
  * third party. Unescaped, an apostrophe or an ampersand renders wrong and a
- * tag renders as markup — in someone else's inbox, where nothing can be
+ * tag renders as markup, in someone else's inbox, where nothing can be
  * corrected after the fact.
  */
 function escapeHtml(value: string): string {
@@ -148,76 +277,75 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-export function paymentOverdueEmail(params: {
+function reminderHtml(opts: {
+  title: string;
+  greeting: string;
+  intro: string;
+  rows: Array<[string, string, string?]>;
+  outro: string;
+  regards: string;
   companyName: string;
-  clientName: string;
-  invoiceNumber: string;
-  total: number;
-  currency: string;
-  dueDate: string;
-}) {
-  const subject = `Payment reminder – Invoice ${params.invoiceNumber}`;
-  const html = `
+}): string {
+  const rows = opts.rows
+    .map(([label, value, color], i) => {
+      const border = i < opts.rows.length - 1 ? ' style="border-bottom: 1px solid #e5e5e5;"' : "";
+      const tint = color ? ` color: ${color};` : "";
+      return `
+        <tr${border}>
+          <td style="padding: 8px 0; color: #666;">${escapeHtml(label)}</td>
+          <td style="padding: 8px 0; font-weight: bold;${tint}">${escapeHtml(value)}</td>
+        </tr>`;
+    })
+    .join("");
+  return `
     <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #1a1a1a;">Payment Reminder</h2>
-      <p>Dear ${escapeHtml(params.clientName)},</p>
-      <p>This is a friendly reminder that the following invoice is past due:</p>
-      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-        <tr style="border-bottom: 1px solid #e5e5e5;">
-          <td style="padding: 8px 0; color: #666;">Invoice</td>
-          <td style="padding: 8px 0; font-weight: bold;">${escapeHtml(params.invoiceNumber)}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e5e5;">
-          <td style="padding: 8px 0; color: #666;">Amount</td>
-          <td style="padding: 8px 0; font-weight: bold;">${params.total.toFixed(2)} ${escapeHtml(params.currency)}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #666;">Due Date</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #dc2626;">${escapeHtml(params.dueDate)}</td>
-        </tr>
+      <h2 style="color: #1a1a1a;">${escapeHtml(opts.title)}</h2>
+      <p>${escapeHtml(opts.greeting)}</p>
+      <p>${escapeHtml(opts.intro)}</p>
+      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">${rows}
       </table>
-      <p>Please arrange payment at your earliest convenience.</p>
+      <p>${escapeHtml(opts.outro)}</p>
       <p style="margin-top: 32px; color: #666; font-size: 14px;">
-        Best regards,<br/>${escapeHtml(params.companyName)}
+        ${escapeHtml(opts.regards)}<br/>${escapeHtml(opts.companyName)}
       </p>
     </div>
   `;
-  return { subject, html };
 }
 
-export function quoteExpiringEmail(params: {
-  companyName: string;
-  clientName: string;
-  quoteNumber: string;
-  total: number;
-  currency: string;
-  validityDate: string;
-}) {
-  const subject = `Quote ${params.quoteNumber} expiring soon`;
-  const html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: #1a1a1a;">Quote Expiring Soon</h2>
-      <p>Dear ${escapeHtml(params.clientName)},</p>
-      <p>This is a reminder that the following quote will expire soon:</p>
-      <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
-        <tr style="border-bottom: 1px solid #e5e5e5;">
-          <td style="padding: 8px 0; color: #666;">Quote</td>
-          <td style="padding: 8px 0; font-weight: bold;">${escapeHtml(params.quoteNumber)}</td>
-        </tr>
-        <tr style="border-bottom: 1px solid #e5e5e5;">
-          <td style="padding: 8px 0; color: #666;">Amount</td>
-          <td style="padding: 8px 0; font-weight: bold;">${params.total.toFixed(2)} ${escapeHtml(params.currency)}</td>
-        </tr>
-        <tr>
-          <td style="padding: 8px 0; color: #666;">Valid Until</td>
-          <td style="padding: 8px 0; font-weight: bold; color: #f59e0b;">${escapeHtml(params.validityDate)}</td>
-        </tr>
-      </table>
-      <p>If you would like to proceed, please let us know before the expiry date.</p>
-      <p style="margin-top: 32px; color: #666; font-size: 14px;">
-        Best regards,<br/>${escapeHtml(params.companyName)}
-      </p>
-    </div>
-  `;
-  return { subject, html };
+export function paymentOverdueEmail(params: OverdueParams) {
+  const lang = reminderLang(params.lang);
+  const t = REMINDER_TEXT[lang];
+  const html = reminderHtml({
+    title: t.overdueTitle,
+    greeting: t.greeting(params.clientName),
+    intro: t.overdueIntro,
+    rows: [
+      [t.invoice, params.invoiceNumber],
+      [t.amountDue, reminderMoney(params.total, params.currency, lang)],
+      [t.dueDate, reminderDate(params.dueDate, lang), "#dc2626"],
+    ],
+    outro: t.overdueOutro,
+    regards: t.regards,
+    companyName: params.companyName,
+  });
+  return { subject: t.overdueSubject(params.invoiceNumber), html };
+}
+
+export function quoteExpiringEmail(params: QuoteParams) {
+  const lang = reminderLang(params.lang);
+  const t = REMINDER_TEXT[lang];
+  const html = reminderHtml({
+    title: t.quoteTitle,
+    greeting: t.greeting(params.clientName),
+    intro: t.quoteIntro,
+    rows: [
+      [t.quote, params.quoteNumber],
+      [t.amount, reminderMoney(params.total, params.currency, lang)],
+      [t.validUntil, reminderDate(params.validityDate, lang), "#f59e0b"],
+    ],
+    outro: t.quoteOutro,
+    regards: t.regards,
+    companyName: params.companyName,
+  });
+  return { subject: t.quoteSubject(params.quoteNumber), html };
 }
