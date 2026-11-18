@@ -1,20 +1,20 @@
 import { LOCALE } from "./locale";
 
 /**
- * The fictional business filmed in the guide. One shared cast of names keeps
+ * The fictional business shown in the guide. One shared cast of names keeps
  * the chapters coherent: the product created in chapter 03 is the one sold at
  * the till in chapter 06 and re-ordered from the supplier in chapter 07.
  *
  * Two kinds of string live here, and they behave differently across languages.
  *
  * A **name** does not translate. An Algerian company is called "Électro Souk"
- * in an English video too, its client is "SARL Atlas Distribution", its
+ * in the English guide too, its client is "SARL Atlas Distribution", its
  * supplier is "Condor Electronics Distribution", and its address is copied off
  * an envelope rather than rendered into another language. Identifiers, phone
  * numbers, references, barcodes and prices are facts of the same kind.
  *
  * A **description** does translate. "Téléviseur LED 43\" Condor" in an English
- * interface is the giveaway that the video was filmed once and relabelled: the
+ * interface is the giveaway that the guide was shot once and relabelled: the
  * brand stays, the noun does not. The same goes for the category, the expense
  * labels, the stock-movement reasons and the words "Magasin" and "Dépôt" in
  * the location names — Alger-Centre and Rouiba are places, "shop" and
@@ -102,7 +102,7 @@ export const BIZ = {
   password: "Probook2026!",
   email: "contact@electro-souk.dz",
   // The employee account chapter 11 creates. Logins are unique across every
-  // business, so an earlier take's copy has to be released like the owner's.
+  // business, so an earlier run's copy has to be released like the owner's.
   staffUsername: "amina",
 };
 

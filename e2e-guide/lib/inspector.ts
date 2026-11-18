@@ -7,7 +7,7 @@ import type { Page } from "@playwright/test";
  * they could not do was *notice* anything that breaks no assertion. A cash
  * movement was refused with a 400 and an "Échec de l'enregistrement" toast for
  * weeks; the chapter went green anyway, because nothing asserted on it. It was
- * caught by a person watching the video.
+ * caught by a person reading the guide.
  *
  * So the walk itself becomes the detector. Every failed request, every console
  * error, every error toast is collected as it happens and attributed to the

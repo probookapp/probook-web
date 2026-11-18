@@ -1,101 +1,47 @@
 import fs from "fs";
 import path from "path";
-import { type Page, type Locator, type TestInfo, expect } from "@playwright/test";
+import { type Page, type Locator, type TestInfo, expect, test } from "@playwright/test";
 import { LOCALE, narrate } from "./locale";
 import { Inspector } from "./inspector";
 import { t } from "./i18n";
-import { Camera } from "./camera";
-import { cachedClip, voiceSettings } from "../../scripts/guide-voice.mjs";
 
 export { LOCALE } from "./locale";
 
 /**
- * GUIDE_FAST=1 runs the exact same chapters with the narration pacing stripped
- * out: same clicks, same assertions, no dwell time and no video. That is how
- * the guide doubles as the UI test suite — every flow is proven green before a
- * single frame is filmed.
+ * GUIDE_SHOTS=1: take the guide's screenshots while the chapters run.
+ *
+ * The chapters are the written guide's source as well as the UI test suite.
+ * Each `say()` is a step of the guide — its sentence is printed on the
+ * /guide pages (scripts/build-guide-content.mjs) — and, in this mode, the
+ * screen as that step leaves it is captured beside it. What the guide shows is
+ * therefore, by construction, what the test just verified.
+ *
+ * Without it, the same chapters run as plain tests: same clicks, same
+ * assertions, no files written.
  */
-export const FAST = process.env.GUIDE_FAST === "1";
-
-/** Lets the shared afterEach give the closing caption its reading time. */
-const OPEN_TOURS = new WeakMap<Page, Tour>();
+export const SHOTS = process.env.GUIDE_SHOTS === "1";
 
 const ROOT = path.resolve(__dirname, "..", "..");
 
-/**
- * Where the narration is drawn.
- *
- * "post" (the default): nothing in the page; the build script burns styled
- * subtitles from the timeline, so the camera's zoom never enlarges or crops
- * them. "page": the old caption bar, drawn by the page itself.
- */
-const CAPTIONS_IN_PAGE = process.env.GUIDE_CAPTIONS === "page";
-
-const VOICE = voiceSettings();
-
-/** Silence left between one sentence and the next. */
-const VOICE_GAP_MS = 320;
-
-/**
- * When each page's video started. Playwright starts recording as the page is
- * created, before the chapter's first line runs; the shared beforeEach stamps
- * it so the timeline's times are times in the video.
- */
-const VIDEO_STARTS = new WeakMap<Page, number>();
-
-export function markVideoStart(page: Page) {
-  VIDEO_STARTS.set(page, Date.now());
-}
-
-/** The closing card, the same at the end of every chapter. */
-const END_CARD: Record<string, { title: string; subtitle: string }> = {
-  fr: { title: "Essayez Probook gratuitement", subtitle: "10 jours, toutes les fonctions — probookapp.net" },
-  en: { title: "Try Probook for free", subtitle: "10 days, every feature — probookapp.net" },
-  ar: { title: "جرّب Probook مجاناً", subtitle: "10 أيام، بكل الميزات — probookapp.net" },
-};
-
-/** One thing that happened on film, timed from the start of the video. */
-export type TimelineEvent =
-  | { type: "say"; t: number; text: string; clip: string | null; ms: number }
-  | { type: "card"; t: number; title: string; subtitle: string; end?: boolean }
-  | { type: "end"; t: number };
+/** Lets the shared fixture close the chapter: last screenshot, inspector. */
+const OPEN_TOURS = new WeakMap<Page, Tour>();
 
 export function tourFor(page: Page): Tour | undefined {
   return OPEN_TOURS.get(page);
 }
 
-/** Reading pace for a caption with no voice (ms). */
-function readingTime(text: string): number {
-  if (FAST) return 0;
-  return Math.min(5200, Math.max(1100, 850 + text.length * 42));
-}
-
-declare global {
-  interface Window {
-    __tour?: {
-      caption: (t: string) => void;
-      chip: (t: string) => void;
-      position: (p: "top" | "bottom") => void;
-      spot: (box: { x: number; y: number; w: number; h: number } | null) => void;
-      card: (title: string, subtitle: string) => void;
-      hideCard: () => void;
-    };
-  }
-}
-
 /**
  * Everything that must exist before the first navigation:
- *  - the caption bar / cursor / click-ripple overlay,
  *  - a service-worker stub (the real worker claims the page and reloads it,
- *    which would cut the recording mid-action),
+ *    which would cut a chapter mid-action),
  *  - popup + print suppression (the POS receipt opens a blank window and calls
- *    print(); in a recording that steals focus and lands in its own video file).
+ *    print(), which steals focus from the chapter),
+ *  - the Next.js dev badge hidden, so it is never in a screenshot.
  *
  * Must be called before page.goto — addInitScript only applies to later loads.
  */
 export async function installTourRuntime(page: Page) {
   await page.addInitScript(() => {
-    // ─── service worker: never register ───
     if ("serviceWorker" in navigator) {
       Object.defineProperty(navigator, "serviceWorker", {
         configurable: true,
@@ -110,199 +56,33 @@ export async function installTourRuntime(page: Page) {
       });
     }
 
-    // ─── receipt printing: keep it off-screen ───
     window.print = () => {};
     const nativeOpen = window.open.bind(window);
     window.open = ((url?: string | URL, ...rest: unknown[]) =>
       url ? (nativeOpen as never as (...a: unknown[]) => Window | null)(url, ...rest) : null) as typeof window.open;
 
-    // ─── caption bar + cursor overlay ───
-    const KEY_TEXT = "__tour_caption";
-    const KEY_CHIP = "__tour_chip";
-    const KEY_POS = "__tour_pos";
-
-    const render = () => {
-      const chip = document.getElementById("__tour_chip");
-      const text = document.getElementById("__tour_text");
-      const cap = document.getElementById("__tour_caption");
-      if (!chip || !text || !cap) return;
-      chip.textContent = sessionStorage.getItem(KEY_CHIP) || "";
-      text.textContent = sessionStorage.getItem(KEY_TEXT) || "";
-      cap.className = sessionStorage.getItem(KEY_POS) || "bottom";
-      if (text.textContent) cap.classList.add("on");
-    };
-
     const install = () => {
-      if (document.getElementById("__tour_style") || !document.body) return;
+      if (document.getElementById("__tour_style") || !document.head) return;
       const style = document.createElement("style");
       style.id = "__tour_style";
-      style.textContent = `
-        /* The Next.js dev-tools badge sits in the bottom-left corner and would
-           be filmed into a customer-facing video. It is a development artefact
-           with no place in the guide. */
-        nextjs-portal, [data-nextjs-dev-tools-button], #__next-dev-tools-indicator,
-        [data-nextjs-toast], nextjs-dev-tools-indicator {display:none !important}
-        #__tour_cursor{position:fixed;width:26px;height:26px;border-radius:50%;
-          background:radial-gradient(circle at 34% 34%,rgba(255,255,255,.95),rgba(70,147,154,.6) 62%,rgba(70,147,154,.12));
-          border:2px solid rgba(255,255,255,.92);box-shadow:0 2px 12px rgba(0,0,0,.4);
-          transform:translate(-50%,-50%);pointer-events:none;z-index:2147483647;opacity:0;transition:opacity .25s}
-        #__tour_cursor.on{opacity:1}
-        .__tour_ripple{position:fixed;width:28px;height:28px;border-radius:50%;
-          border:3px solid rgba(42,118,126,.95);transform:translate(-50%,-50%);
-          pointer-events:none;z-index:2147483646;animation:__tourRipple .6s ease-out forwards}
-        @keyframes __tourRipple{to{transform:translate(-50%,-50%) scale(3.2);opacity:0}}
-        #__tour_spot{position:fixed;pointer-events:none;z-index:2147483644;border-radius:10px;
-          box-shadow:0 0 0 3px rgba(42,118,126,.95),0 0 22px rgba(42,118,126,.5);
-          opacity:0;transition:opacity .2s,top .18s,left .18s,width .18s,height .18s}
-        #__tour_spot.on{opacity:1}
-        #__tour_caption{position:fixed;left:0;right:0;z-index:2147483645;pointer-events:none;
-          display:flex;align-items:center;gap:16px;padding:18px 34px;color:#fff;
-          font:500 22px/1.35 var(--font-plex-sans),"Segoe UI",system-ui,sans-serif;
-          opacity:0;transition:opacity .3s;text-shadow:0 1px 3px rgba(0,0,0,.6)}
-        #__tour_caption.on{opacity:1}
-        #__tour_caption.bottom{bottom:0;background:linear-gradient(to top,rgba(19,18,17,.95),rgba(19,18,17,.45))}
-        #__tour_caption.top{top:0;background:linear-gradient(to bottom,rgba(19,18,17,.95),rgba(19,18,17,.45))}
-        #__tour_chip{flex:none;background:#1c5f68;border-radius:999px;padding:6px 15px;
-          font-size:15px;font-weight:600;letter-spacing:.3px;text-shadow:none}
-        #__tour_text{flex:1}
-        /* Same brand as the product on screen behind it: petrol on warm stone,
-           set in the interface face. It used to be royal blue and Segoe UI —
-           left over from the palette the application no longer wears. */
-        #__tour_card{position:fixed;inset:0;z-index:2147483647;pointer-events:none;
-          display:flex;align-items:center;justify-content:center;text-align:center;
-          background:radial-gradient(circle at 50% 40%,#1c5f68,#131211 72%);
-          opacity:0;transition:opacity .6s ease}
-        #__tour_card.on{opacity:1}
-        #__tour_card_in{transform:translateY(14px);transition:transform .7s ease}
-        #__tour_card.on #__tour_card_in{transform:translateY(0)}
-        #__tour_card_t{color:#faf9f7;letter-spacing:-1.5px;
-          font:700 68px/1.15 var(--font-plex-sans),"Segoe UI",system-ui,sans-serif}
-        #__tour_card_s{color:#a8d3d5;margin-top:18px;
-          font:400 28px/1.4 var(--font-plex-sans),"Segoe UI",system-ui,sans-serif}
-
-        /* Phone-shaped recordings: the overlay is sized for 1080p, and at
-           390px the caption would eat half the screen and the title card
-           would run off the edges. */
-        @media (max-width: 600px) {
-          #__tour_caption{gap:10px;padding:12px 16px;font-size:15px;line-height:1.3}
-          #__tour_chip{padding:4px 10px;font-size:11px}
-          #__tour_card{padding:0 28px}
-          #__tour_card_t{font-size:34px;letter-spacing:-.5px}
-          #__tour_card_s{font-size:16px;margin-top:12px}
-        }
-      `;
+      style.textContent = `nextjs-portal, [data-nextjs-dev-tools-button], #__next-dev-tools-indicator,
+        [data-nextjs-toast], nextjs-dev-tools-indicator {display:none !important}`;
       document.head.appendChild(style);
-
-      const cursor = document.createElement("div");
-      cursor.id = "__tour_cursor";
-      const caption = document.createElement("div");
-      caption.id = "__tour_caption";
-      caption.innerHTML = '<span id="__tour_chip"></span><span id="__tour_text"></span>';
-      const spot = document.createElement("div");
-      spot.id = "__tour_spot";
-      document.body.append(cursor, caption, spot);
-      render();
-
-      addEventListener(
-        "mousemove",
-        (e) => {
-          cursor.style.left = `${e.clientX}px`;
-          cursor.style.top = `${e.clientY}px`;
-          cursor.classList.add("on");
-        },
-        true
-      );
-      addEventListener(
-        "mousedown",
-        (e) => {
-          const r = document.createElement("div");
-          r.className = "__tour_ripple";
-          r.style.left = `${e.clientX}px`;
-          r.style.top = `${e.clientY}px`;
-          document.body.appendChild(r);
-          setTimeout(() => r.remove(), 700);
-        },
-        true
-      );
     };
-
-    window.__tour = {
-      caption: (t: string) => {
-        sessionStorage.setItem(KEY_TEXT, t);
-        render();
-      },
-      chip: (t: string) => {
-        sessionStorage.setItem(KEY_CHIP, t);
-        render();
-      },
-      position: (p: "top" | "bottom") => {
-        sessionStorage.setItem(KEY_POS, p);
-        render();
-      },
-      card: (title: string, subtitle: string) => {
-        document.getElementById("__tour_card")?.remove();
-        const card = document.createElement("div");
-        card.id = "__tour_card";
-        card.innerHTML =
-          `<div id="__tour_card_in"><div id="__tour_card_t">${title}</div>` +
-          `<div id="__tour_card_s">${subtitle}</div></div>`;
-        document.body.appendChild(card);
-        requestAnimationFrame(() => card.classList.add("on"));
-      },
-      hideCard: () => {
-        const card = document.getElementById("__tour_card");
-        if (!card) return;
-        card.classList.remove("on");
-        setTimeout(() => card.remove(), 700);
-      },
-      spot: (box) => {
-        const el = document.getElementById("__tour_spot");
-        if (!el) return;
-        if (!box) {
-          el.classList.remove("on");
-          return;
-        }
-        el.style.left = `${box.x - 5}px`;
-        el.style.top = `${box.y - 5}px`;
-        el.style.width = `${box.w + 10}px`;
-        el.style.height = `${box.h + 10}px`;
-        el.classList.add("on");
-      },
-    };
-
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", install);
-    } else {
-      install();
-    }
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", install);
+    else install();
   });
 }
 
 /**
- * A recorded chapter: navigation, narration and human-paced interactions.
- *
- * Every click glides the pointer to the target before pressing, so the viewer
- * can follow what is being clicked — a bare locator.click() teleports and reads
- * as a jump-cut on video.
+ * A chapter of the guide: its steps, and the interactions that carry them out.
  */
 export class Tour {
+  /** `label` is the chapter's short name ("4 · Devis"), kept with its screenshots. */
   constructor(
     readonly page: Page,
-    private readonly chip: string
-  ) {
-    // The phone chapters are framed by the phone itself: no camera there.
-    const width = page.viewportSize()?.width ?? 1920;
-    this.camera = width >= 1024 && process.env.GUIDE_CAMERA !== "0" ? new Camera(page, FAST) : null;
-  }
-
-  private readonly camera: Camera | null;
-
-  /** What happened when, for the build script: voice, subtitles, trimming. */
-  private readonly events: TimelineEvent[] = [];
-
-  private now() {
-    return Date.now() - (VIDEO_STARTS.get(this.page) ?? Date.now());
-  }
+    readonly label: string
+  ) {}
 
   /**
    * Watches the whole walk. The chapters touch every feature; this is what
@@ -310,147 +90,133 @@ export class Tour {
    */
   readonly inspector!: Inspector;
 
-  static async open(page: Page, chip: string): Promise<Tour> {
+  /**
+   * The source (French) sentence of each step said so far, in order — the
+   * screenshot NN.png belongs to said[NN]. Kept by text, not by position:
+   * a chapter may skip a step (the till is already open), and the build script
+   * then leaves that sentence without a picture instead of shifting the rest.
+   */
+  private readonly said: string[] = [];
+
+  static async open(page: Page, label: string): Promise<Tour> {
     const inspector = Inspector.attach(page);
     await installTourRuntime(page);
-    const tour = new Tour(page, narrate(chip));
+    const tour = new Tour(page, narrate(label));
     (tour as { inspector: Inspector }).inspector = inspector;
     OPEN_TOURS.set(page, tour);
     return tour;
   }
 
-  // ─── narration ───
+  // ─── steps ───
 
-  /** When the caption now on screen has been readable long enough. */
-  private captionUntil = 0;
-
-  private async runtime(): Promise<boolean> {
-    return this.page
-      .evaluate(() => typeof window.__tour !== "undefined")
-      .catch(() => false);
-  }
-
-  /** Show a caption and hold it long enough to be read. */
-  async say(text: string, holdMs?: number) {
-    // Resolved before the fast-mode bail-out, so `GUIDE_LOCALE=en guide:check`
-    // fails on a missing caption in seconds instead of surfacing it halfway
-    // through a recording.
-    const line = narrate(text);
-    // Whatever went wrong belongs to the step the viewer was just shown, and
-    // an error notice raised by the previous one is still on screen now.
+  /**
+   * Start a step of the guide. The previous step is over, so its screen is
+   * captured first: a sentence describes what the actions after it do, and
+   * the picture shows where they led.
+   */
+  async say(text: string) {
+    // Resolved here, so a missing caption fails in seconds in any language.
+    narrate(text);
+    // Whatever went wrong belongs to the step just finished, and an error
+    // notice raised by it is still on screen now.
     this.inspector?.atStep(text);
     await this.inspector?.sweepToasts();
     await this.inspector?.sweepMissingKeys();
-    // With a voice, the clip must exist before filming starts: synthesizing
-    // here would put dead air in the take. Checked in verification runs too,
-    // so a missing clip is found in seconds.
-    const clip = cachedClip(ROOT, LOCALE, line, VOICE);
-    if (VOICE.provider !== "off" && !clip) {
-      throw new Error(
-        `No ${LOCALE} voice clip for ${JSON.stringify(line)} — run \`npm run guide:voice -- ${LOCALE}\``
-      );
-    }
-    if (FAST) return;
-    await this.holdCaption();
-    if (CAPTIONS_IN_PAGE && (await this.runtime())) {
-      await this.page.evaluate(
-        ([t, c]) => {
-          window.__tour?.chip(c);
-          window.__tour?.caption(t);
-        },
-        [line, this.chip] as const
-      );
-    }
-    this.events.push({ type: "say", t: this.now(), text: line, clip: clip?.file ?? null, ms: clip?.durationMs ?? 0 });
-    // Timed on the line that is actually spoken: the clip's own length, or a
-    // reading time in its language when there is no voice — the same sentence
-    // is a different length in each language.
-    //
-    // Only a lead-in is held here. The rest is owed to the *next* line, which
-    // waits for it before starting — so the actions a sentence describes play
-    // while it is being said, instead of after it.
-    const total = holdMs ?? (clip ? clip.durationMs + VOICE_GAP_MS : readingTime(line));
-    const lead = Math.min(900, Math.round(total * 0.35));
-    await this.page.waitForTimeout(lead);
-    this.captionUntil = Date.now() + (total - lead);
-  }
-
-  /** Let the caption on screen finish its reading time before anything replaces it. */
-  async holdCaption() {
-    const remaining = this.captionUntil - Date.now();
-    if (remaining > 0) await this.page.waitForTimeout(remaining);
-    this.captionUntil = 0;
+    if (this.said.length > 0) await this.capture(this.said.length - 1);
+    this.said.push(text);
   }
 
   /**
-   * Full-screen chapter card. Recorded into the chapter's own video, which also
-   * makes it the separator between chapters in the stitched full-length cut.
-   */
-  async titleCard(title: string, subtitle: string, holdMs = 2600) {
-    const card = [narrate(title), narrate(subtitle)] as const;
-    if (FAST) return;
-    await this.holdCaption();
-    await this.camera?.wide();
-    if (!(await this.runtime())) return;
-    this.events.push({ type: "card", t: this.now(), title: card[0], subtitle: card[1] });
-    await this.page.evaluate(([t, s]) => window.__tour?.card(t, s), card);
-    await this.page.waitForTimeout(holdMs);
-    await this.page.evaluate(() => window.__tour?.hideCard());
-    await this.page.waitForTimeout(700);
-  }
-
-  /**
-   * Close the take: let the last sentence finish, show the closing card, and
-   * write the timeline next to the video for the build script.
+   * End of the chapter: the last step's screenshot, and the sentence each
+   * screenshot belongs to, which the build script matches to the transcript.
    */
   async finish(testInfo: TestInfo) {
-    await this.holdCaption();
-    if (FAST) return;
-    await this.camera?.wide().catch(() => {});
-    const card = END_CARD[LOCALE] ?? END_CARD.fr;
-    if (await this.runtime()) {
-      this.events.push({ type: "card", t: this.now(), title: card.title, subtitle: card.subtitle, end: true });
-      await this.page.evaluate(([t, s]) => window.__tour?.card(t, s), [card.title, card.subtitle] as const);
-      await this.page.waitForTimeout(3200);
-    }
-    this.events.push({ type: "end", t: this.now() });
-    fs.mkdirSync(testInfo.outputDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(testInfo.outputDir, "timeline.json"),
-      JSON.stringify({ locale: LOCALE, voice: VOICE, events: this.events }, null, 2)
-    );
+    if (!SHOTS) return;
+    if (this.said.length > 0) await this.capture(this.said.length - 1);
+    const dir = this.shotDir(testInfo);
+    fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(path.join(dir, "steps.json"), JSON.stringify({ chapter: this.label, said: this.said }, null, 1) + "\n");
   }
 
-  async captionPosition(p: "top" | "bottom") {
-    if (FAST) return;
-    if (await this.runtime()) {
-      await this.page.evaluate((pos) => window.__tour?.position(pos), p);
-    }
+  /** guide-output/shots/<locale>/<desktop|mobile>/<chapter>/ */
+  private shotDir(testInfo: TestInfo) {
+    const suite = path.basename(path.dirname(testInfo.file)) === "e2e-guide" ? "desktop" : "mobile";
+    const chapter = path.basename(testInfo.file, ".spec.ts");
+    return path.join(ROOT, "guide-output", "shots", LOCALE, suite, chapter);
   }
 
-  async pause(ms = 900) {
-    if (FAST) return;
-    await this.page.waitForTimeout(ms);
+  /** The screen as a step leaves it. */
+  private async capture(index: number) {
+    if (!SHOTS) return;
+    await this.page.waitForLoadState("networkidle", { timeout: 4_000 }).catch(() => {});
+    // A page still loading shows a spinner, not the step's result.
+    await this.page
+      .locator(".animate-spin")
+      .filter({ visible: true })
+      .first()
+      .waitFor({ state: "hidden", timeout: 8_000 })
+      .catch(() => {});
+    // Dialogs fade and slide in; a toast slides up. Let them land.
+    await this.page.waitForTimeout(450);
+
+    const vp = this.page.viewportSize() ?? { width: 1440, height: 900 };
+    const visible = (selector: string) =>
+      this.page.locator(selector).filter({ visible: true }).last().boundingBox({ timeout: 500 }).catch(() => null);
+    const inView = (b: { x: number; y: number; width: number; height: number }, margin: number) => {
+      const x = Math.max(0, b.x - margin);
+      const y = Math.max(0, b.y - margin);
+      return {
+        x,
+        y,
+        width: Math.min(vp.width, b.x + b.width + margin) - x,
+        height: Math.min(vp.height, b.y + b.height + margin) - y,
+      };
+    };
+    // An open dialog is the subject: the picture is the dialog itself. Otherwise
+    // the page's content, without the sidebar — at the width of the guide's
+    // column, the whole window would shrink the text past reading.
+    const dialog = await visible('[role="dialog"]');
+    const main = await visible("main");
+    const clip =
+      dialog && dialog.width * dialog.height < vp.width * vp.height * 0.8
+        ? inView(dialog, 16)
+        : main && main.width < vp.width - 40
+          ? inView(main, 0)
+          : undefined;
+
+    const dir = this.shotDir(test.info());
+    fs.mkdirSync(dir, { recursive: true });
+    await this.page.screenshot({
+      path: path.join(dir, `${String(index).padStart(2, "0")}.png`),
+      clip,
+      // Not "disabled": Playwright then cancels infinite animations and
+      // replays them through the animation API, which detaches them from
+      // their CSS class. A loading spinner's node, reused by React for the
+      // page header once loaded, kept spinning — header and all.
+      caret: "hide",
+    });
   }
 
   /**
-   * Wait for a navigation to finish. The overlay rebuilds itself on each load
-   * and restores its caption from sessionStorage, so nothing else is needed.
+   * The chapter's title. The guide page has its own heading, so nothing is
+   * shown; resolving the strings keeps a missing translation a failure.
    */
+  async titleCard(title: string, subtitle: string) {
+    narrate(title);
+    narrate(subtitle);
+  }
+
+  /** Wait for a navigation to finish. */
   private async settle() {
     await this.page.waitForLoadState("domcontentloaded");
-    await this.page
-      .waitForLoadState("networkidle", { timeout: 15_000 })
-      .catch(() => {});
+    await this.page.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
   }
 
   // ─── navigation ───
 
-  async goto(path: string) {
-    await this.camera?.wide();
-    await this.page.goto(`/${LOCALE}/${path}`.replace(/\/+$/, ""));
+  async goto(route: string) {
+    await this.page.goto(`/${LOCALE}/${route}`.replace(/\/+$/, ""));
     await this.settle();
-    await this.pause(600);
   }
 
   /**
@@ -461,7 +227,6 @@ export class Tour {
    * here keeps the chapters identical at both widths.
    */
   async nav(route: string) {
-    await this.camera?.wide();
     const link = this.page.locator(`aside a[href="/${LOCALE}${route}"]`).first();
 
     // The off-canvas sidebar is translated out of frame, not hidden, so
@@ -471,190 +236,70 @@ export class Tour {
     const box = await link.boundingBox().catch(() => null);
     if (!box || box.x < 0) {
       const hamburger = this.page.locator("main button").first();
-      if (await hamburger.isVisible().catch(() => false)) {
-        await this.click(hamburger, { settleMs: 500 });
-      }
+      if (await hamburger.isVisible().catch(() => false)) await this.click(hamburger);
     }
 
     await this.click(link);
     await this.settle();
-    await this.pause(700);
   }
 
   // ─── interaction ───
 
   /**
-   * Glide the pointer to an element and highlight it, without clicking.
+   * Wait for a target and bring it into view.
    *
-   * Verification mode runs this too. Skipping it there would leave the pointer
-   * maths — the one part only the recording exercises — untested, and a
-   * chapter that verifies green would still be able to fail mid-take.
+   * Finding the element and scrolling to it are retried together: a list that
+   * refetched between the two threw "Element is not attached to the DOM", and
+   * because the chapters share one tenant, losing one chapter that way took
+   * the following ones down with it.
    */
-  async point(target: Locator, kind: "click" | "field" = "click") {
+  async point(target: Locator) {
     const loc = target.first();
-
-    // Finding the element and scrolling to it are retried together. Only the
-    // measuring below used to be guarded, so a list that refetched between the
-    // wait and the scroll threw "Element is not attached to the DOM" — and
-    // because the chapters share one tenant, losing chapter 4 that way took
-    // chapters 5, 6, 8 and 11 down with it.
     for (let attempt = 0; ; attempt++) {
       try {
         await loc.waitFor({ state: "visible", timeout: attempt === 0 ? 30_000 : 8_000 });
-        // Out of the zoomed frame, nothing can be reached: step back first.
-        await this.camera?.settle();
-        if (this.camera?.zoomed) {
-          const before = await loc.boundingBox();
-          if (!before || !(await this.camera.shows(before))) await this.camera.wide();
-        }
         await loc.scrollIntoViewIfNeeded();
-        break;
+        // The pointer goes where a person's would: some affordances only show
+        // on hover, and the chapters have always been verified that way.
+        const box = await loc.boundingBox();
+        if (box) await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+        return loc;
       } catch (err) {
         if (attempt >= 2) throw err;
         await this.page.waitForTimeout(400);
       }
     }
-
-    // A list that refetches can unmount the element between waitFor and
-    // boundingBox, so measuring is retried rather than fatal. If it still has
-    // no box, the highlight is skipped and the caller carries on: the spotlight
-    // is decoration, and the click that follows does its own actionability
-    // checks — failing the whole chapter on a decoration was costing takes.
-    let box = await loc.boundingBox();
-    for (let attempt = 0; !box && attempt < 3; attempt++) {
-      await this.page.waitForTimeout(250);
-      await loc.waitFor({ state: "visible", timeout: 5_000 }).catch(() => {});
-      box = await loc.boundingBox();
-    }
-    if (!box) return loc;
-
-    if (this.camera) {
-      box = (await this.aim(loc, box, kind)) ?? box;
-    }
-
-    await this.page.evaluate(
-      (b) => window.__tour?.spot(b),
-      { x: box.x, y: box.y, w: box.width, h: box.height }
-    );
-    await this.page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, {
-      steps: FAST ? 1 : 18,
-    });
-    return loc;
   }
 
-  /**
-   * Choose what the camera frames for this target, and frame it.
-   *
-   * A dialog is framed whole: it is the scene. A form field outside one gets
-   * its neighbourhood, wide enough to keep the fields around it in view. Any
-   * other click stays inside the current frame when it can, and goes wide
-   * when it cannot. Returns the target's box once the camera has settled.
-   */
-  private async aim(
-    loc: Locator,
-    box: { x: number; y: number; width: number; height: number },
-    kind: "click" | "field"
-  ) {
-    const camera = this.camera!;
-    const dialog = await loc
-      .evaluate((el) => {
-        const d = el.closest('[role="dialog"]');
-        if (!d) return null;
-        const r = d.getBoundingClientRect();
-        return { x: r.x, y: r.y, width: r.width, height: r.height };
-      })
-      .catch(() => null);
-
-    if (dialog) {
-      await camera.frame(dialog, { dialog: true });
-    } else if (kind === "field" && camera.zoomed && (await camera.shows(box))) {
-      // Already in frame: the next field of the same block. No camera move.
-    } else if (kind === "field") {
-      // The block the field belongs to, edge to edge — a whole line of the
-      // document, a whole settings card — rather than a window centred on the
-      // field, which cut the line's description off and let the sidebar in.
-      const vp = this.page.viewportSize() ?? { width: 1920, height: 1080 };
-      const block = await loc
-        .evaluate((el, maxWidth) => {
-          for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
-            const r = p.getBoundingClientRect();
-            if (r.width >= 900 && r.width <= maxWidth) return { x: r.x, width: r.width };
-            if (r.width > maxWidth) break;
-          }
-          return null;
-        }, vp.width * 0.9)
-        .catch(() => null);
-      const w = block ? block.width : Math.min(vp.width, Math.max(1240, box.width + 200));
-      const x = block ? block.x : box.x + box.width / 2 - w / 2;
-      const h = (w * vp.height) / vp.width;
-      await camera.frame({ x, y: box.y + box.height / 2 - h / 2, width: w, height: h });
-    } else if (camera.zoomed && !(await camera.shows(box))) {
-      await camera.wide();
-    }
-    return loc.boundingBox();
-  }
-
-  /**
-   * Click without letting Playwright scroll the target "into view": under a
-   * pinch that snaps the zoomed view away. point() has already made sure the
-   * target is visible and on screen; this checks the rest of what a normal
-   * click would.
-   */
-  private async press(loc: Locator) {
-    if (!this.camera?.zoomed) return loc.click();
-    await expect(loc).toBeEnabled({ timeout: 10_000 });
-    return loc.click({ force: true });
-  }
-
-  private async clearSpot() {
-    await this.page.evaluate(() => window.__tour?.spot(null)).catch(() => {});
-  }
-
-  /** Move to the target, then click it with full actionability checks. */
-  async click(target: Locator, opts: { settleMs?: number } = {}) {
+  async click(target: Locator) {
     const loc = await this.point(target);
-    await this.pause(180);
     try {
-      await this.press(loc);
+      await loc.click();
     } catch (err) {
-      // Same race, one step later: the row can remount while the pointer is
-      // travelling to it. Re-point and click once more before giving up.
+      // Same race, one step later: the row can remount between the wait and
+      // the click. Look again and click once more before giving up.
       if (!String(err).includes("not attached")) throw err;
-      const again = await this.point(target);
-      await this.press(again);
+      await (await this.point(target)).click();
     }
-    await this.clearSpot();
-    await this.pause(opts.settleMs ?? 320);
-    // The click may have closed the framed dialog or changed page.
-    await this.camera?.settle();
   }
 
-  /** Type character by character so the viewer sees the field being filled. */
   async type(target: Locator, text: string, opts: { clear?: boolean } = {}) {
-    const loc = await this.point(target, "field");
-    await this.press(loc);
+    const loc = await this.point(target);
+    await loc.click();
     if (opts.clear !== false) await loc.fill("");
-    if (FAST) await loc.fill(text);
-    // Brisk but legible; a long text is typed faster so it does not drag.
-    else await loc.pressSequentially(text, { delay: text.length > 40 ? 14 : 24 });
-    await this.clearSpot();
-    await this.pause(220);
+    await loc.fill(text);
   }
 
   /** Set a value in one shot (date pickers, long numbers). */
   async set(target: Locator, value: string) {
-    const loc = await this.point(target, "field");
+    const loc = await this.point(target);
     await loc.fill(value);
-    await this.clearSpot();
-    await this.pause(280);
   }
 
   /** Native <select>, by value or by visible label. */
   async choose(target: Locator, value: string | { label: string } | { value: string }) {
-    const loc = await this.point(target, "field");
+    const loc = await this.point(target);
     await loc.selectOption(value);
-    await this.clearSpot();
-    await this.pause(320);
   }
 
   /**
@@ -662,19 +307,12 @@ export class Tour {
    * a role=listbox. `root` is the wrapper div holding both.
    */
   async pick(root: Locator, optionText: string, opts: { search?: string } = {}) {
-    const trigger = root.locator("button").first();
-    await this.click(trigger, { settleMs: 250 });
+    await this.click(root.locator("button").first());
     if (opts.search) {
-      const search = root.locator('input[type="text"]').first();
-      if (FAST) await search.fill(opts.search);
-      else await search.pressSequentially(opts.search, { delay: 30 });
-      await this.page.waitForTimeout(FAST ? 400 : 300);
+      await root.locator('input[type="text"]').first().fill(opts.search);
+      await this.page.waitForTimeout(400);
     }
-    const option = this.page
-      .locator('li[role="option"]')
-      .filter({ hasText: optionText })
-      .first();
-    await this.click(option, { settleMs: 350 });
+    await this.click(this.page.locator('li[role="option"]').filter({ hasText: optionText }).first());
   }
 
   // ─── selectors ───
@@ -706,29 +344,22 @@ export class Tour {
    * `action()`, which needs no container.
    */
   row(text: string): Locator {
-    return this.page
-      .getByRole("row")
-      .filter({ hasText: text })
-      .filter({ visible: true })
-      .first();
+    return this.page.getByRole("row").filter({ hasText: text }).filter({ visible: true }).first();
   }
 
   /** An icon-only action inside a given row, matched on its aria-label. */
   rowAction(rowText: string, label: string): Locator {
-    return this.row(rowText)
-      .locator(`[aria-label="${label}"], [title="${label}"]`)
-      .first();
+    return this.row(rowText).locator(`[aria-label="${label}"], [title="${label}"]`).first();
   }
 
   /**
    * Run a list action wherever the list keeps it: the icon beside the menu when
-   * it is the primary action, otherwise an item of the "⋯" menu — which
-   * the viewer then sees being opened, as they would do it themselves.
+   * it is the primary action, otherwise an item of the "⋯" menu.
    */
-  async clickAction(label: string, opts: { settleMs?: number } = {}) {
+  async clickAction(label: string) {
     const inline = this.action(label);
     if (await inline.count()) {
-      await this.click(inline, opts);
+      await this.click(inline);
       return;
     }
     // Phone lists fold the rarer actions into "⋯" too. Looked for inside the
@@ -739,24 +370,22 @@ export class Tour {
       .locator(`[aria-label="${more}"], [title="${more}"]`)
       .filter({ visible: true })
       .first();
-    await this.click(cardMenu, { settleMs: 350 });
+    await this.click(cardMenu);
     await this.click(
-      this.page.getByRole("menuitem", { name: label, exact: true }).filter({ visible: true }).first(),
-      opts
+      this.page.getByRole("menuitem", { name: label, exact: true }).filter({ visible: true }).first()
     );
   }
 
   /** As clickAction, inside the desktop table row containing `rowText`. */
-  async clickRowAction(rowText: string, label: string, opts: { settleMs?: number } = {}) {
+  async clickRowAction(rowText: string, label: string) {
     const inline = this.rowAction(rowText, label);
     if (await inline.count()) {
-      await this.click(inline, opts);
+      await this.click(inline);
       return;
     }
-    await this.click(this.rowAction(rowText, t("common:buttons.moreActions")), { settleMs: 350 });
+    await this.click(this.rowAction(rowText, t("common:buttons.moreActions")));
     await this.click(
-      this.page.getByRole("menuitem", { name: label, exact: true }).filter({ visible: true }).first(),
-      opts
+      this.page.getByRole("menuitem", { name: label, exact: true }).filter({ visible: true }).first()
     );
   }
 
@@ -775,14 +404,9 @@ export class Tour {
       .nth(index);
   }
 
-  /** Wait for a toast so the viewer sees the confirmation before moving on. */
-  async expectToast(text?: string | RegExp) {
+  /** Wait for a toast; never fails the chapter over one (they auto-dismiss). */
+  async expectToast() {
     const toast = this.page.locator("[role='status'], .toast, [data-toast]").first();
-    try {
-      await expect(toast).toBeVisible({ timeout: 4000 });
-    } catch {
-      /* toasts auto-dismiss fast; never fail the recording over one */
-    }
-    if (text) await this.page.waitForTimeout(600);
+    await expect(toast).toBeVisible({ timeout: 4000 }).catch(() => {});
   }
 }

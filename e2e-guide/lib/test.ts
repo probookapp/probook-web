@@ -1,6 +1,6 @@
 import { test as base, expect } from "@playwright/test";
 import { inspectorFor } from "./inspector";
-import { markVideoStart, tourFor } from "./tour";
+import { tourFor } from "./tour";
 
 /**
  * The chapters' `test`, with the inspector's verdict attached.
@@ -13,25 +13,20 @@ import { markVideoStart, tourFor } from "./tour";
  * An automatic fixture, not top-level beforeEach/afterEach hooks. Hooks called
  * at a shared module's top level are registered once, when the first chapter
  * imports it, and attach to that file only: in a run of twelve chapters the
- * inspector's verdict — and the take's timeline — applied to the first alone.
+ * inspector's verdict — and the screenshots' closing step — applied to the
+ * first alone.
  */
 export const test = base.extend<{ guideTake: void }>({
   guideTake: [
     async ({ page }, use, testInfo) => {
-      // The page exists, so its video has just started: the timeline counts
-      // from here.
-      markVideoStart(page);
-
       await use();
 
-      // The closing line has no next caption to wait for it, and the recording
-      // stops with the page — so it would otherwise be cut mid-sentence. Then
-      // the closing card, and the timeline the build script cuts the video by.
-      // Loud, not swallowed: a take without its timeline is edited the old
-      // way, with no voice and no subtitles, and nothing else would say why.
+      // The last step has no next one to capture it. Loud, not swallowed: a
+      // chapter without its step count is refused by the build script, and
+      // nothing else would say why.
       await tourFor(page)
         ?.finish(testInfo)
-        .catch((err) => console.warn(`[guide] could not close the take: ${err}`));
+        .catch((err) => console.warn(`[guide] could not close the chapter: ${err}`));
 
       const inspector = inspectorFor(page);
       if (!inspector) return;

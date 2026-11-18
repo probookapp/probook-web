@@ -1,7 +1,7 @@
 /**
  * What the guide has to show, and which chapter shows it.
  *
- * The guide is filmed from the same specs that test the interface, so a feature
+ * The guide is made from the same specs that test the interface, so a feature
  * with no chapter is a feature nobody watches *and* nobody exercises end to end.
  * This registry makes that failure loud: the test beside it refuses to pass when
  * a page exists in the application and appears nowhere here.
@@ -14,9 +14,9 @@ export interface GuideFeature {
   route: string;
   /** What a viewer would call it. */
   label: string;
-  /** Chapter file (without the .spec.ts), or null when deliberately not filmed. */
+  /** Chapter file (without the .spec.ts), or null when deliberately not shown. */
   chapter: string | null;
-  /** Why, when it is not filmed. */
+  /** Why, when it is not shown. */
   reason?: string;
 }
 
@@ -131,7 +131,7 @@ export const GUIDE_TOPICS: GuideTopic[] = [
 ];
 
 /**
- * The phone guide is its own set of chapters (e2e-guide-mobile), filmed
+ * The phone guide is its own set of chapters (e2e-guide-mobile), shot
  * portrait. It shows fewer subjects on purpose — what someone actually does
  * standing up — but each one still has to prove it is in the chapter.
  */

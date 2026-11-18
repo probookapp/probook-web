@@ -1,12 +1,12 @@
 # Le guide sur téléphone
 
-Quatre chapitres courts, filmés en portrait 390×844 — la forme qu'un prospect
-regarde sur WhatsApp ou Instagram, et la largeur que la barrière responsive
-(`e2e/responsive-audit.spec.ts`) tient déjà.
+Quatre chapitres courts, en portrait 390×844 — la largeur que la barrière
+responsive (`e2e/responsive-audit.spec.ts`) tient déjà. Comme ceux du bureau,
+ils vérifient le parcours et fournissent ses captures au guide `/guide`.
 
 Ce ne sont pas les chapitres du bureau rejoués en petit : à cette largeur les
 tableaux deviennent des cartes et la barre latérale se replie derrière un
-bouton. Rejouer les mêmes gestes filmerait une fiction. Ceux-ci montrent ce
+bouton. Rejouer les mêmes gestes montrerait une fiction. Ceux-ci montrent ce
 qu'on fait vraiment depuis un téléphone — sur un chantier, dans une camionnette,
 au comptoir.
 
@@ -27,9 +27,9 @@ un compte vide. Lancer le guide bureau d'abord.
 ## Commandes
 
 ```bash
-# Vérification, sans vidéo
+# Vérification
 npm run guide:mobile:check
 
-# Tournage, puis export MP4
-npm run guide:mobile:record && npm run guide:build -- --mobile
+# Vérification + captures pour le guide, puis images
+npm run guide:mobile:shots && npm run guide:images
 ```

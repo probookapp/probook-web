@@ -9,17 +9,12 @@ test("Chapitre 6 — Vendre au comptoir avec la caisse", async ({ page }) => {
   await resume(page, "dashboard");
   await tour.titleCard("La caisse", "Chapitre 6 — session, encaissement, rapport Z");
 
-  // The POS fills the viewport top to bottom; the caption sits at the top so it
-  // never covers the payment bar at the bottom of the cart.
-  await tour.captionPosition("top");
-
   await tour.say("Pour la vente au comptoir, Probook bascule en mode caisse.");
   // Resolved through the bundle, not spelled out: /caisse/i matched nothing
   // once the same chapter was run against the English interface, where the
   // button reads "POS Mode".
   await tour.click(
-    page.locator("aside button").filter({ hasText: t("navigation:posMode") }).first(),
-    { settleMs: 2000 }
+    page.locator("aside button").filter({ hasText: t("navigation:posMode") }).first()
   );
   await expect(page).toHaveURL(new RegExp(`/${LOCALE}/pos`));
 
@@ -47,14 +42,14 @@ test("Chapitre 6 — Vendre au comptoir avec la caisse", async ({ page }) => {
   const createRegister = tour.button(t("pos:createRegister"));
   if (seen === "register") {
     await tour.say("Première utilisation : on déclare le poste de caisse.");
-    await tour.click(createRegister, { settleMs: 800 });
+    await tour.click(createRegister);
     // Placeholders, not positions: the product search box is also a text input.
     await tour.type(page.getByPlaceholder(t("pos:registerNamePlaceholder")), LABELS.register);
     await tour.type(
       page.getByPlaceholder(t("pos:registerLocationPlaceholder")),
       LOCATIONS.shop
     );
-    await tour.click(tour.button(t("pos:createRegister")), { settleMs: 1800 });
+    await tour.click(tour.button(t("pos:createRegister")));
   }
 
   // ─── ouverture de session ───
@@ -71,40 +66,30 @@ test("Chapitre 6 — Vendre au comptoir avec la caisse", async ({ page }) => {
       "Chaque journée commence par l'ouverture de la session : on saisit le fond de caisse."
     );
     await tour.set(page.locator('input[type="number"]').first(), "5000");
-    await tour.click(openSession, { settleMs: 2200 });
+    await tour.click(openSession);
   }
 
   await expect(searchBox).toBeVisible({ timeout: 30_000 });
   await tour.say("La caisse est ouverte. À droite, le catalogue ; à gauche, le panier.");
-  await tour.pause(1600);
 
   // ─── vente ───
   await tour.say("On peut scanner un code-barres, ou simplement toucher l'article.");
-  await tour.click(page.getByRole("button").filter({ hasText: PRODUCTS.tv.designation }).first(), {
-    settleMs: 1200,
-  });
+  await tour.click(page.getByRole("button").filter({ hasText: PRODUCTS.tv.designation }).first());
 
   await tour.say("Recherchons le second article.");
   await tour.type(page.getByPlaceholder(t("pos:searchProducts")), "HDMI");
-  await tour.pause(900);
   await tour.click(
-    page.getByRole("button").filter({ hasText: PRODUCTS.cable.designation }).first(),
-    { settleMs: 1000 }
+    page.getByRole("button").filter({ hasText: PRODUCTS.cable.designation }).first()
   );
 
   await tour.say("Cet article a plusieurs tarifs : détail ou gros. On prend le prix de détail.");
-  await tour.click(tour.dialog().getByRole("button", { name: t("pos:defaultPrice") }), {
-    settleMs: 1400,
-  });
+  await tour.click(tour.dialog().getByRole("button", { name: t("pos:defaultPrice") }));
 
   await tour.say("Le panier totalise les articles, la TVA et le montant à encaisser.");
-  await tour.pause(1800);
 
   // ─── encaissement ───
   await tour.say("On passe au paiement.");
-  await tour.click(page.getByRole("button").filter({ hasText: new RegExp(t("pos:pay")) }).first(), {
-    settleMs: 1200,
-  });
+  await tour.click(page.getByRole("button").filter({ hasText: new RegExp(t("pos:pay")) }).first());
 
   // Scope to the payment panel: the till behind it is full of buttons too.
   const payModal = tour.dialog();
@@ -114,11 +99,9 @@ test("Chapitre 6 — Vendre au comptoir avec la caisse", async ({ page }) => {
   await expect(
     payModal.getByRole("button").filter({ hasText: t("pos:cheque") }).first()
   ).toBeVisible();
-  await tour.pause(1600);
   await tour.say(
     "Un chèque ou un virement se note avec sa référence ; seules les espèces bougent le tiroir-caisse, et le rapport de fin de journée le sait."
   );
-  await tour.pause(1600);
 
   await tour.say("Ici, le client paie en espèces.");
   await tour.click(payModal.getByRole("button").filter({ hasText: t("pos:cash") }).first());
@@ -127,65 +110,52 @@ test("Chapitre 6 — Vendre au comptoir avec la caisse", async ({ page }) => {
   await tour.set(payModal.locator('input[type="number"]').first(), "60000");
 
   await tour.say("Probook calcule le rendu de monnaie automatiquement.");
-  await tour.pause(1800);
 
   const confirmPayment = payModal.getByRole("button", { name: t("pos:confirm") });
   await expect(confirmPayment).toBeEnabled({ timeout: 15_000 });
-  await tour.click(confirmPayment, { settleMs: 2500 });
+  await tour.click(confirmPayment);
   await tour.say("Vente enregistrée, ticket imprimé, stock décrémenté. Panier vidé pour le client suivant.");
-  await tour.pause(1500);
 
   // ─── mouvement de caisse ───
   await tour.say("En cours de journée, on trace les entrées et sorties d'espèces.");
-  await tour.click(tour.button(t("pos:menu")), { settleMs: 700 });
-  await tour.click(page.getByRole("button", { name: t("pos:cashMovement") }), { settleMs: 1200 });
+  await tour.click(tour.button(t("pos:menu")));
+  await tour.click(page.getByRole("button", { name: t("pos:cashMovement") }));
 
   const movement = tour.dialog();
   await tour.click(movement.getByRole("button", { name: t("pos:cashOut") }));
   await tour.set(movement.locator('input[type="number"]').first(), "2000");
   await tour.type(movement.locator('input[type="text"]').first(), LABELS.supplies);
-  await tour.click(movement.getByRole("button", { name: t("pos:addCashOut") }), { settleMs: 1800 });
+  await tour.click(movement.getByRole("button", { name: t("pos:addCashOut") }));
 
   await tour.say("Le mouvement s'ajoute à la liste ; la caisse reste ouverte pour en saisir d'autres.");
-  await tour.pause(1500);
   // The panel intentionally stays open to record several movements in a row.
-  await tour.click(movement.getByRole("button", { name: t("pos:close"), exact: true }).last(), {
-    settleMs: 800,
-  });
+  await tour.click(movement.getByRole("button", { name: t("pos:close"), exact: true }).last());
 
   // ─── historique ───
   await tour.say("L'historique liste les tickets de la session, et permet d'en annuler un.");
-  await tour.click(tour.button(t("pos:menu")), { settleMs: 700 });
-  await tour.click(page.getByRole("button", { name: t("pos:transactionHistory") }), {
-    settleMs: 2000,
-  });
-  await tour.pause(1800);
+  await tour.click(tour.button(t("pos:menu")));
+  await tour.click(page.getByRole("button", { name: t("pos:transactionHistory") }));
   // The drawer closes on its header X (no Escape handler) or on the backdrop.
-  await tour.click(page.locator("div.fixed.inset-0.z-50.flex").locator("button").first(), {
-    settleMs: 900,
-  });
+  await tour.click(page.locator("div.fixed.inset-0.z-50.flex").locator("button").first());
 
   // ─── clôture ───
   await tour.say("En fin de journée, on ferme la caisse : c'est le rapport Z.");
-  await tour.click(tour.button(t("pos:menu")), { settleMs: 700 });
-  await tour.click(page.getByRole("button", { name: t("pos:closeSession") }), { settleMs: 2000 });
+  await tour.click(tour.button(t("pos:menu")));
+  await tour.click(page.getByRole("button", { name: t("pos:closeSession") }));
 
   await tour.say(
     "Probook affiche le nombre de tickets, les ventes en espèces et par carte, et le montant attendu en caisse."
   );
-  await tour.pause(2600);
 
   await tour.say("On saisit les espèces réellement comptées.");
   const closeDialog = tour.dialog();
   await tour.set(closeDialog.locator('input[type="number"]').first(), "48000");
   await tour.say("L'écart éventuel est signalé immédiatement.");
-  await tour.pause(2000);
 
   const confirmClose = closeDialog.getByRole("button", { name: t("pos:closeSession") }).last();
   // The button stays disabled until the session summary has loaded.
   await expect(confirmClose).toBeEnabled({ timeout: 20_000 });
-  await tour.click(confirmClose, { settleMs: 2500 });
+  await tour.click(confirmClose);
 
   await tour.say("Session clôturée. Le rapport reste consultable dans les rapports.");
-  await tour.captionPosition("bottom");
 });

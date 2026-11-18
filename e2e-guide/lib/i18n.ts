@@ -2,7 +2,7 @@
  * The app's own strings, read straight from the locale bundle it renders.
  *
  * Selecting buttons by hard-coded text would silently rot the moment a label
- * changes; resolving through the same JSON the UI renders keeps the recording
+ * changes; resolving through the same JSON the UI renders keeps the chapters
  * script and the product in lockstep — and, since the bundle follows
  * GUIDE_LOCALE, lets one script drive the French, English and Arabic
  * interfaces without a line of it being rewritten.
@@ -120,9 +120,9 @@ const BY_LOCALE: Record<string, Record<string, unknown>> = {
 const bundles = BY_LOCALE[LOCALE];
 
 /**
- * Resolve "namespace:dotted.key" to its string in the filmed language.
+ * Resolve "namespace:dotted.key" to its string in the guide's language.
  * Throws on a missing key — a silent "" would produce a selector that matches
- * everything and a video full of wrong clicks.
+ * everything and a guide full of wrong clicks.
  */
 export function t(key: string): string {
   const [ns, path] = key.includes(":") ? key.split(/:(.+)/) : ["common", key];

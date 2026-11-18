@@ -6,8 +6,8 @@ import path from "node:path";
  * Narration, against the captions the other two languages read from.
  *
  * `narrate()` throws on a missing line, which is the right behaviour at record
- * time — a French sentence spoken over an English screen is worse than no
- * video. But it throws one line at a time, halfway into a chapter, after a
+ * time — a French sentence beside an English screen is worse than no
+ * guide. But it throws one line at a time, halfway into a chapter, after a
  * browser has started: translating a chapter meant a dozen record-fail-fix
  * rounds. This is the whole list, in under a second, before anything launches.
  *

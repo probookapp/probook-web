@@ -2,11 +2,11 @@ import fs from "fs";
 import path from "path";
 
 /**
- * Which language the guide is filmed in.
+ * Which language the guide is made in.
  *
- * One recording per interface language is unavoidable: the buttons, the column
+ * One run per interface language is unavoidable: the buttons, the column
  * headings and the messages are burned into the pixels, so an English caption
- * over a French screen reads as a mistake no subtitle track can repair.
+ * beside a French screen reads as a mistake.
  *
  * What *is* avoidable is writing the chapters three times. The chapters stay
  * written in French — that is the source — and both the selectors and the
@@ -25,7 +25,7 @@ function resolveLocale(): GuideLocale {
   if (!(GUIDE_LOCALES as readonly string[]).includes(raw)) {
     throw new Error(
       `GUIDE_LOCALE="${raw}" is not one of ${GUIDE_LOCALES.join(", ")}. ` +
-        "Filming an unsupported language would produce a video of a fallback UI."
+        "An unsupported language would produce a guide of a fallback UI."
     );
   }
   return raw as GuideLocale;
@@ -64,8 +64,8 @@ export function narrate(fr: string): string {
   if (LOCALE === "fr") return fr;
   const line = CAPTIONS[fr];
   if (line === undefined) {
-    // Falling back to French would put two languages in one video, which is
-    // worse than not filming: it looks like a broken product rather than a
+    // Falling back to French would put two languages in one page, which is
+    // worse than no guide at all: it looks like a broken product rather than a
     // missing translation.
     throw new Error(`No ${LOCALE} caption for: ${JSON.stringify(fr)}`);
   }

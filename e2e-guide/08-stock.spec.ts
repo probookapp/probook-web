@@ -19,13 +19,11 @@ test("Chapitre 8 — Plusieurs points de vente et transferts de stock", async ({
   await tour.say(
     "Probook a déjà créé un emplacement par défaut au nom de votre entreprise : c'est là que se trouve tout le stock saisi jusqu'ici. Renommons-le."
   );
-  await tour.clickRowAction(BIZ.company, t("common:buttons.edit"), { settleMs: 1000 });
+  await tour.clickRowAction(BIZ.company, t("common:buttons.edit"));
 
   const shopForm = tour.dialog();
   await tour.type(shopForm.locator("input").first(), LOCATIONS.shop);
-  await tour.click(shopForm.getByRole("button", { name: t("common:buttons.save"), exact: true }), {
-    settleMs: 1400,
-  });
+  await tour.click(shopForm.getByRole("button", { name: t("common:buttons.save"), exact: true }));
   await expect(tour.row(LOCATIONS.shop)).toBeVisible();
 
   await tour.say("Ajoutons maintenant le dépôt.");
@@ -33,16 +31,14 @@ test("Chapitre 8 — Plusieurs points de vente et transferts de stock", async ({
   const depotForm = tour.dialog();
   await tour.type(depotForm.locator("input").first(), LOCATIONS.warehouse);
   await tour.choose(depotForm.locator('select[name="location-type"]'), "warehouse");
-  await tour.click(depotForm.getByRole("button", { name: t("common:buttons.create"), exact: true }), {
-    settleMs: 1400,
-  });
+  await tour.click(depotForm.getByRole("button", { name: t("common:buttons.create"), exact: true }));
 
   await expect(page.getByText(LOCATIONS.warehouse).first()).toBeAttached();
 
   // ─── transfert ───
   await tour.say("On transfère maintenant des articles du magasin vers le dépôt.");
-  await tour.click(tour.button(t("locations:tabs.transfers")), { settleMs: 900 });
-  await tour.click(tour.button(t("locations:transfers.newTransfer")), { settleMs: 1200 });
+  await tour.click(tour.button(t("locations:tabs.transfers")));
+  await tour.click(tour.button(t("locations:transfers.newTransfer")));
 
   // Written on its own page, like the other documents with lines.
   const transfer = page.locator("main");
@@ -58,31 +54,24 @@ test("Chapitre 8 — Plusieurs points de vente et transferts de stock", async ({
   );
   await tour.set(transfer.locator('input[type="number"]').first(), "20");
 
-  await tour.click(transfer.getByRole("button", { name: t("common:buttons.create"), exact: true }), {
-    settleMs: 2000,
-  });
+  await tour.click(transfer.getByRole("button", { name: t("common:buttons.create"), exact: true }));
   await tour.say("Le transfert est tracé : sa page dit ce qui a quitté un site pour l'autre.");
   // The lines render twice (phone cards and desktop table) and the hidden copy
   // comes first in the DOM; which one `.first()` meets depends on timing.
   await expect(
     transfer.getByText(PRODUCTS.cable.designation).filter({ visible: true }).first()
   ).toBeVisible();
-  await tour.pause(1800);
 
   // ─── stock par emplacement ───
   await tour.nav("/products");
   await tour.say("Sur la fiche produit, le stock se lit désormais emplacement par emplacement.");
-  await tour.clickRowAction(PRODUCTS.cable.designation, t("products:stockLocations.title"), {
-    settleMs: 2000,
-  });
-  await tour.pause(2400);
-  await tour.click(tour.dialog().locator("button[aria-label]").first(), { settleMs: 800 });
+  await tour.clickRowAction(PRODUCTS.cable.designation, t("products:stockLocations.title"));
+  await tour.click(tour.dialog().locator("button[aria-label]").first());
 
   // ─── alerte stock faible ───
   await tour.say(
     "Enfin, Probook signale les articles en stock faible pour éviter la rupture."
   );
   await tour.goto("reports");
-  await tour.click(tour.button(t("reports:lowStock.title")), { settleMs: 2000 });
-  await tour.pause(2400);
+  await tour.click(tour.button(t("reports:lowStock.title")));
 });

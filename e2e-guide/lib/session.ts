@@ -18,7 +18,7 @@ export interface GuideSession {
 /**
  * Chapter 01 signs up for real (that's the footage); later chapters reuse the
  * same tenant so the account looks progressively lived-in instead of resetting
- * to an empty database on every video.
+ * to an empty database in every chapter.
  */
 export async function saveSession(
   page: Page,

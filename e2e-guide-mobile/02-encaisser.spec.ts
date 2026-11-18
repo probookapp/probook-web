@@ -8,7 +8,7 @@ import { CLIENT } from "../e2e-guide/lib/data";
  * Setup before the camera rolls, the same way resume() restores the session.
  *
  * The desktop guide settles its invoice in chapter 5, so the account arrives
- * here with nothing outstanding. Everything the viewer sees happen is real; only
+ * here with nothing outstanding. Everything the reader sees happen is real; only
  * the starting position is arranged.
  */
 async function anUnpaidInvoice(page: import("@playwright/test").Page) {
@@ -49,37 +49,28 @@ test("Mobile 2 — Retrouver une facture et encaisser", async ({ page }) => {
   await tour.say(
     "Le tableau de bord répond à la première question du matin : combien reste-t-il à encaisser ?"
   );
-  await tour.pause(1600);
   await tour.say("Le chiffre est cliquable : il ouvre directement les factures non réglées.");
   await tour.click(
-    page.getByRole("link", { name: new RegExp(t("dashboard:stats.pending"), "i") }).first(),
-    { settleMs: 2000 }
+    page.getByRole("link", { name: new RegExp(t("dashboard:stats.pending"), "i") }).first()
   );
   await expect(page).toHaveURL(/\/invoices\?status=ISSUED/);
-  await tour.pause(1400);
 
   // ─── règlement ───
   await tour.say("On retrouve la facture en tapant le nom du client.");
   await tour.type(page.locator('input[name="invoice-search"]'), "Atlas");
-  await tour.pause(1200);
   // La recherche ne laisse qu'une entrée : l'action visible est la sienne.
-  await tour.clickAction(t("common:buttons.view"), { settleMs: 2000 });
+  await tour.clickAction(t("common:buttons.view"));
 
   await tour.say("Le client règle : on enregistre le versement.");
-  await tour.click(page.getByRole("button", { name: t("common:buttons.add"), exact: true }), {
-    settleMs: 1200,
-  });
+  await tour.click(page.getByRole("button", { name: t("common:buttons.add"), exact: true }));
 
   const payment = tour.dialog();
   await tour.say("Le montant proposé est le solde restant. Espèces, chèque, virement, carte.");
   await tour.choose(payment.locator('select[name="payment_method"]'), "especes");
-  await tour.click(payment.getByRole("button", { name: t("common:payments.savePayment") }), {
-    settleMs: 2400,
-  });
+  await tour.click(payment.getByRole("button", { name: t("common:payments.savePayment") }));
 
   await tour.say(
     "La facture passe en « Payée » toute seule, et le tableau de bord se met à jour derrière."
   );
   await expect(page.getByText(t("invoices:status.PAID"), { exact: true }).first()).toBeVisible();
-  await tour.pause(2000);
 });

@@ -16,9 +16,7 @@ test("Chapitre 3 — Construire son catalogue produits", async ({ page }) => {
 
   const catForm = tour.dialog();
   await tour.type(catForm.locator('input[name="name"]'), CATEGORY);
-  await tour.click(catForm.getByRole("button", { name: t("common:buttons.create"), exact: true }), {
-    settleMs: 1000,
-  });
+  await tour.click(catForm.getByRole("button", { name: t("common:buttons.create"), exact: true }));
   await expect(page.getByText(CATEGORY, { exact: true }).first()).toBeVisible();
   await tour.say("Les catégories peuvent s'imbriquer, pour un rayon puis ses sous-rayons.");
 
@@ -47,9 +45,7 @@ test("Chapitre 3 — Construire son catalogue produits", async ({ page }) => {
   await tour.pick(tour.fieldByLabel(t("products:fields.category"), form), CATEGORY);
   await tour.set(form.locator('input[name="quantity"]'), PRODUCTS.tv.quantity);
 
-  await tour.click(form.getByRole("button", { name: t("products:createProduct"), exact: true }), {
-    settleMs: 1300,
-  });
+  await tour.click(form.getByRole("button", { name: t("products:createProduct"), exact: true }));
   await expect(tour.row(PRODUCTS.tv.designation)).toBeVisible();
 
   // ─── accessoire ───
@@ -68,9 +64,7 @@ test("Chapitre 3 — Construire son catalogue produits", async ({ page }) => {
   await tour.click(form2.getByRole("button", { name: t("products:pricing.addTier") }));
   await tour.choose(form2.locator("select").last(), "wholesale");
   await tour.set(form2.locator('input[name="prices.0.price"]'), "1400");
-  await tour.click(form2.getByRole("button", { name: t("products:createProduct"), exact: true }), {
-    settleMs: 1300,
-  });
+  await tour.click(form2.getByRole("button", { name: t("products:createProduct"), exact: true }));
   await expect(tour.row(PRODUCTS.cable.designation)).toBeVisible();
 
   // ─── prestation de service ───
@@ -84,9 +78,7 @@ test("Chapitre 3 — Construire son catalogue produits", async ({ page }) => {
   await tour.click(form3.locator("#is_service"));
   await tour.say("Le champ quantité disparaît : c'est bien une prestation.");
   await expect(form3.locator('input[name="quantity"]')).toHaveCount(0);
-  await tour.click(form3.getByRole("button", { name: t("products:createProduct"), exact: true }), {
-    settleMs: 1300,
-  });
+  await tour.click(form3.getByRole("button", { name: t("products:createProduct"), exact: true }));
   await expect(tour.row(PRODUCTS.install.designation)).toBeVisible();
 
   // ─── ajustement de stock ───
@@ -99,22 +91,17 @@ test("Chapitre 3 — Construire son catalogue produits", async ({ page }) => {
   await tour.click(stock.getByRole("button", { name: t("products:adjustStock.deltaMode") }));
   await tour.set(stock.locator('input[type="number"]'), "3");
   await tour.type(stock.locator("textarea"), LABELS.restock);
-  await tour.click(stock.getByRole("button", { name: t("products:adjustStock.apply") }), {
-    settleMs: 1300,
-  });
+  await tour.click(stock.getByRole("button", { name: t("products:adjustStock.apply") }));
 
   await expect(tour.row(PRODUCTS.tv.designation)).toContainText("15");
   await tour.say("Le stock est passé de 12 à 15 unités.");
 
   // ─── historique des mouvements ───
   await tour.say("Chaque mouvement est tracé, avec son motif et son solde après opération.");
-  await tour.clickRowAction(PRODUCTS.tv.designation, t("products:movements.title"), {
-    settleMs: 1200,
-  });
+  await tour.clickRowAction(PRODUCTS.tv.designation, t("products:movements.title"));
   const movements = tour.dialog();
   await expect(movements.getByText(t("products:movements.types.adjustment")).first()).toBeVisible();
-  await tour.pause(1500);
-  await tour.click(movements.locator('button[aria-label]').first(), { settleMs: 700 });
+  await tour.click(movements.locator('button[aria-label]').first());
 
   // ─── pack ───
   // A client asked for it: an installer sells "the camera, its connectors and
@@ -131,9 +118,7 @@ test("Chapitre 3 — Construire son catalogue produits", async ({ page }) => {
   await tour.click(packForm.locator("#is_bundle"));
   await tour.say("Un pack n'a ni stock ni taux de TVA à lui : ce sont ceux de ses composants.");
   await expect(packForm.locator('input[name="quantity"]')).toHaveCount(0);
-  await tour.click(packForm.getByRole("button", { name: t("products:createProduct"), exact: true }), {
-    settleMs: 1500,
-  });
+  await tour.click(packForm.getByRole("button", { name: t("products:createProduct"), exact: true }));
 
   await tour.say("Le pack est créé, et sa fiche s'ouvre pour choisir ce qu'il contient.");
   const composition = tour.dialog().getByTestId("bundle-manager");
@@ -145,17 +130,14 @@ test("Chapitre 3 — Construire son catalogue produits", async ({ page }) => {
       search: component.reference,
     });
   }
-  await tour.click(composition.getByRole("button", { name: t("products:bundle.save") }), { settleMs: 1200 });
+  await tour.click(composition.getByRole("button", { name: t("products:bundle.save") }));
   await tour.expectToast();
 
   await tour.say(
     "La fiche compare la valeur des composants au prix du pack : la remise se voit tout de suite."
   );
   await expect(composition.getByText(t("products:bundle.discount"))).toBeVisible();
-  await tour.pause(1500);
-  await tour.click(tour.dialog().getByRole("button", { name: t("common:buttons.cancel"), exact: true }), {
-    settleMs: 900,
-  });
+  await tour.click(tour.dialog().getByRole("button", { name: t("common:buttons.cancel"), exact: true }));
   await expect(tour.row(PRODUCTS.pack.designation)).toContainText(t("products:types.bundle"));
   await tour.say(
     "Dans la liste, le stock du pack est ce que ses composants permettent d'assembler. Vendu, il les sortira du stock un par un."

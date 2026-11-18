@@ -30,7 +30,7 @@ test("Mobile 3 — Vendre au comptoir", async ({ page }) => {
 
   if (seen === "session") {
     await tour.say("On ouvre la caisse avec le fond de tiroir du matin.");
-    await tour.click(tour.button(t("pos:openSession")), { settleMs: 1200 });
+    await tour.click(tour.button(t("pos:openSession")));
 
     // The till may already have been open when the chapter started — a previous
     // run leaves its session behind. Only fill the float if the dialog is really
@@ -40,13 +40,11 @@ test("Mobile 3 — Vendre au comptoir", async ({ page }) => {
     const float = openDialog.locator('input[type="number"]').first();
     if (await float.isVisible({ timeout: 4000 }).catch(() => false)) {
       await tour.set(float, "5000");
-      await tour.click(openDialog.getByRole("button", { name: t("pos:openSession") }).last(), {
-        settleMs: 2000,
-      });
+      await tour.click(openDialog.getByRole("button", { name: t("pos:openSession") }).last());
     }
   }
 
-  // Whatever the entry screen was, the chapter films an open till.
+  // Whatever the entry screen was, the chapter shows an open till.
   await expect(searchBox).toBeVisible({ timeout: 30_000 });
 
   // ─── liste compacte ───
@@ -55,14 +53,12 @@ test("Mobile 3 — Vendre au comptoir", async ({ page }) => {
   );
   const compact = page.getByRole("button", { name: t("pos:compactView") });
   if ((await compact.getAttribute("aria-pressed")) !== "true") {
-    await tour.click(compact, { settleMs: 1400 });
+    await tour.click(compact);
   }
   await expect(compact).toHaveAttribute("aria-pressed", "true");
-  await tour.pause(1400);
 
   await tour.say("On cherche l'article, on l'ajoute au panier.");
   await tour.type(page.getByPlaceholder(t("pos:searchProducts")), "HDMI");
-  await tour.pause(1200);
   // The compact row is itself a button; clicking the text inside it is not the
   // same thing, and left the basket empty.
   const row = page
@@ -71,7 +67,7 @@ test("Mobile 3 — Vendre au comptoir", async ({ page }) => {
     .filter({ visible: true })
     .first();
   await expect(row).toBeVisible({ timeout: 15_000 });
-  await tour.click(row, { settleMs: 1400 });
+  await tour.click(row);
 
   // This article carries a wholesale tariff alongside the retail one, so the
   // till asks which applies before it joins the basket. Awaited rather than
@@ -81,7 +77,7 @@ test("Mobile 3 — Vendre au comptoir", async ({ page }) => {
   // page-wide match clicked something that did nothing.
   const tierPicker = tour.dialog().getByRole("button", { name: t("pos:defaultPrice") });
   await expect(tierPicker).toBeVisible({ timeout: 15_000 });
-  await tour.click(tierPicker, { settleMs: 1400 });
+  await tour.click(tierPicker);
 
   // Anchored on the start of the label: a loose "Panier" match also hits
   // "Vider le panier", and clicking that emptied the basket a step after
@@ -110,11 +106,10 @@ test("Mobile 3 — Vendre au comptoir", async ({ page }) => {
   // Assert here rather than discovering an empty basket at the payment step.
   await expect(payButton).toBeEnabled({ timeout: 15_000 });
   await tour.say("Le panier totalise les articles, la TVA et le montant à encaisser.");
-  await tour.pause(1600);
 
   // ─── règlement ───
   await tour.say("On passe au paiement.");
-  await tour.click(payButton, { settleMs: 1400 });
+  await tour.click(payButton);
 
   const payModal = tour.dialog();
   await tour.say(
@@ -123,19 +118,16 @@ test("Mobile 3 — Vendre au comptoir", async ({ page }) => {
   await expect(
     payModal.getByRole("button").filter({ hasText: t("pos:cheque") }).first()
   ).toBeVisible();
-  await tour.pause(1600);
 
   await tour.click(payModal.getByRole("button").filter({ hasText: t("pos:cash") }).first());
   // A note larger than the total: anything short would leave a balance, and the
   // till refuses to book that without a named client to chase.
   await tour.set(payModal.locator('input[type="number"]').first(), "5000");
   await tour.say("Le rendu de monnaie se calcule tout seul.");
-  await tour.pause(1400);
 
   const confirmPayment = payModal.getByRole("button", { name: t("pos:confirm") });
   await expect(confirmPayment).toBeEnabled({ timeout: 15_000 });
-  await tour.click(confirmPayment, { settleMs: 2500 });
+  await tour.click(confirmPayment);
 
   await tour.say("Vente enregistrée, stock décrémenté, panier vidé pour le client suivant.");
-  await tour.pause(1800);
 });

@@ -9,7 +9,7 @@ import { assertTestDatabase } from "../../e2e/assert-test-db";
  * stamp:
  * `contact+gekpa@electro-souk.dz`, `karim-gekpa`. That works, but it is typed
  * on camera — a viewer reads it as a throwaway test account and trusts the rest
- * of the film a little less.
+ * of the guide a little less.
  *
  * Only the identifiers are taken back; the old tenant's data stays where it
  * is. Deleting it outright looked tidier and does not work: the tenant cascade

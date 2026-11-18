@@ -35,9 +35,7 @@ test("Chapitre 2 — Gérer son fichier clients", async ({ page }) => {
   await tour.type(form.locator('input[name="postal_code"]'), CLIENT.postalCode);
   await tour.type(form.locator('input[name="city"]'), CLIENT.city);
 
-  await tour.click(form.getByRole("button", { name: t("common:buttons.create"), exact: true }), {
-    settleMs: 1200,
-  });
+  await tour.click(form.getByRole("button", { name: t("common:buttons.create"), exact: true }));
   await expect(tour.row(CLIENT.name)).toBeVisible();
   await tour.say("La fiche est enregistrée et apparaît immédiatement dans la liste.");
 
@@ -48,16 +46,14 @@ test("Chapitre 2 — Gérer son fichier clients", async ({ page }) => {
   await tour.type(form2.locator('input[name="email"]'), CLIENT_2.email);
   await tour.type(form2.locator('input[name="phone"]'), CLIENT_2.phone);
   await tour.type(form2.locator('input[name="city"]'), CLIENT_2.city);
-  await tour.click(form2.getByRole("button", { name: t("common:buttons.create"), exact: true }), {
-    settleMs: 1200,
-  });
+  await tour.click(form2.getByRole("button", { name: t("common:buttons.create"), exact: true }));
   await expect(tour.row(CLIENT_2.name)).toBeVisible();
 
   // ─── contacts rattachés ───
   await tour.say(
     "Chaque client peut avoir plusieurs interlocuteurs : acheteur, comptable, responsable technique…"
   );
-  await tour.clickRowAction(CLIENT.name, t("clients:viewContacts"), { settleMs: 900 });
+  await tour.clickRowAction(CLIENT.name, t("clients:viewContacts"));
 
   const details = tour.dialog();
   await tour.click(details.getByRole("button", { name: t("common:buttons.add"), exact: true }));
@@ -71,25 +67,19 @@ test("Chapitre 2 — Gérer son fichier clients", async ({ page }) => {
 
   await tour.say("On peut désigner un contact principal, celui utilisé par défaut dans les emails.");
   await tour.click(contactForm.locator("#is_primary"));
-  await tour.click(contactForm.getByRole("button", { name: t("common:buttons.add"), exact: true }), {
-    settleMs: 1000,
-  });
+  await tour.click(contactForm.getByRole("button", { name: t("common:buttons.add"), exact: true }));
 
   await expect(details.getByText("Yacine Hamdi")).toBeVisible();
   await tour.say("Le contact est rattaché à la fiche.");
-  await tour.click(details.getByRole("button", { name: t("common:buttons.close"), exact: true }), {
-    settleMs: 800,
-  });
+  await tour.click(details.getByRole("button", { name: t("common:buttons.close"), exact: true }));
 
   // ─── recherche ───
   await tour.say("Quand le fichier grandit, la recherche filtre instantanément.");
   await tour.type(page.locator('input[name="client-search"]'), "Numidia");
-  await tour.pause(1000);
   await expect(tour.row(CLIENT_2.name)).toBeVisible();
   await expect(page.getByRole("row").filter({ hasText: CLIENT.name })).toHaveCount(0);
 
   await tour.set(page.locator('input[name="client-search"]'), "");
-  await tour.pause(800);
 
   // ─── annuaire ───
   await tour.say(
@@ -99,7 +89,6 @@ test("Chapitre 2 — Gérer son fichier clients", async ({ page }) => {
   await expect(page.getByText(t("common:phonebook.subtitle")).first()).toBeVisible();
   await tour.say("Un nom, un email, un numéro : on cherche sans savoir chez quel client il travaille.");
   await tour.type(page.getByPlaceholder(t("common:phonebook.searchPlaceholder")), "Yacine");
-  await tour.pause(1400);
 
   await tour.goto("clients");
 

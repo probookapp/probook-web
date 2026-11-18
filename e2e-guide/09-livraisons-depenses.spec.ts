@@ -13,7 +13,7 @@ test("Chapitre 9 — Bons de livraison et dépenses", async ({ page }) => {
   await tour.say(
     "Quand la marchandise part avant la facture, on édite un bon de livraison à joindre au colis."
   );
-  await tour.click(tour.button(t("delivery:newDeliveryNote")), { settleMs: 1400 });
+  await tour.click(tour.button(t("delivery:newDeliveryNote")));
 
   await tour.pick(tour.fieldByLabel(`${t("delivery:fields.client")} *`), CLIENT_2.name, {
     search: "Numidia",
@@ -31,30 +31,26 @@ test("Chapitre 9 — Bons de livraison et dépenses", async ({ page }) => {
   });
   await tour.set(page.locator('input[name="lines.0.quantity"]'), "5");
 
-  await tour.click(tour.button(t("delivery:createDeliveryNote")), { settleMs: 2000 });
+  await tour.click(tour.button(t("delivery:createDeliveryNote")));
 
   // Saving lands straight on the note, not back on the list.
   await expect(page).toHaveURL(/delivery-notes\/[0-9a-f-]{36}/);
   await expect(page.getByText(CLIENT_2.name).filter({ visible: true }).first()).toBeVisible();
   await tour.say("Le bon est prêt à imprimer. Il pourra être transformé en facture plus tard.");
-  await tour.pause(1800);
 
   await tour.say("Une fois la marchandise remise, on marque le bon comme livré.");
-  await tour.click(tour.button(t("delivery:actions.markAsDelivered")), { settleMs: 1200 });
+  await tour.click(tour.button(t("delivery:actions.markAsDelivered")));
   const confirm = tour.dialog();
   if (await confirm.isVisible().catch(() => false)) {
-    await tour.click(confirm.getByRole("button", { name: t("common:buttons.confirm") }), {
-      settleMs: 1800,
-    });
+    await tour.click(confirm.getByRole("button", { name: t("common:buttons.confirm") }));
   }
-  await tour.pause(1200);
 
   // ─── dépenses ───
   await tour.nav("/expenses");
   await tour.say(
     "Dernier volet du quotidien : les charges. Loyer, électricité, carburant — tout ce qui sort de la caisse."
   );
-  await tour.click(tour.button(t("expenses:newExpense")), { settleMs: 1000 });
+  await tour.click(tour.button(t("expenses:newExpense")));
 
   const expense = tour.dialog();
   await tour.type(expense.locator('input[name="name"]'), EXPENSE.name);
@@ -66,9 +62,7 @@ test("Chapitre 9 — Bons de livraison et dépenses", async ({ page }) => {
   await tour.say("Le mode de paiement dit d'où sort l'argent : le loyer part par virement.");
   await tour.choose(expense.locator('select[name="payment_method"]'), "virement");
   await tour.type(expense.locator('textarea[name="notes"]'), LABELS.rentMonthly);
-  await tour.click(expense.getByRole("button", { name: t("common:buttons.create"), exact: true }), {
-    settleMs: 1600,
-  });
+  await tour.click(expense.getByRole("button", { name: t("common:buttons.create"), exact: true }));
 
   await expect(tour.row(EXPENSE.name)).toBeVisible();
   // Scoped to the row: the page also renders a hidden mobile card carrying the
@@ -76,25 +70,19 @@ test("Chapitre 9 — Bons de livraison et dépenses", async ({ page }) => {
   await expect(tour.row(EXPENSE.name)).toContainText(t("expenses:suggestions.rent"));
 
   // A second expense under the same heading, so the report has something to group.
-  await tour.click(tour.button(t("expenses:newExpense")), { settleMs: 900 });
+  await tour.click(tour.button(t("expenses:newExpense")));
   const fuel = tour.dialog();
   await tour.type(fuel.locator('input[name="name"]'), LABELS.fuelInstall);
   await tour.set(fuel.locator('input[name="amount"]'), "6800");
   await tour.type(fuel.locator('input[name="category_name"]'), t("expenses:suggestions.fuel"));
-  await tour.click(fuel.getByRole("button", { name: t("common:buttons.create"), exact: true }), {
-    settleMs: 1600,
-  });
+  await tour.click(fuel.getByRole("button", { name: t("common:buttons.create"), exact: true }));
 
   await tour.say("Les postes se gèrent à part : on peut en renommer un, ou en supprimer un devenu inutile.");
-  await tour.click(tour.button(t("expenses:categories.manage")), { settleMs: 1200 });
+  await tour.click(tour.button(t("expenses:categories.manage")));
   await expect(page.getByText(t("expenses:categories.title")).first()).toBeVisible();
-  await tour.pause(1600);
-  await tour.click(tour.dialog().getByRole("button", { name: t("common:aria.close") }), {
-    settleMs: 1000,
-  });
+  await tour.click(tour.dialog().getByRole("button", { name: t("common:aria.close") }));
 
   await tour.say(
     "Ces dépenses viennent en déduction dans le rapport de résultat et l'export comptable, et le rapport « dépenses par poste » montre où part l'argent."
   );
-  await tour.pause(1800);
 });

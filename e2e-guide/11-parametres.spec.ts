@@ -37,17 +37,15 @@ test("Chapitre 11 — Paramétrer son entreprise", async ({ page }) => {
     mimeType: "image/png",
     buffer: LOGO_PNG,
   });
-  // The upload used to fail silently in the test environment and the take
+  // The upload used to fail silently in the test environment and the guide
   // showed an error toast; the logo itself is the proof it went through.
   await expect(page.getByRole("img", { name: t("settings:branding.logoAlt") })).toBeVisible();
-  await tour.pause(2000);
 
   // ─── régime fiscal ───
   await tour.say(
     "Le régime fiscal est le réglage clé : il détermine les taux de TVA proposés et les identifiants demandés."
   );
   await tour.point(page.locator('select[name="fiscal_profile"]'));
-  await tour.pause(1800);
 
   await tour.say(
     "En Algérie, Probook demande le NIF, le registre de commerce, le NIS et l'article d'imposition."
@@ -60,17 +58,14 @@ test("Chapitre 11 — Paramétrer son entreprise", async ({ page }) => {
   await tour.say(
     "Une entreprise basée en France choisirait « France » : la TVA passe au barème français et les champs deviennent SIRET et numéro de TVA."
   );
-  await tour.pause(2200);
 
   // ─── facturation ───
   await tour.say("La devise et la TVA par défaut sont déjà réglées pour l'Algérie : dinar et 19 %.");
   await tour.point(page.locator('select[name="currency"]'));
-  await tour.pause(1600);
 
   await tour.say("Les préfixes et les compteurs pilotent la numérotation de vos documents.");
   await tour.set(page.locator('input[name="invoice_prefix"]'), "FA-2026-");
   await tour.set(page.locator('input[name="quote_prefix"]'), "DV-2026-");
-  await tour.pause(1400);
 
   // ─── droit de timbre ───
   await tour.say(
@@ -78,16 +73,13 @@ test("Chapitre 11 — Paramétrer son entreprise", async ({ page }) => {
   );
   // Aim at a state, not at a click: replayed on a tenant that already has the
   // setting on, a blind click turned it back off and the rest of the chapter
-  // then filmed an invoice with no timbre on it.
+  // then showed an invoice with no timbre on it.
   const stampToggle = page.locator('input[name="stamp_duty_enabled"]');
   if (!(await stampToggle.isChecked())) await tour.click(stampToggle);
   await tour.set(page.locator('input[name="stamp_duty_threshold"]'), "0");
-  await tour.pause(1800);
 
   await tour.say("On enregistre.");
-  await tour.click(page.getByRole("button", { name: t("common:buttons.save"), exact: true }).last(), {
-    settleMs: 2200,
-  });
+  await tour.click(page.getByRole("button", { name: t("common:buttons.save"), exact: true }).last());
 
   // ─── vérification sur une facture ───
   // The timbre is snapshotted when an invoice is issued, so an invoice issued
@@ -96,7 +88,7 @@ test("Chapitre 11 — Paramétrer son entreprise", async ({ page }) => {
   // issued here instead, which is what actually demonstrates the setting.
   await tour.say("Le réglage vaut pour les factures émises à partir de maintenant. Émettons-en une.");
   await tour.nav("/invoices");
-  await tour.click(tour.button(t("invoices:newInvoice")), { settleMs: 1400 });
+  await tour.click(tour.button(t("invoices:newInvoice")));
 
   await tour.pick(tour.fieldByLabel(`${t("invoices:fields.client")} *`), CLIENT.name, {
     search: "Atlas",
@@ -108,23 +100,21 @@ test("Chapitre 11 — Paramétrer son entreprise", async ({ page }) => {
 
   await tour.say("La case « vente au comptant » est cochée par défaut : c'est elle qui déclenche le timbre.");
   await tour.point(page.getByText(t("invoices:stampDuty.cashSale")));
-  await tour.pause(1600);
 
-  await tour.click(tour.button(t("invoices:createInvoice")), { settleMs: 2600 });
+  await tour.click(tour.button(t("invoices:createInvoice")));
   // Saving returns to the list; the new invoice is the first row for the client.
-  await tour.clickRowAction(CLIENT.name, t("common:buttons.view"), { settleMs: 2000 });
-  await tour.click(tour.button(t("invoices:actions.markAsIssued")), { settleMs: 2500 });
+  await tour.clickRowAction(CLIENT.name, t("common:buttons.view"));
+  await tour.click(tour.button(t("invoices:actions.markAsIssued")));
 
   await tour.say("Le droit de timbre s'ajoute au total à payer, sans entrer dans le chiffre d'affaires ni dans la TVA.");
   const stampLine = page.getByText(t("invoices:fields.stampDuty")).first();
   await expect(stampLine).toBeVisible();
   await tour.point(stampLine);
-  await tour.pause(2200);
 
   // ─── équipe ───
   await tour.nav("/settings");
   await tour.say("Enfin, l'équipe : chaque employé a son compte et ses permissions.");
-  await tour.click(tour.button(t("auth:userManagement.addUser")), { settleMs: 1200 });
+  await tour.click(tour.button(t("auth:userManagement.addUser")));
 
   const userForm = tour.dialog();
   const inputs = userForm.locator("input:not([type='file'])");
@@ -136,17 +126,13 @@ test("Chapitre 11 — Paramétrer son entreprise", async ({ page }) => {
     "En choisissant le rôle « employé », on coche précisément les modules auxquels la personne accède."
   );
   await tour.choose(userForm.locator("select").first(), "employee");
-  await tour.pause(2200);
 
-  await tour.click(userForm.getByRole("button", { name: t("common:buttons.create"), exact: true }), {
-    settleMs: 2000,
-  });
+  await tour.click(userForm.getByRole("button", { name: t("common:buttons.create"), exact: true }));
   await expect(userForm).toBeHidden();
 
   await tour.say(
     "Voilà : de la création du compte à la clôture de caisse, vous avez fait le tour de Probook."
   );
   await tour.goto("dashboard");
-  await tour.pause(1500);
   await tour.titleCard("Merci", "Probook — votre gestion commerciale, simplement");
 });

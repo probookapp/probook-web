@@ -9,7 +9,7 @@ test("Chapitre 1 — Créer son compte et découvrir Probook", async ({ page }) 
   const tour = await Tour.open(page, "1 · Démarrage");
 
   // The address and the login are typed on camera, so they have to read like a
-  // real shop's. The previous take is removed rather than dodged with a stamp.
+  // real shop's. The previous run's is removed rather than dodged with a stamp.
   const { username, email } = BIZ;
   await releaseDemoAccount({ email, username, staffUsernames: [BIZ.staffUsername] });
 
@@ -21,12 +21,11 @@ test("Chapitre 1 — Créer son compte et découvrir Probook", async ({ page }) 
     "Probook est le logiciel de gestion commerciale pensé pour les commerces algériens : facturation, stock, caisse et comptabilité au même endroit."
   );
   // Scroll to the feature list and stop there. Blind pixel scrolls used to
-  // carry on into the pricing section, which is data: the film would have to
+  // carry on into the pricing section, which is data: the guide would have to
   // be reshot every time an offer changes, and it showed whatever plans the
   // database happened to hold.
   const features = page.getByText(t("common:landing.features.title")).first();
   await features.scrollIntoViewIfNeeded();
-  await tour.pause(1800);
 
   // ─── inscription ───
   await tour.say("Commençons par créer un compte. L'inscription prend moins d'une minute.");
@@ -53,11 +52,10 @@ test("Chapitre 1 — Créer son compte et découvrir Probook", async ({ page }) 
   await tour.choose(page.locator("form select"), "DZ");
 
   await tour.say("Il ne reste plus qu'à valider.");
-  await tour.click(page.locator('button[type="submit"]'), { settleMs: 1500 });
+  await tour.click(page.locator('button[type="submit"]'));
 
   await page.waitForURL(new RegExp(`/${LOCALE}/(dashboard|settings)`), { timeout: 30_000 });
   await page.waitForLoadState("networkidle", { timeout: 20_000 }).catch(() => {});
-  await tour.pause(1500);
 
   // ─── premier contact avec l'application ───
   await tour.say(
@@ -74,9 +72,9 @@ test("Chapitre 1 — Créer son compte et découvrir Probook", async ({ page }) 
   }
 
   // ─── vérification de l'adresse email ───
-  // The one step of the guide that needs a real inbox. We film it — the banner
+  // The one step of the guide that needs a real inbox. We show it — the banner
   // and its "resend" button are part of the product — then clear the flag
-  // through the test-only endpoint so the rest of the guide is not filmed with
+  // through the test-only endpoint so the rest of the guide is not shown with
   // a permanent warning strip across every page.
   const verifyBanner = page.getByText(t("common:emailVerify.banner"));
   if (await verifyBanner.isVisible().catch(() => false)) {
@@ -102,35 +100,30 @@ test("Chapitre 1 — Créer son compte et découvrir Probook", async ({ page }) 
   }
 
   // Offers, named but never priced. Prices are data — a figure spoken on camera
-  // would date the film the first time the grid moves, and the pricing page
+  // would date the guide the first time the grid moves, and the pricing page
   // shows the current one anyway.
   await tour.say(
     "L'essai donne accès à tout. Ensuite, trois offres : Essentiel pour facturer, Commerce qui ajoute la caisse, les achats et les dépenses, Entreprise qui ouvre le multi-sites et les rapports avancés."
   );
-  await tour.pause(1500);
   await tour.say(
     "Chaque offre couvre un nombre d'utilisateurs, et il est possible de composer son propre abonnement module par module. On y revient au dernier chapitre."
   );
-  await tour.pause(1500);
 
   await tour.say(
     "Le tableau de bord affiche d'un coup d'œil le chiffre d'affaires, les factures en attente et les alertes."
   );
-  await tour.pause(1200);
 
   await tour.say(
     "À gauche, le menu regroupe tous les modules : clients, produits, devis, factures, achats, stock et rapports."
   );
   for (const route of ["/clients", "/products", "/invoices", "/reports"]) {
     await tour.point(page.locator(`aside a[href="/${LOCALE}${route}"]`));
-    await tour.pause(500);
   }
 
   await tour.say("Et en bas, le bouton Mode caisse bascule l'application vers la vente au comptoir.");
   await tour.point(
     page.locator("aside button").filter({ hasText: t("navigation:posMode") }).first()
   );
-  await tour.pause(1200);
 
   await tour.say("Dans les prochains chapitres, nous allons remplir ce compte pas à pas.");
 
