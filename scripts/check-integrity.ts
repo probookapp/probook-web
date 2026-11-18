@@ -45,7 +45,10 @@ async function main() {
       })),
     });
     const v2 = invoice.integrityHash.startsWith("v2:");
-    if (v2) valid ? v2ok++ : v2bad++; else valid ? legacyOk++ : legacyBad++;
+    if (v2 && valid) v2ok++;
+    else if (v2) v2bad++;
+    else if (valid) legacyOk++;
+    else legacyBad++;
   }
   console.log(`non-draft invoices: ${invoices.length} — v2 ok=${v2ok} v2 mismatch=${v2bad} legacy ok=${legacyOk} legacy mismatch=${legacyBad} no hash=${none}`);
   const sales = await prisma.posTransaction?.count?.().catch(() => null);
